@@ -20,3 +20,4 @@ _package_ is the name of an AUR package. Dependencies are retrieved recursively.
 + aurbuild - build script using repose. Mostly done, but makepkg doesn't play nice.
 + aurclone - clone script
 + revisit multireq sequential curl use
++ Allow to exclude a local repository in sift()
