@@ -22,4 +22,4 @@ _package_ is the name of an AUR package. Dependencies are retrieved recursively.
 + revisit multireq sequential curl use
 + Allow to exclude a local repository in sift()
   + Don't filter command-line arguments?
-  + pacsift --regex --repo=<pattern>
+  + pacsift --regex --repo=pattern
