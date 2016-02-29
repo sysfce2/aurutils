@@ -13,13 +13,3 @@ _package_ must be a directory containing a .SRCINFO file. Dependencies are not r
 ```multireq package```
 
 _package_ is the name of an AUR package. Dependencies are retrieved recursively.
-
-# TODO
-
-+ Write a proper man page, see man-pages(7)
-+ aurbuild - build script using repose. Mostly done, but makepkg doesn't play nice.
-+ aurclone - clone script
-+ revisit multireq sequential curl use
-+ Allow to exclude a local repository in sift()
-  + Don't filter command-line arguments?
-  + pacsift --regex --repo=pattern
