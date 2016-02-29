@@ -27,6 +27,7 @@ url() {
     printf '%s' $str
 }
 
+# Dependency trees aren't visible from a single request, so we make requests sequentially.
 query() {
     local start=$SECONDS
 
