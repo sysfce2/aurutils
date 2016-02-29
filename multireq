@@ -35,7 +35,7 @@ query() {
 	exit 1
     fi
 
-    for ((a = 0; a <= 100; ++a)); do
+    for ((a = 1; a <= 100; ++a)); do
 	if ! curl --retry 3 -sgL $(deps raw_"$((--a))" | tee -a copy | url) > raw_$a; then
 	    error "Request failed"
 	    exit 1
