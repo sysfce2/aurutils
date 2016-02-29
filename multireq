@@ -47,7 +47,7 @@ query() {
 	fi
     done
 
-    if (( a > 100 )); then
+    if ((a > 100)); then
 	error "Total requests: $((++a)) (exceeded maximum)"
 	exit 1
     else
