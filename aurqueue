@@ -1,0 +1,94 @@
+#!/bin/bash
+# aurqueue - generate ordered dependency lists for package builds
+
+# requires pacutils expac
+
+set -o pipefail
+
+# Determine the path to each .SRCINFO, outputs to stdout using using null
+# delimitation.
+findsrc() {
+    find "$@" -maxdepth 2 -type f -name .SRCINFO -print0
+}
+
+# Use xargs to pass a list of paths to .SRCINFOs for processing, then
+# outputs all (global) dependencies on stdout.
+gendeps() {
+    xargs -0i awk -v FS='[<=>]' '
+    	  /pkgbase/			{name = $2; print $2, $2}
+    	  /^\t(make|check)?depends/	{print name, $2}
+	  /^$/                        	{nextfile}
+    ' {}
+}
+
+# Takes a set of package names to create "package virtual" pairs, querying
+# both provides and replaces fields.
+provides() {
+    expac '%n %R %S' -S "$@" | awk '{
+	for(i = 2; i <= NF; ++i) { print $1, $i | "sort -u" }
+    }'
+}
+
+# Read package names from stdin separated by the IFS and produces a list of
+# packages not provided in the official repositories.
+sift() {
+    declare -A pkgset
+    declare all siftargs query provides repo n p v
+
+    while read -r p; do
+	pkgset["$p"]=1
+	all+=("$p")
+    done
+
+    if [[ ! ${pkgset[@]} ]]; then
+	error "No packages on standard input"
+	exit 1
+    fi
+
+    for p in "${!pkgset[@]}"; do
+	siftargs+=(--satisfies="$p")
+    done
+
+    # Close standard input for pacsift to allow --sync.
+    # https://github.com/andrewgregory/pacutils/issues/3
+    query=($(pacsift --sync --exact "${siftargs[@]}" <&-))
+
+    if [[ ${query[@]} ]]; then
+        for p in "${query[@]#*/}"; do
+            if [[ ${pkgset[$p]} ]]; then
+                repo+=("$p")
+            else
+                n+=("$p")
+            fi
+        done
+    else
+        msg2 "No matches in the sync database"
+    fi
+
+    if [[ ${n[@]} ]]; then
+	while read -r p v; do
+	    if [[ ${pkgset[$v]} ]]; then
+		warning "virtual dependency $v provided $p"
+		repo+=("$v")
+	    fi
+	done < <(provides "${n[@]}")
+    fi
+
+    # Print the relative complement between repo provided dependencies and all
+    # required dependencies. all \ repo
+    grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
+}
+
+if ! source /usr/share/makepkg/util.sh; then
+    exit 1
+fi
+
+if ((!$#)); then
+    error "usage: aurqueue repo [repo, ...]"
+    exit 1
+fi
+
+[[ -t 2 ]] && colorize
+
+msg "Generating dependencies..."
+findsrc "$@" | gendeps | tsort | sift | tac
