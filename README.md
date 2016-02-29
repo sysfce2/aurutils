@@ -1,6 +1,6 @@
 # aurutils
 
-Collection of small helper tools for use with the Arch User Repository.
+Collection of helper tools for use with the Arch User Repository.
 
 ## aurqueue
 
