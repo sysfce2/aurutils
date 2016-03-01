@@ -49,6 +49,10 @@ sift() {
 	siftargs+=(--satisfies="$p")
     done
 
+    for ofc in testing core extra community community-testing multilib multilib-testing; do
+        siftargs+=(--repo="$ofc")
+    done
+
     # Close standard input for pacsift to allow --sync.
     # https://github.com/andrewgregory/pacutils/issues/3
     query=($(pacsift --sync --exact "${siftargs[@]}" <&-))
