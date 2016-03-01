@@ -13,10 +13,6 @@ done
 
 wait
 
-fail=($(awk '{if($2 != 0) print $1}' < "$tmp" 2>/dev/null))
-
-if [[ ${fail[@]} ]]; then
-    printf '%s\n' 'Failed to clone:' "${fail[@]}" >&2
-fi
+awk '{if($2 != 0) printf "Failed to clone: %s\n", $1}' < "$tmp" 2>/dev/null
 
 rm "$tmp"
