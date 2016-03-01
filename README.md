@@ -10,6 +10,6 @@ _package_ must be a directory containing a .SRCINFO file. Dependencies are not r
 
 ## multireq
 
-```multireq package```
+```multireq package ...```
 
 _package_ must be the name of an AUR package. Dependencies are retrieved recursively.
