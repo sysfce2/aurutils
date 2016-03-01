@@ -12,4 +12,4 @@ _package_ must be a directory containing a .SRCINFO file. Dependencies are not r
 
 ```multireq package```
 
-_package_ is the name of an AUR package. Dependencies are retrieved recursively.
+_package_ must be the name of an AUR package. Dependencies are retrieved recursively.
