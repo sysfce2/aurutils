@@ -4,6 +4,8 @@ readonly argv0=aurclone
 readonly aurgit=https://aur.archlinux.org
 readonly tmp=$(mktemp)
 
+trap 'rm $tmp; pkill -P $$' TERM EXIT
+
 while read -r target; do
    ( if ! git clone -v "$aurgit/$target.git"; then
         printf '%s\n' "$target 1" >> "$tmp"
@@ -14,5 +16,3 @@ done
 wait
 
 awk '{if($2 != 0) printf "Failed to clone: %s\n", $1}' < "$tmp" 2>/dev/null
-
-rm "$tmp"
