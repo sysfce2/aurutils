@@ -1,0 +1,22 @@
+#!/bin/bash
+
+readonly argv0=aurclone
+readonly aurgit=https://aur.archlinux.org
+readonly tmp=$(mktemp)
+
+while read -r target; do
+   ( if ! git clone -v "$aurgit/$target.git"; then
+        printf '%s\n' "$target 1" >> "$tmp"
+     fi 
+   ) &
+done
+
+wait
+
+fail=($(awk '{if($2 != 0) print $1}' < "$tmp" 2>/dev/null))
+
+if [[ ${fail[@]} ]]; then
+    printf '%s\n' 'Failed to clone:' "${fail[@]}"
+fi
+
+rm "$tmp"
