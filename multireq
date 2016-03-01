@@ -2,6 +2,10 @@
 
 readonly argv0=multireq
 
+count() {
+    jshon -F "$1" -Qe resultcount
+}
+
 deps() {
     jshon -F "$1" -Qe results -a -e Depends -a -u
     jshon -F "$1" -Qe results -a -e MakeDepends -a -u
@@ -27,29 +31,34 @@ url() {
     printf '%s' $str
 }
 
-# Dependency trees aren't visible from a single request, so we make requests sequentially.
+die() {
+    error "$@"
+    exit 1
+}
+
 query() {
     local start=$SECONDS
 
     if ! curl --retry 3 -sgL $(printf '%s\n' "$@" | tee copy | url) > raw_0; then
-	error "Request failed"
-	exit 1
+        die "Request failed"
+    fi
+
+    if [[ $(count raw_0) == 0 ]]; then
+        die "No packages found"
     fi
 
     for ((a = 1; a <= 100; ++a)); do
 	if ! curl --retry 3 -sgL $(deps raw_"$((--a))" | tee -a copy | url) > raw_$a; then
-	    error "Request failed"
-	    exit 1
+	    die "Request failed"
 	fi
 
-	if [[ $(jshon -F raw_$a -Qe resultcount) == 0 ]]; then
+        if [[ $(count raw_$a) == 0 ]]; then
 	    break
 	fi
     done
 
     if ((a > 100)); then
-	error "Total requests: $((++a)) (exceeded maximum)"
-	exit 1
+	die "Total requests: $((++a)) (exceeded maximum)"
     else
 	msg2 "Total requests: $((++a))"
 	msg2 "Time: $((SECONDS - start)) seconds"
@@ -59,8 +68,7 @@ query() {
 source /usr/share/makepkg/util.sh || exit 1
 
 if ((!$#)); then
-    error "no arguments"
-    exit 1
+    die "usage: $argv0 package [package, ...]"
 fi
 
 [[ -t 2 ]] && colorize
@@ -76,12 +84,11 @@ msg 'Querying AUR RPC...'
 query "$@"
 
 msg 'Generating dependencies...'
-if curl -sgL $(sort -u < copy | url) > raw_n; then
+if curl --retry 3 -sgL $(sort -u < copy | url) > raw_n; then
     pair "$(jshon -e resultcount < raw_n)" raw_n | tsort > all
     jshon -F raw_n -e results -a -e Name -u > aur
 else
-    error "Request failed"
-    exit 1
+    die "Request failed"
 fi
 
 grep -Fxf aur all | tac
