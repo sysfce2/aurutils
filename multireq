@@ -1,4 +1,7 @@
 #!/bin/bash
+# multireq
+
+# requires jshon
 
 readonly argv0=multireq
 
