@@ -8,7 +8,7 @@ license=('ISC')
 source=("git+$url")
 depends=('pacman>=5.0')
 makedepends=('git')
-optdepends=('repose: aurbuild'
+optdepends=('repose-git: aurbuild'
             'jshon: multireq'
             'pacutils-git: aurqueue'
             'expac: aurqueue'
