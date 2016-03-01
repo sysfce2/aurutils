@@ -85,7 +85,7 @@ query "$@"
 
 msg 'Generating dependencies...'
 if curl --retry 3 -sgL $(sort -u < copy | url) > raw_n; then
-    pair "$(jshon -e resultcount < raw_n)" raw_n | tsort > all
+    pair "$(count raw_n)" raw_n | tsort > all
     jshon -F raw_n -e results -a -e Name -u > aur
 else
     die "Request failed"
