@@ -33,7 +33,7 @@ provides() {
 # packages not provided in the official repositories.
 sift() {
     declare -A pkgset
-    declare all siftargs query provides repo n p v
+    declare all siftargs query provides repo n p r v
 
     while read -r p; do
 	pkgset["$p"]=1
@@ -49,8 +49,8 @@ sift() {
 	siftargs+=(--satisfies="$p")
     done
 
-    for ofc in testing core extra community community-testing multilib multilib-testing; do
-        siftargs+=(--repo="$ofc")
+    for r in testing core extra community community-testing multilib multilib-testing; do
+        siftargs+=(--repo="$r")
     done
 
     # Close standard input for pacsift to allow --sync.
