@@ -19,3 +19,11 @@ _package_ must be the name of an AUR package. Dependencies are retrieved recursi
 ```aurclone < FILE```
 
 Input must be provided as single package names, available via https://aur.archlinux.org.
+
+## aurbuild
+
+TBD
+
+## aursearch
+
+TBD
