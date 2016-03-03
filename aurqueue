@@ -33,7 +33,7 @@ provides() {
 # packages not provided in the official repositories.
 sift() {
     declare -A pkgset
-    declare all siftargs query provides repo n p r v
+    declare all siftargs query repo n p r v
 
     while read -r p; do
 	pkgset["$p"]=1
