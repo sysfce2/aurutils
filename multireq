@@ -32,25 +32,21 @@ url() {
     printf '%s' $str
 }
 
-die() {
-    error "$@"
-    exit 1
-}
-
 query() {
     local start=$SECONDS
 
-    if ! curl --retry 3 -sgL $(printf '%s\n' "$@" | tee copy | url) > raw_0; then
-        die "Request failed"
+    if ! curl --retry 3 -sSgL $(printf '%s\n' "$@" | tee copy | url) > raw_0; then
+        exit 1
     fi
 
     if [[ $(count raw_0) == 0 ]]; then
-        die "No packages found"
+        error "No packages found"
+        exit 1
     fi
 
     for ((a = 1; a <= 100; ++a)); do
-	if ! curl --retry 3 -sgL $(deps raw_"$((--a))" | tee -a copy | url) > raw_$a; then
-	    die "Request failed"
+	if ! curl --retry 3 -sSgL $(deps raw_"$((--a))" | tee -a copy | url) > raw_$a; then
+	    exit 1
 	fi
 
         if [[ $(count raw_$a) == 0 ]]; then
@@ -59,7 +55,8 @@ query() {
     done
 
     if ((a > 100)); then
-	die "Total requests: $((++a)) (exceeded maximum)"
+	error "Total requests: $((++a)) (exceeded maximum)"
+	exit 1
     else
 	msg2 "Total requests: $((++a))"
 	msg2 "Time: $((SECONDS - start)) seconds"
@@ -69,7 +66,8 @@ query() {
 source /usr/share/makepkg/util.sh || exit 1
 
 if ((!$#)); then
-    die "usage: $argv0 package [package, ...]"
+    error "usage: $argv0 package [package, ...]"
+    exit 1
 fi
 
 [[ -t 2 ]] && colorize
@@ -85,12 +83,10 @@ msg 'Querying AUR RPC...'
 query "$@"
 
 msg 'Generating dependencies...'
-if curl --retry 3 -sgL $(sort -u < copy | url) > raw_n; then
+if curl --retry 3 -sSgL $(sort -u < copy | url) > raw_n; then
     pair "$(count raw_n)" raw_n | tsort > all
     jshon -F raw_n -e results -a -e Name -u > aur
-else
-    die "Request failed"
+    grep -Fxf aur all | tac
 fi
 
-grep -Fxf aur all | tac
 rm -rf "$output"
