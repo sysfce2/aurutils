@@ -29,13 +29,13 @@ url() {
 	str+="&arg[]=$p"
     done
 
-    printf '%s' $str
+    printf '%s' "$str"
 }
 
 query() {
     local start=$SECONDS
 
-    if ! curl --retry 3 -sSgL $(printf '%s\n' "$@" | tee copy | url) > raw_0; then
+    if ! curl --retry 3 -sSgL "$(printf '%s\n' "$@" | tee copy | url)" > raw_0; then
         exit 1
     fi
 
@@ -45,7 +45,7 @@ query() {
     fi
 
     for ((a = 1; a <= 100; ++a)); do
-	if ! curl --retry 3 -sSgL $(deps raw_"$((--a))" | tee -a copy | url) > raw_$a; then
+	if ! curl --retry 3 -sSgL "$(deps raw_"$((--a))" | tee -a copy | url)" > raw_$a; then
 	    exit 1
 	fi
 
@@ -83,7 +83,7 @@ msg 'Querying AUR RPC...'
 query "$@"
 
 msg 'Generating dependencies...'
-if curl --retry 3 -sSgL $(sort -u < copy | url) > raw_n; then
+if curl --retry 3 -sSgL "$(sort -u < copy | url)" > raw_n; then
     pair "$(count raw_n)" raw_n | tsort > all
     jshon -F raw_n -e results -a -e Name -u > aur
     grep -Fxf aur all | tac
