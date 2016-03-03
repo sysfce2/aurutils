@@ -3,7 +3,7 @@
 readonly argv0=aurclone
 readonly tmp=$(mktemp)
 
-trap 'rm $tmp; pkill -P $$' TERM EXIT
+trap 'rm "$tmp"; pkill -P $$' TERM EXIT
 
 while read -r target; do
    ( if ! git clone -v https://aur.archlinux.org/"$target".git; then
