@@ -77,7 +77,7 @@ if mkdir -p "$tmp" -m 700; then
     output=$(mktemp -d XXXXXXXX -p "$tmp")
 fi
 
-trap 'rm -rf "$output"'
+trap 'rm -rf "$output"' EXIT
 cd "$output" || exit 1
 
 msg 'Querying AUR RPC...'
