@@ -9,6 +9,7 @@ source=("git+$url")
 depends=('pacman>=5.0')
 makedepends=('git')
 optdepends=('repose-git: aurbuild'
+            'powerpill: aurbuild'
             'jshon: multireq'
             'pacutils-git: aurqueue'
             'expac: aurqueue'
