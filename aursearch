@@ -1,0 +1,36 @@
+#!/bin/bash -e
+
+readonly cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
+readonly remote="https://aur.archlinux.org"
+readonly rpc="$remote/rpc/?v=5&type=info"
+
+filter() {
+    tee # TBD
+}
+
+split() {
+    awk -v rpc=$rpc 'BEGIN { printf "%s", rpc } !/#/ {
+        gsub("+","%2b"); gsub("@","%40");
+        if ((NR % 150) == 0)
+            printf "&arg[]=%s\n%s", $0, rpc;
+        else
+            printf "&arg[]=%s", $0;
+    }'
+}
+
+source /usr/share/makepkg/util.sh || exit 1
+
+if ((!$#)); then
+    error "aursearch: pattern"
+    exit 1
+fi
+
+[[ -t 2 ]] && colorize
+
+msg "Retrieving package list"
+curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
+
+msg "Sending request"
+zgrep -P -- "$1" "$cache"/packages.gz | split | aria2c -s 16 -x 16 -j 32 --log="$cache"/aria2c.log --log-level=info -q -i -
+
+# vim: set sts=4:
