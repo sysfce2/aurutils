@@ -19,14 +19,14 @@ fi
 [[ -t 2 ]] && colorize
 
 msg "Retrieving package list"
-curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz -                                                                                                                                                                                               -create-dirs
+curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
 
 msg "Collecting data"
 while read -r p; do
-    args+=("arg[]=$p")
-    ((++a)); if ((a == 150)); then
-        printf '%s\n' "${args[*]}" > tmp_"$((++i))"
-        unset a args
+    ((++i)); args+=("arg[]=$p")
+    if ((i == 150)); then
+    printf '%s\n' "${args[*]}" > tmp_"$((++t))"
+        unset i args
     fi
 done < <(zgrep -P -- "$1" "$cache"/packages.gz)
 printf '%s\n' "${args[*]}" > tmp_"$((++i))"
@@ -35,8 +35,8 @@ msg "Sending request"
 LC_COLLATE=C
 while read -r -a tmp; do
     ((++r)); unset enc
-    for t in "${tmp[@]}"; do
-        enc+=(--data-urlencode "$t")
+    for a in "${tmp[@]}"; do
+        enc+=(--data-urlencode "$a")
     done
     curl -sSgG --compressed "$rpc" "${enc[@]}" -o raw_"$r" &
 done < <(cat ./tmp_*)
