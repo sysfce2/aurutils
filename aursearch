@@ -19,6 +19,10 @@ split() {
     }'
 }
 
+getjson() {
+    aria2c -s 16 -x 16 -j 32 --log="$cache"/aria2c.log --log-level=info -q -i -
+}
+
 source /usr/share/makepkg/util.sh || exit 1
 
 if ((!$#)); then
@@ -32,6 +36,6 @@ msg "Retrieving package list"
 curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
 
 msg "Sending request"
-zgrep -P -- "$1" "$cache"/packages.gz | split | aria2c -s 16 -x 16 -j 32 --log="$cache"/aria2c.log --log-level=info -q -i -
+zgrep -P -- "$1" "$cache"/packages.gz | split | getjson
 
 # vim: set sts=4:
