@@ -20,10 +20,10 @@ _package_ must be the name of an AUR package. Dependencies are retrieved recursi
 
 Input must be provided as single package names, available via https://aur.archlinux.org.
 
-## aurbuild
-
-TBD
-
 ## aursearch
 
-TBD
+```aursearch pattern```
+
+Return JSON based on a PCRE pattern. Due to aurweb limitations, results are split by 150 results.
+
+## aurbuild
