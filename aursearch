@@ -9,10 +9,10 @@ filter() {
 }
 
 split() {
-    awk -v rpc=$rpc '!/#/ {
+    awk -v rpc=$rpc '{
         gsub("+","%2b"); gsub("@","%40");
 
-        if ((NR % 150) == 0 || NR == 2)
+        if ((NR % 150) == 0 || NR == 1)
             printf "\n%s&arg[]=%s", rpc, $0;
         else
             printf "&arg[]=%s", $0;
@@ -34,8 +34,7 @@ fi
 
 msg "Retrieving package list"
 curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
+zcat "$cache"/packages.gz | tail -n +2 > "$cache"/packages
 
 msg "Sending request"
-zgrep -P -- "$1" "$cache"/packages.gz | split | getjson
-
-# vim: set sts=4:
+grep -P -- "$1" "$cache"/packages | split | getjson
