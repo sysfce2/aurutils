@@ -12,7 +12,8 @@ optdepends=('repose-git: aurbuild'
             'jshon: multireq'
             'pacutils-git: aurqueue'
             'expac: aurqueue'
-            'git: aurclone')
+            'git: aurclone'
+            'aria2: aursearch')
 
 pkgver() {
     printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
