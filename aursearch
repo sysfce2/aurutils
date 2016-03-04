@@ -25,7 +25,7 @@ msg "Collecting data"
 while read -r p; do
     ((++i)); args+=("arg[]=$p")
     if ((i == 150)); then
-    printf '%s\n' "${args[*]}" > tmp_"$((++t))"
+        printf '%s\n' "${args[*]}" > tmp_"$((++t))"
         unset i args
     fi
 done < <(zgrep -P -- "$1" "$cache"/packages.gz)
