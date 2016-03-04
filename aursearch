@@ -9,10 +9,10 @@ filter() {
 }
 
 split() {
-    awk -v rpc=$rpc 'BEGIN { printf "%s", rpc } !/#/ {
+    awk -v rpc=$rpc '!/#/ {
         gsub("+","%2b"); gsub("@","%40");
-        if ((NR % 150) == 0)
-            printf "&arg[]=%s\n%s", $0, rpc;
+        if ((NR % 150) == 0 || NR == 2)
+            printf "\n%s&arg[]=%s", rpc, $0;
         else
             printf "&arg[]=%s", $0;
     }'
