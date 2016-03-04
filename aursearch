@@ -11,6 +11,7 @@ filter() {
 split() {
     awk -v rpc=$rpc '!/#/ {
         gsub("+","%2b"); gsub("@","%40");
+
         if ((NR % 150) == 0 || NR == 2)
             printf "\n%s&arg[]=%s", rpc, $0;
         else
