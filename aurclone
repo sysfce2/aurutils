@@ -3,9 +3,6 @@
 readonly argv0=aurclone
 readonly tmp=$(mktemp)
 
-# Dodgy trap, see: http://www.cons.org/cracauer/sigint.html
-trap 'rm "$tmp"; pkill -P $$' TERM EXIT
-
 while read -r target; do
    ( if ! git clone -v https://aur.archlinux.org/"$target".git; then
         printf '%s\n' "$target 1" >> "$tmp"
