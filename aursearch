@@ -1,5 +1,4 @@
 #!/bin/bash -e
-# WARNING! ALL VOIDED WARRANTY IS VOIDED-ER IF YOU USE THIS SCRIPT! 
 
 readonly cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
 readonly remote="https://aur.archlinux.org"
@@ -7,6 +6,10 @@ readonly rpc="$remote/rpc/?v=5&type=info"
 
 filter() {
     tee # TBD
+}
+
+split() {
+    awk '!/#/ { if ((NR % 150) == 0) printf "%s\n", $0; else printf "%s ", $0; }'
 }
 
 source /usr/share/makepkg/util.sh || exit 1
@@ -21,23 +24,12 @@ fi
 msg "Retrieving package list"
 curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
 
-msg "Collecting data"
-while read -r p; do
-    ((++i)); args+=("arg[]=$p")
-    if ((i == 150)); then
-        printf '%s\n' "${args[*]}" > tmp_"$((++t))"
-        unset i args
-    fi
-done < <(zgrep -P -- "$1" "$cache"/packages.gz)
-printf '%s\n' "${args[*]}" > tmp_"$((++i))"
-
 msg "Sending request"
-LC_COLLATE=C
 while read -r -a tmp; do
-    ((++r)); unset enc
-    for a in "${tmp[@]}"; do
-        enc+=(--data-urlencode "$a")
+    ((++line)); unset enc
+    for pkg in "${tmp[@]}"; do
+        enc+=(--data-urlencode "arg[]=$pkg")
     done
-    curl -sSgG --compressed "$rpc" "${enc[@]}" -o raw_"$r" &
-done < <(cat ./tmp_*)
+    curl -sSgG --compressed "$rpc" "${enc[@]}" -o raw_"$line" &
+done < <(zgrep -P -- "$1" "$cache"/packages.gz | split)
 wait
