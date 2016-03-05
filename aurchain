@@ -1,7 +1,7 @@
 #!/bin/bash
 # requires jshon
 
-readonly argv0=multireq
+readonly argv0=aurchain
 
 count() {
     jshon -F "$1" -Qe resultcount
