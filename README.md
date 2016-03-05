@@ -32,8 +32,8 @@ Return JSON based on a PCRE pattern. Due to aurweb limitations, results are spli
 
 ```aurbuild < FILE```
 
-Input must contain directories containing a PKGBUILD file. Built packages are stored in a local repository.
+Input must contain directories containing a PKGBUILD file. Built packages are stored in a local repository (PKGDEST); _repo_ (default: custom) defines the repository name.
 
 ## aurbob
 
-TBD
+Wrapper for aurchain, aurclone and aurbuild.
