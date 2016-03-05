@@ -2,6 +2,8 @@
 
 Collection of helper tools for use with the Arch User Repository.
 
+__Experimental --- Use at your own risk.__
+
 ## aurqueue
 
 ```aurqueue package dependency ...```
