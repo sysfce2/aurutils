@@ -24,7 +24,7 @@ Input must contain single package names, available via https://aur.archlinux.org
 
 ```aursearch pattern```
 
-(In-progress) Return JSON based on a PCRE pattern. Due to aurweb limitations, results are split by 150 matches, and searched by name only.
+Return JSON based on a PCRE pattern. Due to aurweb limitations, results are split by 150 matches, and searched by name only.
 
 ## aurbuild
 
