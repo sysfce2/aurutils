@@ -36,4 +36,6 @@ Input must contain directories containing a PKGBUILD file. Built packages are st
 
 ## aurbob
 
+```aurbob package ...```
+
 Wrapper for aurchain, aurclone and aurbuild.
