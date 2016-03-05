@@ -10,6 +10,7 @@ filter() {
 
 split() {
     awk -v rpc=$rpc '{
+        # URL encode @ and +
         gsub("+","%2b"); gsub("@","%40");
 
         if ((NR % 150) == 0 || NR == 1)
