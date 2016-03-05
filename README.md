@@ -31,3 +31,7 @@ Input must contain single package names, available via https://aur.archlinux.org
 ```aurbuild < FILE```
 
 Input must contain directories containing a PKGBUILD file. Built packages are stored in a local repository.
+
+## aurbob
+
+TBD
