@@ -20,8 +20,12 @@ hash powerpill 2>/dev/null && cmd=powerpill
 while read -r pkg; do
     if cd "$pwd/$pkg"; then
         if PACMAN="${cmd:-pacman}" LC_MESSAGES=C makepkg -Lsc --noconfirm; then
-            repose -vf "$repo".db -r "$PKGDEST" -p "$PKGDEST"
-            sudo pacsync "$repo"
+            if repose -vf "$repo".db -r "$PKGDEST" -p "$PKGDEST"; then
+                sudo pacsync "$repo"
+            else
+                error "$repo: failed to update database"
+                exit 1
+            fi
         else
             error "$pkg: build failure"
             exit 1
