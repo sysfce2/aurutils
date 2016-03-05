@@ -21,6 +21,7 @@ while read -r pkg; do
     if cd "$pwd/$pkg"; then
         if PACMAN="${cmd:-pacman}" LC_MESSAGES=C makepkg -Lsc --noconfirm; then
             if repose -vf "$repo".db -r "$PKGDEST" -p "$PKGDEST"; then
+                # https://github.com/AladW/aurutils/issues/19
                 sudo pacsync "$repo"
             else
                 error "$repo: failed to update database"
