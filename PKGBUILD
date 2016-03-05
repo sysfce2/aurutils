@@ -10,11 +10,12 @@ depends=('pacman>=5.0')
 makedepends=('git')
 optdepends=('repose-git: aurbuild'
             'powerpill: aurbuild'
-            'jshon: multireq'
+            'jshon: aurchain'
             'pacutils-git: aurqueue'
             'expac: aurqueue'
             'git: aurclone'
-            'aria2: aursearch')
+            'aria2: aursearch'
+            'vifm: aurbob')
 
 pkgver() {
     printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
