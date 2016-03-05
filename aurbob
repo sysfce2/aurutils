@@ -15,7 +15,7 @@ inspect() {
 	((c)) && { tee in | xargs -i find {} -maxdepth 1 | vifm - -c '+view'; tee < in; } || tee
 }
 
-confirm 'Inspect build files?' && c=1
+confirm 'Inspect build files? ' && c=1
 
 if aurchain "$@" | tee queue | aurclone; then 
 	inspect < queue | aurbuild
