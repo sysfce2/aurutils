@@ -1,7 +1,7 @@
 #!/bin/bash
 readonly argv0=aurbuild
 readonly pwd=$PWD
-readonly repo=${repo:-custom}
+readonly repo=custom
 
 trap 'exit' INT
 
