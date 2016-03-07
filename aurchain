@@ -72,13 +72,12 @@ fi
 
 [[ -t 2 ]] && colorize
 
-tmp=${TMPDIR:-/tmp}/$argv0-$UID
-if mkdir -p "$tmp" -m 700; then
-    output=$(mktemp -d XXXXXXXX -p "$tmp")
-fi
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
 
-trap 'rm -rf "$output"' EXIT
-cd "$output" || exit 1
+if ! [[ $tmp ]] && cd "$tmp"; then
+    exit 1
+fi
 
 msg 'Querying AUR RPC...'
 query "$@"
