@@ -7,15 +7,17 @@ readonly pwd=$PWD
 repofind() {
     #global target pool
     declare repo path
-    declare -A rset
 
     while {
 	read -r repo
 	read -r _ _ path
     } do
 	if [[ $path =~ ^file:// ]]; then
-	    repo=${repo%\]} repo=${repo#\[} path=${path#file://}
-	    rset[$repo]=$path
+	    repo=${repo%\]}
+            repo=${repo#\[}
+            path=${path#file://}
+
+            declare -A rset[$repo]=$path
 	fi
     done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/')
 
