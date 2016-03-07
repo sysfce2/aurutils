@@ -1,31 +1,35 @@
 #!/bin/bash
+export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 readonly argv0=aurbuild
 readonly pwd=$PWD
 
 repofind() {
-    #global target
-    declare repo location rset
+    #global target pool
+    declare repo path
+    declare -A rset
 
     while {
 	read -r repo
-	read -r _ _ location
+	read -r _ _ path
     } do
-	if [[ $location =~ ^file: ]]; then
-	    repo=${repo%\]}
-	    repo=${repo#\[}
-	    rset+=("$repo")
+	if [[ $path =~ ^file:// ]]; then
+	    repo=${repo%\]} repo=${repo#\[} path=${path#file://}
+	    rset[$repo]=$path
 	fi
     done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/')
 
     if [[ ${rset[@]} ]]; then
         if ((${#rset[@]} > 1)); then
-            select target in "${rset[@]}"; do
+            select target in "${!rset[@]}"; do
                 break
             done
         else
-            target=$rset
+            target=${!rset[*]}
         fi
+
         msg "Using [$target] repository"
+        pool=${rset[$target]}
     else
         error "No file:// repository found"
         exit 1
@@ -37,7 +41,7 @@ build() {
     mkdir -p log
 
     if PACMAN="${cmd:-pacman}" LC_MESSAGES=C LOGDEST=${LOGDEST:-./log} makepkg -Lsc; then
-        if repose -vf "$target".db -r "$PKGDEST" -p "$PKGDEST"; then
+        if repose -vf "$target".db -r "$pool" -p "$pool"; then
             # https://github.com/AladW/aurutils/issues/19
             sudo pacsync "$target"
         else
