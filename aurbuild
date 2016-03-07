@@ -58,7 +58,7 @@ fi
 
 while read -r -u 3 pkg; do
     if cd "$pwd/$pkg"; then
-	if PACMAN="${cmd:-pacman}" LC_MESSAGES=C makepkg -Lscf; then
+	if PACMAN="${cmd:-pacman}" LC_MESSAGES=C makepkg -Lsc; then
 	    if repose -vf "$target".db -r "$PKGDEST" -p "$PKGDEST"; then
 		# https://github.com/AladW/aurutils/issues/19
 		sudo pacsync "$target"
