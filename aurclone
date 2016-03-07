@@ -1,4 +1,5 @@
 #!/bin/bash
+export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 readonly argv0=aurclone
 readonly tmp=$(mktemp)

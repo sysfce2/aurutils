@@ -1,5 +1,6 @@
 #!/bin/bash
-# Can he fix it?
+export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
 set -o pipefail
 
 confirm() {
