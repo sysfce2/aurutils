@@ -3,20 +3,17 @@
 set -o pipefail
 
 confirm() {
-	local -l reply
-	local message=$*
+    local -l reply
+    local message=$*
 
-	read -rp "$message [Y/n] " reply
-	[[ ! $reply || $reply = y?(es) ]]
+    read -rp "$message [Y/n] " reply
+    [[ ! $reply || $reply = y?(es) ]]
 }
 
-inspect() {
-	# If vifm folders can be folded, then find isn't needed.
-	((c)) && { tee in | xargs -i find {} -maxdepth 1 | vifm - -c '+view'; tee < in; } || tee
-}
+if aurchain "$@" | tee queue | aurclone; then
+    if confirm 'Inspect build files?'; then
+        xargs -a queue -i find {} -maxdepth 1 | vifm - -c '+vie'
+    fi
 
-confirm 'Inspect build files?' && c=1
-
-if aurchain "$@" | tee queue | aurclone; then 
-	inspect < queue | aurbuild
+    aurbuild queue
 fi
