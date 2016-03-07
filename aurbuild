@@ -27,7 +27,6 @@ repofind() {
         else
             target=${!rset[*]}
         fi
-
         msg "Using [$target] repository"
         pool=${rset[$target]}
     else
@@ -40,7 +39,7 @@ build() {
     # Store logs (non-localized) in a separate directory.
     mkdir -p log
 
-    if PACMAN="${cmd:-pacman}" LC_MESSAGES=C LOGDEST=${LOGDEST:-./log} makepkg -Lsc; then
+    if PACMAN="${cmd:-pacman}" PKGDEST="$pool" LC_MESSAGES=C LOGDEST="${LOGDEST:-./log}" makepkg -Lsc; then
         if repose -vf "$target".db -r "$pool" -p "$pool"; then
             # https://github.com/AladW/aurutils/issues/19
             sudo pacsync "$target"
@@ -59,11 +58,6 @@ source /etc/makepkg.conf || exit 1
 
 [[ -t 2 ]] && colorize
 
-if [[ ! -d $PKGDEST ]]; then
-    error "$PKGDEST: not a directory (PKGDEST)"
-    exit 1
-fi
-
 # Read from fd 3 to not influence select and makepkg providers.
 if [[ -r $1 ]]; then
     exec 3< "$1"
@@ -73,6 +67,10 @@ else
 fi
 
 repofind
+
+if [[ $PKGDEST ]] && [[ $PKGDEST != $pool ]]; then
+    warning "PKGDEST does not match repository path"
+fi
 
 hash powerpill 2>/dev/null && cmd=powerpill
 
