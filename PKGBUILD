@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=r100.9b7901a
+pkgver=r105.a981862
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
@@ -27,7 +27,7 @@ package() {
 
     install -m755 ./aur* -t "$pkgdir"/usr/bin
     install -m644 LICENSE -t "$pkgdir"/usr/share/licenses/aurutils
-    install -m644 README.md -t "$pkgdir"/usr/share/doc/aurutils
+    install -m644 CREDITS README.md -t "$pkgdir"/usr/share/doc/aurutils
 }
 
 md5sums=('SKIP')
