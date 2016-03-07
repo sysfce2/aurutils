@@ -3,8 +3,8 @@ readonly argv0=aurbuild
 readonly pwd=$PWD
 
 repofind() {
-    #global rset
-    declare repo location
+    #global target
+    declare repo location rset
 
     while {
 	read -r repo
