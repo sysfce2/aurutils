@@ -1,6 +1,6 @@
 pkgname=aurutils-git
-pkgver=r89.278f05b
-pkgrel=1
+pkgver=r99.20e3730
+pkgrel=2
 pkgdesc='AUR helpers tools'
 arch=('any')
 url=https://github.com/AladW/aurutils
@@ -23,8 +23,9 @@ pkgver() {
 
 package() {
     cd aurutils
-    install -d "$pkgdir"/usr/bin
-    install -m755 * "$pkgdir"/usr/bin
+    install -d "$pkgdir"/usr/{bin,share{,/licenses}/aurutils}
+    install -m755 ./aur* -t "$pkgdir"/usr/bin
+    install -m644 LICENSE -t "$pkgdir"/usr/share/licenses/aurutils
 }
 
 md5sums=('SKIP')
