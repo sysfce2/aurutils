@@ -58,7 +58,7 @@ source /etc/makepkg.conf || exit 1
 
 [[ -t 2 ]] && colorize
 
-# Read from fd 3 to not influence select and makepkg providers.
+# https://bugs.archlinux.org/task/42601
 if [[ -r $1 ]]; then
     exec 3< "$1"
 else
@@ -68,6 +68,7 @@ fi
 
 repofind
 
+# https://bugs.archlinux.org/task/48497
 if [[ $PKGDEST ]] && [[ $PKGDEST != $pool ]]; then
     warning "PKGDEST does not match repository path"
 fi
