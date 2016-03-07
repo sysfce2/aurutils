@@ -76,7 +76,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 # Check if tmp is not empty, as cd '' returns 0
-if ! [[ $tmp ]] && cd "$tmp"; then
+if ! { [[ $tmp ]] && cd "$tmp"; }; then
     exit 1
 fi
 
