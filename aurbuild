@@ -44,8 +44,6 @@ if [[ ! -d $PKGDEST ]]; then
     exit 1
 fi
 
-repofind
-
 # Read from fd 3 to not influence select and makepkg providers.
 if [[ -r $1 ]]; then
     exec 3< "$1"
@@ -53,6 +51,8 @@ else
     error "$1: not readable (queue)"
     exit 1
 fi
+
+repofind
 
 hash powerpill 2>/dev/null && cmd=powerpill
 
