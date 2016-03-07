@@ -42,8 +42,6 @@ if ! { [[ $tmp ]] && cd "$tmp"; }; then
     exit 1
 fi
 
-msg2 "Working in $PWD"
-exit
 msg "Retrieving package list"
 curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
 zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
