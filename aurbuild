@@ -16,6 +16,20 @@ repocheck() {
 	    rset+=("$repo")
 	fi
     done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/')
+
+    if [[ ${rset[@]} ]]; then
+        if ((${#rset[@]} > 1)); then
+            select target in "${rset[@]}"; do
+                break
+            done
+        else
+            target=$rset
+        fi
+        msg "Using [$target] repository"
+    else
+        error "No file:// repository found"
+        exit 1
+    fi
 }
 
 trap 'exit' INT
@@ -31,20 +45,6 @@ if [[ ! -d $PKGDEST ]]; then
 fi
 
 repocheck
-
-if [[ ${rset[@]} ]]; then
-    if ((${#rset[@]} > 1)); then
-	select target in "${rset[@]}"; do
-	    break
-	done
-    else
-	target=$rset
-    fi
-    msg "Using [$target] repository"
-else
-    error "No file:// repository found"
-    exit 1
-fi
 
 # Read from fd 3 to not influence select and makepkg providers.
 if [[ -r $1 ]]; then
