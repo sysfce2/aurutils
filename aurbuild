@@ -2,7 +2,7 @@
 readonly argv0=aurbuild
 readonly pwd=$PWD
 
-repocheck() {
+repofind() {
     #global rset
     declare repo location
 
@@ -44,7 +44,7 @@ if [[ ! -d $PKGDEST ]]; then
     exit 1
 fi
 
-repocheck
+repofind
 
 # Read from fd 3 to not influence select and makepkg providers.
 if [[ -r $1 ]]; then
