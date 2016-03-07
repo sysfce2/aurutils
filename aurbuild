@@ -32,6 +32,22 @@ repofind() {
     fi
 }
 
+build() {
+    #global PKGDEST target cmd
+    if PACMAN="${cmd:-pacman}" LC_MESSAGES=C LOGDEST=${LOGDEST:-./log} makepkg -Lsc; then
+        if repose -vf "$target".db -r "$PKGDEST" -p "$PKGDEST"; then
+            # https://github.com/AladW/aurutils/issues/19
+            sudo pacsync "$target"
+        else
+            error "$target: failed to update database"
+            exit 1
+        fi
+    else
+        error "$1: build failure"
+        exit 1
+    fi
+}
+
 trap 'exit' INT
 
 source /usr/share/makepkg/util.sh || exit 1
@@ -60,19 +76,7 @@ while read -r -u 3 pkg; do
     if cd "$pwd/$pkg"; then
         # Store logs (non-localized) in a separate directory.
         mkdir -p log
-
-	if PACMAN="${cmd:-pacman}" LC_MESSAGES=C LOGDEST=${LOGDEST:-./log} makepkg -Lsc; then
-	    if repose -vf "$target".db -r "$PKGDEST" -p "$PKGDEST"; then
-		# https://github.com/AladW/aurutils/issues/19
-		sudo pacsync "$target"
-	    else
-		error "$target: failed to update database"
-		exit 1
-	    fi
-	else
-	    error "$pkg: build failure"
-	    exit 1
-	fi
+        build "$pkg"
     fi
 done
 
