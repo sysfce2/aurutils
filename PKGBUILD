@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=r20.9fafeb0
+pkgver=r89.278f05b
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
@@ -11,7 +11,7 @@ makedepends=('git')
 optdepends=('repose-git: aurbuild'
             'powerpill: aurbuild'
             'jshon: aurchain'
-            'pacutils-git: aurqueue'
+            'pacutils-git: aurqueue, aurbuild'
             'expac: aurqueue'
             'git: aurclone'
             'aria2: aursearch'
