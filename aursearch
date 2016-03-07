@@ -48,4 +48,4 @@ zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
 
 msg "Sending request"
 grep -P -- "$1" "$cache"/packages | split | getjson
-cat ./index.html* > "$cache"/query
+awk '{print $0}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$cache"/query
