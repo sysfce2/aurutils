@@ -4,6 +4,7 @@ export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
 readonly remote="https://aur.archlinux.org"
 readonly rpc="$remote/rpc/?v=5&type=info"
+readonly tmp=$(mktemp -d)
 
 filter() {
     tee # TBD
@@ -25,7 +26,9 @@ getjson() {
     aria2c -s 16 -x 16 -j 32 --log="$cache"/aria2c.log --log-level=info -q -i -
 }
 
-source /usr/share/makepkg/util.sh || exit 1
+trap 'rm -rf "$tmp"' EXIT
+
+source /usr/share/makepkg/util.sh
 
 if ((!$#)); then
     error "aursearch: pattern"
@@ -34,9 +37,7 @@ fi
 
 [[ -t 2 ]] && colorize
 
-tmp=$(mktemp -d) || exit 1
-cd "$tmp" || exit 1
-trap 'rm -rf "$tmp"' EXIT
+cd "$tmp"
 
 msg "Retrieving package list"
 curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
@@ -44,4 +45,4 @@ zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
 
 msg "Sending request"
 grep -P -- "$1" "$cache"/packages | split | getjson
-awk '{print $0}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$cache"/query
+awk '{print}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
