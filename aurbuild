@@ -39,12 +39,10 @@ build() {
             # https://github.com/AladW/aurutils/issues/19
             sudo pacsync "$target"
         else
-            error "$target: failed to update database"
-            exit 1
+            return
         fi
     else
-        error "$1: build failure"
-        exit 1
+        return
     fi
 }
 
@@ -76,7 +74,7 @@ while read -r -u 3 pkg; do
     if cd "$pwd/$pkg"; then
         # Store logs (non-localized) in a separate directory.
         mkdir -p log
-        build "$pkg"
+        build || break
     fi
 done
 
