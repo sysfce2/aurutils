@@ -30,9 +30,9 @@ Return JSON based on a PCRE pattern. Due to aurweb limitations, results are spli
 
 ## aurbuild
 
-```aurbuild < FILE```
+```aurbuild QUEUE```
 
-Input must contain directories containing a PKGBUILD file. Built packages are stored in a local repository (PKGDEST); _repo_ (default: custom) defines the repository name.
+The QUEUE file must include names of directories containing a PKGBUILD file. file:// repositories are retrieved from /etc/pacman.conf.
 
 ## aurbob
 
