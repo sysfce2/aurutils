@@ -1,7 +1,22 @@
 #!/bin/bash
 readonly argv0=aurbuild
 readonly pwd=$PWD
-readonly repo=custom
+
+repocheck() {
+    #global rset
+    declare repo location
+
+    while {
+	read -r repo
+	read -r _ _ location
+    } do
+	if [[ $location =~ ^file: ]]; then
+	    repo=${repo%\]}
+	    repo=${repo#\[}
+	    rset+=("$repo")
+	fi
+    done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/')
+}
 
 trap 'exit' INT
 
@@ -15,23 +30,49 @@ if [[ ! -d $PKGDEST ]]; then
     exit 1
 fi
 
+repocheck
+
+if [[ ${rset[@]} ]]; then
+    if ((${#rset[@]} > 1)); then
+	select target in "${rset[@]}"; do
+	    break
+	done
+    else
+	target=$rset
+    fi
+    msg "Using [$target] repository"
+else
+    error "No file:// repository found"
+    exit 1
+fi
+
 hash powerpill 2>/dev/null && cmd=powerpill
 
-while read -r pkg; do
+# Read from fd 3 to not influence select and makepkg providers.
+if [[ -r $1 ]]; then
+    exec 3< "$1"
+else
+    error "$1: not readable (queue)"
+    exit 1
+fi
+
+while read -r -u 3 pkg; do
     if cd "$pwd/$pkg"; then
-        if PACMAN="${cmd:-pacman}" LC_MESSAGES=C makepkg -Lsc --noconfirm; then
-            if repose -vf "$repo".db -r "$PKGDEST" -p "$PKGDEST"; then
-                # https://github.com/AladW/aurutils/issues/19
-                sudo pacsync "$repo"
-            else
-                error "$repo: failed to update database"
-                exit 1
-            fi
-        else
-            error "$pkg: build failure"
-            exit 1
-        fi
+	if PACMAN="${cmd:-pacman}" LC_MESSAGES=C makepkg -Lscf; then
+	    if repose -vf "$target".db -r "$PKGDEST" -p "$PKGDEST"; then
+		# https://github.com/AladW/aurutils/issues/19
+		sudo pacsync "$target"
+	    else
+		error "$target: failed to update database"
+		exit 1
+	    fi
+	else
+	    error "$pkg: build failure"
+	    exit 1
+	fi
     fi
 done
+
+exec 3<&-
 
 # vim: set sw=4 sts=4:
