@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 readonly cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
@@ -28,7 +28,7 @@ getjson() {
 
 trap 'rm -rf "$tmp"' EXIT
 
-source /usr/share/makepkg/util.sh
+source /usr/share/makepkg/util.sh || exit 1
 
 if ((!$#)); then
     error "aursearch: pattern"
@@ -37,12 +37,15 @@ fi
 
 [[ -t 2 ]] && colorize
 
-cd "$tmp"
+cd "$tmp" || exit 1
 
 msg "Retrieving package list"
-curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs
-zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
+if curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs; then
+    zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
 
-msg "Sending request"
-grep -P -- "$1" "$cache"/packages | split | getjson
-awk '{print}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+    msg 'Sending request'
+    grep -P -- "$1" "$cache"/packages | split | getjson
+
+    # Merge to a single JSON structure.
+    awk '{print}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+fi
