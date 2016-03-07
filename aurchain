@@ -72,13 +72,9 @@ fi
 
 [[ -t 2 ]] && colorize
 
-tmp=$(mktemp -d)
+tmp=$(mktemp -d) || exit 1
+cd "$tmp" || exit 1
 trap 'rm -rf "$tmp"' EXIT
-
-# Check if tmp is not empty, as cd '' returns 0
-if ! { [[ $tmp ]] && cd "$tmp"; }; then
-    exit 1
-fi
 
 msg 'Querying AUR RPC...'
 query "$@"
