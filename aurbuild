@@ -58,7 +58,9 @@ hash powerpill 2>/dev/null && cmd=powerpill
 
 while read -r -u 3 pkg; do
     if cd "$pwd/$pkg"; then
-	if PACMAN="${cmd:-pacman}" LC_MESSAGES=C makepkg -Lsc; then
+        # Store logs (non-localized) in a separate directory.
+        mkdir -p log
+	if PACMAN="${cmd:-pacman}" LC_MESSAGES=C LOGDEST=${LOGDEST:-./log} makepkg -Lsc; then
 	    if repose -vf "$target".db -r "$PKGDEST" -p "$PKGDEST"; then
 		# https://github.com/AladW/aurutils/issues/19
 		sudo pacsync "$target"
