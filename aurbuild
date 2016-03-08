@@ -38,7 +38,7 @@ repofind() {
 }
 
 build() {
-    if PACMAN="${cmd:-pacman}" PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc; then
+    if PACMAN="$cmd" PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc; then
         if repose -vf "$target".db -r "$pool" -p "$pool"; then
             # https://github.com/AladW/aurutils/issues/19
             sudo pacsync "$target"
@@ -53,7 +53,6 @@ build() {
 trap 'exit' INT
 
 source /usr/share/makepkg/util.sh || exit 1
-source /etc/makepkg.conf || exit 1
 
 [[ -t 2 ]] && colorize
 
@@ -67,12 +66,7 @@ fi
 
 repofind
 
-# https://bugs.archlinux.org/task/48497
-if [[ $PKGDEST ]] && [[ $PKGDEST != $pool ]]; then
-    warning "PKGDEST does not match repository path"
-fi
-
-hash powerpill 2>/dev/null && cmd=powerpill
+hash powerpill 2>/dev/null && cmd=powerpill || cmd=pacman
 
 while read -r -u 3 p; do
     if cd "$pwd/$p"; then
