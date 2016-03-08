@@ -38,6 +38,7 @@ repofind() {
 }
 
 build() {
+    # Create a log to search for error messages (#17)
     if PACMAN="$cmd" PKGDEST="$pool" LC_MESSAGES=C makepkg -src |& tee build.log 1>&2; then
         if repose -vf "$target".db -r "$pool" -p "$pool"; then
             # https://github.com/AladW/aurutils/issues/19
