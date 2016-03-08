@@ -38,15 +38,17 @@ repofind() {
 }
 
 build() {
-    if PACMAN="$cmd" PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc; then
+    if PACMAN="$cmd" PKGDEST="$pool" LC_MESSAGES=C makepkg -src |& tee build.log 1>&2; then
         if repose -vf "$target".db -r "$pool" -p "$pool"; then
             # https://github.com/AladW/aurutils/issues/19
             sudo pacsync "$target"
         else
-            return
+            return 1
         fi
+    elif egrep -q '.+already been built.+' build.log
+        plain 'Skipping'
     else
-        return
+        return 1
     fi
 }
 
@@ -56,7 +58,7 @@ source /usr/share/makepkg/util.sh || exit 1
 
 [[ -t 2 ]] && colorize
 
-# Preserve console input for makepkg/select (#21)
+# Preserve terminal input for makepkg/select (#21)
 if [[ -r $1 ]]; then
     exec 3< "$1"
 else
