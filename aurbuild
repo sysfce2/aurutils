@@ -47,7 +47,7 @@ build() {
         else
             return 1
         fi
-    elif egrep -q '.+already been built.+' build.log; then
+    elif egrep -q '==>.+already been built.+' build.log; then
         plain 'Skipping package'
     else
         return 1
