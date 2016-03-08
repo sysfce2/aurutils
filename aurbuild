@@ -57,7 +57,7 @@ source /etc/makepkg.conf || exit 1
 
 [[ -t 2 ]] && colorize
 
-# https://bugs.archlinux.org/task/42601
+# Preserve console input for makepkg/select (#21)
 if [[ -r $1 ]]; then
     exec 3< "$1"
 else
