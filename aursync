@@ -20,4 +20,8 @@ while read -r target; do
 done
 
 wait
-cat "$tmp"
+
+if (($(awk '{END {print NR}' "$tmp"))); then
+    cat "$tmp"
+    exit 1
+fi
