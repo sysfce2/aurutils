@@ -20,12 +20,14 @@ clone() {
 		return
             fi
 	else
-            if ! git clone -v https://aur.archlinux.org/"$src".git "$AURDEST/$src"; then
+            if ! git clone -v https://aur.archlinux.org/"$src".git; then
 		return
             fi
 	fi
     done
 }
+
+cd "$AURDEST" || exit 1
 
 if aurchain "$@" | tee queue | clone; then
     if confirm 'Inspect build files?'; then
