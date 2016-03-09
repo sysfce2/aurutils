@@ -2,12 +2,12 @@
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 readonly argv0=aursync
-readonly tmp=$(mktemp)
+readonly tmp=$(mktemp) || exit 1
 
 trap 'rm "$tmp"' EXIT
 
 while read -r target; do
-   ( if [[ -d $target/.git ]]; then
+   ( if cd "$target" && [[ -d .git ]]; then
         if ! git pull; then
             printf '%s\n' "$target 1" >> "$tmp"
         fi
