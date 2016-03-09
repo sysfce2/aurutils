@@ -1,18 +1,24 @@
 #!/bin/bash
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-readonly argv0=aurclone
+readonly argv0=aursync
 readonly tmp=$(mktemp)
 
 trap 'rm "$tmp"' EXIT
 
 while read -r target; do
-   ( if ! git clone -v https://aur.archlinux.org/"$target".git; then
-        printf '%s\n' "$target 1" >> "$tmp"
-     fi 
-   ) &
+   ( if [[ -d $target/.git ]]; then
+        if ! git pull; then
+            printf '%s\n' "$target 1" >> "$tmp"
+        fi
+    else
+        if ! git clone -v https://aur.archlinux.org/"$target".git; then
+            printf '%s\n' "$target 1" >> "$tmp"
+        fi
+    fi
+    ) &
 done
 
 wait
 
-awk '{if($2 != 0) printf "Failed to clone: %s\n", $1}' < "$tmp" 2>/dev/null
+awk '{if($2 != 0) printf "Failed to sync: %s\n", $1}' < "$tmp" 2>/dev/null
