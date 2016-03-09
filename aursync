@@ -7,11 +7,11 @@ readonly pwd=$PWD
 while read -r target; do
     if cd "$pwd/$target" 2>/dev/null; then
         if ! git pull -v; then
-            break
+            exit 1
         fi
     else
         if ! git clone -v https://aur.archlinux.org/"$target".git; then
-            break
+            exit 1
         fi
     fi
 done
