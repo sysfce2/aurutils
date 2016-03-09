@@ -16,12 +16,6 @@ _package_ must be a directory containing a .SRCINFO file. Dependencies are not r
 
 _package_ must be the name of an AUR package. Dependencies are retrieved recursively.
 
-## aursync
-
-```command ... | aursync```
-
-Input must contain single package names, available via https://aur.archlinux.org.
-
 ## aursearch
 
 ```aursearch pattern```
@@ -33,9 +27,3 @@ Return JSON based on a PCRE pattern. Due to aurweb limitations, results are spli
 ```aurbuild QUEUE```
 
 The QUEUE file must include names of directories containing a PKGBUILD file. file:// repositories are retrieved from /etc/pacman.conf.
-
-## aurbob
-
-```aurbob package ...```
-
-Wrapper for aurchain, aursync and aurbuild.
