@@ -21,7 +21,7 @@ done
 
 wait
 
-if (($(awk '{END {print NR}' "$tmp"))); then
+if (($(awk 'END {print NR}' "$tmp"))); then
     cat "$tmp"
     exit 1
 fi
