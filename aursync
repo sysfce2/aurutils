@@ -20,5 +20,4 @@ while read -r target; do
 done
 
 wait
-
 cat "$tmp"
