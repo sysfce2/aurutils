@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=r143.f52dd3d
+pkgver=r144.995322c
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
