@@ -11,7 +11,7 @@ confirm() {
     [[ ! $reply || $reply = y?(es) ]]
 }
 
-if aurchain "$@" | tee queue | aurclone; then
+if aurchain "$@" | tee queue | aursync; then
     if confirm 'Inspect build files?'; then
         xargs -a queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
