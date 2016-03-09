@@ -7,7 +7,7 @@ readonly tmp=$(mktemp) || exit 1
 trap 'rm "$tmp"' EXIT
 
 while read -r target; do
-   ( if cd "$target"; then
+   ( if cd "$target" 2>/dev/null; then
         if ! git pull -v; then
             printf '%s\n' "$target" >> "$tmp"
         fi
