@@ -2,8 +2,8 @@
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-readonly argv0=aursync
-readonly pwd=$PWD
+readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
 
 confirm() {
     local -l reply
@@ -14,13 +14,13 @@ confirm() {
 }
 
 clone() {
-    while read -r target; do
-	if cd "$pwd/$target" 2>/dev/null; then
+    while read -r src; do
+	if cd "$AURDEST/$src" 2>/dev/null; then
             if ! git pull -v; then
 		return
             fi
 	else
-            if ! git clone -v https://aur.archlinux.org/"$target".git; then
+            if ! git clone -v https://aur.archlinux.org/"$src".git "$AURDEST/$src"; then
 		return
             fi
 	fi
@@ -33,4 +33,3 @@ if aurchain "$@" | tee queue | clone; then
     fi
     aurbuild queue
 fi
-
