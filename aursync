@@ -8,7 +8,7 @@ trap 'rm "$tmp"' EXIT
 
 while read -r target; do
    ( if cd "$target" && [[ -d .git ]]; then
-        if ! git pull; then
+        if ! git pull -v; then
             printf '%s\n' "$target 1" >> "$tmp"
         fi
     else
