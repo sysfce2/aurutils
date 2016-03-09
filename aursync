@@ -2,26 +2,16 @@
 export PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 readonly argv0=aursync
-readonly tmp=$(mktemp) || exit 1
-
-trap 'rm "$tmp"' EXIT
+readonly pwd=$PWD
 
 while read -r target; do
-   ( if cd "$target" 2>/dev/null; then
+    if cd "$pwd/$target" 2>/dev/null; then
         if ! git pull -v; then
-            printf '%s\n' "Failed to pull: $target" >> "$tmp"
+            break
         fi
     else
         if ! git clone -v https://aur.archlinux.org/"$target".git; then
-            printf '%s\n' "Failed to clone: $target" >> "$tmp"
+            break
         fi
     fi
-    ) &
 done
-
-wait
-
-if (($(awk 'END {print NR}' "$tmp"))); then
-    cat "$tmp"
-    exit 1
-fi
