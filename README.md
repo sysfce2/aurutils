@@ -16,6 +16,12 @@ _pkgbase_ must be a directory containing a .SRCINFO file. Dependencies are not r
 
 _pkgname_ must be the name of an AUR package. Dependencies are retrieved recursively.
 
+## aursift
+
+```command ... | aursift```
+
+Filter input for packages in the official Arch Linux repositories, and solve virtual dependencies.
+
 ## aursearch
 
 ```aursearch pattern```
