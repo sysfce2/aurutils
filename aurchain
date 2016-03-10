@@ -65,7 +65,7 @@ query() {
     fi
 }
 
-#trap 'rm -rf "$tmp"' EXIT
+trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit 1
 
