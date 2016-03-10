@@ -55,6 +55,7 @@ build_chroot() {
     declare CHROOT=/var/cache/aurbuild
 
     if [[ ! -d $CHROOT/root ]]; then
+	sudo mkdir -p "$CHROOT"
 	if sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel; then
 	    return 1
 	fi
