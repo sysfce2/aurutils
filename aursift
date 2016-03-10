@@ -62,3 +62,5 @@ sift() {
     # required dependencies. all \ repo
     grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
 }
+
+sift
