@@ -40,36 +40,26 @@ repofind() {
 }
 
 build() {
-    #global pool target
-    if PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc; then
-        if repose -vf "$target".db -r "$pool" -p "$pool"; then
-            sudo pacsync "$target"
-        else
-            return 1
-        fi
-    else
-        return 1
-    fi
+    set -e    
+    PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc
+    repose -vf "$target".db -r "$pool" -p "$pool"
+    sudo pacsync "$target"
+    set +e
 }
 
 build_chroot() {
     #global pool target
     declare CHROOT=/var/cache/aurbuild
 
+    set -e
     if [[ ! -d $CHROOT/root ]]; then
 	sudo mkdir -p "$CHROOT"
-	if ! sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel; then
-	    return 1
-	fi
+	sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel
     fi
 
-    if sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT"; then
-	if ! repose -vf "$target".db -r "$pool" -p "$pool"; then
-	    return 1
-	fi
-    else
-	return 1
-    fi
+    sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT"
+    repose -vf "$target".db -r "$pool" -p "$pool"
+    set +e
 }
 
 trap 'exit' INT
@@ -90,7 +80,7 @@ repofind
 
 while read -r -u 3 p; do
     if cd "$pwd/$p"; then
-        build_chroot || break
+        build_chroot
     fi
 done
 
