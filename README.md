@@ -20,7 +20,7 @@ _pkgname_ must be the name of an AUR package. Dependencies are retrieved recursi
 
 ```command ... | aursift```
 
-Filter input for packages in the official Arch Linux repositories, and solve virtual dependencies.
+Filter input for packages in the official Arch Linux repositories. Virtual packages (provides/replaces) are solved.
 
 ## aursearch
 
