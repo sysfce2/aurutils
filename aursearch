@@ -1,5 +1,6 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -o pipefail
 
 readonly cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
 readonly remote="https://aur.archlinux.org"
@@ -8,6 +9,10 @@ readonly tmp=$(mktemp -d) || exit 1
 
 filter() {
     tee # TBD
+}
+
+argsum() {
+    cksum <<< "$1" | awk '{print $1}'
 }
 
 split() {
@@ -44,8 +49,8 @@ if curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.g
     zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
 
     msg 'Sending request'
-    grep -P -- "$1" "$cache"/packages | split | getjson
-
-    # Merge to a single JSON structure.
-    awk '{print}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+    if grep -P -- "$1" "$cache"/packages | split | getjson; then
+	# Merge to a single JSON structure.
+	awk '{print}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+    fi
 fi
