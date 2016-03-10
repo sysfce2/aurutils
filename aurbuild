@@ -53,6 +53,7 @@ build() {
 }
 
 build_chroot() {
+    #global pool target
     declare CHROOT=/var/cache/aurbuild
 
     if [[ ! -d $CHROOT/root ]]; then
