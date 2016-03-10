@@ -15,12 +15,9 @@ repofind() {
 	read -r _ _ path
     } do
 	if [[ $path =~ ^file:// ]]; then
-	    repo=${repo%\]}
-            repo=${repo#\[}
-            path=${path#file://}
-            rset[$repo]=$path
+            rset[$repo]=${path#file://}
 	fi
-    done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/')
+    done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/ {gsub(/[][]/,""); print}')
 
     if [[ ${rset[@]} ]]; then
         if ((${#rset[@]} > 1)); then
