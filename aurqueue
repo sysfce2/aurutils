@@ -25,9 +25,7 @@ base() {
     grep -Fxf <(printf '%s\n' "$@")
 }
 
-if ! source /usr/share/makepkg/util.sh; then
-    exit 1
-fi
+source /usr/share/makepkg/util.sh || exit 1
 
 if ((!$#)); then
     error "usage: aurqueue repo [repo, ...]"
