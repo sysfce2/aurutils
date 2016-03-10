@@ -40,6 +40,7 @@ repofind() {
 }
 
 build() {
+    #global pool target
     if PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc; then
         if repose -vf "$target".db -r "$pool" -p "$pool"; then
             sudo pacsync "$target"
