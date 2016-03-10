@@ -18,9 +18,9 @@ deps() {
 pair() {
     for ((i = 0; i < "$1"; ++i)); do
 	awk 'NR == 1 { p = $1 } NR > 1 { print p, $0 }' \
-	<(jshon -F "$2" -Qe results -e "$i" -e Name -upe Depends -a -u) \
-	<(jshon -F "$2" -Qe results -e "$i" -e Name -upe MakeDepends -a -u) \
-	<(jshon -F "$2" -Qe results -e "$i" -e Name -upe CheckDepends -a -u)
+	<(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e Depends -a -u) \
+	<(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
+	<(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e CheckDepends -a -u)
     done
 }
 
@@ -89,7 +89,7 @@ if curl --retry 3 -sSgL "$(sort -u < copy | url)" > raw_n; then
     pair "$(count raw_n)" raw_n | tsort | tac > all
     while read -r pkgname pkgbase; do	
 	[[ $pkgname != $pkgbase ]] && sed -i "s|^$pkgname$|$pkgbase|g" all
-    done < <(jshon -F raw_n -e results -a -e Name -upe PackageBase -u | xargs -n2)
+    done < <(jshon -F raw_n -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
 
     grep -Fxf base all
 fi
