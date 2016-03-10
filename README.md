@@ -6,15 +6,15 @@ __EXPERIMENTAL — Use at your own risk.__
 
 ## aurqueue
 
-```aurqueue package dependency ...```
+```aurqueue pkgbase depends ...```
 
-_package_ must be a directory containing a .SRCINFO file. Dependencies are not retrieved recursively, and must be specified on the command line for a complete graph.
+_pkgbase_ must be a directory containing a .SRCINFO file. Dependencies are not retrieved recursively, and must be specified on the command line for a complete graph.
 
 ## aurchain
 
-```aurchain package ...```
+```aurchain pkgname ...```
 
-_package_ must be the name of an AUR package. Dependencies are retrieved recursively.
+_pkgname_ must be the name of an AUR package. Dependencies are retrieved recursively.
 
 ## aursearch
 
