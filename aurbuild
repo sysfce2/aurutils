@@ -61,7 +61,7 @@ build_chroot() {
 	fi
     fi
 
-    if sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -u -r "$CHROOT"; then
+    if sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT"; then
 	if ! repose -vf "$target".db -r "$pool" -p "$pool"; then
 	    return 1
 	fi
