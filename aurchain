@@ -25,8 +25,6 @@ pair() {
 }
 
 gendeps() {
-    jshon -F "$1" -e results -a -e Name -u > name
-    jshon -F "$1" -e results -a -e PackageBase -u > base
     pair "$(count "$1")" "$1" | tsort | tac > all
 
     while read -r pkgname pkgbase; do	
@@ -35,7 +33,7 @@ gendeps() {
 	fi
     done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
 
-    grep -Fxf base all
+    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) all
 }
 
 url() {
