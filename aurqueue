@@ -1,7 +1,5 @@
 #!/bin/bash
 # aurqueue - generate ordered dependency lists for package builds
-
-# requires pacutils expac
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 set -o pipefail
@@ -22,68 +20,7 @@ gendeps() {
     ' {}
 }
 
-# Takes a set of package names to create "package virtual" pairs, querying
-# both provides and replaces fields.
-provides() {
-    expac '%n %R %S' -S "$@" | awk '{
-	for(i = 2; i <= NF; ++i) { print $1, $i | "sort -u" }
-    }'
-}
-
-# Read package names from stdin separated by the IFS and produces a list of
-# packages not provided in the official repositories.
-sift() {
-    declare -A pkgset
-    declare all siftargs query repo n p r v
-
-    while read -r p; do
-	pkgset["$p"]=1
-	all+=("$p")
-    done
-
-    if [[ ! ${pkgset[@]} ]]; then
-	error "No packages on standard input"
-	exit 1
-    fi
-
-    for p in "${!pkgset[@]}"; do
-	siftargs+=(--satisfies="$p")
-    done
-
-    for r in testing core extra community community-testing multilib multilib-testing; do
-        siftargs+=(--repo="$r")
-    done
-
-    # Close standard input for pacsift to allow --sync.
-    # https://github.com/andrewgregory/pacutils/issues/3
-    query=($(pacsift --sync --exact "${siftargs[@]}" <&-))
-
-    if [[ ${query[@]} ]]; then
-        for p in "${query[@]#*/}"; do
-            if [[ ${pkgset[$p]} ]]; then
-                repo+=("$p")
-            else
-                n+=("$p")
-            fi
-        done
-    else
-        msg2 "No matches in the sync database"
-    fi
-
-    if [[ ${n[@]} ]]; then
-	while read -r p v; do
-	    if [[ ${pkgset[$v]} ]]; then
-		warning "virtual dependency $v provided $p"
-		repo+=("$v")
-	    fi
-	done < <(provides "${n[@]}")
-    fi
-
-    # Print the relative complement between repo provided dependencies and all
-    # required dependencies. all \ repo
-    grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
-}
-
+# Ensure no packages are added to the output.
 base() {
     grep -Fxf <(printf '%s\n' "$@")
 }
@@ -100,4 +37,4 @@ fi
 [[ -t 2 ]] && colorize
 
 msg "Generating dependencies..."
-findsrc "$@" | gendeps | tsort | sift | base "$@" | tac
+findsrc "$@" | gendeps | tsort | base "$@" | tac
