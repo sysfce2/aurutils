@@ -30,6 +30,7 @@ repofind() {
         else
             target=${!rset[*]}
         fi
+
         msg "Using [$target] repository"
         pool=${rset[$target]}
     else
@@ -39,7 +40,7 @@ repofind() {
 }
 
 build() {
-    if PACMAN="$cmd" PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc; then
+    if PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc; then
         if repose -vf "$target".db -r "$pool" -p "$pool"; then
             # https://github.com/AladW/aurutils/issues/19
             sudo pacsync "$target"
@@ -48,6 +49,24 @@ build() {
         fi
     else
         return 1
+    fi
+}
+
+build_chroot() {
+    declare CHROOT=/var/cache/aurbuild
+
+    if [[ ! -d $CHROOT/root ]]; then
+	if sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel; then
+	    return 1
+	fi
+    fi
+
+    if sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -u -r "$CHROOT"; then
+	if ! repose -vf "$target".db -r "$pool" -p "$pool"; then
+	    return 1
+	fi
+    else
+	return 1
     fi
 }
 
@@ -67,11 +86,9 @@ fi
 
 repofind
 
-hash powerpill 2>/dev/null && cmd=powerpill || cmd=pacman
-
 while read -r -u 3 p; do
     if cd "$pwd/$p"; then
-        build || break
+        build_chroot || break
     fi
 done
 
