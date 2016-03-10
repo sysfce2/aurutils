@@ -24,6 +24,20 @@ pair() {
     done
 }
 
+gendeps() {
+    jshon -F "$1" -e results -a -e Name -u > name
+    jshon -F "$1" -e results -a -e PackageBase -u > base
+    pair "$(count "$1")" "$1" | tsort | tac > all
+
+    while read -r pkgname pkgbase; do	
+	if [[ $pkgname != $pkgbase ]]; then
+	    sed -i "s|^$pkgname$|$pkgbase|g" all
+	fi
+    done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
+
+    grep -Fxf base all
+}
+
 url() {
     local str='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
 
@@ -83,13 +97,5 @@ query "$@"
 
 msg 'Generating dependencies...'
 if curl --retry 3 -sSgL "$(sort -u < copy | url)" > raw_n; then
-    jshon -F raw_n -e results -a -e Name -u > name
-    jshon -F raw_n -e results -a -e PackageBase -u > base
-
-    pair "$(count raw_n)" raw_n | tsort | tac > all
-    while read -r pkgname pkgbase; do	
-	[[ $pkgname != $pkgbase ]] && sed -i "s|^$pkgname$|$pkgbase|g" all
-    done < <(jshon -F raw_n -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
-
-    grep -Fxf base all
+    gendeps raw_n
 fi
