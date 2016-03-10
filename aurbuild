@@ -56,7 +56,7 @@ build_chroot() {
 
     if [[ ! -d $CHROOT/root ]]; then
 	sudo mkdir -p "$CHROOT"
-	if sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel; then
+	if ! sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel; then
 	    return 1
 	fi
     fi
