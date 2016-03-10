@@ -8,7 +8,7 @@ license=('ISC')
 source=("git+$url")
 depends=('pacman>=5.0' 'pkgbuild-introspection' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2' 'vifm')
 makedepends=('git')
-optdepends=('devtools: aurbuild')
+optdepends=('devtools: aurbuild nspawn support')
            
 pkgver() {
     printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
