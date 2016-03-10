@@ -86,6 +86,15 @@ if curl --retry 3 -sSgL "$(sort -u < copy | url)" > raw_n; then
     jshon -F raw_n -e results -a -e Name -u > name
     jshon -F raw_n -e results -a -e PackageBase -u > base
 
-    pair "$(count raw_n)" raw_n | tsort > all
-    grep -Fxf base all | tac
+    pair "$(count raw_n)" raw_n | tsort | tac > all
+    grep -Fxf base all > match_b
+    grep -Fxf name all > match_n
+
+    if grep -qFxvf match_b match_n; then
+	while read -r pkgname pkgbase; do
+	    sed -i "s|^$pkgname$|$pkgbase|g" all
+	done < <(jshon -F raw_n -e results -a -e Name -upe PackageBase -u | xargs -n2)
+    fi
+
+    grep -Fxf base all
 fi
