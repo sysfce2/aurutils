@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=r167.b0f287a
+pkgver=r168.ffe094e
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
@@ -8,7 +8,7 @@ license=('ISC')
 source=("git+$url")
 depends=('pacman>=5.0' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2' 'vifm')
 makedepends=('git')
-optdepends=('powerpill: aurbuild')
+optdepends=('devtools: aurbuild')
            
 pkgver() {
     printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
