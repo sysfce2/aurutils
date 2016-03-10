@@ -84,6 +84,10 @@ sift() {
     grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
 }
 
+base() {
+    grep -Fxf <(printf '%s\n' "$@")
+}
+
 if ! source /usr/share/makepkg/util.sh; then
     exit 1
 fi
@@ -96,4 +100,4 @@ fi
 [[ -t 2 ]] && colorize
 
 msg "Generating dependencies..."
-findsrc "$@" | gendeps | tsort | sift | tac
+findsrc "$@" | gendeps | tsort | sift | base "$@" | tac
