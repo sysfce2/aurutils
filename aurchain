@@ -9,9 +9,10 @@ count() {
 }
 
 deps() {
-    jshon -F "$1" -Qe results -a -e Depends -a -u
-    jshon -F "$1" -Qe results -a -e MakeDepends -a -u
-    jshon -F "$1" -Qe results -a -e CheckDepends -a -u
+    awk -v FS='[<=>]' '{print $1}' \
+    <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
+    <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
+    <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
 }
 
 pair() {
@@ -64,16 +65,16 @@ query() {
     fi
 }
 
-trap 'rm -rf "$tmp"' EXIT
+#trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit 1
+
+[[ -t 2 ]] && colorize
 
 if ((!$#)); then
     error "usage: $argv0 package [package, ...]"
     exit 1
 fi
-
-[[ -t 2 ]] && colorize
 
 cd "$tmp" || exit 1
 
@@ -82,8 +83,9 @@ query "$@"
 
 msg 'Generating dependencies...'
 if curl --retry 3 -sSgL "$(sort -u < copy | url)" > raw_n; then
-    # Use PackageBase to account for split packages (#27)
+    jshon -F raw_n -e results -a -e Name -u > name
     jshon -F raw_n -e results -a -e PackageBase -u > base
+
     pair "$(count raw_n)" raw_n | tsort > all
     grep -Fxf base all | tac
 fi
