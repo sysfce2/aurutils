@@ -27,9 +27,24 @@ clone() {
     done
 }
 
+snapshot() {
+    if tmp=$(mktemp -d) && cd "$tmp"; then
+	awk -v rpc=$rpc '{
+	    gsub("+","%2b"); gsub("@","%40");
+	    printf "https://aur.archlinux.org/cgit/aur.git/snapshot/%s.tar.gz\n", $1
+	}' | aria2c -s 16 -x 16 -j 32 -i -
+
+	for ar in ./*.tar.gz; do
+	    tar xvf "$ar" -C "$AURDEST"/ || return
+	done
+
+	rm -rf "$tmp"
+    fi
+}
+
 cd "$AURDEST" || exit 1
 
-if aurchain "$@" | tee queue | clone; then
+if aurchain "$@" | tee queue | snapshot; then
     if confirm 'Inspect build files?'; then
         xargs -a queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
