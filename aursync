@@ -4,6 +4,8 @@ set -o pipefail
 
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
+readonly remote=https://aur.archlinux.org
+readonly store=$remote/cgit/aur.git/snapshot
 
 confirm() {
     local -l reply
@@ -18,16 +20,16 @@ clone() {
 	if cd "$AURDEST/$src" 2>/dev/null; then
             git pull -v || return
 	else
-            git clone -v https://aur.archlinux.org/"$src".git || return
+            git clone -v "$remote/$src".git || return
 	fi
     done
 }
 
 snapshot() {
     if tmp=$(mktemp -d) && cd "$tmp"; then
-	awk -v '{
+	awk -v uri=$store '{
 	    gsub("+","%2b"); gsub("@","%40");
-	    printf "https://aur.archlinux.org/cgit/aur.git/snapshot/%s.tar.gz\n", $1
+	    printf "%s/%s.tar.gz\n", uri, $1
 	}' | aria2c -s 16 -x 16 -j 32 -i -
 
 	for ar in ./*.tar.gz; do
