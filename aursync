@@ -16,20 +16,16 @@ confirm() {
 clone() {
     while read -r src; do
 	if cd "$AURDEST/$src" 2>/dev/null; then
-            if ! git pull -v; then
-		return
-            fi
+            git pull -v || return
 	else
-            if ! git clone -v https://aur.archlinux.org/"$src".git; then
-		return
-            fi
+            git clone -v https://aur.archlinux.org/"$src".git || return
 	fi
     done
 }
 
 snapshot() {
     if tmp=$(mktemp -d) && cd "$tmp"; then
-	awk -v rpc=$rpc '{
+	awk -v '{
 	    gsub("+","%2b"); gsub("@","%40");
 	    printf "https://aur.archlinux.org/cgit/aur.git/snapshot/%s.tar.gz\n", $1
 	}' | aria2c -s 16 -x 16 -j 32 -i -
