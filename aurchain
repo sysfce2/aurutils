@@ -24,7 +24,7 @@ pair() {
     done
 }
 
-gendeps() {
+queue() {
     pair "$(count "$1")" "$1" | tsort | tac > all
 
     while read -r pkgname pkgbase; do	
@@ -90,5 +90,5 @@ query "$@"
 
 msg 'Generating dependencies...'
 if curl --retry 3 -sSgL "$(sort -u < copy | url)" > raw_n; then
-    gendeps raw_n
+    queue raw_n
 fi
