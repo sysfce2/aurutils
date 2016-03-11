@@ -16,11 +16,11 @@ confirm() {
 }
 
 clone() {
-    while read -r src; do
-	if cd "$AURDEST/$src" 2>/dev/null; then
+    while read -r base; do
+	if cd "$AURDEST/$base" 2>/dev/null; then
             git pull -v || return
 	else
-            git clone -v "$remote/$src".git || return
+            git clone -v "$remote/$base".git || return
 	fi
     done
 }
