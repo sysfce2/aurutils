@@ -40,11 +40,45 @@ snapshot() {
     fi
 }
 
+repofind() {
+    #global target pool
+    declare repo path
+    declare -A rset
+
+    while {
+	read -r repo
+	read -r _ _ path
+    } do
+	if [[ $path =~ ^file:// ]]; then
+            rset[$repo]=${path#file://}
+	fi
+    done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/ {gsub(/[][]/,""); print}')
+
+    if [[ ${rset[@]} ]]; then
+        if ((${#rset[@]} > 1)); then
+            select target in "${!rset[@]}"; do
+                break
+            done
+        else
+            target=${!rset[*]}
+        fi
+
+        msg "Using [$target] repository"
+        pool=${rset[$target]}
+    else
+        error "No file:// repository found"
+        exit 1
+    fi
+}
+
 cd "$AURDEST" || exit 1
 
 if aurchain "$@" | tee queue | snapshot; then
     if confirm 'Inspect build files?'; then
         xargs -a queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
-    aurbuild queue
+
+    if repofind; then
+	aurbuild -d "$target".db -r "$pool" -p "$pool" queue
+    fi
 fi
