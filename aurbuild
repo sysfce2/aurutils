@@ -1,51 +1,18 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o pipefail
 
 readonly argv0=aurbuild
 readonly pwd=$PWD
 
-repofind() {
-    #global target pool
-    declare repo path
-    declare -A rset
-
-    while {
-	read -r repo
-	read -r _ _ path
-    } do
-	if [[ $path =~ ^file:// ]]; then
-            rset[$repo]=${path#file://}
-	fi
-    done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/ {gsub(/[][]/,""); print}')
-
-    if [[ ${rset[@]} ]]; then
-        if ((${#rset[@]} > 1)); then
-            select target in "${!rset[@]}"; do
-                break
-            done
-        else
-            target=${!rset[*]}
-        fi
-
-        msg "Using [$target] repository"
-        pool=${rset[$target]}
-    else
-        error "No file:// repository found"
-        exit 1
-    fi
-}
-
 build() {
     set -e    
     PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc
-    repose -vf "$target".db -r "$pool" -p "$pool"
-    sudo pacsync "$target"
+    repose -vf "$database" -r "$root" -p "$pool"
+    sudo pacsync "$database"
     set +e
 }
 
 build_chroot() {
-    #global pool target
     declare CHROOT=/var/lib/aurbuild
 
     set -e
@@ -55,7 +22,7 @@ build_chroot() {
     fi
 
     sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT"
-    repose -vf "$target".db -r "$pool" -p "$pool"
+    repose -vf "$database" -r "$root" -p "$pool"
     set +e
 }
 
@@ -65,19 +32,33 @@ source /usr/share/makepkg/util.sh || exit 1
 
 [[ -t 2 ]] && colorize
 
-# Preserve terminal input for makepkg/select (#21)
-if [[ -r $1 ]]; then
-    exec 3< "$1"
-else
+while getopts :cd:p:r: OPT; do
+    case $OPT in
+	c|+c) devtools=1	 ;;
+	d|+d) database="$OPTARG" ;;
+	p|+p) pool="$OPTARG" 	 ;;
+	r|+r) root="$OPTARG" 	 ;;
+	*) plain "usage: $argv0 [+-cp ARG] [+-r ARG} [--] ARGS..."
+	   exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
+if [[ ! -r $1 ]]
     error "$1: not readable (queue)"
     exit 1
 fi
 
-repofind
+exec 3< "$1"
 
 while read -r -u 3 p; do
     if cd "$pwd/$p"; then
-        build_chroot
+	if ((devtools)); then
+            build_chroot
+	else
+	    build
+	fi
     fi
 done
 
