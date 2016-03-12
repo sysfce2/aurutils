@@ -8,7 +8,7 @@ build() {
     set -e    
     PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc
     repose -vf "$database" -r "$root" -p "$pool"
-    sudo pacsync "$database"
+    sudo pacsync "${database%.*}"
     set +e
 }
 
