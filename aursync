@@ -56,7 +56,7 @@ prepare() {
 	esac
     done < <(mksrcinfo -o /dev/stdout)
 
-    read -r syncver < <(expac -1 -Sv '%v' "${name[@]}"
+    read -r syncver < <(expac -1 -Sv '%v' "${name[@]}")
     
     if (($(vercmp "$ver-$rel" "$syncver") == 1)); then
 	msg "$base: $syncver -> $ver-$rel"
