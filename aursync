@@ -40,6 +40,34 @@ snapshot() {
     fi
 }
 
+prepare() {
+    #global todo
+    declare pkgbase pkgname pkgver pkgrel ver
+
+    # Update pkgver for VCS sources
+    makepkg --verifysource --nobuild
+
+    while read -r key _ val; do
+	case "$key" in
+	    pkgname) pkgname+=("$val") ;;
+	    pkgbase) pkgbase=$val ;;
+	    pkgver)  pkgver=$val  ;;
+	    pkgrel)  pkgrel=$val  ;;
+	esac
+    done < <(mksrcinfo -o /dev/stdout)
+
+    [[ ${pkgname[@]} ]] || return 1
+
+    while read -r name version; do
+	if (($(vercmp "$pkgver-$pkgrel" "$version") == 1)); then
+	    msg "name: $version -> $pkgver-$pkgrel"
+	    todo[$pkgbase]=1
+	else
+	    warning "$name is up-to-date"
+	fi
+    done < <(expac -Sv '%n %v' "${pkgname[@]}")
+}
+
 repofind() {
     #global target pool
     declare repo path
@@ -71,6 +99,10 @@ repofind() {
     fi
 }
 
+source /usr/share/makepkg/util.sh || exit 1
+
+[[ -t 2 ]] && colorize
+
 cd "$AURDEST" || exit 1
 
 if aurchain "$@" | tee queue | snapshot; then
@@ -78,7 +110,14 @@ if aurchain "$@" | tee queue | snapshot; then
         xargs -a queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
 
-    if repofind; then
-	aurbuild -d "$target".db -r "$pool" -p "$pool" queue
+    declare -A todo
+    
+    while read -r p; do
+	cd "$AURDEST/$p" && prepare
+	cd - >/dev/null
+    done < queue
+    
+    if grep -Fxf <(printf '%s\n' "${!todo[@]}") queue > queue_new; then
+	repofind && aurbuild -d "$target".db -r "$pool" -p "$pool" queue_new
     fi
 fi
