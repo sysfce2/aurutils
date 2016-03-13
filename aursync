@@ -112,8 +112,9 @@ if aurchain "$@" | tee queue | snapshot; then
     
     while read -r p; do
 	cd "$AURDEST/$p" && prepare
-	cd - >/dev/null
     done < queue
+    
+    cd "$AURDEST" || exit 1
     
     if grep -Fxf <(printf '%s\n' "${!todo[@]}") queue > queue_new; then
 	repofind && aurbuild -d "$target".db -r "$pool" -p "$pool" queue_new
