@@ -42,28 +42,28 @@ snapshot() {
 
 prepare() {
     #global todo
-    declare pkgbase pkgname pkgver pkgrel
+    declare base name ver rel syncver
 
     # Update pkgver for VCS sources
     makepkg --verifysource --nobuild
 
     while read -r key _ val; do
 	case "$key" in
-	    pkgname) pkgname+=("$val") ;;
-	    pkgbase) pkgbase=$val ;;
-	    pkgver)  pkgver=$val  ;;
-	    pkgrel)  pkgrel=$val  ;;
+	    pkgname) name+=("$val") ;;
+	    pkgbase) base=$val ;;
+	    pkgver)  ver=$val  ;;
+	    pkgrel)  rel=$val  ;;
 	esac
     done < <(mksrcinfo -o /dev/stdout)
 
-    while read -r name version; do
-	if (($(vercmp "$pkgver-$pkgrel" "$version") == 1)); then
-	    msg "$name: $version -> $pkgver-$pkgrel"
-	    todo[$pkgbase]=1
-	else
-	    warning "$name is up-to-date"
-	fi
-    done < <(expac -Sv '%n %v' "${pkgname[@]}")
+    read -r syncver < <(expac -1 -Sv '%v' "${name[@]}"
+    
+    if (($(vercmp "$ver-$rel" "$syncver") == 1)); then
+	msg "$base: $syncver -> $ver-$rel"
+	todo[$pkgbase]=1
+    else
+	warning "$name is up-to-date"
+    fi   
 }
 
 repofind() {
