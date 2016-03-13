@@ -58,7 +58,7 @@ prepare() {
 
     while read -r name version; do
 	if (($(vercmp "$pkgver-$pkgrel" "$version") == 1)); then
-	    msg "name: $version -> $pkgver-$pkgrel"
+	    msg "$name: $version -> $pkgver-$pkgrel"
 	    todo[$pkgbase]=1
 	else
 	    warning "$name is up-to-date"
