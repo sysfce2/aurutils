@@ -58,12 +58,12 @@ prepare() {
 
     read -r syncver < <(expac -1 -Sv '%v' "${name[@]}")
     
-    if (($(vercmp "$ver-$rel" "$syncver") == 1)); then
+    if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
 	msg "$base: $syncver -> $ver-$rel"
-	todo[$pkgbase]=1
+	todo[$base]=1
     else
 	warning "$name is up-to-date"
-    fi   
+    fi
 }
 
 repofind() {
