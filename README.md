@@ -30,6 +30,10 @@ Return JSON based on a PCRE pattern. Due to aurweb limitations, results are spli
 
 ## aurbuild
 
-```aurbuild QUEUE```
+```aurbuild [options] QUEUE```
 
-The QUEUE file must include names of directories containing a PKGBUILD file. file:// repositories are retrieved from /etc/pacman.conf.
+The QUEUE file must include names of directories containing a PKGBUILD file. The ```-d``` (database), ```-r``` (root) and ```-p``` (pool) options are relayed to repose.
+
+## aursync
+
+Wrapper and general dumping ground for bad code.
