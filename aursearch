@@ -20,7 +20,7 @@ split() {
         # URL encode @ and +
         gsub("+","%2b"); gsub("@","%40");
 
-        if ((NR % 150) == 0 || NR == 1)
+        if (NR == 1 || (NR % 150) == 0)
             printf "\n%s&arg[]=%s", rpc, $0;
         else
             printf "&arg[]=%s", $0;
