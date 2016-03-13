@@ -42,7 +42,7 @@ snapshot() {
 
 prepare() {
     #global todo
-    declare pkgbase pkgname pkgver pkgrel ver
+    declare pkgbase pkgname pkgver pkgrel
 
     # Update pkgver for VCS sources
     makepkg --verifysource --nobuild
