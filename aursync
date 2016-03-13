@@ -62,7 +62,7 @@ prepare() {
         msg "$base: $syncver -> $ver-$rel"
         todo[$base]=1
     else
-        warning "$name is up-to-date"
+        msg "$base is up-to-date"
     fi
 }
 
