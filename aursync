@@ -56,8 +56,6 @@ prepare() {
 	esac
     done < <(mksrcinfo -o /dev/stdout)
 
-    [[ ${pkgname[@]} ]] || return 1
-
     while read -r name version; do
 	if (($(vercmp "$pkgver-$pkgrel" "$version") == 1)); then
 	    msg "name: $version -> $pkgver-$pkgrel"
