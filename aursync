@@ -105,12 +105,12 @@ source /usr/share/makepkg/util.sh || exit 1
 
 cd "$AURDEST" || exit 1
 
+declare -A todo
+
 if aurchain "$@" | tee queue | snapshot; then
     if confirm 'Inspect build files?'; then
         xargs -a queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
-
-    declare -A todo
     
     while read -r p; do
 	cd "$AURDEST/$p" && prepare
