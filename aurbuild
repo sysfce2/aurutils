@@ -45,7 +45,7 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ ! -r $1 ]]
+if [[ ! -r $1 ]]; then
     error "$1: not readable (queue)"
     exit 1
 fi
