@@ -6,7 +6,7 @@ readonly pwd=$PWD
 
 build() {
     declare mpkg_args=(-Lsc)
-    ((force)) && mpkg_args+=(-f)
+    ((rebuild)) && mpkg_args+=(-f)
     
     set -e
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${mpkg_args[@]}"
@@ -41,7 +41,7 @@ while getopts :cd:f:p:r: OPT; do
     case $OPT in
 	c|+c) devtools=1	 ;;
 	d|+d) database="$OPTARG" ;;
-	f|+f) force=1		 ;;
+	f|+f) rebuild=1		 ;;
 	p|+p) pool="$OPTARG" 	 ;;
 	r|+r) root="$OPTARG" 	 ;;
 	*) plain "usage: $argv0 [+-cp ARG] [+-r ARG} [--] ARGS..."
