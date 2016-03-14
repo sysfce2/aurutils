@@ -5,8 +5,8 @@ readonly argv0=aurbuild
 readonly pwd=$PWD
 
 build() {
-    declare mpkg_args=(--log --syncdeps --clean)
-    ((force)) && mpkg_args+=(--force)
+    declare mpkg_args=(-Lsc)
+    ((force)) && mpkg_args+=(-f)
     
     set -e
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${mpkg_args[@]}"
