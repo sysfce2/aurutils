@@ -54,7 +54,7 @@ prepare() {
             pkgver)  ver=$val  ;;
             pkgrel)  rel=$val  ;;
         esac
-    done < <(mksrcinfo -o /dev/stdout)
+    done < <(makepkg --printsrcinfo)
 
     read -r syncver < <(expac -1 -Sv '%v' "${name[@]}") || :
 
