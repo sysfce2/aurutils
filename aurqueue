@@ -55,11 +55,11 @@ fi
 # graph before matching the original arguments.
 msg "Generating dependencies..."
 if findsrc "$@" | tee "$tmp"/files | gendeps | tsort > "$tmp"/all; then
-    while read -r name base; do 
+    while read -r name base; do
         if [[ $name != $base ]]; then
             sed -i "s|^$name$|$base|g" "$tmp"/all
 	fi
-    done < <(cat "$tmp"/files | allnames)
+    done < <(allnames < "$tmp"/files)
 
     tac "$tmp"/all | LC_COLLATE=C sort -u | orig "$@"
 fi
