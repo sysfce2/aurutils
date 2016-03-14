@@ -25,7 +25,7 @@ build_chroot() {
     fi
 
     # makechrootpkg invokes makepkg both inside and outside the chroot.
-    # PGP checks work in the outside instance, but not in the inside one.
+    # PGP checks work in the outside instance, but may fail in the inside one.
     sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT" -- --skippgpcheck
     repose -vf "$database" -r "$root" -p "$pool"
     set +e
