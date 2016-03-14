@@ -4,6 +4,7 @@ set -e -o pipefail
 
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
+
 readonly remote=https://aur.archlinux.org
 readonly tarpath=$remote/cgit/aur.git/snapshot
 readonly tmp=$(mktemp -d)
@@ -40,8 +41,8 @@ snapshot() {
 }
 
 prepare() {
-    declare -Ag todo
     declare base name ver rel syncver
+    declare -Ag todo
 
     # Update pkgver for VCS sources
     makepkg --verifysource --nobuild
@@ -102,10 +103,11 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :t OPT; do
+while getopts :lt OPT; do
     case $OPT in
+	l|+l) resolve=aurqueue
 	t|+t) download=snapshot ;;
-	*)    plain "usage: ${0##*/} [+-t} [--] ARGS..."
+	*)    plain "usage: ${0##*/} [+-lt} [--] ARGS..."
 	      exit 1 ;;
     esac
 done
@@ -114,7 +116,7 @@ OPTIND=1
 
 cd "$AURDEST"
 
-if aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"; then
+if "${resolve:-aurchain}" "$@" | tee "$tmp"/queue | "${download:-clone}"; then
     if confirm 'Inspect build files?'; then
         xargs -a "$tmp"/queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
