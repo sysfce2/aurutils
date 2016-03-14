@@ -1,38 +1,61 @@
 #!/bin/bash
 # aurqueue - generate ordered dependency lists for package builds
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-
 set -o pipefail
 
-# Determine the path to each .SRCINFO, outputs to stdout using using null
-# delimitation.
+# Determine the path to each .SRCINFO, output to stdout using null
+# delimitation to prevent ARGMAX errors.
 findsrc() {
     find "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
 
-# Use xargs to pass a list of paths to .SRCINFOs for processing, then
-# outputs all (global) dependencies on stdout.
+# Use xargs to pass a list of paths to .SRCINFOs for processing, skip
+# to the next file when a split package is found, and output
+# dependencies on stdout.
 gendeps() {
     xargs -0i awk -v FS='[<=>]' '
-    	  /pkgbase/			{name = $2; print $2, $2}
-    	  /^\t(make|check)?depends/	{print name, $2}
+    	  /pkgbase/			{base = $2; print $2, $2}
+    	  /^\t(make|check)?depends/	{print base, $2}
 	  /^$/                        	{nextfile}
     ' {}
 }
 
-# Ensure no packages are added to the output.
-base() {
+allnames() {
+    xargs -0i awk -v FS='[<=>]' '
+          /pkgbase/ {base = $2}
+          /pkgname/ {print $2, base}
+    ' {}
+}
+
+# The base assumption is to have packages and their dependencies
+# already available, so instead of filtering packages in the official
+# repositories, we simply remove those that weren't there in the first
+# place. As an added benefit, any directory with SRCINFO files can now
+# be included in the queue.
+orig() {
     grep -Fxf <(printf '%s\n' "$@")
 }
 
 source /usr/share/makepkg/util.sh || exit 1
 
 if ((!$#)); then
-    error "usage: aurqueue repo [repo, ...]"
+    error "usage: aurqueue pkgbase [pkgbase, ...]"
     exit 1
 fi
 
 [[ -t 2 ]] && colorize
 
+# pkgbase can be specified explicitely, and does not have to match
+# values in the pkgname array. As source directories are however
+# named after pkgbase, mismatches must be replaced in the initial
+# graph before matching the original arguments.
 msg "Generating dependencies..."
-findsrc "$@" | gendeps | tsort | base "$@" | tac
+if findsrc "$@" | tee files | gendeps | tsort > all; then
+    while read -r name base; do	
+	if [[ $name != $base ]]; then
+	    sed -i "s|^$name$|$base|g" all
+	fi
+    done < <(cat files | allnames)
+
+    tac all | sort -u | orig "$@"
+fi
