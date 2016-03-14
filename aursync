@@ -1,11 +1,12 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o pipefail
+set -e -o pipefail
 
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
 readonly remote=https://aur.archlinux.org
-readonly store=$remote/cgit/aur.git/snapshot
+readonly tarpath=$remote/cgit/aur.git/snapshot
+readonly tmp=$(mktemp -d)
 
 confirm() {
     local -l reply
@@ -18,30 +19,28 @@ confirm() {
 clone() {
     while read -r base; do
         if cd "$AURDEST/$base" 2>/dev/null; then
-            git pull -v || return
+            git pull -v
         else
-            git clone -v "$remote/$base".git || return
+            git clone -v "$remote/$base".git
         fi
     done
 }
 
 snapshot() {
-    if tmp=$(mktemp -d) && cd "$tmp"; then
-        awk -v uri=$store '{
+    if cd "$tmp"; then
+        awk -v uri=$tarpath '{
             gsub("+","%2b"); gsub("@","%40");
             printf "%s/%s.tar.gz\n", uri, $1
         }' | aria2c -s 16 -x 16 -j 32 -i -
 
         for ar in ./*.tar.gz; do
-            tar xvf "$ar" -C "$AURDEST"/ || return
+            tar xvf "$ar" -C "$AURDEST"/
         done
-
-        rm -rf "$tmp"
     fi
 }
 
 prepare() {
-    #global todo
+    declare -Ag todo
     declare base name ver rel syncver
 
     # Update pkgver for VCS sources
@@ -56,7 +55,7 @@ prepare() {
         esac
     done < <(mksrcinfo -o /dev/stdout)
 
-    read -r syncver < <(expac -1 -Sv '%v' "${name[@]}")
+    read -r syncver < <(expac -1 -Sv '%v' "${name[@]}") || :
 
     if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
         msg "$base: $syncver -> $ver-$rel"
@@ -97,26 +96,26 @@ repofind() {
     fi
 }
 
-source /usr/share/makepkg/util.sh || exit 1
+trap 'rm -rf "$tmp"' EXIT
+
+source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-cd "$AURDEST" || exit 1
+cd "$AURDEST"
 
-declare -A todo
-
-if aurchain "$@" | tee queue | snapshot; then
+if aurchain "$@" | tee "$tmp"/queue | snapshot; then
     if confirm 'Inspect build files?'; then
-        xargs -a queue -i find {} -maxdepth 1 | vifm - -c '+vie'
+        xargs -a "$tmp"/queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
 
     while read -r p; do
         cd "$AURDEST/$p" && prepare
-    done < queue
+    done < "$tmp"/queue
 
-    cd "$AURDEST" || exit 1
+    cd "$AURDEST"
 
-    if grep -Fxf <(printf '%s\n' "${!todo[@]}") queue > queue_new; then
-        repofind && aurbuild -d "$target".db -r "$pool" -p "$pool" queue_new
+    if grep -Fxf <(printf '%s\n' "${!todo[@]}") "$tmp"/queue > "$tmp"/queue_new; then
+        repofind && aurbuild -d "$target".db -r "$pool" -p "$pool" "$tmp"/queue_new
     fi
 fi
