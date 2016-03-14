@@ -50,7 +50,7 @@ if [[ ! -r $1 ]]; then
     exit 1
 fi
 
-# Read from the next available FD too choose providers with makepkg (#21)
+# Read from the next available FD to choose providers with makepkg (#21)
 exec {fd}< "$1"
 
 while read -r -u {fd} p; do
