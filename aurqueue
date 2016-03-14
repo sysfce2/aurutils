@@ -3,6 +3,8 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
+readonly tmp=$(mktemp -d) || exit 1
+
 # Determine the path to each .SRCINFO, output to stdout using null
 # delimitation to prevent ARGMAX errors.
 findsrc() {
@@ -36,6 +38,8 @@ orig() {
     grep -Fxf <(printf '%s\n' "$@")
 }
 
+trap 'rm -rf "$tmp"' EXIT
+
 source /usr/share/makepkg/util.sh || exit 1
 
 if ((!$#)); then
@@ -50,12 +54,12 @@ fi
 # named after pkgbase, mismatches must be replaced in the initial
 # graph before matching the original arguments.
 msg "Generating dependencies..."
-if findsrc "$@" | tee files | gendeps | tsort > all; then
+if findsrc "$@" | tee "$tmp"/files | gendeps | tsort > "$tmp"/all; then
     while read -r name base; do	
 	if [[ $name != $base ]]; then
-	    sed -i "s|^$name$|$base|g" all
+	    sed -i "s|^$name$|$base|g" "$tmp"/all
 	fi
-    done < <(cat files | allnames)
+    done < <(cat "$tmp"/files | allnames)
 
-    tac all | sort -u | orig "$@"
+    tac "$tmp"/all | LC_COLLATE=C sort -u | orig "$@"
 fi
