@@ -1,12 +1,13 @@
 pkgname=aurutils-git
-pkgver=r231.4be771a
+pkgver=r247.e1941a8
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
 url=https://github.com/AladW/aurutils
 license=('ISC')
 source=("git+$url")
-depends=('pacman>=5.0' 'pkgbuild-introspection' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2' 'vifm')
+md5sums=('SKIP')
+depends=('pacman>=5.0' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2' 'vifm')
 makedepends=('git')
 optdepends=('devtools: aurbuild nspawn support')
            
@@ -23,4 +24,3 @@ package() {
     install -m644 CREDITS README.md -t "$pkgdir"/usr/share/doc/aurutils
 }
 
-md5sums=('SKIP')
