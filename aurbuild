@@ -5,11 +5,11 @@ readonly argv0=aurbuild
 readonly pwd=$PWD
 
 build() {
-    declare mpkg_args=(-Lsc)
-    ((rebuild)) && mpkg_args+=(-f)
+    declare mp_args=(-Lsc)
+    ((rebuild)) && mp_args+=(-f)
     
     set -e
-    PKGDEST="$pool" LC_MESSAGES=C makepkg "${mpkg_args[@]}"
+    PKGDEST="$pool" LC_MESSAGES=C makepkg "${mp_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
     sudo pacsync "${database%.*}"
     set +e
