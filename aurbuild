@@ -1,34 +1,28 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -e
 
 readonly argv0=aurbuild
 readonly pwd=$PWD
 
-build() {
-    declare mp_args=(-Lsc)
-    ((rebuild)) && mp_args+=(-f)
-    
-    set -e
-    PKGDEST="$pool" LC_MESSAGES=C makepkg "${mp_args[@]}"
+makepkg_args=(-Lsc --holdver)
+
+build_local() {
+    PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
     sudo pacsync "${database%.*}"
-    set +e
 }
 
 build_chroot() {
     declare CHROOT=/var/lib/aurbuild
 
-    set -e
     if [[ ! -d $CHROOT/root ]]; then
 	sudo mkdir -p "$CHROOT"
 	sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel
     fi
 
-    # makechrootpkg invokes makepkg both inside and outside the chroot.
-    # PGP checks work in the outside instance, but may fail in the inside one.
     sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT" -- --skippgpcheck
     repose -vf "$database" -r "$root" -p "$pool"
-    set +e
 }
 
 trap 'exit' INT
@@ -39,9 +33,9 @@ source /usr/share/makepkg/util.sh || exit 1
 
 while getopts :cd:f:p:r: OPT; do
     case $OPT in
-	c|+c) devtools=1	 ;;
+	c|+c) build=build_chroot ;;
 	d|+d) database="$OPTARG" ;;
-	f|+f) rebuild=1		 ;;
+	f|+f) makepkg_args+=(-f) ;;
 	p|+p) pool="$OPTARG" 	 ;;
 	r|+r) root="$OPTARG" 	 ;;
 	*) plain "usage: $argv0 [+-cp ARG] [+-r ARG} [--] ARGS..."
@@ -56,19 +50,15 @@ if [[ ! -r $1 ]]; then
     exit 1
 fi
 
-# Read from fd 3 to allow provider choices with makepkg (#21)
-exec 3< "$1"
+# Read from the next available FD too choose providers with makepkg (#21)
+exec {fd}< "$1"
 
-while read -r -u 3 p; do
+while read -r -u {fd} p; do
     if cd "$pwd/$p"; then
-	if ((devtools)); then
-            build_chroot
-	else
-	    build
-	fi
+	"${build:-build_local}"
     fi
 done
 
-exec 3<&-
+exec {fd}<&-
 
 # vim: set sw=4 sts=4:
