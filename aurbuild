@@ -50,15 +50,15 @@ if [[ ! -r $1 ]]; then
     exit 1
 fi
 
-# Read from the next available FD to choose providers with makepkg (#21)
-exec {fd}< "$1"
+# Read from FD 3 to choose providers with makepkg (#21)
+exec 3< "$1"
 
-while read -r -u {fd} p; do
+while read -r -u 3 p; do
     if cd "$pwd/$p"; then
 	"${build:-build_local}"
     fi
 done
 
-exec {fd}<&-
+exec 3<&-
 
 # vim: set sw=4 sts=4:
