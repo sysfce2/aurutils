@@ -55,9 +55,9 @@ fi
 # graph before matching the original arguments.
 msg "Generating dependencies..."
 if findsrc "$@" | tee "$tmp"/files | gendeps | tsort > "$tmp"/all; then
-    while read -r name base; do	
-	if [[ $name != $base ]]; then
-	    sed -i "s|^$name$|$base|g" "$tmp"/all
+    while read -r name base; do 
+        if [[ $name != $base ]]; then
+            sed -i "s|^$name$|$base|g" "$tmp"/all
 	fi
     done < <(cat "$tmp"/files | allnames)
 
