@@ -105,13 +105,13 @@ source /usr/share/makepkg/util.sh
 
 while getopts :lt OPT; do
     case $OPT in
-	l|+l) resolve=aurqueue
+	l|+l) resolve=aurqueue  ;;
 	t|+t) download=snapshot ;;
 	*)    plain "usage: ${0##*/} [+-lt} [--] ARGS..."
 	      exit 1 ;;
     esac
 done
-shift $(( OPTIND - 1 ))
+shift $((OPTIND - 1))
 OPTIND=1
 
 cd "$AURDEST"
