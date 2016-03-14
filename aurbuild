@@ -5,8 +5,11 @@ readonly argv0=aurbuild
 readonly pwd=$PWD
 
 build() {
-    set -e    
-    PKGDEST="$pool" LC_MESSAGES=C makepkg -Lsc
+    declare mpkg_args=(--log --syncdeps --clean)
+    ((force)) && mpkg_args+=(--force)
+    
+    set -e
+    PKGDEST="$pool" LC_MESSAGES=C makepkg "${mpkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
     sudo pacsync "${database%.*}"
     set +e
@@ -21,7 +24,9 @@ build_chroot() {
 	sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel
     fi
 
-    sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT"
+    # makechrootpkg invokes makepkg both inside and outside the chroot.
+    # PGP checks work in the outside instance, but not in the inside one.
+    sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT" -- --skippgpcheck
     repose -vf "$database" -r "$root" -p "$pool"
     set +e
 }
@@ -32,10 +37,11 @@ source /usr/share/makepkg/util.sh || exit 1
 
 [[ -t 2 ]] && colorize
 
-while getopts :cd:p:r: OPT; do
+while getopts :cd:f:p:r: OPT; do
     case $OPT in
 	c|+c) devtools=1	 ;;
 	d|+d) database="$OPTARG" ;;
+	f|+f) force=1		 ;;
 	p|+p) pool="$OPTARG" 	 ;;
 	r|+r) root="$OPTARG" 	 ;;
 	*) plain "usage: $argv0 [+-cp ARG] [+-r ARG} [--] ARGS..."
