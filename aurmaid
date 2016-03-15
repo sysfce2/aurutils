@@ -3,7 +3,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail
 
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurmaid}
 
 remote=https://aur.archlinux.org
 tarpath=$remote/cgit/aur.git/snapshot
@@ -134,7 +134,7 @@ while getopts :lt OPT; do
     case $OPT in
 	l|+l) resolve=aurqueue  ;;
 	t|+t) download=snapshot ;;
-	*)    plain "usage: ${0##*/} [+-lt} [--] ARGS..."
+	*)    plain "usage: aurmaid [+-lt} [--] ARGS..."
 	      exit 1 ;;
     esac
 done

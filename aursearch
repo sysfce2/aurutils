@@ -2,10 +2,12 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-readonly cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
-readonly remote="https://aur.archlinux.org"
-readonly rpc="$remote/rpc/?v=5&type=info"
-readonly tmp=$(mktemp -d) || exit 1
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
+remote="https://aur.archlinux.org"
+rpc="$remote/rpc/?v=5&type=info"
+tmp=$(mktemp -d) || exit 1
+
+readonly cache remote rpc tmp
 
 filter() {
     tee # TBD
