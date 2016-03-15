@@ -1,8 +1,10 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-readonly argv0=aurchain
-readonly tmp=$(mktemp -d) || exit 1
+argv0=aurchain
+tmp=$(mktemp -d) || exit 1
+
+readonly argv0 tmp
 
 count() {
     jshon -F "$1" -Qe resultcount

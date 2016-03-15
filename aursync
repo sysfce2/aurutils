@@ -2,47 +2,74 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail
 
-readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
 
-readonly remote=https://aur.archlinux.org
-readonly tarpath=$remote/cgit/aur.git/snapshot
-readonly tmp=$(mktemp -d)
+remote=https://aur.archlinux.org
+tarpath=$remote/cgit/aur.git/snapshot
+tmp=$(mktemp -d)
+
+readonly XDG_CACHE_HOME AURDEST remote tarpath tmp
 
 confirm() {
     local -l reply
-    local message=$*
+    local message prompt
+    local bias=$1; shift
 
-    read -rp "$message [Y/n] " reply
-    [[ ! $reply || $reply = y?(es) ]]
+    case $bias in
+        yes) prompt=Y/n ;;
+        no)  prompt=y/N ;;
+    esac
+
+    printf -v message -- "$BOLD* $1 [$prompt]$ALL_OFF " "${@:2}"
+    read -rp "$message" reply
+
+    case $bias in
+        yes) [[ $reply = y || ! $reply ]] ;;
+        no)  [[ $reply = y ]] ;;
+    esac
+}
+
+check() {
+    git fetch 2>/dev/null
+    if [[ $(git rev-parse HEAD) != $(git rev-parse @{upstream}) ]]; then
+	msg2 "changes found: $1"
+	git --no-pager log --oneline --stat ..@{upstream}
+	
+	if confirm no 'Merge?'; then
+	    git merge
+	fi
+    fi
 }
 
 clone() {
     while read -r base; do
         if cd "$AURDEST/$base" 2>/dev/null; then
-            git pull -v
+	    check "$base"
         else
-            git clone -v "$remote/$base".git
+            git clone "$remote/$base".git
         fi
     done
 }
 
 snapshot() {
     if cd "$tmp"; then
+	mkdir -p "$AURDEST"/snapshot
+	
         awk -v uri=$tarpath '{
             gsub("+","%2b"); gsub("@","%40");
             printf "%s/%s.tar.gz\n", uri, $1
         }' | aria2c -s 16 -x 16 -j 32 -i -
 
         for ar in ./*.tar.gz; do
-            tar xvf "$ar" -C "$AURDEST"/
+            tar xvf "$ar" -C "$AURDEST"/snapshot
         done
     fi
 }
 
 prepare() {
     declare base name ver rel syncver
-    declare -Ag todo
+    declare -Ag new
 
     # Update pkgver for VCS sources
     makepkg --verifysource --nobuild
@@ -60,7 +87,7 @@ prepare() {
 
     if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
         msg "$base: $syncver -> $ver-$rel"
-        todo[$base]=1
+        new[$base]=1
     else
         msg "$base is up-to-date"
     fi
@@ -117,7 +144,7 @@ OPTIND=1
 cd "$AURDEST"
 
 if "${resolve:-aurchain}" "$@" | tee "$tmp"/queue | "${download:-clone}"; then
-    if confirm 'Inspect build files?'; then
+    if confirm yes 'Inspect build files?'; then
         xargs -a "$tmp"/queue -i find {} -maxdepth 1 | vifm - -c '+vie'
     fi
 
@@ -127,7 +154,7 @@ if "${resolve:-aurchain}" "$@" | tee "$tmp"/queue | "${download:-clone}"; then
 
     cd "$AURDEST"
 
-    if grep -Fxf <(printf '%s\n' "${!todo[@]}") "$tmp"/queue > "$tmp"/queue_new; then
+    if grep -Fxf <(printf '%s\n' "${!new[@]}") "$tmp"/queue > "$tmp"/queue_new; then
         repofind && aurbuild -d "$target".db -r "$pool" -p "$pool" "$tmp"/queue_new
     fi
 fi
