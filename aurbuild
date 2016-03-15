@@ -27,7 +27,7 @@ build_chroot() {
 
 trap 'exit' INT
 
-source /usr/share/makepkg/util.sh || exit 1
+source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
@@ -45,9 +45,9 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ ! -r $1 ]]; then
-    error "$1: not readable (queue)"
-    exit 1
+if [[ ! -f $1 ]]; then
+    error "$1: No such file or directory"
+    exit 2
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)

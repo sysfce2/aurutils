@@ -2,7 +2,7 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 argv0=aurchain
-tmp=$(mktemp -d) || exit 1
+tmp=$(mktemp -d) || exit
 
 readonly argv0 tmp
 
@@ -50,17 +50,17 @@ url() {
 
 chain() {
     if ! curl --retry 3 -sSgL "$(printf '%s\n' "$@" | tee copy | url)" > raw_0; then
-        exit 1
+        exit
     fi
 
     if [[ $(count raw_0) == 0 ]]; then
         error "No packages found"
-        exit 1
+        exit 2
     fi
 
     for ((a = 1; a <= 100; ++a)); do
 	if ! curl --retry 3 -sSgL "$(deps raw_"$((--a))" | tee -a copy | url)" > raw_$a; then
-	    exit 1
+	    exit
 	fi
 
         if [[ $(count raw_$a) == 0 ]]; then
@@ -70,13 +70,13 @@ chain() {
 
     if ((a > 100)); then
 	error "Total requests: $((++a)) (exceeded maximum)"
-	exit 1
+	exit 34
     fi
 }
 
 trap 'rm -rf "$tmp"' EXIT
 
-source /usr/share/makepkg/util.sh || exit 1
+source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
@@ -85,7 +85,7 @@ if ((!$#)); then
     exit 1
 fi
 
-cd "$tmp" || exit 1
+cd "$tmp" || exit
 
 msg 'Querying AUR RPC...'
 chain "$@"

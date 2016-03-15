@@ -120,7 +120,7 @@ repofind() {
         pool=${rset[$target]}
     else
         error "No file:// repository found"
-        exit 1
+        exit 2
     fi
 }
 

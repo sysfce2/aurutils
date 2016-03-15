@@ -5,7 +5,7 @@ set -o pipefail
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
 remote="https://aur.archlinux.org"
 rpc="$remote/rpc/?v=5&type=info"
-tmp=$(mktemp -d) || exit 1
+tmp=$(mktemp -d) || exit
 
 readonly cache remote rpc tmp
 
@@ -35,7 +35,7 @@ getjson() {
 
 trap 'rm -rf "$tmp"' EXIT
 
-source /usr/share/makepkg/util.sh || exit 1
+source /usr/share/makepkg/util.sh || exit
 
 if ((!$#)); then
     error "aursearch: pattern"
@@ -44,7 +44,7 @@ fi
 
 [[ -t 2 ]] && colorize
 
-cd "$tmp" || exit 1
+cd "$tmp" || exit
 
 msg "Retrieving package list"
 if curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs; then
