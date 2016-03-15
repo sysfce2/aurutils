@@ -32,20 +32,21 @@ confirm() {
 
 check() {
     git fetch 2>/dev/null
+
     if [[ $(git rev-parse HEAD) != $(git rev-parse @{upstream}) ]]; then
-	msg2 "changes found: $1"
-	git --no-pager log --oneline --stat ..@{upstream}
-	
-	if confirm no 'Merge?'; then
-	    git merge
-	fi
+        msg2 "changes found: $1"
+        git --no-pager log --oneline --stat ..@{upstream}
+
+        if confirm no 'Merge?'; then
+            git merge
+        fi
     fi
 }
 
 clone() {
     while read -r base; do
         if cd "$AURDEST/$base" 2>/dev/null; then
-	    check "$base"
+            check "$base"
         else
             git clone "$remote/$base".git
         fi
@@ -54,8 +55,8 @@ clone() {
 
 snapshot() {
     if cd "$tmp"; then
-	mkdir -p "$AURDEST"/snapshot
-	
+        mkdir -p "$AURDEST"/snapshot
+
         awk -v uri=$tarpath '{
             gsub("+","%2b"); gsub("@","%40");
             printf "%s/%s.tar.gz\n", uri, $1
@@ -130,31 +131,38 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :lt OPT; do
+while getopts :cft OPT; do
     case $OPT in
-	l|+l) resolve=aurqueue  ;;
-	t|+t) download=snapshot ;;
-	*)    plain "usage: aurmaid [+-lt} [--] ARGS..."
-	      exit 1 ;;
+        c|+c) aurbuild_args+=(-c) ;;
+        f|+f) aurbuild_args+=(-f)
+              noprepare=1         ;;
+        t|+t) download=snapshot   ;;
+        *)    plain "usage: aurmaid [+-cft} [--] ARGS..."
+              exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
+# Operations are done in the cache directory, unless said otherwise.
 cd "$AURDEST"
 
-if "${resolve:-aurchain}" "$@" | tee "$tmp"/queue | "${download:-clone}"; then
+if aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"; then
     if confirm yes 'Inspect build files?'; then
-        xargs -a "$tmp"/queue -i find {} -maxdepth 1 | vifm - -c '+vie'
+        xargs -a "$tmp"/queue -i find {} -maxdepth 1 | vifm - '+view!'
     fi
 
-    while read -r p; do
-        cd "$AURDEST/$p" && prepare
-    done < "$tmp"/queue
-
-    cd "$AURDEST"
+    if ((!noprepare)); then
+        while read -r pkg; do
+            cd "$AURDEST/$pkg" && prepare
+        done < "$tmp"/queue
+        cd "$AURDEST"
+    fi
 
     if grep -Fxf <(printf '%s\n' "${!new[@]}") "$tmp"/queue > "$tmp"/queue_new; then
-        repofind && aurbuild -d "$target".db -r "$pool" -p "$pool" "$tmp"/queue_new
+        if repofind; then
+            aurbuild_args+=(-d "$target".db -r "$pool" -p "$pool")
+            aurbuild "${aurbuild_args[@]}" "$tmp"/queue_new
+        fi
     fi
 fi
