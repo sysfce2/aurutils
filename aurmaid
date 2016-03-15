@@ -5,11 +5,11 @@ set -e -o pipefail
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurmaid}
 
-remote=https://aur.archlinux.org
-tarpath=$remote/cgit/aur.git/snapshot
+aurweb=https://aur.archlinux.org
+tarpath=$aurweb/cgit/aur.git/snapshot
 tmp=$(mktemp -d)
 
-readonly XDG_CACHE_HOME AURDEST remote tarpath tmp
+readonly XDG_CACHE_HOME AURDEST aurweb tarpath tmp
 
 confirm() {
     local -l reply
@@ -48,7 +48,7 @@ clone() {
         if cd "$AURDEST/$base" 2>/dev/null; then
             check "$base"
         else
-            git clone "$remote/$base".git
+            git clone "$aurweb/$base".git
         fi
     done
 }
@@ -70,28 +70,37 @@ snapshot() {
 
 prepare() {
     declare base name ver rel syncver
-    declare -Ag new
 
     # Update pkgver for VCS sources
     makepkg --verifysource --nobuild
 
     while read -r key _ val; do
         case "$key" in
-            pkgname) name+=("$val") ;;
             pkgbase) base=$val ;;
-            pkgver)  ver=$val  ;;
-            pkgrel)  rel=$val  ;;
+	    pkgname) name+=("$val") ;;
+            pkgver)  ver=$val ;;
+            pkgrel)  rel=$val ;;
         esac
     done < <(makepkg --printsrcinfo)
 
     read -r syncver < <(expac -1 -Sv '%v' "${name[@]}") || :
 
+    # Workaround for vercmp [[:alpha:]] '' == -1
     if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
         msg "$base: $syncver -> $ver-$rel"
-        new[$base]=1
+        printf '%s\n' "$base"
     else
         msg "$base is up-to-date"
     fi
+}
+
+prepare_all() {
+    while read -r pkg; do
+	if cd "$pkg"; then
+	    prepare "$pkg"
+	    cd "$OLDPWD"
+	fi
+    done
 }
 
 repofind() {
@@ -153,13 +162,10 @@ if aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"; then
     fi
 
     if ((!noprepare)); then
-        while read -r pkg; do
-            cd "$AURDEST/$pkg" && prepare
-        done < "$tmp"/queue
-        cd "$AURDEST"
+	prepare_all "$tmp"/queue > "$tmp"/new
     fi
 
-    if grep -Fxf <(printf '%s\n' "${!new[@]}") "$tmp"/queue > "$tmp"/queue_new; then
+    if ((noprepare)) || grep -Fxf "$tmp"/new "$tmp"/queue > "$tmp"/queue_new; then
         if repofind; then
             aurbuild_args+=(-d "$target".db -r "$pool" -p "$pool")
             aurbuild "${aurbuild_args[@]}" "$tmp"/queue_new
