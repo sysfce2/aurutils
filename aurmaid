@@ -31,6 +31,7 @@ confirm() {
 }
 
 inspect() {
+    # Pay for a nice UI with an ugly xargs/find construct.
     if confirm yes 'View build files?'; then
         xargs -a "$1" -i find {} -maxdepth 1 | vifm - '+view!'
     fi
