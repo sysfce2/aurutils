@@ -7,7 +7,7 @@ aurweb="https://aur.archlinux.org"
 rpc="$aurweb/rpc/?v=5&type=info"
 tmp=$(mktemp -d) || exit
 
-readonly cache remote rpc tmp
+readonly cache aurweb rpc tmp
 
 brief() {
     while {
@@ -55,7 +55,7 @@ fi
 cd "$tmp" || exit
 
 msg "Retrieving package list"
-if curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs; then
+if curl -sS "$aurweb"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs; then
     zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
 
     msg 'Sending request'
