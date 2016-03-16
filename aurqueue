@@ -3,7 +3,7 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp -d) || exit 1
 
 # Determine the path to each .SRCINFO, output to stdout using null
 # delimitation to prevent ARG_MAX issues.
@@ -54,12 +54,14 @@ fi
 # named after pkgbase, mismatches must be replaced in the initial
 # graph before matching the original arguments.
 msg "Generating dependencies..."
-if findsrc "$@" | tee "$tmp"/files | gendeps | tsort > "$tmp"/all; then
+if findsrc "$@" > "$tmp"/z; then
+    gendeps < "$tmp"/z | tsort | tac > "$tmp"/q
+
     while read -r name base; do
         if [[ $name != $base ]]; then
-            sed -i "s|^$name$|$base|g" "$tmp"/all
+            sed -i "s|^$name$|$base|g" "$tmp"/q
 	fi
-    done < <(allnames < "$tmp"/files)
+    done < <(allnames < "$tmp"/z)
 
-    tac "$tmp"/all | LC_COLLATE=C sort -u | orig "$@"
+    orig "$@" < "$tmp"/q
 fi
