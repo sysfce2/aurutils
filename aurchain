@@ -27,15 +27,15 @@ pair() {
 }
 
 request() {
-    pair "$(count "$1")" "$1" | tsort | tac > all
+    pair "$(count "$1")" "$1" | tsort | tac > deps
 
     while read -r pkgname pkgbase; do	
 	if [[ $pkgname != $pkgbase ]]; then
-	    sed -i "s|^$pkgname$|$pkgbase|g" all
+	    sed -i "s|^$pkgname$|$pkgbase|g" deps
 	fi
     done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
 
-    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) all
+    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) deps | awk '{if (!seen[$1]++) print $1}'
 }
 
 url() {
