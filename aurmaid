@@ -95,14 +95,16 @@ prepare() {
 }
 
 prepare_all() {
-    ((noprepare)) && return
-    
-    while read -r pkg; do
-	if cd "$pkg"; then
-	    prepare "$pkg"
-	    cd - >/dev/null
-	fi
-    done
+    if ((noprepare)); then
+        tee
+    else    
+	while read -r pkg; do
+	    if cd "$pkg"; then
+		prepare "$pkg"
+		cd "$OLDPWD"
+	    fi
+	done
+    fi
 }
 
 repofind() {
