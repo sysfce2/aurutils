@@ -17,7 +17,7 @@ brief() {
 	read -r Popularity
 	read -r Description
     }; do
-	printf 'aur/%s %s (%s, %s)\n    %s\n\n' "$Name" "$Version" "$NumVotes" "$Popularity" "$Description"
+	printf 'aur/%s %s (%s, %s)\n    %s\n' "$Name" "$Version" "$NumVotes" "$Popularity" "$Description"
     done < <(jshon -C -a -e results -a -e Name -u -p -e Version -u -p -e NumVotes -u -p -e Popularity -u -p -e Description -u)
 }
 
