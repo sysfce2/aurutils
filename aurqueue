@@ -41,9 +41,7 @@ fi
 [[ -t 2 ]] && colorize
 
 msg "Generating dependencies..."
-if findsrc "$@" > "$tmp"/z; then
-    gendeps < "$tmp"/z | tsort | tac > "$tmp"/q
-
+if findsrc "$@" | tee "$tmp"/z | tsort | tac > "$tmp"/q; then
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
     # named after pkgbase, mismatches must be replaced in the initial
