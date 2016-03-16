@@ -54,18 +54,18 @@ clone() {
 }
 
 snapshot() {
-    if cd "$tmp"; then
-        mkdir -p "$AURDEST"/snapshot
+    cd "$tmp"
 
-        awk -v uri=$tarpath '{
-            gsub("+","%2b"); gsub("@","%40");
-            printf "%s/%s.tar.gz\n", uri, $1
-        }' | aria2c -s 16 -x 16 -j 32 -i -
+    awk -v uri=$tarpath '{
+        gsub("+","%2b"); gsub("@","%40");
+        printf "%s/%s.tar.gz\n", uri, $1
+    }' | aria2c -s 16 -x 16 -j 32 -i -
 
-        for ar in ./*.tar.gz; do
-            tar xvf "$ar" -C "$AURDEST"/snapshot
-        done
-    fi
+    mkdir -p "$AURDEST"/snapshot
+
+    for ar in ./*.tar.gz; do
+        tar xvf "$ar" -C "$AURDEST"/snapshot
+    done
 }
 
 prepare() {
@@ -83,6 +83,7 @@ prepare() {
         esac
     done < <(makepkg --printsrcinfo)
 
+    # Read the first match (split packages are built together)
     read -r syncver < <(expac -1 -Sv '%v' "${name[@]}") || :
 
     # Workaround for $(vercmp letter "") == -1
@@ -95,14 +96,14 @@ prepare() {
 }
 
 prepare_all() {
+    declare pwd=$PWD
+
     if ((noprepare)); then
         tee
     else    
 	while read -r pkg; do
-	    if cd "$pkg"; then
-		prepare "$pkg"
-		cd "$OLDPWD"
-	    fi
+	    cd "$pwd/$pkg"
+	    prepare "$pkg"
 	done
     fi
 }
