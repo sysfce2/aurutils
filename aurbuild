@@ -27,7 +27,7 @@ build_chroot() {
 
 trap 'exit' INT
 
-source /usr/share/makepkg/util.sh || exit
+source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
