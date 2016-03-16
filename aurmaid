@@ -30,6 +30,12 @@ confirm() {
     esac
 }
 
+inspect() {
+    if confirm yes 'View build files?'; then
+        xargs -a "$1" -i find {} -maxdepth 1 | vifm - '+view!'
+    fi
+}
+
 check() {
     git fetch 2>/dev/null
 
@@ -145,13 +151,15 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cft OPT; do
+while getopts :clft OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
 	f|+f) aurbuild_args+=(-f)
 	      noprepare=1         ;;
+        l|+l) resolve=aurqueue
+              download=/bin/true  ;;
         t|+t) download=snapshot   ;;
-        *)    plain "usage: aurmaid [+-cft} [--] ARGS..."
+        *)    plain "usage: aurmaid [+-clft} [--] ARGS..."
               exit 1 ;;
     esac
 done
@@ -161,15 +169,13 @@ OPTIND=1
 # Operations are done in the cache directory, unless said otherwise.
 cd "$AURDEST"
 
-if aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"; then
-    if confirm yes 'Inspect build files?'; then
-        xargs -a "$tmp"/queue -i find {} -maxdepth 1 | vifm - '+view!'
-    fi
-
-    if grep -Fxf <(prepare_all "$tmp"/queue) "$tmp"/queue > "$tmp"/queue_new; then
+if "${resolve:-aurchain}" "$@" | tee "$tmp"/q | "${download:-clone}"; then
+    inspect "$tmp"/q
+ 
+    if grep -Fxf <(prepare_all "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
         if repofind; then
             aurbuild_args+=(-d "$target".db -r "$pool" -p "$pool")
-            aurbuild "${aurbuild_args[@]}" "$tmp"/queue_new
+            aurbuild "${aurbuild_args[@]}" "$tmp"/q_new
         fi
     fi
 fi
