@@ -45,6 +45,11 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
+if [[ ! $database ]] || [[ ! $pool ]] || [[ ! $root ]]; then
+    error "Incomplete arguments (-d, -p, -r)"
+    exit 1
+fi
+
 if [[ ! -f $1 ]]; then
     error "$1: No such file or directory"
     exit 2
