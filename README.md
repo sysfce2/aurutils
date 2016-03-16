@@ -14,15 +14,6 @@ The QUEUE file must include names of directories containing a PKGBUILD file. The
 
 _pkgname_ must be the name of an AUR package. Dependencies are retrieved recursively.
 
-## aurmaid
-
-Wrapper for aurchain, aurqueue, and aurbuild. To get started, create a local repository:
-
-```
- $ sudo vim /etc/pacman.conf # uncomment [custom]
- $ sudo install -d /home/packages -o $USER
-```
-
 ## aurqueue
 
 ```aurqueue pkgbase depends ...```
@@ -40,3 +31,13 @@ Return JSON based on a PCRE pattern. Due to aurweb limitations, results are spli
 ```command ... | aursift | ...```
 
 Filter input for packages in the official Arch Linux repositories. Virtual packages (provides/replaces) are solved.
+
+## aursync
+
+Wrapper for aurchain, aurqueue, and aurbuild. To get started, create a local repository:
+
+```
+ $ sudo vim /etc/pacman.conf # uncomment [custom]
+ $ sudo install -d /home/packages -o $USER
+```
+
