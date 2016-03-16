@@ -15,7 +15,7 @@ Wrapper for aurchain, aurqueue, and aurbuild. To get started, create a local rep
 
 ```aurbuild [options] QUEUE```
 
-The QUEUE file must include names of directories containing a PKGBUILD file. The ```-d``` (database), ```-r``` (root) and ```-p``` (pool) options are relayed to repose.
+The QUEUE file must include names of directories containing a PKGBUILD file. The ```-d``` (database), ```-r``` (root) and ```-p``` (pool) options are relayed to repose. ```-c``` builds a package in an nspawn-container (requires _devtools_).
 
 ## aurchain
 
