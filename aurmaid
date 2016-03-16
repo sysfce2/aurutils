@@ -162,7 +162,7 @@ if aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"; then
     fi
 
     if ((!noprepare)); then
-	prepare_all "$tmp"/queue > "$tmp"/new
+	prepare_all < "$tmp"/queue > "$tmp"/new
     fi
 
     if ((noprepare)) || grep -Fxf "$tmp"/new "$tmp"/queue > "$tmp"/queue_new; then
