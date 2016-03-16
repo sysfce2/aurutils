@@ -3,14 +3,22 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
-remote="https://aur.archlinux.org"
-rpc="$remote/rpc/?v=5&type=info"
+aurweb="https://aur.archlinux.org"
+rpc="$aurweb/rpc/?v=5&type=info"
 tmp=$(mktemp -d) || exit
 
 readonly cache remote rpc tmp
 
-filter() {
-    tee # TBD
+brief() {
+    while {
+	read -r Name
+	read -r Version
+	read -r NumVotes
+	read -r Popularity
+	read -r Description
+    }; do
+	printf 'aur/%s %s (%s, %s)\n    %s\n\n' "$Name" "$Version" "$NumVotes" "$Popularity" "$Description"
+    done < <(jshon -C -a -e results -a -e Name -u -p -e Version -u -p -e NumVotes -u -p -e Popularity -u -p -e Description -u)
 }
 
 argsum() {
@@ -53,6 +61,6 @@ if curl -sS "$remote"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.g
     msg 'Sending request'
     if grep -P -- "$1" "$cache"/packages | split | getjson; then
 	# Merge to a single JSON structure.
-	awk '{print}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+	awk '{print}' ./index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' | brief
     fi
 fi
