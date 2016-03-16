@@ -70,9 +70,9 @@ snapshot() {
 
 prepare() {
     declare base name ver rel syncver
-
+    
     # Update pkgver for VCS sources
-    makepkg --verifysource --nobuild
+    makepkg --verifysource --nobuild >/dev/null
 
     while read -r key _ val; do
         case "$key" in
@@ -85,7 +85,7 @@ prepare() {
 
     read -r syncver < <(expac -1 -Sv '%v' "${name[@]}") || :
 
-    # Workaround for vercmp [[:alpha:]] '' == -1
+    # Workaround for $(vercmp letter "") == -1
     if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
         msg "$base: $syncver -> $ver-$rel"
         printf '%s\n' "$base"
@@ -95,10 +95,12 @@ prepare() {
 }
 
 prepare_all() {
+    ((noprepare)) && return
+    
     while read -r pkg; do
 	if cd "$pkg"; then
 	    prepare "$pkg"
-	    cd "$OLDPWD"
+	    cd - >/dev/null
 	fi
     done
 }
@@ -143,8 +145,8 @@ source /usr/share/makepkg/util.sh
 while getopts :cft OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
-        f|+f) aurbuild_args+=(-f)
-              noprepare=1         ;;
+	f|+f) aurbuild_args+=(-f)
+	      noprepare=1         ;;
         t|+t) download=snapshot   ;;
         *)    plain "usage: aurmaid [+-cft} [--] ARGS..."
               exit 1 ;;
@@ -161,11 +163,7 @@ if aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"; then
         xargs -a "$tmp"/queue -i find {} -maxdepth 1 | vifm - '+view!'
     fi
 
-    if ((!noprepare)); then
-	prepare_all < "$tmp"/queue > "$tmp"/new
-    fi
-
-    if ((noprepare)) || grep -Fxf "$tmp"/new "$tmp"/queue > "$tmp"/queue_new; then
+    if grep -Fxf <(prepare_all "$tmp"/queue) "$tmp"/queue > "$tmp"/queue_new; then
         if repofind; then
             aurbuild_args+=(-d "$target".db -r "$pool" -p "$pool")
             aurbuild "${aurbuild_args[@]}" "$tmp"/queue_new
