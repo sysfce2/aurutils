@@ -29,15 +29,6 @@ allnames() {
     ' {}
 }
 
-# The base assumption is to have packages and their dependencies
-# already available, so instead of filtering packages in the official
-# repositories, we simply remove those that weren't there in the first
-# place. As an added benefit, any directory with SRCINFO files can now
-# be included in the queue.
-orig() {
-    grep -Fxf <(printf '%s\n' "$@")
-}
-
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
@@ -49,19 +40,24 @@ fi
 
 [[ -t 2 ]] && colorize
 
-# pkgbase can be specified explicitely, and does not have to match
-# values in the pkgname array. As source directories are however
-# named after pkgbase, mismatches must be replaced in the initial
-# graph before matching the original arguments.
 msg "Generating dependencies..."
 if findsrc "$@" > "$tmp"/z; then
     gendeps < "$tmp"/z | tsort | tac > "$tmp"/q
 
+    # pkgbase can be specified explicitely, and does not have to match
+    # values in the pkgname array. As source directories are however
+    # named after pkgbase, mismatches must be replaced in the initial
+    # graph before matching the original arguments.
     while read -r name base; do
         if [[ $name != $base ]]; then
             sed -i "s|^$name$|$base|g" "$tmp"/q
 	fi
     done < <(allnames < "$tmp"/z)
 
-    orig "$@" < "$tmp"/q
+    # The base assumption is to have packages and their dependencies
+    # already available, so instead of filtering packages in the official
+    # repositories, we simply remove those that weren't there in the first
+    # place. As an added benefit, any directory with SRCINFO files can now
+    # be included in the queue.
+    grep -Fxf <(printf '%s\n' "$@") "$tmp"/q | awk '{if (!seen[$1]++) print $1}'
 fi
