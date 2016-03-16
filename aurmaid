@@ -106,18 +106,15 @@ prepare() {
 }
 
 prepare_all() {
-    declare pwd=$PWD
-
     if ((noprepare)); then
         tee
     else    
 	while read -r pkg; do
-	    cd "$pwd/$pkg"
-	    prepare "$pkg"
+	    ( cd "$pkg"
+	      prepare "$pkg"
+	    )
 	done
     fi
-
-    cd "$pwd"
 }
 
 repofind() {
