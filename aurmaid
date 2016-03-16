@@ -50,13 +50,17 @@ check() {
 }
 
 clone() {
+    declare pwd=$PWD
+    
     while read -r base; do
-        if cd "$AURDEST/$base" 2>/dev/null; then
+        if cd "$pwd/$base" 2>/dev/null; then
             check "$base"
         else
             git clone "$aurweb/$base".git
         fi
     done
+
+    cd "$pwd"
 }
 
 snapshot() {
@@ -90,7 +94,7 @@ prepare() {
     done < <(makepkg --printsrcinfo)
 
     # Read the first match (split packages are built together)
-    read -r syncver < <(expac -1 -Sv '%v' "${name[@]}") || :
+    read -r syncver < <(expac -1 -S '%v' "${name[@]}") || :
 
     # Workaround for $(vercmp letter "") == -1
     if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
@@ -112,6 +116,8 @@ prepare_all() {
 	    prepare "$pkg"
 	done
     fi
+
+    cd "$pwd"
 }
 
 repofind() {
@@ -172,7 +178,7 @@ cd "$AURDEST"
 if "${resolve:-aurchain}" "$@" | tee "$tmp"/q | "${download:-clone}"; then
     inspect "$tmp"/q
  
-    if grep -Fxf <(prepare_all "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
+    if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
         if repofind; then
             aurbuild_args+=(-d "$target".db -r "$pool" -p "$pool")
             aurbuild "${aurbuild_args[@]}" "$tmp"/q_new
