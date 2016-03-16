@@ -44,7 +44,7 @@ msg "Generating dependencies..."
 if findsrc "$@" | tee "$tmp"/z | tsort | tac > "$tmp"/q; then
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
-    # named after pkgbase, mismatches must be replaced in the initial
+    # named after pkgbase, differences must be replaced in the initial
     # graph before matching the original arguments.
     while read -r name base; do
         if [[ $name != $base ]]; then
