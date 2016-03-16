@@ -37,7 +37,7 @@ inspect() {
 }
 
 check() {
-    git fetch 2>/dev/null
+    git fetch -v
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse @{upstream}) ]]; then
         msg2 "changes found: $1"
@@ -50,17 +50,14 @@ check() {
 }
 
 clone() {
-    declare pwd=$PWD
-    
     while read -r base; do
-        if cd "$pwd/$base" 2>/dev/null; then
-            check "$base"
-        else
-            git clone "$aurweb/$base".git
-        fi
+        ( if cd "$base" 2>/dev/null; then
+              check "$base"
+          else
+              git clone "$aurweb/$base".git
+          fi
+	)
     done
-
-    cd "$pwd"
 }
 
 snapshot() {
