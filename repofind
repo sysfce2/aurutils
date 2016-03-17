@@ -5,17 +5,10 @@ set -e -o pipefail
 readonly aurweb=https://aur.archlinux.org
 
 repofind() {
-    declare official user repo
+    declare repo
     declare -A rset
 
-    declare official=(
-	testing core extra community
-	community-testing multilib multilib-testing
-    )
-
-    user=($(grep -Fxvf <(printf '%s\n' "${official[@]}") <(pacconf --repo-list)))
-    
-    for repo in "${user[@]}"; do	
+    for repo in $(pacconf --repo-list); do
 	rset[$repo]=$(pacconf --single --repo="$repo" Server)
 
 	if [[ ${rset[$repo]} =~ file:// ]]; then
