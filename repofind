@@ -92,7 +92,7 @@ while getopts :isu OPT; do
 	s|+s) reposelect ;;
 	u|+u) update=1 ;;	    
 	*)    plain "usage: ${0##*/} [+-isu} [--] ARGS..."
-	      exit 2 ;;
+	      exit 1 ;;
     esac
 done
 shift $(( OPTIND - 1 ))
