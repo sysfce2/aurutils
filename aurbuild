@@ -8,8 +8,6 @@ readonly pwd=$PWD
 makepkg_args=(-Lsc --holdver)
 
 build_local() {
-    ((sysupgrade)) && sudo pacman -Syu
-    
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
     sudo pacsync "${database%.*}"
@@ -33,15 +31,14 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cd:f:p:r:y OPT; do
+while getopts  :cd:f:p:r:R OPT; do
     case $OPT in
 	c|+c) build=build_chroot ;;
 	d|+d) database="$OPTARG" ;;
-	f|+f) makepkg_args+=(-f) ;;
 	p|+p) pool="$OPTARG" 	 ;;
 	r|+r) root="$OPTARG" 	 ;;
-	y|+y) sysupgrade=1       ;;
-	*) plain "usage: $argv0 [+-cd ARG] [+-f ARG] [+-p ARG] [+-r ARG] [+-y} [--] ARGS..."
+	R|+R) rebuild=1          ;;
+	*) plain usage: "$argv0 [+-cd ARG] [+-f ARG] [+-p ARG] [+-r ARG] [+-R} [--] ARGS..."
 	   exit 1 ;;
     esac
 done
@@ -49,7 +46,7 @@ shift $((OPTIND - 1))
 OPTIND=1
 
 if [[ ! $database ]] || [[ ! $pool ]] || [[ ! $root ]]; then
-    error "Incomplete arguments (-d, -p, -r)"
+    error "Missing arguments (-d, -p, -r)"
     exit 1
 fi
 
@@ -63,6 +60,10 @@ exec 3< "$1"
 
 while read -r -u 3 p; do
     if cd "$pwd/$p"; then
+	if ((rebuild)); then
+	    setconf PKGBUILD pkgrel+=0.1
+	    #setconf .SRCINFO pkgrel+=0.1
+	fi
 	"${build:-build_local}"
     fi
 done
