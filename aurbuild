@@ -5,12 +5,14 @@ set -e
 readonly argv0=aurbuild
 readonly pwd=$PWD
 
-makepkg_args=(-Lsc --holdver)
+makepkg_args=(-Lscr --holdver)
 
 build_local() {
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
+
     sudo pacsync "${database%.*}"
+    sudo pactrans --sysupgrade
 }
 
 build_chroot() {
