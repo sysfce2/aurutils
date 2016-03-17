@@ -11,56 +11,52 @@ provides() {
 
 # Read package names from stdin separated by the IFS and produces a list of
 # packages not provided in the official repositories.
-sift() {
-    declare -A pkgset
-    declare all siftargs query repo n p r v
+declare -A pkgset
+declare all siftargs query repo n p r v
 
-    while read -r p; do
-	pkgset["$p"]=1
-	all+=("$p")
+while read -r p; do
+    pkgset["$p"]=1
+    all+=("$p")
+done
+
+if [[ ! ${pkgset[@]} ]]; then
+    error "No packages on standard input"
+    exit 1
+fi
+
+for p in "${!pkgset[@]}"; do
+    siftargs+=(--satisfies="$p")
+done
+
+for r in testing core extra community community-testing multilib multilib-testing; do
+    siftargs+=(--repo="$r")
+done
+
+# Close standard input for pacsift to allow --sync.
+# https://github.com/andrewgregory/pacutils/issues/3
+query=($(pacsift --sync --exact "${siftargs[@]}" <&-))
+
+if [[ ${query[@]} ]]; then
+    for p in "${query[@]#*/}"; do
+        if [[ ${pkgset[$p]} ]]; then
+            repo+=("$p")
+        else
+            n+=("$p")
+        fi
     done
+else
+    msg2 "No matches in the sync database"
+fi
 
-    if [[ ! ${pkgset[@]} ]]; then
-	error "No packages on standard input"
-	exit 1
-    fi
+if [[ ${n[@]} ]]; then
+    while read -r p v; do
+	if [[ ${pkgset[$v]} ]]; then
+	    warning "virtual dependency $v provided $p"
+	    repo+=("$v")
+	fi
+    done < <(provides "${n[@]}")
+fi
 
-    for p in "${!pkgset[@]}"; do
-	siftargs+=(--satisfies="$p")
-    done
-
-    for r in testing core extra community community-testing multilib multilib-testing; do
-        siftargs+=(--repo="$r")
-    done
-
-    # Close standard input for pacsift to allow --sync.
-    # https://github.com/andrewgregory/pacutils/issues/3
-    query=($(pacsift --sync --exact "${siftargs[@]}" <&-))
-
-    if [[ ${query[@]} ]]; then
-        for p in "${query[@]#*/}"; do
-            if [[ ${pkgset[$p]} ]]; then
-                repo+=("$p")
-            else
-                n+=("$p")
-            fi
-        done
-    else
-        msg2 "No matches in the sync database"
-    fi
-
-    if [[ ${n[@]} ]]; then
-	while read -r p v; do
-	    if [[ ${pkgset[$v]} ]]; then
-		warning "virtual dependency $v provided $p"
-		repo+=("$v")
-	    fi
-	done < <(provides "${n[@]}")
-    fi
-
-    # Print the relative complement between repo provided dependencies and all
-    # required dependencies. all \ repo
-    grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
-}
-
-sift
+# Print the relative complement between repo provided dependencies and all
+# required dependencies. all \ repo
+grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
