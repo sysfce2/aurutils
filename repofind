@@ -18,9 +18,8 @@ repofind() {
 }
 
 reposelect() {
-    #global target pool
+    declare repo server target pool
     declare -A avail
-    declare repo server
     
     while read -r repo server; do
 	avail[$repo]=$server
