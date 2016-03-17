@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=r281.9d638d3
+pkgver=r295.74e40b5
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
@@ -9,11 +9,11 @@ source=("git+$url")
 md5sums=('SKIP')
 depends=('pacman>=5.0' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2' 'vifm')
 makedepends=('git')
-optdepends=('devtools: aurbuild nspawn support')
+optdepends=('devtools: aurbuild -c' 'setconf: aurbuild -R')
            
 pkgver() {
     printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)"
-}    
+}
 
 package() {
     cd aurutils
