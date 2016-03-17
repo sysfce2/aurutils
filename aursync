@@ -13,22 +13,12 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 readonly argv0 aurweb rpc tarpath tmp XDG_CACHE_HOME AURDEST
 
 confirm() {
-    local -l reply
-    local message prompt
-    local bias=$1; shift
-
-    case $bias in
-        yes) prompt=Y/n ;;
-        no)  prompt=y/N ;;
-    esac
-
-    printf -v message -- "$BOLD* $1 [$prompt]$ALL_OFF " "${@:2}"
-    read -rp "$message" reply
-
-    case $bias in
-        yes) [[ $reply = y || ! $reply ]] ;;
-        no)  [[ $reply = y ]] ;;
-    esac
+    declare -l reply
+    declare message
+    
+    printf -v message -- "$BOLD* $1 [Y/n]$ALL_OFF " "$@"
+    read -rp "$message" reply    
+    [[ $reply = y || ! $reply ]]
 }
 
 inspect() {
@@ -79,10 +69,10 @@ prepare() {
     
     while read -r key _ val; do
 	case "$key" in
-	    pkgbase) base="$val";;
-	    pkgname) name+=("$val");;
-	    pkgver)  ver="$val";;
-	    pkgrel)  rel="$val";;
+	    pkgbase) base="$val"    ;;
+	    pkgname) name+=("$val") ;;
+	    pkgver)  ver="$val"	    ;;
+	    pkgrel)  rel="$val"	    ;;
 	esac
     done < .SRCINFO
 
