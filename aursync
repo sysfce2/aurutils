@@ -2,14 +2,15 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail
 
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-AURDEST=${AURDEST:-$XDG_CACHE_HOME/aursync}
-
+argv0=aursync
 aurweb=https://aur.archlinux.org
 tarpath=$aurweb/cgit/aur.git/snapshot
 tmp=$(mktemp -d)
 
-readonly XDG_CACHE_HOME AURDEST aurweb tarpath tmp
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
+
+readonly argv0 aurweb tarpath tmp XDG_CACHE_HOME AURDEST
 
 confirm() {
     local -l reply
@@ -168,7 +169,7 @@ while getopts :clft OPT; do
         l|+l) resolve=aurqueue
               download=/bin/true  ;;
         t|+t) download=snapshot   ;;
-        *)    plain "usage: aursync [+-clft} [--] ARGS..."
+        *)    plain "usage: $argv0 [+-clft} [--] ARGS..."
               exit 1 ;;
     esac
 done
