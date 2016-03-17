@@ -174,7 +174,7 @@ quickcheck() {
 	done < <(pacsift --repo="$pool" "${siftargs[@]}" | expac -S '%n %v')
     fi
 
-    for p in "${!pkgset[@]}"; do
+    for p in "${!set_l[@]}"; do
 	str+="&arg[]=$p"
     done
 
