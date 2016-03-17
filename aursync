@@ -155,6 +155,40 @@ repofind() {
     fi
 }
 
+quickcheck() {
+    #global pool
+    declare str='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
+    declare -A set_l set_r
+
+    if (($#)); then
+	for name; do
+	    siftargs+=(--name="$name")
+	done
+    else
+	msg2 "Searching upgrades for all packages"
+    fi
+    
+    if repofind; then
+	while read -r name ver; do
+	    set_l[$pkg]=$ver
+	done < <(pacsift --repo="$pool" "${siftargs[@]}" | expac -S '%n %v')
+    fi
+
+    for p in "${!pkgset[@]}"; do
+	str+="&arg[]=$p"
+    done
+
+    while read -r name ver; do
+	set_r[$pkg]=$ver
+    done < <(curl --retry 3 -sSgL "$str" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
+
+    for p in "${!set_r[@]}"; do
+	if (($(vercmp "${set_r[$p]}" "${set_l[$p]}"))); then
+	    printf '%s\n' "$p ${set_l[$p]} -> ${set_r[$p]}"       
+	fi
+    done
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
