@@ -7,10 +7,12 @@ tmp=$(mktemp -d) || exit
 readonly argv0 tmp
 
 count() {
+    # $1 - request data
     jshon -F "$1" -Qe resultcount
 }
 
 deps() {
+    # $1 - request data
     awk -v FS='[<=>]' '{print $1}' \
     <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
     <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
@@ -18,8 +20,10 @@ deps() {
 }
 
 pair() {
+    # $1 - resultcount
+    # $2 - request data
     for ((i = 0; i < "$1"; ++i)); do
-	awk 'NR == 1 { p = $1 } NR > 1 { print p, $0 }' \
+	awk -v FS='[<=>]' 'NR == 1 { p = $1 } NR > 1 { print p, $1 }' \
 	<(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e Depends -a -u) \
 	<(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
 	<(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e CheckDepends -a -u)
@@ -27,15 +31,16 @@ pair() {
 }
 
 request() {
-    pair "$(count "$1")" "$1" | tsort | tac > deps
+    # $1 - request data
+    pair "$(count "$1")" "$1" | tsort | tac > list
 
     while read -r pkgname pkgbase; do	
 	if [[ $pkgname != $pkgbase ]]; then
-	    sed -i "s|^$pkgname$|$pkgbase|g" deps
+	    sed -i "s|^$pkgname$|$pkgbase|g" list
 	fi
     done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
 
-    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) deps | awk '{if (!seen[$1]++) print $1}'
+    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) list | awk '{if (!seen[$1]++) print $1}'
 }
 
 url() {
