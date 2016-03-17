@@ -52,7 +52,7 @@ reposelect() {
     fi
 
     msg "Using [$target] repository"
-    printf '%s %s\n' "$target" "${avail[$target]}"
+    printf '%s %s\n' "$target" "$pool"
 }
 
 quickcheck() {
