@@ -53,6 +53,11 @@ url() {
     printf '%s' "$str"
 }
 
+# Create a copy of the original arguments, and build an URL for
+# AurJson. If there is at least one result, parse the request data for
+# dependencies, append them to the original copy, and build a new
+# URL. This continues until a certain maximum is exceeded, or no AUR
+# results are found.
 chain() {
     if ! curl --retry 3 -sSgL "$(printf '%s\n' "$@" | tee copy | url)" > raw_0; then
         exit
