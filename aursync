@@ -76,7 +76,6 @@ snapshot() {
 
 prepare() {
     declare key val source vcs base name ver rel syncver
-    makepkg --printsrcinfo > .SRCINFO
 
     while read -r source; do
 	case $(get_protocol "$source") in
