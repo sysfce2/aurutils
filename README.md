@@ -39,5 +39,7 @@ Wrapper for aurchain, aurqueue, and aurbuild. To get started, create a local rep
 ```
  $ sudo vim /etc/pacman.conf # uncomment [custom]
  $ sudo install -d /home/packages -o $USER
+ $ repo-add /home/packages/custom.db.tar
+ $ sudo pacman -Syu
 ```
 
