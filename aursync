@@ -124,77 +124,6 @@ prepare_all() {
     fi
 }
 
-repofind() {
-    #global target pool
-    declare repo path
-    declare -A rset
-
-    while {
-        read -r repo
-        read -r _ _ path
-    } do
-        if [[ $path =~ ^file:// ]]; then
-            rset[$repo]=${path#file://}
-        fi
-    done < <(pacconf --single | awk '/^\[/ && !/options/ || /Server/ {gsub(/[][]/,""); print}')
-
-    if [[ ${rset[@]} ]]; then
-        if ((${#rset[@]} > 1)); then
-            select target in "${!rset[@]}"; do
-                break
-            done
-        else
-            target=${!rset[*]}
-        fi
-
-        msg "Using [$target] repository"
-        pool=${rset[$target]}
-    else
-        error "No file:// repository found"
-        exit 2
-    fi
-
-    if [[ ! -d $pool ]] || [[ ! -w $pool ]]; then
-	error "$pool: Directory is not writeable"
-	exit 1
-    fi
-}
-
-quickcheck() {
-    #global target
-    declare pkg ver siftargs str="$aurweb/rpc.php/rpc/?v=5&type=info"
-    declare -A set_l set_r
-
-    if (($#)); then
-	for pkg; do siftargs+=(--name="$pkg"); done
-    fi
-
-    if repofind; then
-	while read -r pkg ver; do
-	    set_l[$pkg]=$ver
-	done < <(pacsift --repo="$target" "${siftargs[@]}" | expac -S '%n %v' -)
-    fi
-
-    if [[ ! ${set_l[@]} ]]; then
-	error "No packages available"
-	exit
-    fi
-    
-    for p in "${!set_l[@]}"; do
-	str+="&arg[]=$p"
-    done
-
-    while read -r pkg ver; do
-	set_r[$pkg]=$ver
-    done < <(curl --retry 3 -sSgL "$str" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
-
-    for p in "${!set_r[@]}"; do
-	if (($(vercmp "${set_r[$p]}" "${set_l[$p]}") == 1)); then
-	    printf '%s\n' "$p ${set_l[$p]} -> ${set_r[$p]}"
-	fi
-    done
-}
-
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
@@ -205,19 +134,14 @@ while getopts :clfnRtu OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
 	n|+n) noprepare=1         ;;
-	R|+R) aurbuild_args+=(-R)
+	R|+R) aurbuild_args+=(-R) ;;
         t|+t) download=snapshot   ;;
-	u|+u) update=1            ;;
         *)    plain "usage: $argv0 [+-clfnRtu} [--] ARGS..."
               exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
-
-if ((update)); then
-    quickcheck "$@"; exit
-fi
 
 # Operations are done in the cache directory, unless said otherwise.
 cd "$AURDEST"
@@ -226,7 +150,7 @@ if aurchain "$@" | tee "$tmp"/q | "${download:-clone}"; then
     inspect "$tmp"/q
  
     if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
-        if repofind; then
+        if read -r target pool < <(repofind -s); then
             aurbuild_args+=(-d "$target".db -r "$pool" -p "$pool")
             aurbuild "${aurbuild_args[@]}" "$tmp"/q_new
         fi
