@@ -37,23 +37,10 @@ inspect() {
     fi
 }
 
-check() {
-    git fetch -v
-
-    if [[ $(git rev-parse HEAD) != $(git rev-parse @{upstream}) ]]; then
-        msg2 "changes found: $1"
-        git --no-pager log --oneline --stat ..@{upstream}
-
-        if confirm yes 'Merge?'; then
-            git merge
-        fi
-    fi
-}
-
 clone() {
     while read -r base; do
         ( if cd "$base" 2>/dev/null; then
-              check "$base"
+              git pull
           else
               git clone "$aurweb/$base".git
           fi
