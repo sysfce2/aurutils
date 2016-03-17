@@ -44,7 +44,7 @@ check() {
         msg2 "changes found: $1"
         git --no-pager log --oneline --stat ..@{upstream}
 
-        if confirm no 'Merge?'; then
+        if confirm yes 'Merge?'; then
             git merge
         fi
     fi
