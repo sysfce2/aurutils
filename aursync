@@ -204,8 +204,6 @@ source /usr/share/makepkg/util.sh
 while getopts :clfnRtu OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
-        l|+l) resolve=aurqueue
-              download=/bin/true  ;;
 	n|+n) noprepare=1         ;;
 	R|+R) aurbuild_args+=(-R)
         t|+t) download=snapshot   ;;
@@ -224,7 +222,7 @@ fi
 # Operations are done in the cache directory, unless said otherwise.
 cd "$AURDEST"
 
-if "${resolve:-aurchain}" "$@" | tee "$tmp"/q | "${download:-clone}"; then
+if aurchain "$@" | tee "$tmp"/q | "${download:-clone}"; then
     inspect "$tmp"/q
  
     if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
