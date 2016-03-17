@@ -95,7 +95,7 @@ while getopts :isu OPT; do
 	      exit 1 ;;
     esac
 done
-shift $(( OPTIND - 1 ))
+shift $((OPTIND - 1))
 OPTIND=1
 
 if ((update)); then
