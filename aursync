@@ -21,9 +21,17 @@ confirm() {
     [[ $reply = y || ! $reply ]]
 }
 
+viewer() {
+    if hash 2>/dev/null vifm; then
+	vifm - '+view!'
+    else
+	command -- "${PAGER:-less}"
+    fi
+}
+
 inspect() {
     if confirm 'View build files?'; then
-        xargs -a "$1" -i find {} -maxdepth 1 | vifm - '+view!'
+        xargs -a "$1" -i find {} -maxdepth 1 | viewer
     fi
 }
 
