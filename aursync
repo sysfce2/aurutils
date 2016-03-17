@@ -155,7 +155,7 @@ repofind() {
 }
 
 quickcheck() {
-    #global pool
+    #global target
     declare str='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
     declare -A set_l set_r
 
@@ -170,7 +170,7 @@ quickcheck() {
     if repofind; then
 	while read -r name ver; do
 	    set_l[$pkg]=$ver
-	done < <(pacsift --repo="$pool" "${siftargs[@]}" | expac -S '%n %v')
+	done < <(pacsift --repo="$target" "${siftargs[@]}" | expac -S '%n %v')
     fi
 
     for p in "${!set_l[@]}"; do
