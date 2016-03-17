@@ -22,7 +22,7 @@ confirm() {
 }
 
 inspect() {
-    if confirm yes 'View build files?'; then
+    if confirm 'View build files?'; then
         xargs -a "$1" -i find {} -maxdepth 1 | vifm - '+view!'
     fi
 }
