@@ -107,13 +107,13 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :clfnRtu OPT; do
+while getopts :cnRt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
 	n|+n) noprepare=1         ;;
 	R|+R) aurbuild_args+=(-R) ;;
         t|+t) download=snapshot   ;;
-        *)    plain "usage: $argv0 [+-clfnRtu} [--] ARGS..."
+        *)    plain "usage: $argv0 [+-cnRt} [--] ARGS..."
               exit 1 ;;
     esac
 done
