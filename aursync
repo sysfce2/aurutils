@@ -155,7 +155,7 @@ repofind() {
     fi
 
     if [[ ! -d $pool ]] || [[ ! -w $pool ]]; then
-	error "$pool: Not a directory"
+	error "$pool: Directory is not writeable"
 	exit 1
     fi
 }
