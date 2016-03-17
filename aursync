@@ -10,7 +10,7 @@ tmp=$(mktemp -d)
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
-readonly argv0 aurweb tarpath tmp XDG_CACHE_HOME AURDEST
+readonly argv0 aurweb rpc tarpath tmp XDG_CACHE_HOME AURDEST
 
 confirm() {
     local -l reply
@@ -102,10 +102,11 @@ prepare() {
     # Read the first match (split packages are built together)
     read -r syncver < <(expac -1 -S '%v' "${name[@]}") || :
 
-    # Workaround for $(vercmp letter "") == -1
     if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
         msg "$base: $syncver -> $ver-$rel"
         printf '%s\n' "$base"
+    elif (($(vercmp "$ver-$rel" "$syncver") == -1)); then
+	warning "$base: $ver-$rel <- $syncver"
     else
         msg "$base is up-to-date"
     fi
@@ -156,34 +157,35 @@ repofind() {
 
 quickcheck() {
     #global target
-    declare str='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
+    declare pkg ver siftargs str="$aurweb/rpc.php/rpc/?v=5&type=info"
     declare -A set_l set_r
 
     if (($#)); then
-	for name; do
-	    siftargs+=(--name="$name")
-	done
-    else
-	msg2 "Searching upgrades for all packages"
-    fi
-    
-    if repofind; then
-	while read -r name ver; do
-	    set_l[$pkg]=$ver
-	done < <(pacsift --repo="$target" "${siftargs[@]}" | expac -S '%n %v')
+	for pkg; do siftargs+=(--name="$pkg"); done
     fi
 
+    if repofind; then
+	while read -r pkg ver; do
+	    set_l[$pkg]=$ver
+	done < <(pacsift --repo="$target" "${siftargs[@]}" | expac -S '%n %v' -)
+    fi
+
+    if [[ ! ${set_l[@]} ]]; then
+	error "No packages available"
+	exit
+    fi
+    
     for p in "${!set_l[@]}"; do
 	str+="&arg[]=$p"
     done
 
-    while read -r name ver; do
+    while read -r pkg ver; do
 	set_r[$pkg]=$ver
     done < <(curl --retry 3 -sSgL "$str" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
 
     for p in "${!set_r[@]}"; do
-	if (($(vercmp "${set_r[$p]}" "${set_l[$p]}"))); then
-	    printf '%s\n' "$p ${set_l[$p]} -> ${set_r[$p]}"       
+	if (($(vercmp "${set_r[$p]}" "${set_l[$p]}") == 1)); then
+	    printf '%s\n' "$p ${set_l[$p]} -> ${set_r[$p]}"
 	fi
     done
 }
@@ -194,20 +196,26 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :clft OPT; do
+while getopts :clfRtu OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
 	f|+f) aurbuild_args+=(-f)
 	      noprepare=1         ;;
         l|+l) resolve=aurqueue
               download=/bin/true  ;;
+	R|+R) aurbuild_args+=(-R) ;;
         t|+t) download=snapshot   ;;
-        *)    plain "usage: $argv0 [+-clft} [--] ARGS..."
+	u|+u) update=1            ;;
+        *)    plain "usage: $argv0 [+-clfRtu} [--] ARGS..."
               exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+if ((update)); then
+    quickcheck "$@"; exit
+fi
 
 # Operations are done in the cache directory, unless said otherwise.
 cd "$AURDEST"
