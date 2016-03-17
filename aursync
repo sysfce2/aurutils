@@ -153,6 +153,11 @@ repofind() {
         error "No file:// repository found"
         exit 2
     fi
+
+    if [[ ! -d $pool ]] || [[ ! -w $pool ]]; then
+	error "$pool: Not a directory"
+	exit 1
+    fi
 }
 
 quickcheck() {
