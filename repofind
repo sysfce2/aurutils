@@ -51,7 +51,7 @@ reposelect() {
 	exit 1
     fi
 
-    msg "Using [$target] repository"
+    msg2 "Using [$target] repository"
     printf '%s %s\n' "$target" "$pool"
 }
 
