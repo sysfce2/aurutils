@@ -34,9 +34,9 @@ request() {
     # $1 - request data
     pair "$(count "$1")" "$1" | tsort | tac > list
 
-    while read -r pkgname pkgbase; do	
-	if [[ $pkgname != $pkgbase ]]; then
-	    sed -i "s|^$pkgname$|$pkgbase|g" list
+    while read -r name base; do	
+	if [[ $name != $base ]]; then
+	    sed -i "s|^$name$|$base|g" list
 	fi
     done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
 
@@ -44,7 +44,7 @@ request() {
 }
 
 url() {
-    local str='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
+    declare str='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
 
     while read -r p; do
 	str+="&arg[]=$p"
