@@ -18,7 +18,7 @@ repofind() {
 }
 
 reposelect() {
-    declare repo server target pool
+    declare repo server pool
     declare -A avail
     
     while read -r repo server; do
@@ -29,55 +29,51 @@ reposelect() {
 	error "No file:// repository found"
         exit 2
     elif ((${#avail[@]} > 1)); then
-	select target in "${!avail[@]}"; do
+	select repo in "${!avail[@]}"; do
 	    break
 	done
     else
-	target=${!avail[*]}
+	repo=${!avail[*]}
     fi
 
-    pool=${avail[$target]#file://}
+    pool=${avail[$repo]#file://}
     
     if [[ ! -d $pool ]] || [[ ! -w $pool ]]; then
 	error "$pool: Directory is not writeable"
 	exit 1
     fi
 
-    msg2 "Using [$target] repository"
-    printf '%s %s\n' "$target" "$pool"
+    msg2 "Using [$repo] repository"
+    printf '%s %s\n' "$repo" "$pool"
 }
 
 quickcheck() {
-    declare url="$aurweb/rpc.php/rpc/?v=5&type=info"
-    declare pkg ver siftargs
+    declare pkg ver args repo url="$aurweb/rpc.php/rpc/?v=5&type=info"
     declare -A set_l set_r
 
     if (($#)); then
 	for pkg; do args+=(--name="$pkg"); done
     fi
 
-    if read -r target pool < <(reposelect); then
+    if read -r repo _ < <(reposelect); then
 	while read -r pkg ver; do
+	    url+="&arg[]=$pkg"	    
 	    set_l[$pkg]=$ver
-	done < <(pacsift --repo="$target" "${args[@]}" | expac -S '%n %v' -)
+	done < <(pacsift --repo="$repo" "${args[@]}" | ifne expac -S '%n %v' -)
     fi
 
     if [[ ! ${set_l[@]} ]]; then
+	while read -r pkg ver; do
+	    set_r[$pkg]=$ver
+	done < <(curl --retry 3 -sSgL "$url" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
+    else
 	error "No packages available"
-	exit
+	exit 2
     fi
     
-    for p in "${!set_l[@]}"; do
-	url+="&arg[]=$p"
-    done
-
-    while read -r pkg ver; do
-	set_r[$pkg]=$ver
-    done < <(curl --retry 3 -sSgL "$url" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
-
-    for p in "${!set_r[@]}"; do
-	if (($(vercmp "${set_r[$p]}" "${set_l[$p]}") == 1)); then
-	    printf '%s\n' "$p ${set_l[$p]} -> ${set_r[$p]}"
+    for pkg in "${!set_r[@]}"; do
+	if (($(vercmp "${set_r[$pkg]}" "${set_l[$pkg]}") == 1)); then
+	    printf '%s\n' "$pkg ${set_l[$pkg]} -> ${set_r[$pkg]}"
 	fi
     done
 }
