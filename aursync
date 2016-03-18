@@ -100,7 +100,7 @@ prepare() {
 prepare_all() {
     if ((noprepare)); then
         tee
-    else    
+    else
 	while read -r pkg; do
 	    ( cd "$pkg"
 	      prepare "$pkg"
@@ -135,8 +135,8 @@ if aurchain "$@" | tee "$tmp"/q | "${download:-clone}"; then
     inspect "$tmp"/q
  
     if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
-        if read -r target pool < <(repofind -s); then
-            aurbuild_args+=(-d "$target".db -r "$pool" -p "$pool")
+        if read -r repo pool < <(repofind -s); then
+            aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
             aurbuild "${aurbuild_args[@]}" "$tmp"/q_new
         fi
     fi
