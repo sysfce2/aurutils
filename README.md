@@ -24,7 +24,7 @@ _pkgbase_ must be a directory containing a .SRCINFO file. Dependencies are not r
 
 ```aursearch pattern```
 
-Return search results from a PCRE pattern. Due to aurweb limitations, results are split by 150 matches, and searched by name only.
+Search AUR packages from a PCRE pattern. Due to aurweb limitations, results are searched by name only.
 
 ## aursift
 
