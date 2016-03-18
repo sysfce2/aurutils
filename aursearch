@@ -55,7 +55,7 @@ cd "$tmp" || exit
 
 msg "Retrieving package list"
 if curl -sS "$aurweb"/packages.gz -o "$cache"/packages.gz -z "$cache"/packages.gz --create-dirs; then
-    zcat "$cache"/packages.gz | awk '!/^#/' > "$cache"/packages
+    zgrep -ve '^#' "$cache"/packages.gz > "$cache"/packages
 
     msg 'Sending request'
     if grep -P -- "$1" "$cache"/packages | split | getjson; then
