@@ -70,8 +70,6 @@ if stamp_l=$(stat --format '%Y' packages.gz 2>/dev/null); then
 
     if ((stamp_r > stamp_l)); then
         fetch
-    else
-        msg2 "packages.gz does not need updating"
     fi
 else
     fetch
