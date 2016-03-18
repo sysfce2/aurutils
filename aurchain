@@ -6,6 +6,10 @@ tmp=$(mktemp -d) || exit
 
 readonly argv0 tmp
 
+curl_safe() {
+    curl --retry 3 -sSgL "$@" || exit
+}
+
 count() {
     # $1 - request data
     jshon -F "$1" -Qe resultcount
@@ -59,9 +63,7 @@ url() {
 # URL. This continues until a certain maximum is exceeded, or no AUR
 # results are found.
 chain() {
-    if ! curl --retry 3 -sSgL "$(printf '%s\n' "$@" | tee copy | url)" > raw_0; then
-        exit
-    fi
+    curl_safe "$(printf '%s\n' "$@" | tee copy | url)" > raw_0
 
     if [[ $(count raw_0) == 0 ]]; then
         error "No packages found"
@@ -69,9 +71,7 @@ chain() {
     fi
 
     for ((a = 1; a <= 100; ++a)); do
-	if ! curl --retry 3 -sSgL "$(deps raw_"$((--a))" | tee -a copy | url)" > raw_$a; then
-	    exit
-	fi
+	curl_safe "$(deps raw_"$((--a))" | tee -a copy | url)" > raw_$a
 
         if [[ $(count raw_$a) == 0 ]]; then
 	    break
@@ -101,6 +101,6 @@ msg 'Querying AUR RPC...'
 chain "$@"
 
 msg 'Generating dependencies...'
-if curl --retry 3 -sSgL "$(sort -u < copy | url)" > raw_n; then
+if curl_safe "$(sort -u < copy | url)" > raw_n; then
     request raw_n
 fi
