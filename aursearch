@@ -63,7 +63,7 @@ mkdir -p "$cache" -m 700
 cd "$cache" || exit
 
 if stamp_l=$(stat --format '%Y' packages.gz 2>/dev/null); then
-    # aurweb lacks a "Last-Modified" field, so use head to close stdin
+    # aurweb lacks a "Last-Modified" field, so use head to close stdout
     # after reading one line.
     stamp_r=$(curl -s "$aurweb"/packages.gz | zcat | head -1 | awk -F, '{print $3}')
     stamp_r=$(date -d "$stamp_r" '+%s')
