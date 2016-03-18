@@ -62,7 +62,7 @@ quickcheck() {
 	done < <(pacsift --repo="$repo" "${args[@]}" | ifne expac -S '%n %v' -)
     fi
 
-    if [[ ! ${set_l[@]} ]]; then
+    if [[ ${set_l[@]} ]]; then
 	while read -r pkg ver; do
 	    set_r[$pkg]=$ver
 	done < <(curl --retry 3 -sSgL "$url" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
