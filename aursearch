@@ -9,6 +9,15 @@ tmp=$(mktemp -d) || exit
 
 readonly aurweb cache rpc tmp
 
+match() {
+    if ((!$#)); then
+	error "No search pattern"
+	exit 1
+    else
+	grep -P -- "$1" packages
+    fi
+}
+
 brief() {
     while {
         read -r Name
@@ -48,11 +57,6 @@ trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
 
-if ((!$#)); then
-    error "aursearch: pattern"
-    exit 1
-fi
-
 [[ -t 2 ]] && colorize
 
 mkdir -p "$cache" -m 700
@@ -72,4 +76,4 @@ else
 fi
 
 msg 'Sending request'
-grep -P -- "$1" "$cache"/packages | split | getjson | brief
+match | split | getjson | brief
