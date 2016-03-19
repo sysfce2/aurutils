@@ -47,7 +47,7 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ ! $database ]] || [[ ! $pool ]] || [[ ! $root ]]; then
+if [[ ! $database || ! $pool || ! $root ]]; then
     error "Missing arguments (-d, -p, -r)"
     exit 1
 fi
