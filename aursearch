@@ -15,6 +15,21 @@ fetch() {
     zgrep -ve '^#' packages.gz > packages
 }
 
+stamp() {
+    if stamp_l=$(stat --format '%Y' packages.gz 2>/dev/null); then
+	# aurweb lacks a "Last-Modified" field, so use head to close the
+	# pipe after reading one line.
+	if stamp_r=$(curl -s "$aurweb"/packages.gz | gzip -cd | head -1 | awk -F, '{print $3}'); then
+	    stamp_r=$(date -d "$stamp_r" '+%s')
+	    if ((stamp_r > stamp_l)); then
+		fetch
+	    fi
+	fi
+    else
+	fetch
+    fi
+}
+
 match() {
     if ((!$#)); then
 	error "No search pattern"
@@ -37,6 +52,7 @@ split() {
 }
 
 getjson() {
+    msg 'Sending request'
     aria2c -s 16 -x 16 -j 32 -q -d "$tmp" -i -
     # Merge to a single JSON structure.
     awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
@@ -62,18 +78,6 @@ source /usr/share/makepkg/util.sh || exit
 mkdir -p "$cache" -m 700
 cd "$cache" || exit
 
-if stamp_l=$(stat --format '%Y' packages.gz 2>/dev/null); then
-    # aurweb lacks a "Last-Modified" field, so use head to close the
-    # pipe after reading one line.
-    if stamp_r=$(curl -s "$aurweb"/packages.gz | gzip -cd | head -1 | awk -F, '{print $3}'); then
-	stamp_r=$(date -d "$stamp_r" '+%s')
-	if ((stamp_r > stamp_l)); then
-	    fetch
-	fi
-    fi
-else
-    fetch
-fi
+stamp
 
-msg 'Sending request'
 match | split | getjson | brief
