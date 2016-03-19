@@ -61,32 +61,31 @@ snapshot() {
 
 prepare() {
     declare key val source vcs base name ver rel syncver
+    declare -A vcs
 
     while read -r source; do
-	case $(get_protocol "$source") in
-	    bzr*|git*|hg*|svn*)
-		vcs=1
-		break;;
+	proto=$(get_protocol "$source")
+	proto=${proto/[+:]*}
+
+	case "$proto" in
+	    bzr|git|hg|svn) vcs[$proto]=1 ;;
 	esac
     done < <(awk '/source/ {print $3}' .SRCINFO)
 
-    if ((vcs)); then
-	makepkg --verifysource --nobuild >/dev/null
+    if [[ ${vcs[@]} ]]; then
+	for v in "${!vcs[@]}"; do
+	    pacman -T "$v" || sudo pacman -S --asdeps --noconfirm "$v"
+	done
+	
+	makepkg --verifysource >/dev/null
 	makepkg --printsrcinfo > .SRCINFO
     fi
-
-    # if ((rebuild)); then
-    # 	setconf PKGBUILD pkgrel+=0.1
-    # 	setconf .SRCINFO pkgrel+=0.1
-    # fi
     
     while read -r key _ val; do
-	case "$key" in
-	    pkgbase) base="$val"    ;;
-	    pkgname) name+=("$val") ;;
-	    pkgver)  ver="$val"	    ;;
-	    pkgrel)  rel="$val"	    ;;
-	esac
+	[[ $key == pkgbase ]] && base=$val
+	[[ $key == pkgname ]] && name+=("$val")
+	[[ $key == pkgver  ]] && ver=$val
+	[[ $key == pkgrel  ]] && rel=$val
     done < .SRCINFO
 
     # Read the first match (split packages are built together)
