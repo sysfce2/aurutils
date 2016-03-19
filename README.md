@@ -115,16 +115,16 @@ This is straightforward if the built packages are still available, for example i
 ```
  $ cd /home/packages
  $ repose -fv _custom.db_
+ $ sudo pacman -Syu
 ```
 
-To reverse this operation, use `--drop`:
+To reverse this operation, repeat the procedure with `--drop`:
 
 ```
- $ cd /home/packages
  $ repose -dfv _custom.db_
 ```
 
-Without packages, first check the installed files. If needed, rebuild packages with md5sum mismatches.
+Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
 
 ```
  $ pacman -Qqm | paccheck --md5sum --quiet
