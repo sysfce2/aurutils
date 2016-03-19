@@ -38,7 +38,7 @@ reposelect() {
 
     pool=${avail[$repo]#file://}
     
-    if [[ ! -d $pool ]] || [[ ! -w $pool ]]; then
+    if [[ ! -d $pool || ! -w $pool ]]; then
 	error "$pool: Directory is not writeable"
 	exit 1
     fi
