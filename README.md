@@ -8,6 +8,17 @@ Collection of helper tools for use with the Arch User Repository.
 
 The input file must include names of directories containing a PKGBUILD file. The ```-d``` (database), ```-r``` (root) and ```-p``` (pool) arguments are relayed to repose. ```-c``` builds a package in an nspawn-container (requires _devtools_).
 
+To get started, create a local repository:
+
+```
+ $ sudo vim /etc/pacman.conf # uncomment [custom], change _Server_ to suit
+ $ sudo install -d _/home/custompkgs_ -o $USER
+ $ repo-add _/home/custompkgs/custom.db.tar_
+ $ sudo pacman -Syu
+```
+
+See also "Migrating foreign packages".
+
 ## aurchain
 
 ```aurchain pkgname ...```
@@ -71,17 +82,6 @@ Wrapper for aurchain, aurbuild and repofind. Build files are:
 + updated in case of VCS packages (`-n`: disable)
 + marked for building if newer (`-n`: disable)
 
-To get started, create a local repository:
-
-```
- $ sudo vim /etc/pacman.conf # uncomment [custom], change _Server_ to suit
- $ sudo install -d _/home/custompkgs_ -o $USER
- $ repo-add _/home/custompkgs/custom.db.tar_
- $ sudo pacman -Syu
-```
-
-See also "Migrating foreign packages".
-
 ### Examples
 
 Build plasma-desktop-git and its dependencies (add `-c` to use an nspawn container):
@@ -108,7 +108,7 @@ Rebuild all packages in the _custom_ repository:
 
 Print (`-i`) or select (`-s`) `file://` repositories. `-u` checks packages for updates in the AUR (implies `-s`).
 
-# Migrating foreign packages
+# Migrating foreign packages (optional)
 
 This is straightforward if the built packages are still available, for example in `/home/packages`:
 
