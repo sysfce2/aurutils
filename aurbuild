@@ -33,7 +33,7 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts  :cd:f:p:r:R OPT; do
+while getopts :cd:f:p:r:R OPT; do
     case $OPT in
 	c|+c) build=build_chroot ;;
 	d|+d) database="$OPTARG" ;;
@@ -52,9 +52,9 @@ if [[ ! $database ]] || [[ ! $pool ]] || [[ ! $root ]]; then
     exit 1
 fi
 
-if [[ ! -f $1 ]]; then
-    error "$1: No such file or directory"
-    exit 2
+if [[ ! -r $1 ]]; then
+    error "$1: File is not readable"
+    exit 1
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)
