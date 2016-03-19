@@ -57,7 +57,6 @@ quickcheck() {
 
     if read -r repo _ < <(reposelect); then
 	while read -r pkg ver; do
-	    url+="&arg[]=$pkg"	    
 	    set_l[$pkg]=$ver
 	done < <(pacsift --repo="$repo" "${args[@]}" | ifne expac -S '%n %v' -)
     fi
@@ -65,7 +64,7 @@ quickcheck() {
     if [[ ${set_l[@]} ]]; then
 	while read -r pkg ver; do
 	    set_r[$pkg]=$ver
-	done < <(curl --retry 3 -sSgL "$url" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
+	done < <(aursearch -r "${!set_l[@]}" | jshon -e results -a -e Name -u -p -e Version -u | xargs -n2)
     else
 	error "No packages available"
 	exit 2
@@ -84,9 +83,9 @@ source /usr/share/makepkg/util.sh
 
 while getopts :isu OPT; do
     case $OPT in
-	i|+i) repofind ;;
+	i|+i) repofind   ;;
 	s|+s) reposelect ;;
-	u|+u) update=1 ;;	    
+	u|+u) update=1   ;;	    
 	*)    plain "usage: ${0##*/} [+-isu} [--] ARGS..."
 	      exit 1 ;;
     esac
