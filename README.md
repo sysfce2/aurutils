@@ -30,7 +30,7 @@ _pkgbase_ must be a directory containing a .SRCINFO file. Dependencies are not r
 
 ### Examples
 
-Build all packages in a github repository:
+Build all packages in the _pkgbuilds_ github repository:
 
 ```
  $ git clone https://www.github.com/Earnestly/pkgbuilds
@@ -78,6 +78,8 @@ To get started, create a local repository:
  $ sudo pacman -Syu
 ```
 
+See also "Migrating foreign packages".
+
 ### Examples
 
 Build plasma-desktop-git and its dependencies (add `-c` to use an nspawn container):
@@ -101,3 +103,30 @@ Rebuild all packages in the _custom_ repository:
 ## repofind
 
 Print (`-i`) or select (`-s`) `file://` repositories. `-u` checks packages for updates in the AUR (implies `-s`).
+
+# Migrating foreign packages
+
+This is straightforward if the built packages are still available, for example in `/home/packages`:
+
+ $ cd /home/packages
+ $ repose -fv _custom.db_
+
+To reverse this operation, use `--drop`:
+
+ $ cd /home/packages
+ $ repose -dfv _custom.db_
+
+Without packages, first check the installed files. If needed, rebuild packages with md5sum mismatches.
+
+ $ pacman -Qqm | paccheck --md5sum --quiet
+
+Recreate the packages, and save them to PKGDEST, or PWD if not set:
+
+ $ for b in $(pacman -Qqm); do bacman "$b"; done
+
+To check for AUR updates, use `repofind -u` or pass the repository name to a compatible helper. For example: `pacaur --ignorerepo=custom -Syu`, `cower -u --ignorerepo=custom`.
+
+To keep the repository updated when building with other AUR helpers, set PKGDEST and create a repose alias:
+
+ $ sudo vim /etc/makepkg.conf
+ $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
