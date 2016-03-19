@@ -80,9 +80,25 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
+while getopts :ipr OPT; do
+    case $OPT in
+	i|+i) parse=long  ;;
+	p|+p) matchonly=1 ;;
+	r|+r) splitonly=1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
 mkdir -p "$cache" -m 700
 cd "$cache" || exit
 
 stamp
 
-match | split | getjson | brief
+if ((matchonly)); then
+    match "$1"
+elif ((splitonly)); then
+    printf '%s\n' "$@" | split | getjson
+else
+    match "$1" | split | getjson | "${parse:-brief}"
+fi
