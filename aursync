@@ -59,8 +59,8 @@ snapshot() {
     done
 }
 
-prepare() {
-    declare key val source vcs base name ver rel syncver
+prepare_vcs() {
+    declare source proto v
     declare -A vcs
 
     while read -r source; do
@@ -80,6 +80,10 @@ prepare() {
 	makepkg --verifysource >/dev/null
 	makepkg --printsrcinfo > .SRCINFO
     fi
+}
+
+prepare() {
+    declare key val base name ver rel syncver
     
     while read -r key _ val; do
 	[[ $key == pkgbase ]] && base=$val
@@ -107,7 +111,8 @@ prepare_all() {
     else
 	while read -r pkg; do
 	    ( cd "$pkg"
-	      prepare "$pkg"
+	      prepare_vcs
+	      prepare
 	    )
 	done
     fi
