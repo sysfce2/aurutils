@@ -11,9 +11,9 @@ The input file must include names of directories containing a PKGBUILD file. The
 To get started, create a local repository:
 
 ```
- $ sudo vim /etc/pacman.conf # uncomment [custom], change _Server_ to suit
- $ sudo install -d _/home/custompkgs_ -o $USER
- $ repo-add _/home/custompkgs/custom.db.tar_
+ $ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
+ $ sudo install -d /home/custompkgs -o $USER
+ $ repo-add /home/custompkgs/custom.db.tar
  $ sudo pacman -Syu
 ```
 
