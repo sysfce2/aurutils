@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=r328.fae7b44
+pkgver=r335.e9c99b8
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
@@ -10,7 +10,6 @@ md5sums=('SKIP')
 depends=('pacman>=5.0' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2' 'moreutils')
 makedepends=('git')
 optdepends=('devtools: aurbuild -c'
-	    'setconf: aurbuild -R'
 	    'vifm: better interaction with source files')
 
 pkgver() {
