@@ -93,7 +93,7 @@ prepare() {
     read -r syncver < <(expac -1 -S '%v' "${name[@]}") || :
 
     if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
-        msg "$base: $syncver -> $ver-$rel"
+        msg "$base: ${syncver:-0} -> $ver-$rel"
         printf '%s\n' "$base"
     elif (($(vercmp "$ver-$rel" "$syncver") == -1)); then
 	warning "$base: $ver-$rel <- $syncver"
