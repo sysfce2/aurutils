@@ -74,6 +74,11 @@ prepare() {
 	makepkg --verifysource --nobuild >/dev/null
 	makepkg --printsrcinfo > .SRCINFO
     fi
+
+    # if ((rebuild)); then
+    # 	setconf PKGBUILD pkgrel+=0.1
+    # 	setconf .SRCINFO pkgrel+=0.1
+    # fi
     
     while read -r key _ val; do
 	case "$key" in
@@ -115,13 +120,13 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cnRt OPT; do
+while getopts :cfnt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
+	f|+f) aurbuild_args+=(-f) ;;
 	n|+n) noprepare=1         ;;
-	R|+R) aurbuild_args+=(-R) ;;
         t|+t) download=snapshot   ;;
-        *)    plain "usage: $argv0 [+-cnRt} [--] ARGS..."
+        *)    plain "usage: $argv0 [+-cfnt} [--] ARGS..."
               exit 1 ;;
     esac
 done
