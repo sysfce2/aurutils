@@ -114,14 +114,14 @@ This is straightforward if the built packages are still available, for example i
 
 ```
  $ cd /home/packages
- $ repose -fv _custom.db_
+ $ repose -fv custom.db
  $ sudo pacman -Syu
 ```
 
 To reverse this operation, repeat the procedure with `--drop`:
 
 ```
- $ repose -dfv _custom.db_
+ $ repose -dfv custom.db
 ```
 
 Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
@@ -142,5 +142,5 @@ To keep the repository updated when building with other AUR helpers, set PKGDEST
 
 ```
  $ sudo vim /etc/makepkg.conf
- $ alias custom='repose -vf custom.db -p _/home/packages_ -r _/home/packages_'
+ $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
 ```
