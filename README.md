@@ -12,11 +12,11 @@ The QUEUE file must include names of directories containing a PKGBUILD file. The
 
 ```aurchain pkgname ...```
 
-_pkgname_ must be the name of an AUR package. Dependencies are retrieved recursively, topologically sorted, and printed to stdout.
+_pkgname_ must be the name of an AUR package. Dependencies are retrieved recursively, sorted topologically, and printed to stdout.
 
 ### Examples
 
-Run actions on AUR targets in topological order:
+Run actions on AUR targets in total order:
 
 ```
  $ while read -r pkg; do ... done < <(aurchain _foobar_)
@@ -62,7 +62,7 @@ Search for perl modules that are both in the AUR and official repositories:
 
 ## aursync
 
-Wrapper for aurchain and aurbuild. Build files are:
+Wrapper for aurchain, aurbuild and repofind. Build files are:
 
 + downloaded with `git` (`-t`: `.tar.gz` snapshots)
 + inspected with PAGER or, when installed, `vifm`
@@ -97,3 +97,7 @@ Rebuild all packages in the _custom_ repository:
 ```
  $ aursync -nf $(pacman -Slq custom)
 ```
+
+## repofind
+
+Print (`-i`) or select (`-s`) `file://` repositories. `-u` checks packages for updates in the AUR (implies `-s`).
