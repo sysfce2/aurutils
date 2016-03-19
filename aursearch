@@ -9,6 +9,12 @@ tmp=$(mktemp -d) || exit
 
 readonly aurweb cache rpc tmp
 
+fetch() {
+    msg "Retrieving package list"
+    curl -sS "$aurweb"/packages.gz -o packages.gz
+    zgrep -ve '^#' packages.gz > packages
+}
+
 match() {
     if ((!$#)); then
 	error "No search pattern"
@@ -16,17 +22,6 @@ match() {
     else
 	grep -P -- "$1" packages
     fi
-}
-
-brief() {
-    while {
-        read -r Name
-        read -r Version
-        read -r NumVotes
-        read -r Description
-    }; do
-        printf 'aur/%s %s (%s)\n    %s\n' "$Name" "$Version" "$NumVotes" "$Description"
-    done < <(jshon -C -a -e results -a -e Name -u -p -e Version -u -p -e NumVotes -u -p -e Description -u)
 }
 
 split() {
@@ -47,10 +42,15 @@ getjson() {
     awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
 }
 
-fetch() {
-    msg "Retrieving package list"
-    curl -sS "$aurweb"/packages.gz -o packages.gz
-    zgrep -ve '^#' packages.gz > packages
+brief() {
+    while {
+        read -r Name
+        read -r Version
+        read -r NumVotes
+        read -r Description
+    }; do
+        printf 'aur/%s %s (%s)\n    %s\n' "$Name" "$Version" "$NumVotes" "$Description"
+    done < <(jshon -C -a -e results -a -e Name -u -p -e Version -u -p -e NumVotes -u -p -e Description -u)
 }
 
 trap 'rm -rf "$tmp"' EXIT
