@@ -129,4 +129,4 @@ To check for AUR updates, use `repofind -u` or pass the repository name to a com
 To keep the repository updated when building with other AUR helpers, set PKGDEST and create a repose alias:
 
  $ sudo vim /etc/makepkg.conf
- $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
+ $ alias custom='repose -vf custom.db -p _/home/packages_ -r _/home/packages_'
