@@ -39,7 +39,7 @@ while getopts :cd:f:p:r:R OPT; do
 	d|+d) database="$OPTARG" ;;
 	p|+p) pool="$OPTARG" 	 ;;
 	r|+r) root="$OPTARG" 	 ;;
-	R|+R) rebuild=1          ;;
+	f|+f) makepkg_args+=(-f) ;;
 	*) plain usage: "$argv0 [+-cd ARG] [+-f ARG] [+-p ARG] [+-r ARG] [+-R} [--] ARGS..."
 	   exit 1 ;;
     esac
@@ -62,10 +62,6 @@ exec 3< "$1"
 
 while read -r -u 3 p; do
     if cd "$pwd/$p"; then
-	if ((rebuild)); then
-	    setconf PKGBUILD pkgrel+=0.1
-	    #setconf .SRCINFO pkgrel+=0.1
-	fi
 	"${build:-build_local}"
     fi
 done
