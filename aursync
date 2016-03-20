@@ -85,7 +85,7 @@ prepare() {
 	    pkgbase) base="$val"    ;;
 	    pkgname) name+=("$val") ;;
 	    pkgver)  ver="$val"     ;;
-	    pkgrel)  rel="$rel"     ;;
+	    pkgrel)  rel="$val"     ;;
 	esac
     done < .SRCINFO
 
