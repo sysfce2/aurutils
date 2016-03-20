@@ -68,7 +68,9 @@ prepare_vcs() {
 	proto=${proto/[+:]*}
 
 	case "$proto" in
-	    bzr|git|hg|svn) vcs[$proto]=1 ;;
+	    bzr|git) vcs[$proto]=1 ;;
+	    hg)  vcs[mercurial]=1  ;;
+	    svn) vcs[subversion]=1 ;;
 	esac
     done < <(awk '/source/ {print $3}' .SRCINFO)
 
