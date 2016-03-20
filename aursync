@@ -27,9 +27,9 @@ inspect() {
 clone() {
     while read -r base; do
         ( if cd "$base" 2>/dev/null; then
-              git pull
+              git pull -v
           else
-              git clone "$aurweb/$base".git
+              git clone "$aurweb/$base".git -v 
           fi
 	)
     done
@@ -38,7 +38,7 @@ clone() {
 snapshot() {
     awk -v uri=$tarpath '{
         gsub("+","%2b")
-	gsub("@","%40")
+        gsub("@","%40")
         printf "%s/%s.tar.gz\n", uri, $1
     }' | aria2c -d "$tmp" -i -
 
@@ -49,73 +49,35 @@ snapshot() {
     done
 }
 
-prepare_vcs() {
-    declare source proto v
-    declare -A vcs
-
-    while read -r source; do
-	proto=$(get_protocol "$source")
-	proto=${proto/[+:]*}
-
-	case "$proto" in
-	    bzr) vcs[bzr]=1	   ;;
-	    git) vcs[git]=1 	   ;;
-	    hg)  vcs[mercurial]=1  ;;
-	    svn) vcs[subversion]=1 ;;
-	esac
-    done < <(awk '/source/ {print $3}' .SRCINFO)
-
-    if [[ ${vcs[@]} ]]; then
-	for v in "${!vcs[@]}"; do
-	    pacman -T "$v" || sudo pacman -S --asdeps --noconfirm "$v"
-	done
-	
-	makepkg -do --noprepare >/dev/null
-	makepkg --printsrcinfo > .SRCINFO
-    fi
+findsrc() {
+    xargs -i find {} -maxdepth 1 -type f -name .SRCINFO -print0
 }
 
+genver() {
+    xargs -0i awk -F'[= ]' '
+        /^\tpkgver/ {ver = $4;}
+        /^\tpkgrel/ {rel = $4;}
+        /^pkgname/  {printf "%s=%s-%s\n", $4, ver, rel;}
+    ' {}
+}
+
+# Take package names from stdin, build arguments after "pkgname=pkgver-pkgrel",
+# relay them to pacsift, then filter for pkgbase (or pkgname, if unavailable).
 prepare() {
-    declare key val base name ver rel syncver srcver result
-    
-    while read -r key _ val; do
-	case "$key" in
-	    pkgbase) base="$val"    ;;
-	    pkgname) name+=("$val") ;;
-	    pkgver)  ver="$val"     ;;
-	    pkgrel)  rel="$val"     ;;
-	esac
-    done < .SRCINFO
-    
-    # Read the first match (split packages are built together)
-    read -r syncver < <(expac -1 -S '%v' "${name[@]}") || :
+    while read -r pkg; do
+        siftargs+=(--satisfies "$pkg")
+    done
 
-    srcver=$ver-$rel
-    result=$(vercmp "$srcver" "${syncver:-null}")
-
-    case "$result" in
-	1)  msg2 "$base: ${syncver:-null} -> $srcver"
-            printf '%s\n' "$base"
-	    ;;
-	0)  msg2 "$base is up-to-date"
-	    ;;
-	-1) warning "$base: $srcver <- $syncver"
-	    ;;
-    esac
+    pacsift --sync --exact "${siftargs[@]}" <&- | pacinfo | awk '
+       /^Name:/ {n = $2}
+       /^Base:/ {if($2 == "(null)") print n; else print $2 | "sort -u";}
+    '
 }
 
-prepare_all() {
-    if ! ((noprepare)); then
-	while read -r pkg; do
-	    ( cd "$pkg"
-	      [[ -r .SRCINFO ]]
-	      prepare_vcs
-	      prepare
-	    )
-	done
-    else
-	tee
-    fi
+notify() {
+    while read -r line; do
+	msg2 "$line is up-to-date"
+    done
 }
 
 trap 'rm -rf "$tmp"' EXIT
@@ -142,13 +104,22 @@ OPTIND=1
 mkdir -p "$AURDEST" -m 700
 cd "$AURDEST"
 
-aurchain "$@" | tee "$tmp"/q | "${download:-clone}"
+# The queue is saved to a temporary copy for later processing.
+aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"
 
-((insecure)) || inspect < "$tmp"/q
- 
-if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
-    read -r repo pool < <(repofind -s)
-    
-    aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
-    aurbuild "${aurbuild_args[@]}" "$tmp"/q_new
+if ! ((insecure})); then
+    inspect < "$tmp"/queue
 fi
+
+if ! ((noprepare)); then
+    findsrc < "$tmp"/queue | genver | prepare | tee "$tmp"/up | notify
+    
+    grep -Fvxf "$tmp"/up "$tmp"/queue > "$tmp"/build
+else
+    cp "$tmp"/queue "$tmp"/queue.new
+fi
+
+read -r repo pool < <(repofind -s)
+
+aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
+aurbuild "${aurbuild_args[@]}" "$tmp"/queue.new
