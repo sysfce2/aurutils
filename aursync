@@ -68,7 +68,8 @@ prepare_vcs() {
 	proto=${proto/[+:]*}
 
 	case "$proto" in
-	    bzr|git) vcs[$proto]=1 ;;
+	    bzr) vcs[bzr]=1	   ;;
+	    git) vcs[git]=1 	   ;;
 	    hg)  vcs[mercurial]=1  ;;
 	    svn) vcs[subversion]=1 ;;
 	esac
