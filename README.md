@@ -78,7 +78,7 @@ Search for perl modules that are both in the AUR and official repositories:
 Wrapper for aurchain, aurbuild and repofind. Build files are:
 
 + downloaded with `git` (`-t`: `.tar.gz` snapshots)
-+ inspected with PAGER or, when installed, `vifm`
++ inspected with PAGER or, when installed, `vifm` (`-k`: disable)
 + updated in case of VCS packages (`-n`: disable)
 + marked for building if newer (`-n`: disable)
 
