@@ -40,7 +40,6 @@ fi
 
 [[ -t 2 ]] && colorize
 
-msg "Generating dependencies..."
 if findsrc "$@" | tee "$tmp"/z | gendeps | tsort | tac > "$tmp"/q; then
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
