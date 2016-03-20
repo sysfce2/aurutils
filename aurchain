@@ -97,6 +97,7 @@ fi
 
 cd "$tmp" || exit
 
+msg "Generating dependencies"
 chain "$@"
 
 if curl_safe "$(sort -u < copy | url)" > raw_n; then
