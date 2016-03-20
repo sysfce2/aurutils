@@ -70,7 +70,7 @@ prepare_vcs() {
 	    pacman -T "$v" || sudo pacman -S --asdeps --noconfirm "$v"
 	done
 	
-	makepkg --verifysource >/dev/null
+	makepkg --verifysource --nobuild >/dev/null
 	makepkg --printsrcinfo > .SRCINFO
     fi
 }
@@ -108,6 +108,7 @@ prepare_all() {
     if ! ((noprepare)); then
 	while read -r pkg; do
 	    ( cd "$pkg"
+	      [[ -r .SRCINFO ]]
 	      prepare_vcs
 	      prepare
 	    )
