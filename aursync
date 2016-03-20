@@ -21,9 +21,7 @@ viewer() {
 }
 
 inspect() {
-    if confirm 'View build files?'; then
-        xargs -i find {} -maxdepth 1 | viewer
-    fi
+    xargs -i find {} -maxdepth 1 | viewer
 }
 
 clone() {
@@ -144,7 +142,7 @@ cd "$AURDEST"
 
 aurchain "$@" | tee "$tmp"/q | "${download:-clone}"
 
-((noedit)) || inspect "$tmp"/q
+((noedit)) || inspect < "$tmp"/q
  
 if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
     read -r repo pool < <(repofind -s)
