@@ -97,10 +97,8 @@ fi
 
 cd "$tmp" || exit
 
-msg 'Querying AUR RPC...'
 chain "$@"
 
-msg 'Generating dependencies...'
 if curl_safe "$(sort -u < copy | url)" > raw_n; then
     request raw_n
 fi
