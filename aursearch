@@ -52,7 +52,6 @@ split() {
 }
 
 getjson() {
-    msg 'Sending request'
     aria2c -s 16 -x 16 -j 32 -q -d "$tmp" -i -
     # Merge to a single JSON structure.
     awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
