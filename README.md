@@ -93,13 +93,13 @@ Build plasma-desktop-git and its dependencies (add `-c` to use an nspawn contain
 Query the AUR for updates, and build the results:
 
 ```
- $ aursync $(repofind -u | awk '{print $1}')
+ $ aursync -n $(repofind -u | awk '{print $1}')
 ```
 
 Rebuild all packages in the _custom_ repository:
 
 ```
- $ aursync -nf $(pacman -Slq custom)
+ $ aursync -fn $(pacman -Slq custom)
 ```
 
 ## repofind
