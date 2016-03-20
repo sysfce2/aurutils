@@ -70,7 +70,7 @@ prepare_vcs() {
 	    pacman -T "$v" || sudo pacman -S --asdeps --noconfirm "$v"
 	done
 	
-	makepkg --verifysource --nobuild >/dev/null
+	makepkg -do --noprepare >/dev/null
 	makepkg --printsrcinfo > .SRCINFO
     fi
 }
@@ -98,9 +98,9 @@ prepare() {
             printf '%s\n' "$base"
 	    ;;
 	0)  msg2 "$base is up-to-date"
-	    ;;	
+	    ;;
 	-1) warning "$base: $srcver <- $syncver"
-	    ;; 
+	    ;;
     esac
 }
 
