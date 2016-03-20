@@ -86,23 +86,28 @@ prepare_vcs() {
 }
 
 prepare() {
-    declare key val base name ver rel syncver
+    declare key val name syncver srcver
+    declare -A pkg
     
     while read -r key _ val; do
-	[[ $key == pkgbase ]] && base=$val
-	[[ $key == pkgname ]] && name+=("$val")
-	[[ $key == pkgver  ]] && ver=$val
-	[[ $key == pkgrel  ]] && rel=$val
+	case "$key" in
+	    pkgbase|pkgver|pkgrel)
+		pkg[$key]=$val ;;
+	    pkgname)
+		name+=("$val") ;;
+	esac
     done < .SRCINFO
 
     # Read the first match (split packages are built together)
     read -r syncver < <(expac -1 -S '%v' "${name[@]}") || :
 
-    if [[ ! $syncver ]] || (($(vercmp "$ver-$rel" "$syncver") == 1)); then
-        msg2 "$base: ${syncver:-0} -> $ver-$rel"
+    srcver=${pkg[pkgver]}-${pkg[pkgrel]}
+    
+    if [[ ! $syncver ]] || (($(vercmp "$srcver" "$syncver") == 1)); then
+        msg2 "$base: ${syncver:-0} -> $srcver"
         printf '%s\n' "$base"
-    elif (($(vercmp "$ver-$rel" "$syncver") == -1)); then
-	warning "$base: $ver-$rel <- $syncver"
+    elif (($(vercmp "$srcver" "$syncver") == -1)); then
+	warning "$base: $srcver <- $syncver"
     else
         msg2 "$base is up-to-date"
     fi
