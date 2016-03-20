@@ -138,6 +138,7 @@ shift $((OPTIND - 1))
 OPTIND=1
 
 # Operations are done in the cache directory, unless said otherwise.
+mkdir -p "$AURDEST" -m 700
 cd "$AURDEST"
 
 if aurchain "$@" | tee "$tmp"/q | "${download:-clone}"; then
