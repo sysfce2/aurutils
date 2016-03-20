@@ -114,7 +114,7 @@ fi
 if ! ((noprepare)); then
     findsrc < "$tmp"/queue | genver | prepare | tee "$tmp"/up | notify
     
-    grep -Fvxf "$tmp"/up "$tmp"/queue > "$tmp"/build
+    grep -Fvxf "$tmp"/up "$tmp"/queue > "$tmp"/queue.new
 else
     cp "$tmp"/queue "$tmp"/queue.new
 fi
