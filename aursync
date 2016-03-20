@@ -12,15 +12,6 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly argv0 aurweb rpc tarpath tmp XDG_CACHE_HOME AURDEST
 
-confirm() {
-    declare -l reply
-    declare message
-    
-    printf -v message -- "$BOLD* $1 [Y/n]$ALL_OFF " "$@"
-    read -rp "$message" reply    
-    [[ $reply = y || ! $reply ]]
-}
-
 viewer() {
     if hash 2>/dev/null vifm; then
 	vifm - '+view!'
@@ -31,7 +22,7 @@ viewer() {
 
 inspect() {
     if confirm 'View build files?'; then
-        xargs -a "$1" -i find {} -maxdepth 1 | viewer
+        xargs -i find {} -maxdepth 1 | viewer
     fi
 }
 
@@ -48,9 +39,10 @@ clone() {
 
 snapshot() {
     awk -v uri=$tarpath '{
-        gsub("+","%2b"); gsub("@","%40");
+        gsub("+","%2b")
+	gsub("@","%40")
         printf "%s/%s.tar.gz\n", uri, $1
-    }' | aria2c -s 16 -x 16 -j 32 -d "$tmp" -i -
+    }' | aria2c -d "$tmp" -i -
 
     mkdir -p snapshot
 
@@ -86,27 +78,27 @@ prepare_vcs() {
 }
 
 prepare() {
-    declare key val name syncver srcver
-    declare -A pkg
+    declare key val base name ver rel syncver srcver result
     
     while read -r key _ val; do
 	case "$key" in
-	    pkgbase|pkgver|pkgrel)
-		pkg[$key]=$val ;;
-	    pkgname)
-		name+=("$val") ;;
+	    pkgbase) base="$val"    ;;
+	    pkgname) name+=("$val") ;;
+	    pkgver)  ver="$val"     ;;
+	    pkgrel)  rel="$rel"     ;;
 	esac
     done < .SRCINFO
 
     # Read the first match (split packages are built together)
     read -r syncver < <(expac -1 -S '%v' "${name[@]}") || :
-
-    srcver=${pkg[pkgver]}-${pkg[pkgrel]}
     
-    if [[ ! $syncver ]] || (($(vercmp "$srcver" "$syncver") == 1)); then
+    srcver="$ver-$rel"
+    result=$(vercmp "$srcver" "$syncver")
+
+    if [[ ! $syncver ]] || ((result == 1)); then
         msg2 "$base: ${syncver:-0} -> $srcver"
         printf '%s\n' "$base"
-    elif (($(vercmp "$srcver" "$syncver") == -1)); then
+    elif ((result == -1)); then
 	warning "$base: $srcver <- $syncver"
     else
         msg2 "$base is up-to-date"
@@ -114,15 +106,15 @@ prepare() {
 }
 
 prepare_all() {
-    if ((noprepare)); then
-        tee
-    else
+    if ! ((noprepare)); then
 	while read -r pkg; do
 	    ( cd "$pkg"
 	      prepare_vcs
 	      prepare
 	    )
 	done
+    else
+	tee
     fi
 }
 
@@ -136,6 +128,7 @@ while getopts :cfnt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
 	f|+f) aurbuild_args+=(-f) ;;
+	k|+k) noedit=1            ;;
 	n|+n) noprepare=1         ;;
         t|+t) download=snapshot   ;;
         *)    plain "usage: $argv0 [+-cfnt} [--] ARGS..."
@@ -149,13 +142,13 @@ OPTIND=1
 mkdir -p "$AURDEST" -m 700
 cd "$AURDEST"
 
-if aurchain "$@" | tee "$tmp"/q | "${download:-clone}"; then
-    inspect "$tmp"/q
+aurchain "$@" | tee "$tmp"/q | "${download:-clone}"
+
+((noedit)) || inspect "$tmp"/q
  
-    if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
-        if read -r repo pool < <(repofind -s); then
-            aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
-            aurbuild "${aurbuild_args[@]}" "$tmp"/q_new
-        fi
-    fi
+if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
+    read -r repo pool < <(repofind -s)
+    
+    aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
+    aurbuild "${aurbuild_args[@]}" "$tmp"/q_new
 fi
