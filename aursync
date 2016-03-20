@@ -126,7 +126,7 @@ while getopts :cfnt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
 	f|+f) aurbuild_args+=(-f) ;;
-	k|+k) noedit=1            ;;
+	k|+k) insecure=1          ;;
 	n|+n) noprepare=1         ;;
         t|+t) download=snapshot   ;;
         *)    plain "usage: $argv0 [+-cfnt} [--] ARGS..."
@@ -142,7 +142,7 @@ cd "$AURDEST"
 
 aurchain "$@" | tee "$tmp"/q | "${download:-clone}"
 
-((noedit)) || inspect < "$tmp"/q
+((insecure)) || inspect < "$tmp"/q
  
 if grep -Fxf <(prepare_all < "$tmp"/q) "$tmp"/q > "$tmp"/q_new; then
     read -r repo pool < <(repofind -s)
