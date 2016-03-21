@@ -16,6 +16,7 @@ To get started, create a local repository:
  $ repo-add /home/custompkgs/custom.db.tar
  $ sudo pacman -Syu
 ```
+Note: Avoid naming the repository `local`, as this name is reserved by pacman. 
 
 See also "Migrating foreign packages".
 
