@@ -32,7 +32,7 @@ genver() {
     xargs -0i awk -F'[= ]' '
         /^\tpkgver/ {ver = $4;}
         /^\tpkgrel/ {rel = $4;}
-        /^pkgname/  {printf "%s=%s-%s\n", $4, ver, rel;}
+        /^pkgname/  {printf "%s>=%s-%s\n", $4, ver, rel;}
     ' {}
 }
 
