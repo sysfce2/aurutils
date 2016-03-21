@@ -39,6 +39,7 @@ genver() {
 clone() {
     while read -r base; do
         ( if cd "$base" 2>/dev/null; then
+	      git stash
               git pull -v
           else
               git clone "$aurweb/$base".git -v 
