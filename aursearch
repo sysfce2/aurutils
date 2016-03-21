@@ -35,7 +35,10 @@ match() {
 	error "No search pattern"
 	exit 1
     else
-	grep -P -- "$1" packages
+	if ! grep -P -- "$1" packages; then
+            error "No matches found"
+            exit 2
+        fi
     fi
 }
 
