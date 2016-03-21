@@ -86,6 +86,11 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
+if ((!$#)); then
+    plain "usage: $argv0 [+-cfnt} [--] ARGS..."
+    exit 1
+fi
+
 while getopts :cfnt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
