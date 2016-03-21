@@ -5,7 +5,7 @@ set -e
 readonly argv0=aurbuild
 readonly pwd=$PWD
 
-makepkg_args=(-Lscr --holdver)
+makepkg_args=(-Lscr)
 
 build_local() {
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
@@ -33,7 +33,7 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cd:f:p:r: OPT; do
+while getopts :cd:fp:r: OPT; do
     case $OPT in
 	c|+c) build=build_chroot ;;
 	d|+d) database="$OPTARG" ;;
