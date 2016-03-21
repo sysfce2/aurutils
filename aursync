@@ -24,6 +24,18 @@ inspect() {
     xargs -i find {} -maxdepth 1 | viewer
 }
 
+findsrc() {
+    xargs -i find {} -maxdepth 1 -type f -name .SRCINFO -print0
+}
+
+genver() {
+    xargs -0i awk -F'[= ]' '
+        /^\tpkgver/ {ver = $4;}
+        /^\tpkgrel/ {rel = $4;}
+        /^pkgname/  {printf "%s=%s-%s\n", $4, ver, rel;}
+    ' {}
+}
+
 clone() {
     while read -r base; do
         ( if cd "$base" 2>/dev/null; then
@@ -47,18 +59,6 @@ snapshot() {
     for ar in "$tmp"/*.tar.gz; do
         tar xvf "$ar" -C snapshot
     done
-}
-
-findsrc() {
-    xargs -i find {} -maxdepth 1 -type f -name .SRCINFO -print0
-}
-
-genver() {
-    xargs -0i awk -F'[= ]' '
-        /^\tpkgver/ {ver = $4;}
-        /^\tpkgrel/ {rel = $4;}
-        /^pkgname/  {printf "%s=%s-%s\n", $4, ver, rel;}
-    ' {}
 }
 
 # Take package names from stdin, build arguments after "pkgname=pkgver-pkgrel",
