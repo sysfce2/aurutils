@@ -107,7 +107,7 @@ cd "$AURDEST"
 # The queue is saved to a temporary copy for later processing.
 aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"
 
-if ! ((insecure})); then
+if ! ((insecure)); then
     inspect < "$tmp"/queue
 fi
 
