@@ -58,7 +58,7 @@ quickcheck() {
     if read -r repo _ < <(reposelect); then
 	while read -r pkg ver; do
 	    set_l[$pkg]=$ver
-	done < <(pacsift --repo="$repo" "${args[@]}" | ifne expac -S '%n %v' -)
+	done < <(pacsift --exact --repo="$repo" "${args[@]}" | ifne expac -S '%n %v' -)
     fi
 
     if [[ ${set_l[@]} ]]; then
