@@ -57,7 +57,7 @@ url() {
     printf '%s' "$str"
 }
 
-# Create a copy of the original arguments, and build an URL for
+# Create a copy of the original arguments, and build a matching URL for
 # AurJson. If there is at least one result, parse the request data for
 # dependencies, append them to the original copy, and build a new
 # URL. This continues until a certain maximum is exceeded, or no AUR
