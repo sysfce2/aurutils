@@ -12,11 +12,13 @@ To get started, create a local repository:
 
 ```
  $ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
- $ sudo install -d /home/custompkgs -o $USER
- $ repo-add /home/custompkgs/custom.db.tar
+ $ sudo install -d /home/packages -o $USER -m 700
+ $ repo-add /home/packages/custom.db.tar
  $ sudo pacman -Syu
 ```
 Note: Avoid naming the repository `local`, as this name is reserved by pacman. 
+
+Tip: Consider using separate repositories for different purposes, such as version control packages.
 
 See also "Migrating foreign packages".
 
@@ -31,7 +33,7 @@ _pkgname_ must be the name of an AUR package. Dependencies are retrieved recursi
 Run actions on AUR targets in total order:
 
 ```
- $ while read -r pkg; do ... done < <(aurchain _foobar_)
+ $ while read -r pkg; do ... done < <(aurchain foobar)
 ```
 
 ## aurqueue
@@ -48,7 +50,7 @@ Build all packages in the _pkgbuilds_ github repository:
  $ git clone https://www.github.com/Earnestly/pkgbuilds
  $ cd pkgbuilds
  $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
- $ aurbuild -d custom.db -r /home/custompkgs -p /home/custompkgs <(aurqueue *)
+ $ aurbuild -d custom.db -r /home/packages -p /home/packages <(aurqueue *)
 ```
 
 ## aursearch
@@ -96,10 +98,10 @@ Query the AUR for updates, and build the results:
  $ aursync -n $(repofind -u | awk '{print $1}')
 ```
 
-Rebuild all packages in the _custom_ repository:
+Rebuild all packages in the _custom-vcs_ repository:
 
 ```
- $ aursync -fn $(pacman -Slq custom)
+ $ aursync -fn $(pacman -Slq custom-vcs)
 ```
 
 ## repofind
