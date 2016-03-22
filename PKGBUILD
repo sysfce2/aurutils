@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=r395.b8ad483
+pkgver=r404.859ec6c
 pkgrel=1
 pkgdesc='AUR helpers tools'
 arch=('any')
@@ -7,7 +7,7 @@ url=https://github.com/AladW/aurutils
 license=('ISC')
 source=("git+$url")
 md5sums=('SKIP')
-depends=('pacman>=5.0' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2' 'moreutils')
+depends=('pacman>=5.0' 'git' 'repose-git' 'jshon' 'pacutils-git' 'expac' 'aria2')
 makedepends=('git')
 optdepends=('devtools: aurbuild -c'
 	    'vifm: better interaction with source files')
