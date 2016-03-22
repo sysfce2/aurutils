@@ -17,10 +17,10 @@ To get started, create a local repository:
  $ sudo pacman -Syu
 ```
 | Note: | Avoid naming the repository `local`, as this name is reserved by pacman. |
-| --- |: --- |
+| --- | --- |
 
 | Tip: | Consider using separate repositories for different purposes, such as version control packages. |
-| --- |: --- |
+| --- | --- |
 
 See also "Migrating foreign packages".
 
