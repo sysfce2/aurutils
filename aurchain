@@ -39,7 +39,7 @@ request() {
     pair "$(count "$1")" "$1" | tsort | tac > list
 
     while read -r name base; do	
-	if [[ $name != $base ]]; then
+	if [[ $name != "$base" ]]; then
 	    sed -i "s|^$name$|$base|g" list
 	fi
     done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)

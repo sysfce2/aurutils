@@ -43,7 +43,7 @@ match() {
 }
 
 split() {
-    awk -v rpc=$rpc '{
+    awk -v rpc="$rpc" '{
         # URL encode @ and +
         gsub("+","%2b"); gsub("@","%40");
 

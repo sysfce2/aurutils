@@ -46,7 +46,7 @@ if findsrc "$@" | tee "$tmp"/z | gendeps | tsort | tac > "$tmp"/q; then
     # named after pkgbase, differences must be replaced in the initial
     # graph before matching the original arguments.
     while read -r name base; do
-        if [[ $name != $base ]]; then
+        if [[ $name != "$base" ]]; then
             sed -i "s|^$name$|$base|g" "$tmp"/q
 	fi
     done < <(allnames < "$tmp"/z)
