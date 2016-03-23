@@ -5,7 +5,7 @@ Collection of helper tools for use with the Arch User Repository.
 ** aurbuild
 
 #+BEGIN_SRC 
- aurbuild [options] [file]
+aurbuild [options] [file]
 #+END_SRC
 
 The input file must include names of directories containing a PKGBUILD file. The ~-d~ (database), ~-r~ (root) and ~-p~ (pool) arguments are relayed to repose. ~-c~ builds a package in an nspawn-container (requires /devtools/).
@@ -13,10 +13,10 @@ The input file must include names of directories containing a PKGBUILD file. The
 To get started, create a local repository:
 
 #+BEGIN_SRC 
- $ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
- $ sudo install -d /home/packages -o $USER -m 700
- $ repo-add /home/packages/custom.db.tar
- $ sudo pacman -Syu
+$ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
+$ sudo install -d /home/packages -o $USER -m 700
+$ repo-add /home/packages/custom.db.tar
+$ sudo pacman -Syu
 #+END_SRC
 
 | Note: | Avoid naming the repository `local`, as this name is reserved by pacman. |
@@ -38,7 +38,7 @@ aurchain pkgname ...
 Run actions on AUR targets in total order:
 
 #+BEGIN_SRC 
- $ while read -r pkg; do ... done < <(aurchain foobar)
+$ while read -r pkg; do ... done < <(aurchain foobar)
 #+END_SRC
 
 ** aurqueue
@@ -54,10 +54,10 @@ aurqueue pkgbase depends ...
 Build all packages in the /pkgbuilds/ github repository:
 
 #+BEGIN_SRC 
- $ git clone https://www.github.com/Earnestly/pkgbuilds
- $ cd pkgbuilds
- $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
- $ aurbuild -d custom.db -r /home/packages -p /home/packages <(aurqueue *)
+$ git clone https://www.github.com/Earnestly/pkgbuilds
+$ cd pkgbuilds
+$ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
+$ aurbuild -d custom.db -r /home/packages -p /home/packages <(aurqueue *)
 #+END_SRC
 
 ** aursearch
@@ -81,8 +81,8 @@ Filter input for packages in the official Arch Linux repositories. Virtual packa
 Search for perl modules that are both in the AUR and official repositories:
 
 #+BEGIN_SRC 
- $ aursearch -p '^perl-.+' > pkgs
- $ grep -Fxvf <(aursift < pkgs) pkgs
+$ aursearch -p '^perl-.+' > pkgs
+$ grep -Fxvf <(aursift < pkgs) pkgs
 #+END_SRC
 
 ** aursync
@@ -93,28 +93,28 @@ aursync [options] package
 
 Wrapper for aurchain, aurbuild and repofind. Build files are:
 
-- downloaded with `git` (`-t`: `.tar.gz` snapshots)
-- inspected with PAGER or, when installed, `vifm` (`-k`: disable)
-- marked for building if newer (`-n`: disable)
+- downloaded with ~git~ (~-t~: ~.tar.gz~ snapshots)
+- inspected with PAGER or, when installed, ~vifm~ (~-k~: disable)
+- marked for building if newer (~-n~: disable)
 
 *** Examples
 
 Build plasma-desktop-git and its dependencies (add ~-c~ to use an nspawn container):
 
 #+BEGIN_SRC 
- $ aursync plasma-desktop-git
+$ aursync plasma-desktop-git
 #+END_SRC
 
 Query the AUR for updates, and build the results:
 
 #+BEGIN_SRC 
- $ aursync -n $(repofind -u | awk '{print $1}')
+$ aursync -n $(repofind -u | awk '{print $1}')
 #+END_SRC
 
 Rebuild all packages in the /custom-vcs/ repository:
 
 #+BEGIN_SRC 
- $ aursync -fn $(pacman -Slq custom-vcs)
+$ aursync -fn $(pacman -Slq custom-vcs)
 #+END_SRC
 
 ** repofind
@@ -130,27 +130,27 @@ Print (~-i~) or select (~-s~) ~file://~ repositories. ~-u~ checks packages for u
 This is straightforward if the built packages are still available, for example in ~/home/packages~:
 
 #+BEGIN_SRC 
- $ cd /home/packages
- $ repose -fv custom.db
- $ sudo pacman -Syu
+$ cd /home/packages
+$ repose -fv custom.db
+$ sudo pacman -Syu
 #+END_SRC
 
 To reverse this operation, repeat the procedure with ~--drop~:
 
 #+BEGIN_SRC 
- $ repose -dfv custom.db
+$ repose -dfv custom.db
 #+END_SRC
 
 Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
 
 #+BEGIN_SRC 
- $ pacman -Qqm | paccheck --md5sum --quiet
+$ pacman -Qqm | paccheck --md5sum --quiet
 #+END_SRC
 
 Recreate the packages, and save them to PKGDEST, or PWD if not set:
 
-#+BEGIN_SRC 
- $ for b in $(pacman -Qqm); do bacman "$b"; done
+#+BEGIN_SRC
+$ for b in $(pacman -Qqm); do bacman "$b"; done
 #+END_SRC
 
 To check for AUR updates, use ~repofind -u~ or pass the repository name to a compatible helper. For example: ~pacaur --ignorerepo=custom -Syu~, ~cower -u --ignorerepo=custom~.
@@ -158,6 +158,6 @@ To check for AUR updates, use ~repofind -u~ or pass the repository name to a com
 To keep the repository updated when building with other AUR helpers, set ~PKGDEST~ and create a repose alias:
 
 #+BEGIN_SRC
- $ sudo vim /etc/makepkg.conf
- $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
+$ sudo vim /etc/makepkg.conf
+$ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
 #+END_SRC
