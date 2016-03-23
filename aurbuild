@@ -19,8 +19,8 @@ build_chroot() {
     declare CHROOT=/var/lib/aurbuild
 
     if [[ ! -d $CHROOT/root ]]; then
-	sudo mkdir -p "$CHROOT"
-	sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel
+        sudo mkdir -p "$CHROOT"
+        sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel
     fi
 
     sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT" -- --skippgpcheck
@@ -35,13 +35,13 @@ source /usr/share/makepkg/util.sh
 
 while getopts :cd:fp:r: OPT; do
     case $OPT in
-	c|+c) build=build_chroot ;;
-	d|+d) database="$OPTARG" ;;
-	f|+f) makepkg_args+=(-f) ;;
-	p|+p) pool="$OPTARG" 	 ;;
-	r|+r) root="$OPTARG" 	 ;;
-	*) plain usage: "$argv0 [+-cd ARG] [+-f ARG] [+-p ARG] [+-r ARG} [--] ARGS..."
-	   exit 1 ;;
+        c|+c) build=build_chroot ;;
+        d|+d) database="$OPTARG" ;;
+        f|+f) makepkg_args+=(-f) ;;
+        p|+p) pool="$OPTARG"     ;;
+        r|+r) root="$OPTARG"     ;;
+        *) plain usage: "$argv0 [+-cd ARG] [+-f ARG] [+-p ARG] [+-r ARG} [--] ARGS..."
+           exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -62,7 +62,7 @@ exec 3< "$1"
 
 while read -r -u 3 p; do
     if cd "$pwd/$p"; then
-	"${build:-build_local}"
+        "${build:-build_local}"
     fi
 done
 

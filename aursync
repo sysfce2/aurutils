@@ -14,9 +14,9 @@ readonly argv0 aurweb rpc tarpath tmp XDG_CACHE_HOME AURDEST
 
 viewer() {
     if hash 2>/dev/null vifm; then
-	vifm - '+view!'
+        vifm - '+view!'
     else
-	command -- "${PAGER:-less}"
+        command -- "${PAGER:-less}"
     fi
 }
 
@@ -39,12 +39,12 @@ genver() {
 clone() {
     while read -r base; do
         ( if cd "$base" 2>/dev/null; then
-	      git stash
+              git stash
               git pull -v
           else
               git clone "$aurweb/$base".git
           fi
-	)
+        )
     done
 }
 
@@ -77,7 +77,7 @@ prepare() {
 
 notify() {
     while read -r line; do
-	plain "$line is up-to-date"
+        plain "$line is up-to-date"
     done
 }
 
@@ -95,9 +95,9 @@ fi
 while getopts :cfnt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
-	f|+f) aurbuild_args+=(-f) ;;
-	k|+k) insecure=1          ;;
-	n|+n) noprepare=1         ;;
+        f|+f) aurbuild_args+=(-f) ;;
+        k|+k) insecure=1          ;;
+        n|+n) noprepare=1         ;;
         t|+t) download=snapshot   ;;
         *)    plain "usage: $argv0 [+-cfnt} [--] ARGS..."
               exit 1 ;;

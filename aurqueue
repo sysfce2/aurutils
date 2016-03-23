@@ -16,9 +16,9 @@ findsrc() {
 # dependencies on stdout.
 gendeps() {
     xargs -0i awk -v FS='[<=>]' '
-    	  /pkgbase/			{base = $2; print $2, $2}
-    	  /^\t(make|check)?depends/	{print base, $2}
-	  /^$/                        	{nextfile}
+          /pkgbase/                     {base = $2; print $2, $2}
+          /^\t(make|check)?depends/     {print base, $2}
+          /^$/                          {nextfile}
     ' {}
 }
 
@@ -48,7 +48,7 @@ if findsrc "$@" | tee "$tmp"/z | gendeps | tsort | tac > "$tmp"/q; then
     while read -r name base; do
         if [[ $name != "$base" ]]; then
             sed -i "s|^$name$|$base|g" "$tmp"/q
-	fi
+        fi
     done < <(allnames < "$tmp"/z)
 
     # The base assumption is to have packages and their dependencies

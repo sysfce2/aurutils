@@ -5,7 +5,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # both provides and replaces fields.
 provides() {
     expac '%n %R %S' -S "$@" | awk '{
-	for(i = 2; i <= NF; ++i) { print $1, $i | "sort -u" }
+        for(i = 2; i <= NF; ++i) { print $1, $i | "sort -u" }
     }'
 }
 
@@ -16,21 +16,21 @@ sift() {
     declare all siftargs query repo n p r v
 
     while read -r p; do
-	pkgset["$p"]=1
-	all+=("$p")
+        pkgset["$p"]=1
+        all+=("$p")
     done
 
     if [[ ! ${pkgset[@]} ]]; then
-	error "No packages on standard input"
-	exit 1
+        error "No packages on standard input"
+        exit 1
     fi
 
     for p in "${!pkgset[@]}"; do
-	siftargs+=(--satisfies="$p")
+        siftargs+=(--satisfies="$p")
     done
 
     for r in testing core extra community community-testing multilib multilib-testing; do
-	siftargs+=(--repo="$r")
+        siftargs+=(--repo="$r")
     done
 
     # Close standard input for pacsift to allow --sync.
@@ -38,24 +38,24 @@ sift() {
     query=($(pacsift --sync --exact "${siftargs[@]}" <&-))
 
     if [[ ${query[@]} ]]; then
-	for p in "${query[@]#*/}"; do
+        for p in "${query[@]#*/}"; do
             if [[ ${pkgset[$p]} ]]; then
-		repo+=("$p")
+                repo+=("$p")
             else
-		n+=("$p")
+                n+=("$p")
             fi
-	done
+        done
     else
-	msg2 "No matches in the sync database"
+        msg2 "No matches in the sync database"
     fi
 
     if [[ ${n[@]} ]]; then
-	while read -r p v; do
-	    if [[ ${pkgset[$v]} ]]; then
-		warning "virtual dependency $v provided $p"
-		repo+=("$v")
-	    fi
-	done < <(provides "${n[@]}")
+        while read -r p v; do
+            if [[ ${pkgset[$v]} ]]; then
+                warning "virtual dependency $v provided $p"
+                repo+=("$v")
+            fi
+        done < <(provides "${n[@]}")
     fi
 
     # Print the relative complement between repo provided dependencies and all
