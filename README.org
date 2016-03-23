@@ -87,6 +87,48 @@ $ sudo vim /etc/makepkg.conf
 $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
 #+END_SRC
 
+* EXAMPLES
+Run actions on AUR targets in total order:
+
+#+BEGIN_SRC 
+$ while read -r pkg; do ... done < <(aurchain foobar)
+#+END_SRC
+
+Build all packages in the /pkgbuilds/ github repository:
+
+#+BEGIN_SRC 
+$ git clone https://www.github.com/Earnestly/pkgbuilds
+$ cd pkgbuilds
+$ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
+$ aurbuild -d custom.db -r /home/packages -p /home/packages <(aurqueue *)
+#+END_SRC
+
+Search for perl modules that are both in the AUR and official repositories:
+
+#+BEGIN_SRC 
+$ aursearch -p '^perl-.+' > pkgs
+$ grep -Fxvf <(aursift < pkgs) pkgs
+#+END_SRC
+
+Build plasma-desktop-git and its dependencies (add ~-c~ to use an nspawn container):
+
+#+BEGIN_SRC 
+$ aursync plasma-desktop-git
+#+END_SRC
+
+Query the AUR for updates, and build the results:
+
+#+BEGIN_SRC 
+$ aursync -n $(repofind -u | awk '{print $1}')
+#+END_SRC
+
+Rebuild all packages in the /custom-vcs/ repository:
+
+#+BEGIN_SRC 
+$ aursync -fn $(pacman -Slq custom-vcs)
+#+END_SRC
+
+
 * CAVEATS
 
 See https://www.github.com/AladW/aurutils/issues
