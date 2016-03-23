@@ -40,10 +40,7 @@ clone() {
     while read -r base; do
         ( if cd "$base" 2>/dev/null; then
               git stash
-              upstream=$(git ls-remote origin HEAD | awk '{print $1}')
-              if [[ $(git rev-parse HEAD) != "$upstream" ]]; then
-                  git pull
-              fi
+              git pull
           else
               git clone "$aurweb/$base".git
           fi
