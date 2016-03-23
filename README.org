@@ -23,7 +23,7 @@ To get started, create a local repository:
 
 | Tip: | Consider using separate repositories for different purposes, such as version control packages. |
 
-See also [[README.org#Migrating%20foreign%20packages%20(optional)][Migrating foreign packages]]
+See also [[README.org#migrating-foreign-packages-optional][Migrating foreign packages]]
 
 ** aurchain
 
