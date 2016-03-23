@@ -1,0 +1,18 @@
+#+STARTUP: indent
+* NAME
+
+aursearch - search aur packages
+
+* SYNOPSIS
+
+#+BEGIN_SRC 
+aursearch [options] pattern
+#+END_SRC
+
+* DESCRIPTION
+
+Search AUR packages from a PCRE pattern. Due to aurweb limitations, results are searched by name only.
+
+* OPTIONS
+
+TBD

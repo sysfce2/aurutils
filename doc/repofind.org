@@ -1,0 +1,12 @@
+#+STARTUP: indent
+* SYNOPSIS
+
+#+BEGIN_SRC 
+repofind [options]
+#+END_SRC
+
+* OPTIONS
+
+Print (~-i~) or select (~-s~) ~file://~ repositories.
+
+~-u~ checks packages for updates in the AUR (implies ~-s~).

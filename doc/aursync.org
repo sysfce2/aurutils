@@ -1,0 +1,41 @@
+#+STARTUP: indent
+* NAME
+
+aursync 
+
+* SYNOPSIS
+
+#+BEGIN_SRC 
+aursync [options] package
+#+END_SRC
+
+* DESCRIPTION
+
+Wrapper for aurchain, aurbuild and repofind. Build files are:
+
+- downloaded with ~git~ (~-t~: ~.tar.gz~ snapshots)
+- inspected with PAGER or, when installed, ~vifm~ (~-k~: disable)
+- marked for building if newer (~-n~: disable)
+
+* OPTIONS
+
+* ENVIRONMENT
+* EXAMPLES
+
+Build plasma-desktop-git and its dependencies (add ~-c~ to use an nspawn container):
+
+#+BEGIN_SRC 
+$ aursync plasma-desktop-git
+#+END_SRC
+
+Query the AUR for updates, and build the results:
+
+#+BEGIN_SRC 
+$ aursync -n $(repofind -u | awk '{print $1}')
+#+END_SRC
+
+Rebuild all packages in the /custom-vcs/ repository:
+
+#+BEGIN_SRC 
+$ aursync -fn $(pacman -Slq custom-vcs)
+#+END_SRC

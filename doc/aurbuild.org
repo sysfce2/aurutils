@@ -1,0 +1,73 @@
+#+STARTUP: indent
+* NAME
+
+aurbuild - build packages to a local repository
+
+* SYNOPSIS
+
+#+BEGIN_SRC 
+aurbuild [options] <file>
+#+END_SRC
+
+* DESCRIPTION
+
+The input file must include names of directories containing a PKGBUILD file.
+
+* CONFIGURATION
+
+** Creating a local repository
+
+#+BEGIN_SRC 
+$ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
+$ sudo install -d /home/packages -o $USER -m 700
+$ repo-add /home/packages/custom.db.tar
+$ sudo pacman -Syu
+#+END_SRC
+
+| Note: | Avoid naming the repository `local`, as this name is reserved by pacman. |
+
+| Tip: | Consider using separate repositories for different purposes, such as version control packages. |
+
+** Migrating foreign packages (optional)
+
+This is straightforward if the built packages are still available, for example in ~/home/packages~:
+
+#+BEGIN_SRC 
+$ cd /home/packages
+$ repose -fv custom.db
+$ sudo pacman -Syu
+#+END_SRC
+
+To reverse this operation, repeat the procedure with ~--drop~:
+
+#+BEGIN_SRC 
+$ repose -dfv custom.db
+#+END_SRC
+
+Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
+
+#+BEGIN_SRC 
+$ pacman -Qqm | paccheck --md5sum --quiet
+#+END_SRC
+
+Recreate the packages, and save them to PKGDEST, or PWD if not set:
+
+#+BEGIN_SRC
+$ for b in $(pacman -Qqm); do bacman "$b"; done
+#+END_SRC
+
+To check for AUR updates, use ~repofind -u~ or pass the repository name to a compatible helper. For example: ~pacaur --ignorerepo=custom -Syu~, ~cower -u --ignorerepo=custom~.
+
+To keep the repository updated when building with other AUR helpers, set ~PKGDEST~ and create a repose alias:
+
+#+BEGIN_SRC
+$ sudo vim /etc/makepkg.conf
+$ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
+#+END_SRC
+
+* OPTIONS
+
+The ~-d~ (database), ~-r~ (root) and ~-p~ (pool) arguments are relayed to repose.
+
+~-c~ builds a package in an nspawn-container (requires /devtools/).
+

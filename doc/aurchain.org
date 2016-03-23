@@ -1,0 +1,25 @@
+#+STARTUP: indent
+* NAME
+
+aurchain - solve and order dependencies using aurweb
+
+* SYNOPSIS
+
+#+BEGIN_SRC 
+aurchain pkgname ...
+#+END_SRC
+
+* DESCRIPTION
+
+/pkgname/ must be the name of an AUR package. 
+
+Dependencies are retrieved recursively, sorted topologically, and printed to stdout.
+
+* EXAMPLES
+
+Run actions on AUR targets in total order:
+
+#+BEGIN_SRC 
+$ while read -r pkg; do ... done < <(aurchain foobar)
+#+END_SRC
+

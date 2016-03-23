@@ -1,0 +1,25 @@
+* NAME
+
+aursift - filter packages in the Arch Linux repositories
+
+* SYNOPSIS
+
+#+BEGIN_SRC 
+<command> | aursift | ...
+#+END_SRC
+
+* DESCRIPTION
+
+Filter stdin for packages in the official Arch Linux repositories. 
+
+Virtual packages (provides/replaces) are solved.
+
+* EXAMPLES
+
+Search for perl modules that are both in the AUR and official repositories:
+
+#+BEGIN_SRC 
+$ aursearch -p '^perl-.+' > pkgs
+$ grep -Fxvf <(aursift < pkgs) pkgs
+#+END_SRC
+
