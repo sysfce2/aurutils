@@ -100,7 +100,8 @@ Build all packages in the /pkgbuilds/ github repository:
 $ git clone https://www.github.com/Earnestly/pkgbuilds
 $ cd pkgbuilds
 $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
-$ aurbuild -d custom.db -r /home/packages -p /home/packages <(aurqueue *)
+$ aurqueue * > queue # Remove unwanted targets
+$ aurbuild -d custom.db -r /home/packages -p /home/packages queue
 #+END_SRC
 
 Search for perl modules that are both in the AUR and official repositories:
@@ -110,10 +111,10 @@ $ aursearch -p '^perl-.+' > pkgs
 $ grep -Fxvf <(aursift < pkgs) pkgs
 #+END_SRC
 
-Build plasma-desktop-git and its dependencies (add ~-c~ to use an nspawn container):
+Build plasma-desktop-git and its dependencies in an nspawn container:
 
 #+BEGIN_SRC 
-$ aursync plasma-desktop-git
+$ aursync -c plasma-desktop-git
 #+END_SRC
 
 Query the AUR for updates, and build the results:
