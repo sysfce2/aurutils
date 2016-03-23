@@ -1,206 +1,40 @@
 #+STARTUP: indent
-* aurutils
+* NAME
 
-Collection of helper tools for use with the Arch User Repository.
+aurutils - helper tools for the arch user repository
+
+* DESCRIPTION
+
+The below gives a short overview; see the respective documentation for details.
 
 ** aurbuild
 
-*** SYNOPSIS
-
-#+BEGIN_SRC 
-aurbuild [options] <file>
-#+END_SRC
-
-*** DESCRIPTION
-
-The input file must include names of directories containing a PKGBUILD file.
-
-*** CONFIGURATION
-
-**** Creating a local repository
-
-#+BEGIN_SRC 
-$ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
-$ sudo install -d /home/packages -o $USER -m 700
-$ repo-add /home/packages/custom.db.tar
-$ sudo pacman -Syu
-#+END_SRC
-
-| Note: | Avoid naming the repository `local`, as this name is reserved by pacman. |
-
-| Tip: | Consider using separate repositories for different purposes, such as version control packages. |
-
-**** Migrating foreign packages (optional)
-
-This is straightforward if the built packages are still available, for example in ~/home/packages~:
-
-#+BEGIN_SRC 
-$ cd /home/packages
-$ repose -fv custom.db
-$ sudo pacman -Syu
-#+END_SRC
-
-To reverse this operation, repeat the procedure with ~--drop~:
-
-#+BEGIN_SRC 
-$ repose -dfv custom.db
-#+END_SRC
-
-Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
-
-#+BEGIN_SRC 
-$ pacman -Qqm | paccheck --md5sum --quiet
-#+END_SRC
-
-Recreate the packages, and save them to PKGDEST, or PWD if not set:
-
-#+BEGIN_SRC
-$ for b in $(pacman -Qqm); do bacman "$b"; done
-#+END_SRC
-
-To check for AUR updates, use ~repofind -u~ or pass the repository name to a compatible helper. For example: ~pacaur --ignorerepo=custom -Syu~, ~cower -u --ignorerepo=custom~.
-
-To keep the repository updated when building with other AUR helpers, set ~PKGDEST~ and create a repose alias:
-
-#+BEGIN_SRC
-$ sudo vim /etc/makepkg.conf
-$ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
-#+END_SRC
-
-*** OPTIONS
-
-The ~-d~ (database), ~-r~ (root) and ~-p~ (pool) arguments are relayed to repose.
-
-~-c~ builds a package in an nspawn-container (requires /devtools/).
+Build packages to a local repository. Local or nspawn builds are possible.
 
 ** aurchain
 
-*** SYNOPSIS
-
-#+BEGIN_SRC 
-aurchain pkgname ...
-#+END_SRC
-
-*** DESCRIPTION
-
-/pkgname/ must be the name of an AUR package. Dependencies are retrieved recursively, sorted topologically, and printed to stdout.
-
-*** EXAMPLES
-
-Run actions on AUR targets in total order:
-
-#+BEGIN_SRC 
-$ while read -r pkg; do ... done < <(aurchain foobar)
-#+END_SRC
+Solve and order dependencies using the AUR RPC.
 
 ** aurqueue
 
-*** SYNOPSIS
-
-#+BEGIN_SRC 
-aurqueue pkgbase depends ...
-#+END_SRC
-
-*** DESCRIPTION
-
-/pkgbase/ must be a directory containing a .SRCINFO file. Dependencies are not retrieved recursively, and must be specified on the command line for a complete graph.
-
-*** EXAMPLES
-
-Build all packages in the /pkgbuilds/ github repository:
-
-#+BEGIN_SRC 
-$ git clone https://www.github.com/Earnestly/pkgbuilds
-$ cd pkgbuilds
-$ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
-$ aurbuild -d custom.db -r /home/packages -p /home/packages <(aurqueue *)
-#+END_SRC
+Order dependencies using .SRCINFO files.
 
 ** aursearch
 
-*** SYNOPSIS
-
-#+BEGIN_SRC 
-aursearch [options] pattern
-#+END_SRC
-
-*** DESCRIPTION
-
-Search AUR packages from a PCRE pattern. Due to aurweb limitations, results are searched by name only.
-
-*** OPTIONS
-
-TBD
+Search AUR package names by a PCRE pattern.
 
 ** aursift
 
-*** SYNOPSIS
-
-#+BEGIN_SRC 
-<command> | aursift | ...
-#+END_SRC
-
-*** DESCRIPTION
-
-Filter input for packages in the official Arch Linux repositories. Virtual packages (provides/replaces) are solved.
-
-*** EXAMPLES
-
-Search for perl modules that are both in the AUR and official repositories:
-
-#+BEGIN_SRC 
-$ aursearch -p '^perl-.+' > pkgs
-$ grep -Fxvf <(aursift < pkgs) pkgs
-#+END_SRC
+Filter packages in the Arch Linux repositories.
 
 ** aursync
 
-*** SYNOPSIS
-
-#+BEGIN_SRC 
-aursync [options] package
-#+END_SRC
-
-*** DESCRIPTION
-
-Wrapper for aurchain, aurbuild and repofind. Build files are:
-
-- downloaded with ~git~ (~-t~: ~.tar.gz~ snapshots)
-- inspected with PAGER or, when installed, ~vifm~ (~-k~: disable)
-- marked for building if newer (~-n~: disable)
-
-*** OPTIONS
-
-*** EXAMPLES
-
-Build plasma-desktop-git and its dependencies (add ~-c~ to use an nspawn container):
-
-#+BEGIN_SRC 
-$ aursync plasma-desktop-git
-#+END_SRC
-
-Query the AUR for updates, and build the results:
-
-#+BEGIN_SRC 
-$ aursync -n $(repofind -u | awk '{print $1}')
-#+END_SRC
-
-Rebuild all packages in the /custom-vcs/ repository:
-
-#+BEGIN_SRC 
-$ aursync -fn $(pacman -Slq custom-vcs)
-#+END_SRC
+Download and build AUR packags automatically.
 
 ** repofind
 
-*** SYNOPSIS
+Display information on file:// repositories.
 
-#+BEGIN_SRC 
-repofind [options]
-#+END_SRC
+* CAVEATS
 
-*** OPTIONS
-
-Print (~-i~) or select (~-s~) ~file://~ repositories.
-
-~-u~ checks packages for updates in the AUR (implies ~-s~).
+See https://www.github.com/AladW/aurutils/issues
