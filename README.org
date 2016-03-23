@@ -3,7 +3,7 @@
 
 aurutils - helper tools for the arch user repository
 
-* DESCRIPTION
+* PROGRAMS
 
 The below gives a short overview; see the respective documentation for details.
 
