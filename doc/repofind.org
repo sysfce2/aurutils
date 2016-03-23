@@ -1,4 +1,8 @@
 #+STARTUP: indent
+* NAME
+
+repofind - display file:// repositories
+
 * SYNOPSIS
 
 #+BEGIN_SRC 

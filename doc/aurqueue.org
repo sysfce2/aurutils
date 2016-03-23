@@ -14,15 +14,3 @@ aurqueue pkgbase depends ...
 /pkgbase/ must be a directory containing a .SRCINFO file. 
 
 Dependencies are not retrieved recursively, and must be specified on the command line for a complete graph.
-
-* EXAMPLES
-
-Build all packages in the /pkgbuilds/ github repository:
-
-#+BEGIN_SRC 
-$ git clone https://www.github.com/Earnestly/pkgbuilds
-$ cd pkgbuilds
-$ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
-$ aurbuild -d custom.db -r /home/packages -p /home/packages <(aurqueue *)
-#+END_SRC
-
