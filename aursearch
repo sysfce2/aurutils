@@ -76,7 +76,8 @@ brief() {
         read -r Description
     }; do
         # libmakepkg misses PURPLE and CYAN
-        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" "$Name" "$Version" "$NumVotes" "$Description"
+        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" \
+               "$Name" "$Version" "$NumVotes" "$Description"
     done < <(jshon -C -a -e results -a -e Name -u -p -e Version \
                    -u -p -e NumVotes -u -p -e Description -u)
 }
@@ -119,19 +120,19 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :Flqr OPT; do
+while getopts :Fqrv OPT; do
     case $OPT in
         F|+F) string=1   ;;
-        l|+l) parse=long ;;
         q|+q) nameonly=1 ;;
         r|+r) parse=tee  ;;
+        v|+v) parse=long ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
 if ((!$#)); then
-    plain "usage: $argv0 [+-Flqr} [--] ARGS..."
+    plain "usage: $argv0 [+-Fqrv} [--] ARGS..."
     exit 1
 fi
 
