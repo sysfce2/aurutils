@@ -69,7 +69,8 @@ brief() {
         read -r NumVotes
         read -r Description
     }; do
-        printf 'aur/%s %s (%s)\n    %s\n' "$Name" "$Version" "$NumVotes" "$Description"
+        # libmakepkg misses PURPLE and CYAN
+        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" "$Name" "$Version" "$NumVotes" "$Description"
     done < <(jshon -C -a -e results -a -e Name -u -p -e Version -u -p -e NumVotes -u -p -e Description -u)
 }
 
