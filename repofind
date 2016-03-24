@@ -64,7 +64,7 @@ quickcheck() {
     if [[ ${set_l[@]} ]]; then
 	while read -r pkg ver; do
 	    set_r[$pkg]=$ver
-	done < <(aursearch -r "${!set_l[@]}" | jshon -a -e results -a -e Name -u -p -e Version -u | xargs -n2)
+	done < <(aursearch -Fr "${!set_l[@]}" | jshon -a -e results -a -e Name -u -p -e Version -u | xargs -n2)
     else
 	error "No packages available"
 	exit 2
