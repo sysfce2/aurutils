@@ -10,7 +10,6 @@ tmp=$(mktemp -d) || exit
 readonly aurweb cache rpc tmp
 
 fetch() {
-    msg "Retrieving new package list"
     curl -sS "$aurweb"/packages.gz -o packages.gz
     gzip -cd packages.gz | grep -ve '^#' > packages
 }
