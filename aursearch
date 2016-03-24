@@ -133,10 +133,9 @@ fi
 mkdir -p "$cache" -m 700
 cd "$cache" || exit
 
-stamp
-
 if ((nameonly)); then
     match "$1"
 else
+    stamp
     match "$@" | split | getjson | "${parse:-brief}"
 fi
