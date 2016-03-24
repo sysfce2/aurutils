@@ -19,7 +19,9 @@ stamp() {
     if stamp_l=$(stat --format '%Y' packages.gz 2>/dev/null); then
         # aurweb lacks a "Last-Modified" field, so use head to close the
         # pipe after reading one line.
-        if stamp_r=$(curl -s "$aurweb"/packages.gz | gzip -cd | head -1 | awk -F, '{print $3}'); then
+        # XXX: With pipefail this returns 141
+        stamp_r=$(curl -s "$aurweb"/packages.gz | gzip -cd | head -1 | awk -F, '{print $3}')
+        if [[ $stamp_r ]]; then
             stamp_r=$(date -d "$stamp_r" '+%s')
             if ((stamp_r > stamp_l)); then
                 fetch
