@@ -2,12 +2,13 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
+argv0=aursearch
 aurweb="https://aur.archlinux.org"
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/aursearch"
+cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
 rpc="$aurweb/rpc/?v=5&type=info"
 tmp=$(mktemp -d) || exit
 
-readonly aurweb cache rpc tmp
+readonly argv0 aurweb cache rpc tmp
 
 fetch() {
     curl -sS "$aurweb"/packages.gz -o packages.gz
@@ -32,19 +33,14 @@ stamp() {
 }
 
 match() {
-    if (($#)); then
-        if ((string)); then
-            printf '%s\n' "$@"
-            return 0
-        fi
-        
-        if ! grep -P -- "$1" packages; then
-            error "No matches found"
-            exit 2
-        fi
-    else
-        error "No search pattern"
-        exit 1
+    if ((string)); then
+        printf '%s\n' "$@"
+        return 0
+    fi
+    
+    if ! grep -P -- "$1" packages; then
+        error "No matches found"
+        exit 2
     fi
 }
 
@@ -99,6 +95,11 @@ while getopts :Flqr OPT; do
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+if ((!$#)); then
+    plain "usage: $argv0 [+-Flqr} [--] ARGS..."
+    exit 1
+fi
 
 mkdir -p "$cache" -m 700
 cd "$cache" || exit
