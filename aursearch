@@ -11,6 +11,7 @@ tmp=$(mktemp -d) || exit
 readonly argv0 aurweb cache rpc tmp
 
 fetch() {
+    msg2 'Retrieving new package list'
     curl -sS "$aurweb"/packages.gz -o packages.gz
     gzip -cd packages.gz | grep -ve '^#' > packages
 }
@@ -71,12 +72,40 @@ brief() {
     }; do
         # libmakepkg misses PURPLE and CYAN
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" "$Name" "$Version" "$NumVotes" "$Description"
-    done < <(jshon -C -a -e results -a -e Name -u -p -e Version -u -p -e NumVotes -u -p -e Description -u)
+    done < <(jshon -C -a -e results -a -e Name -u -p -e Version \
+                   -u -p -e NumVotes -u -p -e Description -u)
 }
 
 long() {
-    errno 38
-    exit
+    while {
+        read -r Name
+        read -r PackageBase
+        read -r Version
+        read -r Description
+        read -r URL
+        read -r NumVotes
+        read -r Popularity
+        read -r OutOfDate
+        read -r Maintainer
+        read -r FirstSubmitted
+        read -r LastModified
+    }; do
+        printf "Name:            %s\n" "$Name"
+        printf "Base:            %s\n" "$PackageBase"
+        printf "Version:         %s\n" "$Version"
+        printf "Description:     %s\n" "$Description"
+        printf "URL:             %s\n" "$URL"
+        printf "Votes:           %s\n" "$NumVotes"
+        printf "Popularity:      %s\n" "$Popularity"
+        printf "Out Of Date:     %s\n" "$OutOfDate"
+        printf "Maintainer:      %s\n" "$Maintainer"
+        printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
+        printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
+        printf '%s\n'
+    done < <(jshon -C -a -e results -a -e Name -u -p -e PackageBase -u -p -e Version \
+                   -u -p -e Description -u -p -e URL -u -p -e NumVotes -u -p -e Popularity \
+                   -u -p -e OutOfDate -u -p -e Maintainer -u -p -e FirstSubmitted \
+                   -u -p -e LastModified -u)
 }
 
 trap 'rm -rf "$tmp"' EXIT
