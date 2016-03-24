@@ -32,14 +32,19 @@ stamp() {
 }
 
 match() {
-    if ((!$#)); then
-        error "No search pattern"
-        exit 1
-    else
+    if (($#)); then
+        if ((string)); then
+            printf '%s\n' "$@"
+            return 0
+        fi
+        
         if ! grep -P -- "$1" packages; then
             error "No matches found"
             exit 2
         fi
+    else
+        error "No search pattern"
+        exit 1
     fi
 }
 
@@ -84,11 +89,12 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :ipr OPT; do
+while getopts :Flqr OPT; do
     case $OPT in
-        i|+i) parse=long  ;;
-        p|+p) matchonly=1 ;;
-        r|+r) splitonly=1 ;;
+        F|+F) string=1   ;;
+        l|+l) parse=long ;;
+        q|+q) nameonly=1 ;;
+        r|+r) parse=tee  ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -99,10 +105,8 @@ cd "$cache" || exit
 
 stamp
 
-if ((matchonly)); then
+if ((nameonly)); then
     match "$1"
-elif ((splitonly)); then
-    printf '%s\n' "$@" | split | getjson
 else
-    match "$1" | split | getjson | "${parse:-brief}"
+    match "$@" | split | getjson | "${parse:-brief}"
 fi
