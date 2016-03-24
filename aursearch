@@ -38,6 +38,8 @@ stamp() {
     fi
 }
 
+# The actual "match" is done by aurweb; as such, string=1 is similar
+# to grep --fixed-strings.
 match() {
     if ((string)); then
         printf '%s\n' "$@"
@@ -53,7 +55,8 @@ match() {
 split() {
     awk -v rpc="$rpc" '{
         # URL encode @ and +
-        gsub("+","%2b"); gsub("@","%40");
+        gsub("+","%2b")
+        gsub("@","%40")
 
         if (NR == 1 || (NR % 150) == 0)
             printf "\n%s&arg[]=%s", rpc, $0;
