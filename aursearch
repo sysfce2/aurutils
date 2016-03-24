@@ -139,6 +139,7 @@ if ((!$#)); then
     exit 1
 fi
 
+# Operations are done in the cache directory, unless said otherwise.
 mkdir -p "$cache" -m 700
 cd "$cache" || exit
 
