@@ -10,38 +10,43 @@ tmp=$(mktemp -d) || exit
 
 readonly argv0 aurweb cache rpc tmp
 
-fetch() {
-    msg2 'Retrieving new package list'
-    curl -sS "$aurweb"/packages.gz -o packages.gz
-    gzip -cd packages.gz | grep -ve '^#' > packages
-}
-
+# $1: URI to .gz archive
 stamp() {
-    if stamp_l=$(stat --format '%Y' packages.gz 2>/dev/null); then
+    declare gz=${1##*/}
+    declare stamp_l stamp_r fetch
+    
+    if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
         # aurweb lacks a "Last-Modified" field, so use head to close the
         # pipe after reading one line.
         # XXX: curl returns 141, noticed by pipefail
-        stamp_r=$(curl -s "$aurweb"/packages.gz | gzip -cd | head -1 | awk -F, '{print $3}')
+        stamp_r=$(curl -s "$1" | gzip -cd | head -1 | awk -F, '{print $3}')
+
         if [[ $stamp_r ]]; then
             stamp_r=$(date -d "$stamp_r" '+%s')
+
             if ((stamp_r > stamp_l)); then
-                fetch
+                fetch=1
             fi
         fi
     else
-        fetch
+        fetch=1
+    fi
+
+    if ((fetch)); then
+        curl -sS "$1" -o "$gz"
+        gzip -cd "$gz" | grep -ve '^#' > "${gz%.*}"
     fi
 }
 
 match() {
     if ((string)); then
         printf '%s\n' "$@"
-        return 0
-    fi
-    
-    if ! grep -P -- "$1" packages; then
-        error "No matches found"
-        exit 2
+    else
+        stamp "$aurweb"/packages.gz
+        if ! grep -P -- "$1" packages; then
+            error "No matches found"
+            exit 2
+        fi
     fi
 }
 
@@ -136,6 +141,5 @@ cd "$cache" || exit
 if ((nameonly)); then
     match "$1"
 else
-    stamp
     match "$@" | split | getjson | "${parse:-brief}"
 fi
