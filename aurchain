@@ -38,20 +38,20 @@ pair() {
 # with pkgbase in the output, and match for results in the AUR.
 request() {
     # $1 - request data
-    pair "$(count "$1")" "$1" | tsort | tac > list
+    pair "$(count "$1")" "$1" | tsort | tac > list_t
 
     while read -r name base; do 
         if [[ $name != "$base" ]]; then
-            sed -i "s|^$name$|$base|g" list
+            sed -i "s|^$name$|$base|g" list_t
         fi
     done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
     
-    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) list | awk '{if (!seen[$1]++) print $1}' > list_u
+    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) list_t | awk '{if (!seen[$1]++) print $1}' > list_u
 
     jshon -F "$1" -e results -a -e PackageBase -u -p -e Version -u | xargs -n2 > verlist
     
     while read -r name; do
-        printf '%s %s\n' "$name" "$(awk "/$name/ {print \$2}" verlist)"
+        printf '%s %s\n' "$name" "$(awk "/$name/ {print \$2; exit}" verlist)"
     done < list_u
 }
 
