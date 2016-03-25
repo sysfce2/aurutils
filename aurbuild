@@ -21,7 +21,7 @@ build_local() {
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
 
-    printf '%s\n' "[$database]\n$(pacconf --repo="$database")" > "$tmp"/config
+    printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
     sudo pacman -Syu --config="$tmp"/config
 }
 
