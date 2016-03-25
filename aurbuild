@@ -4,7 +4,7 @@ set -e
 
 argv0=aurbuild
 pwd=$PWD
-tmp=$(mktemp)
+tmp=$(mktemp -d)
 
 readonly argv0 pwd tmp
 
