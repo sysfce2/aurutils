@@ -2,19 +2,31 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
-readonly argv0=aurbuild
-readonly pwd=$PWD
+argv0=aurbuild
+pwd=$PWD
+tmp=$(mktemp)
 
-makepkg_args=(-Lscr)
+readonly argv0 pwd tmp
 
+# Use an option array to allow later modification by getopts.
+makepkg_args=(-scr)
+
+# The repo equivalent of "makepkg -i". An interesting side affect is
+# that pacman now considers packages inside the official repositories
+# as "local", and warns if they are newer than a custom counterpart.
 build_local() {
+    #global database pool root makepkg_args
+    database=${database%.*}
+    
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
 
-    sudo pacsync "${database%.*}"
-    sudo pactrans --sysupgrade
+    printf '%s\n' "[$database]\n$(pacconf --repo="$database")" > "$tmp"/config
+    sudo pacman -Syu --config="$tmp"/config
 }
 
+# With an nspawn container, packages are always built against latest
+# official packages, and can be upgraded together on a local -Syu.
 build_chroot() {
     declare CHROOT=/var/lib/aurbuild
 
@@ -23,24 +35,29 @@ build_chroot() {
         sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel
     fi
 
+    # Skip verification checks in the chroot instance as .gnupg paths
+    # are hardcoded in makechrootpkg. Signatures are still verified
+    # outside the chroot.
     sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT" -- --skippgpcheck
     repose -vf "$database" -r "$root" -p "$pool"
 }
 
 trap 'exit' INT
+trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cd:fp:r: OPT; do
+while getopts :cfLd:p:r: OPT; do
     case $OPT in
         c|+c) build=build_chroot ;;
-        d|+d) database="$OPTARG" ;;
         f|+f) makepkg_args+=(-f) ;;
+        L|+L) makepkg_args+=(-L) ;;
+        d|+d) database="$OPTARG" ;;
         p|+p) pool="$OPTARG"     ;;
         r|+r) root="$OPTARG"     ;;
-        *) plain usage: "$argv0 [+-cd ARG] [+-f ARG] [+-p ARG] [+-r ARG} [--] ARGS..."
+        *) plain usage: "$argv0 [+-cfLd ARG] [+-p ARG] [+-r ARG} [--] ARGS..."
            exit 1 ;;
     esac
 done
