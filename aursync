@@ -82,6 +82,7 @@ fi
 while getopts :cfnt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
+        d|+d) nobuild=1           ;;
         f|+f) aurbuild_args+=(-f) ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
@@ -102,6 +103,10 @@ cd "$AURDEST"
 # clone() could print the package name on a successful clone, aria2c
 # however dumps everything on stdout, rather than use stderr sensibly.
 aurchain "$@" | tee "$tmp"/ver | awk '{print $1}' | tee "$tmp"/pkg | "${download:-clone}"
+
+if ((nobuild)); then
+    exit
+fi
 
 if ! ((insecure)); then
     inspect < "$tmp"/pkg
