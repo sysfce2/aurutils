@@ -24,19 +24,6 @@ inspect() {
     xargs -i find {} -maxdepth 1 | viewer
 }
 
-findsrc() {
-    xargs -i find {} -maxdepth 1 -type f -name .SRCINFO -print0
-}
-
-genver() {
-    xargs -0i awk -F'[= ]' '
-        /^\tepoch/  {epoch = $4}
-        /^\tpkgver/ {ver = $4}
-        /^\tpkgrel/ {rel = $4}
-        /^pkgname/  {printf "%s%s%s:%s-%s\n", $4, ">=", epoch, ver, rel}
-    ' {}
-}
-
 clone() {
     while read -r base; do
         ( if cd "$base" 2>/dev/null; then
@@ -45,7 +32,7 @@ clone() {
           else
               git clone "$aurweb/$base".git
           fi
-        )
+        ) >/dev/null
     done
 }
 
@@ -63,11 +50,10 @@ snapshot() {
     done
 }
 
-# Take package names from stdin, build arguments after "pkgname pkgver-pkgrel",
-# relay them to pacsift, then filter for pkgbase (or pkgname, if unavailable).
+
 prepare() {
-    while read -r pkg; do
-        siftargs+=(--satisfies "$pkg")
+    while read -r pkg ver; do
+        siftargs+=(--satisfies "$pkg>=$ver")
     done
 
     pacsift --sync --exact "${siftargs[@]}" <&- | pacinfo | awk '
@@ -111,22 +97,24 @@ OPTIND=1
 mkdir -p "$AURDEST" -m 700
 cd "$AURDEST"
 
-# Save the queue to a temporary copy for later processing.
-aurchain "$@" | tee "$tmp"/queue | "${download:-clone}"
+# Save both the versioned and unversioned queue to a temporary copy
+# for later processing. Move the download function to the pipe end;
+# clone() could print the package name on a successful clone, aria2c
+# however dumps everything on stdout, rather than use stderr sensibly.
+aurchain "$@" | tee "$tmp"/ver | awk '{print $1}' | tee "$tmp"/pkg | "${download:-clone}"
 
 if ! ((insecure)); then
-    inspect < "$tmp"/queue
+    inspect < "$tmp"/pkg
 fi
 
 if ! ((noprepare)); then
-    findsrc < "$tmp"/queue | genver | prepare | tee "$tmp"/ood | notify
-    
-    grep -Fxvf "$tmp"/ood "$tmp"/queue > "$tmp"/queue.new
+    prepare < "$tmp"/ver | tee "$tmp"/upd | notify
+    grep -Fxvf "$tmp"/upd "$tmp"/pkg > "$tmp"/pkg.new
 else
-    cp "$tmp"/queue "$tmp"/queue.new
+    cp "$tmp"/pkg "$tmp"/pkg.new
 fi
 
 read -r repo pool < <(repofind -s)
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
-aurbuild "${aurbuild_args[@]}" "$tmp"/queue.new
+aurbuild "${aurbuild_args[@]}" "$tmp"/pkg.new
