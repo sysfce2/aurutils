@@ -46,7 +46,8 @@ $ repo-add /home/packages/custom.db.tar
 $ sudo pacman -Syu
 #+END_SRC
 
-| Warning: | Avoid naming the repository `local`, as this name is reserved by pacman. |
+| Warning: | Avoid naming the repository `local`, as this name is reserved by pacman.                                        |
+|          | AUR packages migrate regularly to the official repositories; add local repositores to the *end* of pacman.conf. |
 
 | Tip: | Consider using separate repositories for different purposes, such as version control packages. |
 
