@@ -50,17 +50,32 @@ snapshot() {
     done
 }
 
-# Take "pkgname pkgver" strings from stdin, and print updated pkgbase
-# on stdout.
+# stdin: pkgbase pkgver
 prepare() {
-    while read -r pkg ver; do
-        siftargs+=(--satisfies "$pkg>=$ver")
+    declare -A aur repo
+
+    while read -r base ver; do
+        aur[$base]=$ver
     done
 
-    pacsift --sync --exact "${siftargs[@]}" <&- | pacinfo | awk '
-       /^Name:/ {n = $2}
-       /^Base:/ {if($2 == "(null)") print n; else print $2 | "sort -u";}
-    '
+    # Requires expac 5-1-ge629dec
+    while read -r base name ver; do
+        if [[ $base = "(null)" ]]; then
+            base=$name
+        fi
+        repo[$base]=$ver
+    done < <(expac -S '%e %n %v' "${!aur[@]}")
+
+    for base in "${!aur[@]}"; do
+        ret=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
+        
+        case "$ret" in
+            -1) msg2 "$base ${repo[$base]:-0} -> ${aur[$base]}" ;;
+            0)  msg "$base is up-to-date"
+                printf '%s\n' "$base" ;;
+            1)  warning "$base ${repo[$base]} is newer than ${aur[$base]}" ;;
+        esac
+    done
 }
 
 trap 'rm -rf "$tmp"' EXIT
