@@ -52,6 +52,7 @@ snapshot() {
 
 # stdin: pkgbase pkgver
 prepare() {
+    declare base name ver check
     declare -A aur repo
 
     while read -r base ver; do
@@ -66,12 +67,12 @@ prepare() {
         repo[$base]=$ver
     done < <(expac -S '%e %n %v' "${!aur[@]}")
 
-    for base in "${!aur[@]}"; do
-        ret=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
-        
-        case "$ret" in
+    for base in "${!aur[@]}"; do       
+        check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
+
+        case "$check" in
             -1) msg2 "$base ${repo[$base]:-0} -> ${aur[$base]}" ;;
-            0)  msg "$base is up-to-date"
+            0)  plain "$base is up-to-date"
                 printf '%s\n' "$base" ;;
             1)  warning "$base ${repo[$base]} is newer than ${aur[$base]}" ;;
         esac
