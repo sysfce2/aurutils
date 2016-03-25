@@ -11,7 +11,7 @@ readonly argv0 pwd tmp
 # Use an option array to allow later modification by getopts.
 makepkg_args=(-scr)
 
-# The repo equivalent of "makepkg -i". An interesting side affect is
+# The repo equivalent of "makepkg -i". An interesting side effect is
 # that pacman now considers packages inside the official repositories
 # as "local", and warns if they are newer than a custom counterpart.
 build_local() {
