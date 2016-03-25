@@ -25,7 +25,7 @@ inspect() {
 }
 
 clone() {
-    while read -r base; do
+    while read -r base _; do
         ( if cd "$base" 2>/dev/null; then
               git stash
               git pull
@@ -50,7 +50,8 @@ snapshot() {
     done
 }
 
-
+# Take "pkgname pkgver" strings from stdin, and print updated pkgbase
+# on stdout.
 prepare() {
     while read -r pkg ver; do
         siftargs+=(--satisfies "$pkg>=$ver")
@@ -60,12 +61,6 @@ prepare() {
        /^Name:/ {n = $2}
        /^Base:/ {if($2 == "(null)") print n; else print $2 | "sort -u";}
     '
-}
-
-notify() {
-    while read -r line; do
-        plain "$line is up-to-date"
-    done
 }
 
 trap 'rm -rf "$tmp"' EXIT
@@ -98,23 +93,26 @@ OPTIND=1
 mkdir -p "$AURDEST" -m 700
 cd "$AURDEST"
 
-# Save both the versioned and unversioned queue to a temporary copy
-# for later processing. Move the download function to the pipe end;
-# clone() could print the package name on a successful clone, aria2c
-# however dumps everything on stdout, rather than use stderr sensibly.
-aurchain "$@" | tee "$tmp"/ver | awk '{print $1}' | tee "$tmp"/pkg | "${download:-clone}"
+# Save the queue to a temporary copy for later processing. Move the
+# download function to the pipe end; clone() could print the package
+# name on a successful clone, aria2c however dumps everything on
+# stdout, rather than use stderr sensibly.
+aurchain "$@" | tee "$tmp"/pkg.ver | "${download:-clone}"
 
 if ((nobuild)); then
+    msg "Files downloaded to $AURDEST"
     exit
 fi
+
+# Remove version information for grep/find
+awk '{print $1}' "$tmp"/pkg.ver > "$tmp"/pkg
 
 if ! ((insecure)); then
     inspect < "$tmp"/pkg
 fi
 
 if ! ((noprepare)); then
-    prepare < "$tmp"/ver | tee "$tmp"/upd | notify
-    grep -Fxvf "$tmp"/upd "$tmp"/pkg > "$tmp"/pkg.new
+    grep -Fxvf <(prepare < "$tmp"/pkg.ver) "$tmp"/pkg > "$tmp"/pkg.new
 else
     cp "$tmp"/pkg "$tmp"/pkg.new
 fi
