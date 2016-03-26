@@ -123,6 +123,11 @@ cd "$AURDEST"
 # dumps everything on stdout, rather than use stderr sensibly.
 aurchain "$@" | tee "$tmp"/pkg.ver | "${download:-clone}"
 
+if [[ ! -s "$tmp"/pkg.ver ]]; then
+    error "No data available"
+    exit 61
+fi
+
 if ((nobuild)); then
     msg "Files downloaded to $AURDEST"
     exit
