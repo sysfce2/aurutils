@@ -50,9 +50,9 @@ snapshot() {
     done
 }
 
-# Simulate expac '%e %v %n' (requires expac 5-1-ge629dec)
+# Simulate expac '%e %n %v' (requires expac 5-1-ge629dec)
 pacbase() {
-    pacinfo | awk '/Name:/ {n = $2} /Base:/ {b = $2} /Version:/ {v = $2; print n, b, v}'
+    pacinfo | awk '/Name:/ {n = $2} /Base:/ {e = $2} /Version:/ {v = $2; print e, n, v}'
 }
 
 # Given a list of "pkgbase pkgver" strings of AUR packages, find the
