@@ -34,25 +34,33 @@ pair() {
     done
 }
 
-# Create name/dependency pairs suitable for tsort, replace pkgname
-# with pkgbase in the output, and match for results in the AUR.
 request() {
-    # $1 - request data
-    pair "$(count "$1")" "$1" | tsort | tac > list_t
+    # list: pkgname (all, total order)
+    pair "$(count "$1")" "$1" | tsort | tac > list_tsort
 
+    # list: pkgbase (AUR)
+    jshon -F "$1" -e results -a -e PackageBase -u > list_base
+
+    # pair: pkgbase/pkgname (AUR)
+    jshon -F "$1" -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > pair_base
+
+    # pair: pkgbase/version (AUR)
+    jshon -F "$1" -e results -a -e PackageBase -u -p -e Version -u | xargs -n2 > pair_version
+
+    # pkgname -> pkgbase (all, total order)
     while read -r name base; do 
         if [[ $name != "$base" ]]; then
-            sed -i "s|^$name$|$base|g" list_t
+            sed -i "s|^$name$|$base|g" list_tsort
         fi
-    done < <(jshon -F "$1" -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
-    
-    grep -Fxf <(jshon -F "$1" -e results -a -e PackageBase -u) list_t | awk '{if (!seen[$1]++) print $1}' > list_u
+    done < pair_base
 
-    jshon -F "$1" -e results -a -e PackageBase -u -p -e Version -u | xargs -n2 > verlist
-    
+    # all -> AUR, remove duplicates (total order)
+    grep -Fxf list_base list_tsort | awk '{if (!x[$1]++) print $1}' > list_aur
+
+    # append version string
     while read -r name; do
-        printf '%s %s\n' "$name" "$(awk "/$name/ {print \$2; exit}" verlist)"
-    done < list_u
+        awk "/$name/ {print \$1, \$2; exit}" pair_version
+    done < list_aur
 }
 
 url() {
