@@ -53,20 +53,22 @@ snapshot() {
 # Given a list of "pkgbase pkgver" strings of AUR packages, find the
 # respective repository versions, and compare them.
 prepare() {
-    declare base name ver check
+    declare base name ver siftargs check
     declare -A aur repo
 
     while read -r base ver; do
-        siftargs+=(--base "$base" --name "$base")
+        siftargs+=(--base "$base")
+        siftargs+=(--name "$base")
         aur[$base]=$ver
     done
 
     # Requires expac 5-1-ge629dec
     while read -r base name ver; do
         if [[ $base == "(null)" ]]; then
-            base=$name
+            repo[$name]=$ver
+        else
+            repo[$base]=$ver
         fi
-        repo[$base]=$ver
     done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | expac -S '%e %n %v' - "")
 
     for base in "${!aur[@]}"; do       
