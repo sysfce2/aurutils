@@ -65,7 +65,7 @@ prepare() {
     
     # Requires expac 5-1-ge629dec
     while read -r base name ver; do
-        if [[ $base = "(null)" ]]; then
+        if [[ $base == "(null)" ]]; then
             base=$name
         fi
         repo[$base]=$ver
