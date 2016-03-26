@@ -50,43 +50,6 @@ snapshot() {
     done
 }
 
-# Simulate expac '%e %n %v' (requires expac 5-1-ge629dec)
-pacbase() {
-    pacinfo | awk '/Name:/ {n = $2} /Base:/ {e = $2} /Version:/ {v = $2; print e, n, v}'
-}
-
-# Given a list of "pkgbase pkgver" strings of AUR packages, find the
-# respective repository versions, and compare them.
-prepare() {
-    declare base name ver siftargs check
-    declare -A aur repo
-
-    while read -r base ver; do
-        siftargs+=(--base "$base")
-        siftargs+=(--name "$base")
-        aur[$base]=$ver
-    done
-
-    while read -r base name ver; do
-        if [[ $base == "(null)" ]]; then
-            repo[$name]=$ver
-        else
-            repo[$base]=$ver
-        fi
-    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | pacbase)
-
-    for base in "${!aur[@]}"; do       
-        check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
-
-        case "$check" in
-            -1) msg2 "$base ${repo[$base]:-0} -> ${aur[$base]}" ;;
-            0)  msg "$base is up-to-date"
-                printf '%s\n' "$base" ;;
-            1)  warning "$base ${repo[$base]} is newer than ${aur[$base]}" ;;
-        esac
-    done
-}
-
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
@@ -141,7 +104,7 @@ if ! ((insecure)); then
 fi
 
 if ! ((noprepare)); then
-    grep -Fxvf <(prepare < "$tmp"/pkg.ver) "$tmp"/pkg > "$tmp"/pkg.new
+    grep -Fxvf <(aursift -U < "$tmp"/pkg.ver) "$tmp"/pkg > "$tmp"/pkg.new
 else
     cp "$tmp"/pkg "$tmp"/pkg.new
 fi
