@@ -21,8 +21,8 @@ sift() {
     done
 
     if [[ ! ${pkgset[@]} ]]; then
-        error "No packages on standard input"
-        exit 1
+        error "No data available"
+        exit 61
     fi
 
     for p in "${!pkgset[@]}"; do
@@ -63,8 +63,58 @@ sift() {
     grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
 }
 
+# Simulate expac '%e %n %v' (requires expac 5-1-ge629dec)
+pacbase() {
+    pacinfo | awk '/^Name:/ {n = $2} /^Base:/ {e = $2} /^Version:/ {v = $2; print e, n, v}'
+}
+
+# Read "pkgbase pkgver" strings from stdin, find and compare
+# repository versions, and print updated packages on stdout.
+prepare() {
+    declare base name ver siftargs check
+    declare -A aur repo
+
+    while read -r base ver; do
+        siftargs+=(--base "$base")
+        siftargs+=(--name "$base")
+        aur[$base]=$ver
+    done
+
+    if [[ ! ${!aur[@]} ]]; then
+        error "No data available"
+        exit 61
+    fi
+
+    while read -r base name ver; do
+        if [[ $base == "(null)" ]]; then
+            repo[$name]=$ver
+        else
+            repo[$base]=$ver
+        fi
+    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | pacbase)
+
+    for base in "${!aur[@]}"; do       
+        check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
+
+        case "$check" in
+            -1) msg2 "$base ${repo[$base]:-0} -> ${aur[$base]}" ;;
+            0)  msg "$base is up-to-date"
+                printf '%s\n' "$base" ;;
+            1)  warning "$base ${repo[$base]} is newer than ${aur[$base]}" ;;
+        esac
+    done
+}
+
 source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-sift
+while getopts :SU OPT; do
+    case $OPT in
+        S|+S) sift    ;;
+        U|+U) prepare ;;
+        *)    plain "usage: aursift [+-SU} [--] ARGS..."
+    esac
+done
+shift $(( OPTIND - 1 ))
+OPTIND=1
