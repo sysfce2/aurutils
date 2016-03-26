@@ -91,7 +91,7 @@ $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
 Run actions on AUR targets in total order:
 
 #+BEGIN_SRC 
-$ while read -r pkg; do ... done < <(aurchain foobar)
+$ while read -r pkg ver; do ... done < <(aurchain foobar)
 #+END_SRC
 
 Build all packages in the /pkgbuilds/ github repository:
