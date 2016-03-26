@@ -50,6 +50,11 @@ snapshot() {
     done
 }
 
+# Simulate expac '%e %v %n' (requires expac 5-1-ge629dec)
+pacbase() {
+    pacinfo | awk '/Name:/ {n = $2} /Base:/ {b = $2} /Version:/ {v = $2; print n, b, v}'
+}
+
 # Given a list of "pkgbase pkgver" strings of AUR packages, find the
 # respective repository versions, and compare them.
 prepare() {
@@ -62,14 +67,13 @@ prepare() {
         aur[$base]=$ver
     done
 
-    # Requires expac 5-1-ge629dec
     while read -r base name ver; do
         if [[ $base == "(null)" ]]; then
             repo[$name]=$ver
         else
             repo[$base]=$ver
         fi
-    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | expac -S '%e %n %v' - "")
+    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | pacbase)
 
     for base in "${!aur[@]}"; do       
         check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
