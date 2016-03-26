@@ -57,7 +57,7 @@ prepare() {
     declare -A aur repo
 
     while read -r base ver; do
-        siftargs+=(--satisfies "$base")
+        siftargs+=(--base "$base" --name "$base")
         aur[$base]=$ver
     done
 
@@ -67,7 +67,7 @@ prepare() {
             base=$name
         fi
         repo[$base]=$ver
-    done < <(pacsift --sync --exact "${siftargs[@]}" <&- | expac -S '%e %n %v' - "")
+    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | expac -S '%e %n %v' - "")
 
     for base in "${!aur[@]}"; do       
         check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
