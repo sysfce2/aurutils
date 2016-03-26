@@ -59,13 +59,17 @@ prepare() {
         aur[$base]=$ver
     done
 
+    for base in "${!aur[@]}"; do
+        siftargs+=(--base "$base" --name "$base")
+    done
+    
     # Requires expac 5-1-ge629dec
     while read -r base name ver; do
         if [[ $base = "(null)" ]]; then
             base=$name
         fi
         repo[$base]=$ver
-    done < <(expac -S '%e %n %v' "${!aur[@]}")
+    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | expac -S '%e %n %v' - "")
 
     for base in "${!aur[@]}"; do       
         check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
@@ -109,10 +113,10 @@ OPTIND=1
 mkdir -p "$AURDEST" -m 700
 cd "$AURDEST"
 
-# Save the queue to a temporary copy for later processing. Move the
-# download function to the pipe end; clone() could print the package
-# name on a successful clone, aria2c however dumps everything on
-# stdout, rather than use stderr sensibly.
+# Save the (pkgbase) queue to a temporary copy for later
+# processing. Move the download function to the pipe end; clone()
+# could print the package name on a successful clone, aria2c however
+# dumps everything on stdout, rather than use stderr sensibly.
 aurchain "$@" | tee "$tmp"/pkg.ver | "${download:-clone}"
 
 if ((nobuild)); then
