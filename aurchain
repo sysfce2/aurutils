@@ -48,7 +48,7 @@ request() {
     jshon -F "$1" -e results -a -e PackageBase -u -p -e Version -u | xargs -n2 > pair_version
 
     # pkgname -> pkgbase (all, total order)
-    while read -r name base; do 
+    while read -r base name ; do 
         if [[ $name != "$base" ]]; then
             sed -i "s|^$name$|$base|g" list_tsort
         fi
