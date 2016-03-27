@@ -59,7 +59,7 @@ if ((!$#)); then
     exit 1
 fi
 
-while getopts :cfnt OPT; do
+while getopts :cdfknt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
@@ -67,7 +67,7 @@ while getopts :cfnt OPT; do
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
         t|+t) download=aria       ;;
-        *)    plain "usage: $argv0 [+-cfnt} [--] ARGS..."
+        *)    plain "usage: $argv0 [+-cdfknt} [--] ARGS..."
               exit 1 ;;
     esac
 done
