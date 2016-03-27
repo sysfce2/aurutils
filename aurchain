@@ -59,7 +59,7 @@ request() {
 
     # append version string
     while read -r name; do
-        awk "/$name/ {print \$1, \$2; exit}" pair_version
+        awk "/^$name/ {print \$1, \$2; exit}" pair_version
     done < list_aur
 }
 
@@ -100,7 +100,7 @@ chain() {
     fi
 }
 
-trap 'rm -rf "$tmp"' EXIT
+#trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
 
