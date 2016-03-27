@@ -2,6 +2,7 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail
 
+readonly argv0=repofind
 readonly aurweb=https://aur.archlinux.org
 
 repofind() {
@@ -48,26 +49,23 @@ reposelect() {
 }
 
 quickcheck() {
-    declare pkg ver args repo
+    declare pkg ver repo
     declare -A set_l set_r
 
-    if (($#)); then
-	for pkg; do args+=(--name="$pkg"); done
-    fi
-
-    if read -r repo _ < <(reposelect); then
-	while read -r pkg ver; do
-	    set_l[$pkg]=$ver
-	done < <(pacsift --exact --repo="$repo" "${args[@]}" <&- | xargs -r expac -S '%n %v')
-    fi
-
+    # Check if the repo is configured
+    pacconf --repo="$1" >/dev/null
+    
+    while read -r pkg ver; do
+	set_l[$pkg]=$ver
+    done < <(pacsift --exact --repo="$repo" <&- | xargs -r expac -S '%n %v')
+    
     if [[ ${set_l[@]} ]]; then
 	while read -r pkg ver; do
 	    set_r[$pkg]=$ver
 	done < <(aursearch -Fr "${!set_l[@]}" | jshon -a -e results -a -e Name -u -p -e Version -u | xargs -n2)
     else
-	error "No packages available"
-	exit 2
+	error "No data available"
+	exit 61
     fi
 
     for pkg in "${!set_r[@]}"; do
@@ -81,18 +79,14 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :isu OPT; do
+while getopts :isu: OPT; do
     case $OPT in
 	i|+i) repofind   ;;
 	s|+s) reposelect ;;
-	u|+u) update=1   ;;	    
-	*)    plain "usage: ${0##*/} [+-isu} [--] ARGS..."
+	u|+u) quickcheck "$OPTARG" ;;	    
+	*)    plain "usage: $argv0 [+-isu ARG} [--] ARGS..."
 	      exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
-
-if ((update)); then
-    quickcheck "$@"
-fi
