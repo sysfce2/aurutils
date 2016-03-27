@@ -86,7 +86,7 @@ prepare() {
         else
             repo[$base]=$ver
         fi
-    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | xargs -r expac '%e %n %v')
+    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | xargs -r expac -S '%e %n %v')
 
     for base in "${!aur[@]}"; do       
         check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
