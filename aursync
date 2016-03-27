@@ -24,11 +24,23 @@ inspect() {
     xargs -i find {} -maxdepth 1 | viewer
 }
 
+revcheck() {
+    #global tmp
+    git stash
+    git fetch
+
+    if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
+        git --no-pager log --patch --stat '..@{upstream}' >> "$tmp"/diff
+        printf '\n' >> "$tmp"/diff
+        git merge
+    fi
+}
+
 clone() {
+    #global aurweb
     while read -r base _; do
         ( if cd "$base" 2>/dev/null; then
-              git stash
-              git pull
+              revcheck
           else
               git clone "$aurweb/$base".git
           fi
@@ -37,6 +49,7 @@ clone() {
 }
 
 aria() {
+    #global tarpath tmp
     awk -v uri=$tarpath '{
         gsub("+","%2b")
         gsub("@","%40")
@@ -104,6 +117,13 @@ fi
 awk '{print $1}' "$tmp"/pkg.ver > "$tmp"/pkg
 
 if ! ((insecure)); then
+    if [[ -s "$tmp"/diff ]]; then
+        msg2 "aurweb: changes found"
+        command -- "${EDITOR:-nano}" "$tmp"/diff
+    else
+        msg2 "aurweb: up-to-date"
+    fi
+
     inspect < "$tmp"/pkg
 fi
 
