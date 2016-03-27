@@ -36,17 +36,15 @@ clone() {
     done
 }
 
-snapshot() {
+aria() {
     awk -v uri=$tarpath '{
         gsub("+","%2b")
         gsub("@","%40")
         printf "%s/%s.tar.gz\n", uri, $1
     }' | aria2c -d "$tmp" -i -
 
-    mkdir -p snapshot
-
     for ar in "$tmp"/*.tar.gz; do
-        tar xvf "$ar" -C snapshot
+        tar xvf "$ar"
     done
 }
 
@@ -68,7 +66,7 @@ while getopts :cfnt OPT; do
         f|+f) aurbuild_args+=(-f) ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
-        t|+t) download=snapshot   ;;
+        t|+t) download=aria       ;;
         *)    plain "usage: $argv0 [+-cfnt} [--] ARGS..."
               exit 1 ;;
     esac
@@ -79,6 +77,12 @@ OPTIND=1
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p "$AURDEST" -m 700
 cd "$AURDEST"
+
+# Use a separate tar directory to prevent conflicts with git.
+if [[ $download == aria ]]; then
+    mkdir -p snapshot -m 700
+    cd snapshot
+fi
 
 # Save the (pkgbase) queue to a temporary copy for later
 # processing. Move the download function to the pipe end; clone()
@@ -92,7 +96,7 @@ if [[ ! -s "$tmp"/pkg.ver ]]; then
 fi
 
 if ((nobuild)); then
-    msg "Files downloaded to $AURDEST"
+    msg "Files downloaded to $PWD"
     exit
 fi
 
