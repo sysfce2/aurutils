@@ -113,7 +113,7 @@ fi
 
 cd "$tmp" || exit
 
-msg "Generating dependencies"
+msg "Resolving dependencies"
 chain "$@"
 
 if curl_safe "$(sort -u < copy | url)" > raw_n; then
