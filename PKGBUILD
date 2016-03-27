@@ -1,5 +1,5 @@
-pkgname=aurutils-git
-pkgver=0.1.0.r0.g11890a5
+pkgname=aurutils
+pkgver=0.2.1
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -12,11 +12,6 @@ checkdepends=('shellcheck')
 makedepends=('git')
 optdepends=('devtools: aurbuild -c'
 	    'vifm: improved build file interaction')
-
-pkgver() {
-  cd aurutils
-  git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g'
-}
 
 check() {
   cd aurutils
