@@ -49,7 +49,7 @@ reposelect() {
 }
 
 quickcheck() {
-    declare pkg ver repo
+    declare pkg ver
     declare -A set_l set_r
 
     # Check if the repo is configured
@@ -57,7 +57,7 @@ quickcheck() {
     
     while read -r pkg ver; do
 	set_l[$pkg]=$ver
-    done < <(pacsift --exact --repo="$repo" <&- | xargs -r expac -S '%n %v')
+    done < <(pacsift --exact --repo="$1" <&- | xargs -r expac -S '%n %v')
     
     if [[ ${set_l[@]} ]]; then
 	while read -r pkg ver; do
