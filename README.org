@@ -108,7 +108,7 @@ Search for perl modules that are both in the AUR and official repositories:
 
 #+BEGIN_SRC 
 $ aursearch -q '^perl-.+' > pkgs
-$ grep -Fxvf <(aursift < pkgs) pkgs
+$ grep -Fxvf <(aursift -S < pkgs) pkgs
 #+END_SRC
 
 Build plasma-desktop-git and its dependencies in an nspawn container:
@@ -120,7 +120,7 @@ $ aursync -c plasma-desktop-git
 Query the AUR for updates, and build the results:
 
 #+BEGIN_SRC 
-$ aursync -n $(repofind -u | awk '{print $1}')
+$ aursync -n $(repofind -u custom | awk '{print $1}')
 #+END_SRC
 
 Rebuild all packages in the /custom-vcs/ repository:
