@@ -63,11 +63,6 @@ sift() {
     grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
 }
 
-# Simulate expac '%e %n %v' (requires expac 5-1-ge629dec)
-pacbase() {
-    pacinfo | awk '/^Name:/ {n = $2} /^Base:/ {e = $2} /^Version:/ {v = $2; print e, n, v}'
-}
-
 # Read "pkgbase pkgver" strings from stdin, find and compare
 # repository versions, and print updated packages on stdout.
 prepare() {
@@ -91,7 +86,7 @@ prepare() {
         else
             repo[$base]=$ver
         fi
-    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | pacbase)
+    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | xargs -r expac '%e %n %v')
 
     for base in "${!aur[@]}"; do       
         check=$(vercmp "${repo[$base]:-0}" "${aur[$base]}")
