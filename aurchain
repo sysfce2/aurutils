@@ -64,7 +64,7 @@ request() {
 
     # append version string
     while read -r name; do
-        awk "/^$name/ {print; exit}" pair_version
+        awk -v n="$name" '{if($1 == n) {print; exit};}' pair_version
     done < list_aur
 }
 
