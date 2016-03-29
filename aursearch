@@ -6,7 +6,7 @@ argv0=aursearch
 aurweb="https://aur.archlinux.org"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
 rpc="$aurweb/rpc/?v=5&type=info"
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp -d)
 
 readonly argv0 aurweb cache rpc tmp
 
@@ -143,7 +143,7 @@ fi
 
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p "$cache" -m 700
-cd "$cache" || exit
+cd "$cache"
 
 if ((nameonly)); then
     match "$1"
