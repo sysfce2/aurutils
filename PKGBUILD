@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.2.0.r3.gc696694
+pkgver=0.2.0.r16.g761f52c
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -25,10 +25,11 @@ check() {
 
 package() {
   cd aurutils
-  install -d "$pkgdir"/usr/{bin,share{/licenses,/doc}/aurutils}
+  install -d "$pkgdir"/usr/{bin,share{/man/man1,{/licenses,/doc}/aurutils}}
 
   install -m755 ./aur* repofind "$pkgdir"/usr/bin/
   install -m644 LICENSE "$pkgdir"/usr/share/licenses/aurutils/
-  install -m644 CREDITS doc/* "$pkgdir"/usr/share/doc/aurutils/
+  install -m644 CREDITS README.org "$pkgdir"/usr/share/doc/aurutils/
+  install -m644 doc/*.1 "$pkgdir"/usr/share/man/man1/
 }
 
