@@ -1,22 +1,36 @@
-.TH AURSIFT 1
+.TH AURSIFT 1 2016-03-30 AURUTILS
 .SH NAME
 aursift \- filter packages in the Arch Linux repositories
 .SH SYNOPSIS
 .BR aursift
-<operation> [targets]
+-S
+.I target
+.RE
+.BR aursift
+-U
+.I target
 .SH DESCRIPTION
-Invoking aursift involves specifying an operation with any potential options, and targets to operate on. A target is usually a package name, or a (space-separated) string of package base and package version. Targets can be provided on stdin.
+Invoking aursift involves specifying an operation with any potential
+options, and targets to operate on. A target is usually a package
+name, or a (space-separated) string of package base and package
+version. Targets can be provided on stdin.
 .SH OPERATIONS
 .TP 4
 .B \-S
 Check if
 .I pkgname
-is in the official Arch Linux repositories, and print it to stdout if not. Virtual packages, when found, are solved and printed to stderr.
+is in the official Arch Linux repositories, and print it to stdout if
+not. Virtual packages, when found, are solved and printed to stderr.
 .TP 4
 .B \-U
 Compare
 .I pkgbase pkgver
-against packages from any configured repository. Names of updated package bases are printed on stdout.
+against packages from any configured repository. Names of updated
+package bases are printed to stdout.
 .SH SEE ALSO
 .BR pacsift (1),
 .BR expac (1)
+.SH AUTHORS
+.MT https://github.com/AladW
+Alad Wenter
+.ME
