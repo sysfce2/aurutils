@@ -37,7 +37,7 @@ Display information on ~file://~ repositories.
 
 * EXIT STATUS
 
-Programs follow ~errno(3)~, or preserve existing status through ~command || exit~ clauses.
+On error, programs follow ~errno(3)~, or preserve command status where applicable (~command || exit~).
 
 * NOTES
 
