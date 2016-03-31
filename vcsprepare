@@ -34,6 +34,11 @@ findvcs() {
     done
 }
 
+if ((!$#)); then
+    plain "usage: vcsprepare target [target ...]"
+    exit 1
+fi
+
 # 1. Retrieve "package client" strings from .SRCINFO
 # 2. Install client if not available
 # 3. Update VCS sources
