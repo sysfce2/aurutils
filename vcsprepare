@@ -50,6 +50,7 @@ while read -r pkg client; do
         sudo pacman -S --asdeps --noconfirm "$client"
     fi
 
+    # XXX: Only works if targets are in PWD
     ( cd "$pkg"
       makepkg -do --noprepare
       makepkg --printsrcinfo > .SRCINFO
