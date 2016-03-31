@@ -2,9 +2,6 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail
 
-source /etc/makepkg.conf
-source /usr/share/makepkg/util.sh
-
 findsrc() {
     find "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
@@ -33,6 +30,11 @@ findvcs() {
         printf '%s %s\n' "$i" "${match[$i]}"
     done
 }
+
+source /etc/makepkg.conf
+source /usr/share/makepkg/util.sh
+
+[[ -t 2 ]] && colorize
 
 if ((!$#)); then
     plain "usage: vcsprepare target [target ...]"
