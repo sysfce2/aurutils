@@ -7,7 +7,7 @@ findsrc() {
 }
 
 gensrc() {
-    xargs -0i awk -F'[<=>]' '/^pkgbase/ {e = $2} /^\tsource/ {print e, $2}' {}
+    xargs -0i awk '/^pkgbase/ {e = $3} /^\tsource/ {print e, $3}' {}
 }
 
 findvcs() {
