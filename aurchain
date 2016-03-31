@@ -100,7 +100,7 @@ chain() {
     done
 
     if ((a > 100)); then
-        error "Total requests: $((++a)) (exceeded maximum)"
+        error "Total requests: $((++a)) (out of range)"
         exit 34
     fi
 }

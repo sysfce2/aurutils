@@ -38,10 +38,15 @@ reposelect() {
     fi
 
     pool=${avail[$repo]#file://}
-    
-    if [[ ! -d $pool || ! -w $pool ]]; then
-	error "$pool: Directory is not writeable"
-	exit 1
+
+    if [[ ! -d $pool ]]; then
+        error "$pool: Not a directory"
+        exit 20
+    fi
+
+    if [[ ! -w $pool ]]; then
+        error "$pool: Permission denied"
+        exit 13
     fi
 
     msg2 "Using [$repo] repository"
