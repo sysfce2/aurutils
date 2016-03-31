@@ -95,7 +95,8 @@ prepare() {
             -1) msg2 "$base ${repo[$base]:-null} -> ${aur[$base]}" ;;
             0)  msg "$base is up-to-date"
                 printf '%s\n' "$base" ;;
-            1)  warning "$base ${repo[$base]} is newer than ${aur[$base]}" ;;
+            1)  warning "$base ${repo[$base]} is newer than ${aur[$base]}"
+                printf '%s\n' "$base" ;;
         esac
     done
 }
