@@ -26,12 +26,13 @@ inspect() {
 
 revcheck() {
     #global tmp
-    git stash
     git fetch
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
         git --no-pager log --patch --stat '..@{upstream}' >> "$tmp"/diff
         printf '\n' >> "$tmp"/diff
+
+        git stash
         git merge
     fi
 }
