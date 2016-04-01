@@ -49,6 +49,8 @@ match() {
     fi
 }
 
+# aurweb only takes GET requests, so split arguments by 150 to prevent
+# HTTP 414 errors.
 split() {
     awk -v rpc="$rpc" '{
         # URL encode @ and +
