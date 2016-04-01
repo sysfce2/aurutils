@@ -117,8 +117,7 @@ awk '{print $1}' "$tmp"/pkg.ver > "$tmp"/pkg
 
 if ! ((insecure)); then
     ( shopt -s nullglob
-      files=("$tmp"/*.diff)
-      printf '%s\n' "${files[@]}" | cat - "$tmp"/pkg | inspect
+      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/pkg | inspect
     )
 fi
 
