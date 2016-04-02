@@ -42,10 +42,10 @@ stamp() {
 # to grep --fixed-strings.
 match() {
     if ((string)); then
-        printf '%s\n' "$@"
+        printf '%s\n' "${@:2}"
     else
-        stamp "$aurweb"/packages.gz
-        grep -P -- "$1" packages
+        stamp "$aurweb/$1".gz
+        grep -P -- "$2" "$1"
     fi
 }
 
@@ -127,19 +127,20 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :Fqrv OPT; do
+while getopts :Fbqrv OPT; do
     case $OPT in
-        F|+F) string=1   ;;
-        q|+q) nameonly=1 ;;
-        r|+r) parse=tee  ;;
-        v|+v) parse=long ;;
+        F|+F) string=1     ;;
+        b|+b) list=pkgbase ;;
+        q|+q) nameonly=1   ;;
+        r|+r) parse=tee    ;;
+        v|+v) parse=long   ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
 if ((!$#)); then
-    plain "usage: $argv0 [+-Fqrv} [--] ARGS..."
+    plain "usage: $argv0 [+-Fbqrv} [--] ARGS..."
     exit 1
 fi
 
@@ -148,7 +149,7 @@ mkdir -p "$cache" -m 700
 cd "$cache"
 
 if ((nameonly)); then
-    match "$1"
+    match "${list:-packages}" "$1"
 else
-    match "$@" | split | getjson | "${parse:-brief}"
+    match "${list:-packages}" "$@" | split | getjson | "${parse:-brief}"
 fi
