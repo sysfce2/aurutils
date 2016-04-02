@@ -54,7 +54,7 @@ request() {
         fi
     done < pair_base
 
-    # all -> AUR (total order)
+    # pkgbase (all) -> pkgbase (AUR)
     grep -Fxf list_base list_tsort | awk -v arch="$(uname -m)" '{
         if(arch == "i686")
             gsub(/^lib32-/,"")
