@@ -52,6 +52,7 @@ aria() {
     awk -v uri=$tarpath '{
         gsub("+","%2b")
         gsub("@","%40")
+
         printf "%s/%s.tar.gz\n", uri, $1
     }' | aria2c -d "$tmp" -i -
 
@@ -60,32 +61,45 @@ aria() {
     done
 }
 
-usage() {
-    plain "usage: $argv0 [+-cdfknt} [--] ARGS..."
-    exit 1
-}
-
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdfknt OPT; do
+while getopts :cdfknut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
         f|+f) aurbuild_args+=(-f) ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
+        u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *)    usage               ;;
+        *) plain "usage: $argv0 [+-cdfknut} [--] ARGS..."
+           exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-((!$#)) && usage
+# Version information from repofind -u is unlikely to add aurchain
+# results, but don't assume this, and only take the package names.
+if ((update)); then
+    read -r repo pool < <(repofind -s)
+    update_targets=($(repofind -u "$repo" | awk '{print $1}'))
+
+    if [[ ! ${update_targets[@]} ]]; then
+        msg2 "No updates available"
+    else
+        set -- "$@" "${update_targets[@]}"
+    fi
+fi
+
+if ((!$#)); then
+    error "$argv0: no targets specified"
+    exit 1
+fi
 
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p "$AURDEST" -m 700
@@ -128,7 +142,10 @@ else
     cp "$tmp"/pkg "$tmp"/pkg.new
 fi
 
-read -r repo pool < <(repofind -s)
+# Avoid selecting repos twice with -u.
+if ! ((update)); then
+    read -r repo pool < <(repofind -s)
+fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
 aurbuild "${aurbuild_args[@]}" "$tmp"/pkg.new
