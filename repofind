@@ -33,19 +33,19 @@ reposelect() {
     elif [[ ${avail[@]} ]]; then
         repo=${!avail[*]}
     else
-	error "No file:// repository found"
+	error "$argv0: no file:// repository"
         exit 2
     fi
 
     pool=${avail[$repo]#file://}
 
     if [[ ! -d $pool ]]; then
-        error "$pool: Not a directory"
+        error "$argv0: not a directory ($pool)"
         exit 20
     fi
 
     if [[ ! -w $pool ]]; then
-        error "$pool: Permission denied"
+        error "$argv0: permission denied ($pool)"
         exit 13
     fi
 
@@ -75,7 +75,7 @@ quickcheck() {
 	    set_r[$pkg]=$ver
 	done < <(aursearch -Fr "${!set_l[@]}" | namever)
     else
-	error "No data available"
+	error "$argv0: no data available"
 	exit 61
     fi
 

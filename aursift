@@ -1,6 +1,8 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+readonly argv0=aursift
+
 # Takes a set of package names to create "package virtual" pairs, querying
 # both provides and replaces fields.
 provides() {
@@ -21,7 +23,7 @@ sift() {
     done
 
     if [[ ! ${pkgset[@]} ]]; then
-        error "No data available"
+        error "$argv0: no data available"
         exit 61
     fi
 
@@ -76,7 +78,7 @@ prepare() {
     done
 
     if [[ ! ${!aur[@]} ]]; then
-        error "No data available"
+        error "$argv0: no data available"
         exit 61
     fi
 
@@ -109,7 +111,7 @@ while getopts :SU OPT; do
     case $OPT in
         S|+S) sift    ;;
         U|+U) prepare ;;
-        *)    plain "usage: aursift [+-SU} [--] ARGS..."
+        *)    plain "usage: $argv0 [+-SU} [--] ARGS..."
     esac
 done
 shift $(( OPTIND - 1 ))

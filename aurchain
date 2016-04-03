@@ -35,19 +35,19 @@ pair() {
 }
 
 request() {
-    # list: pkgname (all, total order)
+    # list: pkgname (all, tsort)
     pair "$(count "$1")" "$1" | tsort | tac > list_tsort
 
     # list: pkgbase (AUR)
     jshon -F "$1" -e results -a -e PackageBase -u > list_base
 
-    # pair: pkgbase/pkgname (AUR)
+    # pair: pkgbase pkgname (AUR)
     jshon -F "$1" -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > pair_base
 
-    # pair: pkgbase/version (AUR)
+    # pair: pkgbase version (AUR)
     jshon -F "$1" -e results -a -e PackageBase -u -p -e Version -u | xargs -n2 > pair_version
 
-    # pkgname -> pkgbase (all, total order)
+    # pkgname (all) -> pkgbase (all)
     while read -r base name ; do 
         if [[ $name != "$base" ]]; then
             sed -i "s|^$name$|$base|g" list_tsort
@@ -87,7 +87,7 @@ chain() {
     curl_safe "$(printf '%s\n' "$@" | tee copy | url)" > raw_0
 
     if [[ $(count raw_0) == 0 ]]; then
-        error "No packages found"
+        error "$argv0: No packages found"
         exit 2
     fi
 
@@ -100,7 +100,7 @@ chain() {
     done
 
     if ((a > 100)); then
-        error "Total requests: $((++a)) (out of range)"
+        error "$argv0: total requests: $((++a)) (out of range)"
         exit 34
     fi
 }

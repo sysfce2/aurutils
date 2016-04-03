@@ -3,6 +3,7 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
+argv0=aurqueue
 tmp=$(mktemp -d) || exit
 
 # Determine the path to each .SRCINFO, output to stdout using null
@@ -34,7 +35,7 @@ trap 'rm -rf "$tmp"' EXIT
 source /usr/share/makepkg/util.sh || exit
 
 if ((!$#)); then
-    error "usage: aurqueue pkgbase [pkgbase, ...]"
+    error "usage: $argv0 pkgbase [pkgbase, ...]"
     exit 1
 fi
 

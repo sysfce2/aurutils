@@ -103,7 +103,7 @@ fi
 aurchain "$@" | tee "$tmp"/pkg.ver | "${download:-clone}"
 
 if [[ ! -s "$tmp"/pkg.ver ]]; then
-    error "No data available"
+    error "$argv0: no data available"
     exit 61
 fi
 
