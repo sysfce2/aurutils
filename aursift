@@ -65,16 +65,14 @@ sift() {
     grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
 }
 
-# Read "pkgbase pkgver" strings from stdin, find and compare
+# Read "pkgname pkgver" strings from stdin, find and compare
 # repository versions, and print updated packages on stdout.
 prepare() {
-    declare base name ver siftargs check
+    declare name ver siftargs check
     declare -A aur repo
 
-    while read -r base ver; do
-        siftargs+=(--base "$base")
-        siftargs+=(--name "$base")
-        aur[$base]=$ver
+    while read -r name ver; do
+        aur[$name]=$ver
     done
 
     if [[ ! ${!aur[@]} ]]; then
@@ -82,23 +80,19 @@ prepare() {
         exit 61
     fi
 
-    while read -r base name ver; do
-        if [[ $base == "(null)" ]]; then
-            repo[$name]=$ver
-        else
-            repo[$base]=$ver
-        fi
-    done < <(pacsift --any --sync --exact "${siftargs[@]}" <&- | xargs -r expac -S '%e %n %v')
+    while read -r name ver; do
+        repo[$name]=$ver
+    done < <(expac -S '%n %v' "${!aur[@]}")
 
-    for base in "${!aur[@]}"; do       
-        check=$(vercmp "${repo[$base]:-null}" "${aur[$base]}")
+    for name in "${!aur[@]}"; do       
+        check=$(vercmp "${repo[$name]:-null}" "${aur[$name]}")
 
         case "$check" in
-            -1) msg2 "$base ${repo[$base]:-null} -> ${aur[$base]}" ;;
-            0)  msg "$base is up-to-date"
-                printf '%s\n' "$base" ;;
-            1)  warning "$base ${repo[$base]} is newer than ${aur[$base]}"
-                printf '%s\n' "$base" ;;
+            -1) msg2 "$name ${repo[$name]:-null} -> ${aur[$name]}" ;;
+            0)  msg "$name is up-to-date"
+                printf '%s\n' "$name" ;;
+            1)  warning "$name ${repo[$name]} is newer than ${aur[$name]}"
+                printf '%s\n' "$name" ;;
         esac
     done
 }
