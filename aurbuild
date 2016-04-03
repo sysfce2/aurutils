@@ -79,8 +79,8 @@ fi
 # Read from FD 3 to choose providers with makepkg (#21)
 exec 3< "$1"
 
-while read -r -u 3 p; do
-    if cd "$pwd/$p"; then
+while read -r -u 3 pkg _; do
+    if cd "$pwd/$pkg"; then
         "${build:-build_local}"
     fi
 done
