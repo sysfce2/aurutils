@@ -142,7 +142,7 @@ else
     cp "$tmp"/pkg "$tmp"/pkg.new
 fi
 
-# Avoid selecting repos twice with -u.
+# Avoid selecting repo/pool twice with -u.
 if ! ((update)); then
     read -r repo pool < <(repofind -s)
 fi
