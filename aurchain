@@ -38,33 +38,23 @@ request() {
     # list: pkgname (all, tsort)
     pair "$(count "$1")" "$1" | tsort | tac > list_tsort
 
-    # list: pkgbase (AUR)
-    jshon -F "$1" -e results -a -e PackageBase -u > list_base
+    # list: pkgname (AUR)
+    jshon -F "$1" -e results -a -e Name -u > list_name
 
-    # pair: pkgbase pkgname (AUR)
-    jshon -F "$1" -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > pair_base
+    # pair: pkgname version (AUR)
+    jshon -F "$1" -e results -a -e Name -u -p -e Version -u | xargs -n2 > pair_version
 
-    # pair: pkgbase version (AUR)
-    jshon -F "$1" -e results -a -e PackageBase -u -p -e Version -u | xargs -n2 > pair_version
-
-    # pkgname (all) -> pkgbase (all)
-    while read -r base name ; do 
-        if [[ $name != "$base" ]]; then
-            sed -i "s|^$name$|$base|g" list_tsort
-        fi
-    done < pair_base
-
-    # pkgbase (all) -> pkgbase (AUR)
-    grep -Fxf list_base list_tsort | awk -v arch="$(uname -m)" '{
-        if(arch == "i686")
-            gsub(/^lib32-/,"")
-        if(!seen[$1]++)
-            print $1
+    # pkgname (all) -> pkgname (AUR)
+    grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
+        if(arch == "i686") gsub(/^lib32-/,"")
+        print
     }' > list_aur
 
     # append version string
     while read -r name; do
-        awk -v n="$name" '{if($1 == n) {print; exit};}' pair_version
+        awk -v n="$name" '{
+            if($1 == n) {print; exit}
+        }' pair_version
     done < list_aur
 }
 
