@@ -121,10 +121,10 @@ Build plasma-desktop-git and its dependencies in an nspawn container:
 $ aursync -c plasma-desktop-git
 #+END_SRC
 
-Query the AUR for updates, and build the results:
+Check the /custom/ repository for AUR updates:
 
 #+BEGIN_SRC 
-$ aursync -n $(repofind -u custom | awk '{print $1}')
+$ repofind -u custom
 #+END_SRC
 
 Rebuild all packages in the /custom-vcs/ repository:
