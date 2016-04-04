@@ -1,0 +1,12 @@
+#!/bin/bash -
+PATH=/bin:/usr/bin
+tmp=$(mktemp -d) || exit
+official=(core testing extra community community-testing multilib multilib-testing)
+
+for i in "${official[@]}"; do
+    if pacconf --repo="$i" &>/dev/null; then
+        printf '%s\n%s\n' "[$i]" "$(pacconf --repo="$i")" >> "$tmp"/config
+    fi
+done
+
+pacman --config="$tmp"/config "$@"
