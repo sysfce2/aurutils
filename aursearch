@@ -5,10 +5,9 @@ set -e
 argv0=aursearch
 aurweb="https://aur.archlinux.org"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
-rpc="$aurweb/rpc/?v=5&type=info"
 tmp=$(mktemp -d)
 
-readonly argv0 aurweb cache rpc tmp
+readonly argv0 aurweb cache tmp
 
 # $1: URI to .gz archive
 stamp() {
@@ -52,7 +51,7 @@ match() {
 # aurweb only takes GET requests, so split arguments by 150 to prevent
 # HTTP 414 errors.
 split() {
-    awk -v rpc="$rpc" '{
+    awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
         # URL encode @ and +
         gsub("+","%2b")
         gsub("@","%40")
