@@ -60,6 +60,7 @@ aria() {
     done
 }
 
+# Replace pkgname with pkgbase in-place.
 sedbase() {
     declare base name
 
@@ -70,7 +71,7 @@ sedbase() {
     done
 }
 
-#trap 'rm -rf "$tmp"' EXIT
+trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
@@ -129,36 +130,39 @@ if [[ ! -s "$tmp"/raw ]]; then
     exit 61
 fi
 
-# The RPC sorts results alphabetically, so order is not preserved here.
-jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u | sort -u > "$tmp"/base
-jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > "$tmp"/base_pair
+# The RPC sorts results alphabetically, overwriting an existing order.
+jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > "$tmp"/pair_base
 
-"${download:-clone}" < "$tmp"/base
+# Download build files by pkgbase (split packages).
+awk '{print $1 | "sort -u"}' "$tmp"/pair_base | tee "$tmp"/base | "${download:-clone}"
 
 if ((nobuild)); then
     msg "Files downloaded to $PWD"
     exit
 fi
 
+# View changes and build files in one window (#77).
 if ! ((insecure)); then
     ( shopt -s nullglob
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/base | inspect
     )
 fi
 
-# Copy first column for use with grep
-awk '{print $1}' "$tmp"/chain > "$tmp"/chain.1
-sedbase "$tmp"/chain.1        < "$tmp"/base_pair
+# Strip version information for later use with grep.
+awk '{print $1}' "$tmp"/chain > "$tmp"/chain_name
 
-if ! ((noprepare)); then    
-    aursift -U < "$tmp"/chain > "$tmp"/chain.utd
-    sedbase "$tmp"/chain.utd  < "$tmp"/base_pair
+# Replace pkgname with pkgbase (split packages).
+sedbase "$tmp"/chain_name < "$tmp"/pair_base
 
-    # Print relative complement: pkgbase (all) \ pkgbase (utd). This
-    # assumes all packages in a split package are available.
-    grep -Fxvf "$tmp"/chain.utd "$tmp"/chain.1 > "$tmp"/chain.new
+if ! ((noprepare)); then
+    # Print sync updates, and replace pkgname with pkgbase.
+    aursift -U < "$tmp"/chain > "$tmp"/chain_sync
+    sedbase "$tmp"/chain_sync < "$tmp"/pair_base
+
+    # Print relative complement: pkgbase (all) \ pkgbase (sync).
+    grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_name > "$tmp"/chain_new
 else
-    cp "$tmp"/chain.1 "$tmp"/chain.new
+    cp "$tmp"/chain_name "$tmp"/chain_new
 fi
 
 # Avoid selecting repo/pool twice with -u.
@@ -167,4 +171,4 @@ if ! ((update)); then
 fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
-aurbuild "${aurbuild_args[@]}" "$tmp"/chain.new
+aurbuild "${aurbuild_args[@]}" "$tmp"/chain_new
