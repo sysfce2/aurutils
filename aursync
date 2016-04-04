@@ -61,7 +61,17 @@ aria() {
     done
 }
 
-trap 'rm -rf "$tmp"' EXIT
+sedbase() {
+    declare base name
+
+    while read -r base name ; do 
+        if [[ $name != "$base" ]]; then
+            sed -i "s|^$name$|$base|g" "$1"
+        fi
+    done
+}
+
+#trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
@@ -111,35 +121,45 @@ if [[ $download == aria ]]; then
     cd snapshot
 fi
 
-# Save the (pkgbase) queue to a temporary copy for later
-# processing. Move the download function to the pipe end; clone()
-# could print the package name on a successful clone, aria2c however
-# dumps everything on stdout, rather than use stderr sensibly.
-aurchain "$@" | tee "$tmp"/pkg.ver | "${download:-clone}"
+# Save the queue to a temporary copy, and retrieve the AUR metadata
+# for later processing.
+aurchain "$@" | tee "$tmp"/chain | xargs -r aursearch -Fr > "$tmp"/raw
 
-if [[ ! -s "$tmp"/pkg.ver ]]; then
+if [[ ! -s "$tmp"/raw ]]; then
     error "$argv0: no data available"
     exit 61
 fi
+
+# The RPC sorts results alphabetically, so order is not preserved here.
+jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u | sort -u > "$tmp"/base
+jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > "$tmp"/base_pair
+
+"${download:-clone}" < "$tmp"/base
 
 if ((nobuild)); then
     msg "Files downloaded to $PWD"
     exit
 fi
 
-# Remove version information for grep/find
-awk '{print $1}' "$tmp"/pkg.ver > "$tmp"/pkg
-
 if ! ((insecure)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/pkg | inspect
+      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/base | inspect
     )
 fi
 
-if ! ((noprepare)); then
-    grep -Fxvf <(aursift -U < "$tmp"/pkg.ver) "$tmp"/pkg > "$tmp"/pkg.new
+# Copy first column for use with grep
+awk '{print $1}' "$tmp"/chain > "$tmp"/chain.1
+sedbase "$tmp"/chain.1        < "$tmp"/base_pair
+
+if ! ((noprepare)); then    
+    aursift -U < "$tmp"/chain > "$tmp"/chain.utd
+    sedbase "$tmp"/chain.utd  < "$tmp"/base_pair
+
+    # Print relative complement: pkgbase (all) \ pkgbase (utd). This
+    # assumes all packages in a split package are available.
+    grep -Fxvf "$tmp"/chain.utd "$tmp"/chain.1 > "$tmp"/chain.new
 else
-    cp "$tmp"/pkg "$tmp"/pkg.new
+    cp "$tmp"/chain.1 "$tmp"/chain.new
 fi
 
 # Avoid selecting repo/pool twice with -u.
@@ -148,4 +168,4 @@ if ! ((update)); then
 fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
-aurbuild "${aurbuild_args[@]}" "$tmp"/pkg.new
+aurbuild "${aurbuild_args[@]}" "$tmp"/chain.new
