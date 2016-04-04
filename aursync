@@ -121,8 +121,7 @@ if [[ $download == aria ]]; then
     cd snapshot
 fi
 
-# Save the queue to a temporary copy, and retrieve the AUR metadata
-# for later processing.
+# Copy the queue, and retrieve the AUR metadata for later processing.
 aurchain "$@" | tee "$tmp"/chain | xargs -r aursearch -Fr > "$tmp"/raw
 
 if [[ ! -s "$tmp"/raw ]]; then
@@ -155,8 +154,10 @@ awk '{print $1}' "$tmp"/chain > "$tmp"/chain_name
 sedbase "$tmp"/chain_name < "$tmp"/pair_base
 
 if ! ((noprepare)); then
-    # Print sync updates, and replace pkgname with pkgbase.
+    # Print all updated sync packages.
     aursift -U < "$tmp"/chain > "$tmp"/chain_sync
+
+    # This assumes all packages in a split package are available (#28).
     sedbase "$tmp"/chain_sync < "$tmp"/pair_base
 
     # Print relative complement: pkgbase (all) \ pkgbase (sync).
