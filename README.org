@@ -84,7 +84,7 @@ Recreate the packages, and save them to PKGDEST, or PWD if not set:
 $ for b in $(pacman -Qqm); do bacman "$b"; done
 #+END_SRC
 
-To check for AUR updates, use ~repofind -u custom~ or ~aursync -u~. Alternatively, use the ~foreign~ script with helpers supporting the ~PACMAN~ variable, e.g.:
+To check for AUR updates, use ~repofind -u custom~ or ~aursync -u~. Alternatively, the ~foreign~ script supports helpers which honor the ~PACMAN~ variable, e.g.:
 
 #+BEGIN_SRC 
 $ PACMAN=foreign pacaur -Syu
