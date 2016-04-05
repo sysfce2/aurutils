@@ -7,31 +7,33 @@ aurutils - helper tools for the arch user repository
 
 The below gives a short overview; see the respective documentation for details.
 
-** aurbuild
+aurbuild
+
+*** aurbuild
 
 Build packages to a local repository. Local or nspawn builds are possible.
 
-** aurchain
+*** aurchain
 
 Solve and order dependencies using the AUR RPC.
 
-** aurqueue
+*** aurqueue
 
 Order dependencies using ~.SRCINFO~ files.
 
-** aursearch
+*** aursearch
 
 Search AUR package names by a PCRE pattern.
 
-** aursift
+*** aursift
 
 Filter packages in the Arch Linux repositories.
 
-** aursync
+*** aursync
 
 Download and build AUR packags automatically.
 
-** repofind
+*** repofind
 
 Display information on ~file://~ repositories.
 
@@ -82,7 +84,19 @@ Recreate the packages, and save them to PKGDEST, or PWD if not set:
 $ for b in $(pacman -Qqm); do bacman "$b"; done
 #+END_SRC
 
-To check for AUR updates, use ~repofind -u~ or pass the repository name to a compatible helper. For example: ~pacaur --ignorerepo=custom -Syu~, ~cower -u --ignorerepo=custom~.
+To check for AUR updates, use ~repofind -u custom~ or ~aursync -u~. Alternatively, use the ~foreign~ script with helpers supporting the ~PACMAN~ variable, e.g.:
+
+#+BEGIN_SRC 
+$ PACMAN=foreign pacaur -Syu
+#+END_SRC
+
+Or using cower:
+
+#+BEGIN_SRC 
+$ cower --ignorerepo=custom -u
+#+END_SRC
+
+Unlike ~repofind~, these only check updates for installed packages.
 
 To keep the repository updated when building with other AUR helpers, set ~PKGDEST~ and create a repose alias:
 
