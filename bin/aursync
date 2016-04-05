@@ -93,10 +93,10 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# Version information from repofind -u is unlikely to add aurchain
-# results, but don't assume this, and only take the package names.
+# Select file:// repository
+read -r repo pool < <(repofind -s)
+
 if ((update)); then
-    read -r repo pool < <(repofind -s)
     update_targets=($(repofind -u "$repo" | awk '{print $1}'))
 
     if [[ ! ${update_targets[@]} ]]; then
@@ -164,11 +164,6 @@ if ! ((noprepare)); then
     grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_name > "$tmp"/chain_new
 else
     cp "$tmp"/chain_name "$tmp"/chain_new
-fi
-
-# Avoid selecting repo/pool twice with -u.
-if ! ((update)); then
-    read -r repo pool < <(repofind -s)
 fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
