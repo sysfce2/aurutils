@@ -30,6 +30,15 @@ allnames() {
     ' {}
 }
 
+isvalid() {
+    if datamash -W check < "$1" >/dev/null; then
+        tsort "$1" | tac > "$2"
+    else
+        error "$argv0: bad message"
+        exit 74
+    fi
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
@@ -41,7 +50,10 @@ fi
 
 [[ -t 2 ]] && colorize
 
-if findsrc "$@" | tee "$tmp"/z | gendeps | tsort | tac > "$tmp"/q; then
+if findsrc "$@" | tee "$tmp"/z | gendeps > "$tmp"/A; then
+    # Validate tsort data (#87)
+    isvalid "$tmp"/A "$tmp"/q
+    
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
     # named after pkgbase, differences must be replaced in the initial
