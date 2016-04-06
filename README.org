@@ -82,9 +82,7 @@ Recreate the packages, and save them to PKGDEST, or PWD if not set:
 $ for b in $(pacman -Qqm); do bacman "$b"; done
 #+END_SRC
 
-To check for AUR updates, use ~repofind -u custom~ or ~aursync -u~.
-
-Alternatively, use the ~aurstranger~ script with helpers which honor the ~PACMAN~ variable, e.g. ~PACMAN=aurstranger pacaur -Syu~, or the ~--ignorerepo~ flag for ~cower~. Unlike ~repofind~, these only check updates for installed packages.
+To check for AUR updates, use ~repofind -u custom~ or ~aursync -u~. Alternatively, use the ~aurstranger~ script with helpers which honor the ~PACMAN~ variable, e.g. ~PACMAN=aurstranger pacaur -Syu~, or the ~--ignorerepo~ flag for ~cower~. Unlike ~repofind~, these only check updates for installed packages.
 
 To keep the repository updated when building with other AUR helpers, set ~PKGDEST~ and create a repose alias:
 
@@ -123,12 +121,17 @@ Build plasma-desktop-git and its dependencies in an nspawn container:
 $ aursync -c plasma-desktop-git
 #+END_SRC
 
-Check the /custom/ repository for AUR updates:
+Print AUR updates in the /custom/ repository (output similar to ~checkupdates~):
 
 #+BEGIN_SRC 
 $ repofind -u custom
 #+END_SRC
 
+Build all AUR updates in a selected repository:
+
+#+BEGIN_SRC 
+$ aursync -u
+#+END_SRC
 Rebuild all packages in the /custom-vcs/ repository:
 
 #+BEGIN_SRC 
