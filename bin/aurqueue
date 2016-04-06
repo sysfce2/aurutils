@@ -34,8 +34,8 @@ isvalid() {
     if datamash -W check < "$1" >/dev/null; then
         tsort "$1" | tac > "$2"
     else
-        error "$argv0: bad message"
-        exit 74
+        error "$argv0: invalid argument"
+        exit 22
     fi
 }
 
