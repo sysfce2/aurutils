@@ -42,8 +42,8 @@ request() {
     if datamash -W check < pair_all >/dev/null; then
         tsort pair_all | tac > list_tsort
     else
-        error "$argv0: invalid argument"
-        exit 22
+        error "$argv0: bad message"
+        exit 74
     fi
 
     # list: pkgname (AUR)
