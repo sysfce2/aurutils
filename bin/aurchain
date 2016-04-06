@@ -35,8 +35,16 @@ pair() {
 }
 
 request() {
-    # list: pkgname (all, tsort)
-    pair "$(count "$1")" "$1" | tsort | tac > list_tsort
+    # pair: pkgname (all)
+    pair "$(count "$1")" "$1" > pair_all
+
+    # Validate tsort data (#87)
+    if datamash -W check < pair_all >/dev/null; then
+        tsort pair_all | tac > list_tsort
+    else
+        error 'Invalid argument'
+        exit 22
+    fi
 
     # list: pkgname (AUR)
     jshon -F "$1" -e results -a -e Name -u > list_name
