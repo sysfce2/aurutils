@@ -42,7 +42,7 @@ request() {
     if datamash -W check < pair_all >/dev/null; then
         tsort pair_all | tac > list_tsort
     else
-        error 'Invalid argument'
+        error "$argv0: invalid argument"
         exit 22
     fi
 
