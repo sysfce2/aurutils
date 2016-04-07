@@ -77,16 +77,17 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdfknut OPT; do
+while getopts :cdfLknut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
-        f|+f) aurbuild_args+=(-f) ;;
+        f|+f) makepkg_args+=(-f)  ;;
+        L|+L) makepkg_args+=(-L)  ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdfknut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdfLknut} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -166,5 +167,5 @@ else
     cp "$tmp"/chain_name "$tmp"/chain_new
 fi
 
-aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool")
-aurbuild "${aurbuild_args[@]}" "$tmp"/chain_new
+aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/chain_new)
+aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"

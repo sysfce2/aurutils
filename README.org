@@ -105,7 +105,7 @@ $ git clone https://www.github.com/Earnestly/pkgbuilds
 $ cd pkgbuilds
 $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;
 $ aurqueue * > queue # Remove unwanted targets
-$ aurbuild -d custom.db -r /home/packages -p /home/packages queue
+$ aurbuild -d custom.db -r /home/packages -p /home/packages -a queue
 #+END_SRC
 
 Search for perl modules that are both in the AUR and official repositories:
@@ -132,6 +132,7 @@ Build all AUR updates in a selected repository:
 #+BEGIN_SRC 
 $ aursync -u
 #+END_SRC
+
 Rebuild all packages in the /custom-vcs/ repository:
 
 #+BEGIN_SRC 

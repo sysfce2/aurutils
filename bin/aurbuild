@@ -51,11 +51,10 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cfLd:p:r: OPT; do
+while getopts :a:cd:p:r: OPT; do
     case $OPT in
+        a|+a) queue="$OPTARG"    ;;
         c|+c) build=build_chroot ;;
-        f|+f) makepkg_args+=(-f) ;;
-        L|+L) makepkg_args+=(-L) ;;
         d|+d) database="$OPTARG" ;;
         p|+p) pool="$OPTARG"     ;;
         r|+r) root="$OPTARG"     ;;
@@ -63,21 +62,22 @@ while getopts :cfLd:p:r: OPT; do
            exit 1 ;;
     esac
 done
-shift $((OPTIND - 1))
-OPTIND=1
+
+# Pass all arguments after -- to makepkg.
+makepkg_args+=("${@:$OPTIND}")
 
 if [[ ! $database || ! $pool || ! $root ]]; then
     error "$argv0: Missing arguments (-d, -p, -r)"
     exit 1
 fi
 
-if [[ ! -r $1 ]]; then
-    error "$1: Permission denied"
+if [[ ! -r $queue ]]; then
+    error "$queue: Permission denied"
     exit 13
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)
-exec 3< "$1"
+exec 3< "$queue"
 
 while read -r -u 3 pkg _; do
     if cd "$pwd/$pkg"; then
