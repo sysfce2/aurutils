@@ -82,7 +82,9 @@ Recreate the packages, and save them to PKGDEST, or PWD if not set:
 $ for b in $(pacman -Qqm); do bacman "$b"; done
 #+END_SRC
 
-To check for AUR updates, use ~repofind -u custom~ or ~aursync -u~. Alternatively, use the ~aurstranger~ script with helpers which honor the ~PACMAN~ variable, e.g. ~PACMAN=aurstranger pacaur -Syu~, or the ~--ignorerepo~ flag for ~cower~. Unlike ~repofind~, these only check updates for installed packages.
+To check for AUR updates, use ~repofind -u custom~ or ~aursync -u~.
+
+Alternatively, use the ~aurstranger~ script with helpers which honor the ~PACMAN~ variable, e.g. ~PACMAN=aurstranger pacaur -Syu~, or the ~--ignorerepo~ flag for ~cower~. Unlike ~repofind~, these only check updates for installed packages.
 
 To keep the repository updated when building with other AUR helpers, set ~PKGDEST~ and create a repose alias:
 
