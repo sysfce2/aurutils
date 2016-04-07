@@ -58,7 +58,7 @@ while getopts :a:cd:p:r: OPT; do
         d|+d) database="$OPTARG" ;;
         p|+p) pool="$OPTARG"     ;;
         r|+r) root="$OPTARG"     ;;
-        *) plain "usage: $argv0 [+-cfLd ARG] [+-p ARG] [+-r ARG} [--] ARGS..."
+        *) plain "usage: $argv0 [+-a ARG] [+-cd ARG] [+-p ARG] [+-r ARG} [--] ARGS..."
            exit 1 ;;
     esac
 done
