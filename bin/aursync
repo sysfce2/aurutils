@@ -137,7 +137,7 @@ jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u -p -e Name -u | xargs -n2
 # chain_name: pkgname → pkgbase (split packages).
 sedbase "$tmp"/chain_name < "$tmp"/pair_base
 
-# chain_base: chain_name \ {duplicates}
+# chain_base: chain_name \ {duplicates} (download, build)
 awk '{if (!seen[$i]++) print $1}' "$tmp"/chain_name > "$tmp"/chain_base
 
 # Download build files
