@@ -159,7 +159,7 @@ if ! ((noprepare)); then
     # chain_sync: pkgname pkgver → pkgname {updated}
     aursift -U < "$tmp"/chain_ver > "$tmp"/chain_sync
 
-    # chain_sync: pkgname → pkgbase (#28)
+    # chain_sync: pkgname → pkgbase (split packages)
     sedbase "$tmp"/chain_sync < "$tmp"/pair_base
 
     # chain_new: pkgbase {all} \ pkgbase {updated}
