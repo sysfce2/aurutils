@@ -60,7 +60,6 @@ aria() {
     done
 }
 
-# Replace pkgname with pkgbase in-place.
 sedbase() {
     declare base name
 
@@ -77,16 +76,17 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdLknut OPT; do
+while getopts :cdiLknut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
+        i|+i) ignore+=("$OPTARG") ;;
         L|+L) makepkg_args+=(-L)  ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdLknut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdiLknut} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -96,6 +96,7 @@ OPTIND=1
 # Select file:// repository
 read -r repo pool < <(repofind -s)
 
+# Reuse selection for repofind (#82)
 if ((update)); then
     update_targets=($(repofind -u "$repo" | awk '{print $1}'))
 
@@ -121,19 +122,26 @@ if [[ $download == aria ]]; then
     cd snapshot
 fi
 
-# Copy the queue, and retrieve the AUR metadata for later processing.
-aurchain "$@" | tee "$tmp"/chain | xargs -r aursearch -Fr > "$tmp"/raw
+# filter: package blacklist (#88)
+printf '%s\n' "${ignore[@]}" > "$tmp"/filter
 
-if [[ ! -s "$tmp"/raw ]]; then
-    error "$argv0: no data available"
-    exit 61
-fi
+# chain_ver, chain_name: aurchain → filter → copy
+aurchain "$@" | grep -wvf "$tmp"/filter | tee "$tmp"/chain_ver | awk '{print $1}' > "$tmp"/chain_name
 
-# The RPC sorts results alphabetically, overwriting an existing order.
+# raw: pkgname → AUR (JSON)
+xargs -a "$tmp"/chain_name -r aursearch -Fr > "$tmp"/raw
+
+# pair_base: "pkgbase pkgname" (sedbase)
 jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > "$tmp"/pair_base
 
-# Download build files by pkgbase (split packages).
-awk '{print $1 | "sort -u"}' "$tmp"/pair_base | tee "$tmp"/base | "${download:-clone}"
+# chain_name: pkgname → pkgbase (split packages).
+sedbase "$tmp"/chain_name < "$tmp"/pair_base
+
+# chain_base: chain_name \ {duplicates}
+awk '{if (!seen[$i]++) print $1}' "$tmp"/chain_name > "$tmp"/chain_base
+
+# Download build files
+"${download:-clone}" < "$tmp"/chain_base
 
 if ((nobuild)); then
     msg "Files downloaded to $PWD"
@@ -143,27 +151,21 @@ fi
 # View changes and build files in one window (#77).
 if ! ((insecure)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/base | inspect
+      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/chain_base | inspect
     )
 fi
 
-# Strip version information for later use with grep.
-awk '{print $1}' "$tmp"/chain > "$tmp"/chain_name
-
-# Replace pkgname with pkgbase (split packages).
-sedbase "$tmp"/chain_name < "$tmp"/pair_base
-
 if ! ((noprepare)); then
-    # Print all updated sync packages.
-    aursift -U < "$tmp"/chain > "$tmp"/chain_sync
+    # chain_sync: pkgname pkgver → pkgname {updated}
+    aursift -U < "$tmp"/chain_ver > "$tmp"/chain_sync
 
-    # This assumes all packages in a split package are available (#28).
+    # chain_sync: pkgname → pkgbase (#28)
     sedbase "$tmp"/chain_sync < "$tmp"/pair_base
 
-    # Print relative complement: pkgbase (all) \ pkgbase (sync).
-    grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_name > "$tmp"/chain_new
+    # chain_new: pkgbase {all} \ pkgbase {updated}
+    grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_base > "$tmp"/chain_new
 else
-    cp "$tmp"/chain_name "$tmp"/chain_new
+    cp "$tmp"/chain_base "$tmp"/chain_new
 fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/chain_new)
