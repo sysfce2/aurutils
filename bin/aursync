@@ -60,12 +60,18 @@ aria() {
     done
 }
 
-sedbase() {
+getbase() {
+    declare -A pkg seen
     declare base name
 
-    while read -r base name ; do 
-        if [[ $name != "$base" ]]; then
-            sed -i "s|^$name$|$base|g" "$1"
+    while read -r name base; do
+        pkg[$name]=$base
+    done < <(jshon -F "$1" -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
+
+    while read -r name _; do
+        if [[ ! ${seen[$name]} ]]; then
+            printf '%s\n' "${pkg[$name]}"
+            seen[$name]=1
         fi
     done
 }
@@ -125,23 +131,14 @@ fi
 # filter: package blacklist (#88)
 printf '%s\n' "${ignore[@]}" > "$tmp"/filter
 
-# chain_ver, chain_name: aurchain → filter → copy
-aurchain "$@" | grep -wvf "$tmp"/filter | tee "$tmp"/chain_ver | awk '{print $1}' > "$tmp"/chain_name
+# aurchain → filter → pkgname pkgver
+aurchain "$@" | grep -wvf "$tmp"/filter > "$tmp"/chain_ver
 
-# raw: pkgname → AUR (JSON)
-xargs -a "$tmp"/chain_name -r aursearch -Fr > "$tmp"/raw
+# pkgname pkgver → pkgname → json
+awk '{print $1}' "$tmp"/chain_ver | tee "$tmp"/chain_name | xargs -r aursearch -Fr > "$tmp"/raw
 
-# pair_base: "pkgbase pkgname" (sedbase)
-jshon -F "$tmp"/raw -a -e results -a -e PackageBase -u -p -e Name -u | xargs -n2 > "$tmp"/pair_base
-
-# chain_name: pkgname → pkgbase (split packages).
-sedbase "$tmp"/chain_name < "$tmp"/pair_base
-
-# chain_base: chain_name \ {duplicates} (download, build)
-awk '{if (!seen[$i]++) print $1}' "$tmp"/chain_name > "$tmp"/chain_base
-
-# Download build files
-"${download:-clone}" < "$tmp"/chain_base
+# pkgname → pkgbase → download
+getbase "$tmp"/raw < "$tmp"/chain_name | tee "$tmp"/chain_base | "${download:-clone}"
 
 if ((nobuild)); then
     msg "Files downloaded to $PWD"
@@ -156,13 +153,10 @@ if ! ((insecure)); then
 fi
 
 if ! ((noprepare)); then
-    # chain_sync: pkgname pkgver → pkgname {updated}
-    aursift -U < "$tmp"/chain_ver > "$tmp"/chain_sync
+    # pkgname pkgver → pkgname {updated} → pkgbase {updated}
+    aursift -U < "$tmp"/chain_ver | getbase "$tmp"/raw > "$tmp"/chain_sync
 
-    # chain_sync: pkgname → pkgbase (split packages)
-    sedbase "$tmp"/chain_sync < "$tmp"/pair_base
-
-    # chain_new: pkgbase {all} \ pkgbase {updated}
+    # pkgbase {all} \ pkgbase {updated}
     grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_base > "$tmp"/chain_new
 else
     cp "$tmp"/chain_base "$tmp"/chain_new
