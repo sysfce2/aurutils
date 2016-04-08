@@ -84,8 +84,13 @@ prepare() {
         repo[$name]=$ver
     done < <(expac -S '%n %v' "${!aur[@]}")
 
-    for name in "${!aur[@]}"; do       
-        check=$(vercmp "${repo[$name]}" "${aur[$name]}")
+    for name in "${!aur[@]}"; do
+        if [[ ${repo[$name]} ]]; then
+            check=$(vercmp "${repo[$name]}" "${aur[$name]}")
+        else
+            # vercmp '' foo → 1 (#20)
+            check=-1
+        fi
 
         case "$check" in
             -1) msg2 "$name ${repo[$name]:-0} -> ${aur[$name]}" ;;
