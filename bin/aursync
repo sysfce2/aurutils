@@ -77,17 +77,16 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdfLknut OPT; do
+while getopts :cdLknut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
-        f|+f) makepkg_args+=(-f)  ;;
         L|+L) makepkg_args+=(-L)  ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdfLknut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdLknut} [--] ARGS..."
            exit 1 ;;
     esac
 done
