@@ -30,7 +30,7 @@ allnames() {
     ' {}
 }
 
-mash() {
+dmsort() {
     if datamash -W check < "$1" >/dev/null; then
         tsort "$1" | tac > "$2"
     else
@@ -52,7 +52,7 @@ fi
 
 if findsrc "$@" | tee "$tmp"/z | gendeps > "$tmp"/A; then
     # Validate tsort data (#87)
-    mash "$tmp"/A "$tmp"/q
+    dmsort "$tmp"/A "$tmp"/q
     
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
