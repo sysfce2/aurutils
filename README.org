@@ -29,7 +29,7 @@ Filter packages in the Arch Linux repositories.
 
 *** aursync
 
-Download and build AUR packags automatically.
+Download and build AUR packages automatically.
 
 *** repofind
 
