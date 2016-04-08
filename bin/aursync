@@ -145,13 +145,6 @@ if ((nobuild)); then
     exit
 fi
 
-# View changes and build files in one window (#77).
-if ! ((insecure)); then
-    ( shopt -s nullglob
-      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/chain_base | inspect
-    )
-fi
-
 if ! ((noprepare)); then
     # pkgname pkgver → pkgname {updated} → pkgbase {updated}
     aursift -U < "$tmp"/chain_ver | getbase "$tmp"/raw > "$tmp"/chain_sync
@@ -160,6 +153,13 @@ if ! ((noprepare)); then
     grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_base > "$tmp"/chain_new
 else
     cp "$tmp"/chain_base "$tmp"/chain_new
+fi
+
+# View changes and build files in one window (#77).
+if ! ((insecure)); then
+    ( shopt -s nullglob
+      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/chain_new | inspect
+    )
 fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/chain_new)
