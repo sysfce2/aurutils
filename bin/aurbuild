@@ -30,6 +30,7 @@ build_local() {
 # '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
 # if already available.
 build_chroot() {
+    #global database pool root
     declare CHROOT=/var/lib/aurbuild
 
     if [[ ! -d $CHROOT/root ]]; then
