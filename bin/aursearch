@@ -154,7 +154,8 @@ if ((!$#)); then
 fi
 
 # Operations are done in the cache directory, unless said otherwise.
-mkdir -p "$cache" -m 700
+mkdir -p "$cache"
+chown -c 700 "$cache"
 cd "$cache"
 
 if ((nameonly)); then

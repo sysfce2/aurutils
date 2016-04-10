@@ -60,39 +60,22 @@ aria() {
     done
 }
 
-getbase() {
-    declare -A pkg seen
-    declare base name
-
-    while read -r name base; do
-        pkg[$name]=$base
-    done < <(jshon -F "$1" -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2)
-
-    while read -r name _; do
-        if [[ ! ${seen[$name]} ]]; then
-            printf '%s\n' "${pkg[$name]}"
-            seen[$name]=1
-        fi
-    done
-}
-
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdiLknut OPT; do
+while getopts :cdiknut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
         i|+i) ignore+=("$OPTARG") ;;
-        L|+L) makepkg_args+=(-L)  ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdiLknut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdiknut} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -118,38 +101,36 @@ if ((!$#)); then
     exit 1
 fi
 
-# Operations are done in the cache directory, unless said otherwise.
-mkdir -p "$AURDEST" -m 700
-cd "$AURDEST"
-
 # Use a separate tar directory to prevent conflicts with git.
+mkdir -p "$AURDEST"/snapshot
+chmod -c 700 "$AURDEST"
+
 if [[ $download == aria ]]; then
-    mkdir -p snapshot -m 700
-    cd snapshot
+    cd "$AURDEST"/snapshot
+else
+    cd "$AURDEST"
 fi
 
-# filter: package blacklist (#88)
+# Package blacklist (#88)
 printf '%s\n' "${ignore[@]}" > "$tmp"/filter
 
-# aurchain → filter → pkgname pkgver
-aurchain "$@" | grep -wvf "$tmp"/filter > "$tmp"/chain_ver
+# aurchain → filter → pkgname{,pkgver}
+aurchain "$@" | grep -wvf "$tmp"/filter | tee "$tmp"/chain_ver | awk '{print $1}' > "$tmp"/chain_name
 
-# pkgname pkgver → pkgname → json
-awk '{print $1}' "$tmp"/chain_ver | tee "$tmp"/chain_name | xargs -r aursearch -Fr > "$tmp"/raw
+# pkgname → json
+xargs -a "$tmp"/chain_name -r aursearch -Fr > "$tmp"/raw
+
+# json → pkgname pkgbase
+jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair_base
 
 # pkgname → pkgbase → download
-getbase "$tmp"/raw < "$tmp"/chain_name | tee "$tmp"/chain_base | "${download:-clone}"
-
-if ((nobuild)); then
-    msg "Files downloaded to $PWD"
-    exit
-fi
+aursplit "$tmp"/pair_base < "$tmp"/chain_name | tee "$tmp"/chain_base | "${download:-clone}"
 
 if ! ((noprepare)); then
-    # pkgname pkgver → pkgname {updated} → pkgbase {updated}
-    aursift -U < "$tmp"/chain_ver | getbase "$tmp"/raw > "$tmp"/chain_sync
+    # pkgname pkgver → pkgname {up} → pkgbase {up}
+    aursift -U < "$tmp"/chain_ver | aursplit "$tmp"/pair_base > "$tmp"/chain_sync
 
-    # pkgbase {all} \ pkgbase {updated}
+    # pkgbase {all} \ pkgbase {up}
     grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_base > "$tmp"/chain_new
 else
     cp "$tmp"/chain_base "$tmp"/chain_new
@@ -161,6 +142,8 @@ if ! ((insecure)); then
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/chain_new | inspect
     )
 fi
+
+((nobuild)) && exit
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/chain_new)
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"

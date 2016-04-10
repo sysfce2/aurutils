@@ -1,0 +1,26 @@
+#!/bin/bash
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -e
+
+getbase() {
+    declare -A pkg seen
+    declare base name
+
+    while read -r name base; do
+        pkg[$name]=$base
+    done < "$1"
+
+    while read -r name _; do
+        if [[ ! ${seen[$name]} ]]; then
+            printf '%s\n' "${pkg[$name]}"
+            seen[$name]=1
+        fi
+    done
+}
+
+if [[ ! -r $1 ]]; then
+    error "$1: Permission denied"
+    exit 13
+fi
+
+getbase "$1"

@@ -30,9 +30,10 @@ allnames() {
     ' {}
 }
 
+# Validate tsort data (#87)
 dmsort() {
     if datamash -W check < "$1" >/dev/null; then
-        tsort "$1" | tac > "$2"
+        tsort "$1" | tac
     else
         error "$argv0: invalid argument"
         exit 22
@@ -50,24 +51,17 @@ fi
 
 [[ -t 2 ]] && colorize
 
-if findsrc "$@" | tee "$tmp"/z | gendeps > "$tmp"/A; then
-    # Validate tsort data (#87)
-    dmsort "$tmp"/A "$tmp"/q
-    
+if findsrc "$@" | tee >(allnames > "$tmp"/base) | gendeps > "$tmp"/all; then
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
     # named after pkgbase, differences must be replaced in the initial
     # graph before matching the original arguments.
-    while read -r name base; do
-        if [[ $name != "$base" ]]; then
-            sed -i "s|^$name$|$base|g" "$tmp"/q
-        fi
-    done < <(allnames < "$tmp"/z)
+    dmsort "$tmp"/all | aursplit "$tmp"/base > "$tmp"/queue
 
     # The base assumption is to have packages and their dependencies
     # already available, so instead of filtering packages in the official
     # repositories, we simply remove those that weren't there in the first
     # place. As an added benefit, any directory with SRCINFO files can now
     # be included in the queue.
-    grep -Fxf <(printf '%s\n' "$@") "$tmp"/q | awk '{if (!seen[$1]++) print $1}'
+    grep -Fxf <(printf '%s\n' "$@") "$tmp"/queue
 fi
