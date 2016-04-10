@@ -155,7 +155,7 @@ fi
 
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p "$cache"
-chown -c 700 "$cache"
+chmod -c 700 "$cache"
 cd "$cache"
 
 if ((nameonly)); then
