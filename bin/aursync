@@ -146,4 +146,4 @@ fi
 ((nobuild)) && exit
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/chain_new)
-aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+aurbuild "${aurbuild_args[@]}" # -- "${makepkg_args[@]}"
