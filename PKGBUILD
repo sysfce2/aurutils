@@ -19,8 +19,8 @@ pkgver() {
 }
 
 check() {
-  cd aurutils/bin
-  shellcheck -e 2016 -x ./*
+  cd aurutils
+  shellcheck -e 2016 -x bin/*
 }
 
 package() {

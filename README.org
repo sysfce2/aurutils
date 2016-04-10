@@ -35,9 +35,25 @@ Download and build AUR packages automatically.
 
 Display information on ~file://~ repositories.
 
+*** repoman
+
+Run pacman, only considering the official repositories.
+
 * EXIT STATUS
 
-On error, programs follow ~errno(3)~, or preserve command status where applicable (~command || exit~).
+Programs follow a subset of ~errno(3)~, or preserve command status where applicable.
+
+| Exit | Description                   |
+|------+-------------------------------|
+|    1 | Operation not permitted       |
+|    2 | No such file or directory     |
+|   13 | Permission denied             |
+|   20 | Not a directory               |
+|   22 | Invalid argument              |
+|   34 | Numerical result out of range |
+|   61 | No data available             |
+
+See also ~EXIT STATUS~ in ~curl(1)~, ~aria2c(1)~.
 
 * NOTES
 
@@ -94,6 +110,7 @@ $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
 #+END_SRC
 
 * EXAMPLES
+
 Run actions on AUR targets in total order:
 
 #+BEGIN_SRC 
@@ -123,10 +140,10 @@ Build plasma-desktop-git and its dependencies in an nspawn container:
 $ aursync -c plasma-desktop-git
 #+END_SRC
 
-Print AUR updates in the /custom/ repository (output similar to ~checkupdates~):
+Download and view build files recursively:
 
 #+BEGIN_SRC 
-$ repofind -u custom
+$ aursync -dn libunity
 #+END_SRC
 
 Build all AUR updates in a selected repository:
@@ -135,12 +152,20 @@ Build all AUR updates in a selected repository:
 $ aursync -u
 #+END_SRC
 
-Rebuild all packages in the /custom-vcs/ repository:
+Print AUR updates in the /custom/ repository (output similar to ~checkupdates~):
 
 #+BEGIN_SRC 
-$ aursync -fn $(pacman -Slq custom-vcs)
+$ repofind -u custom
 #+END_SRC
 
-* CAVEATS
+* BUGS
 
-See https://www.github.com/AladW/aurutils/issues
+Before filing a bug, check the following:
+
++ Does the package conform to PKGBUILD(5)?
++ Does the package conform to the AUR Package Guidelines?
++ Does the package build with ~makepkg -s~ ?
+
+If yes to all, attach a debug log (~bash -x scriptname |& tee error.log~) and open a new issue at:
+
+https://www.github.com/AladW/aurutils/issues
