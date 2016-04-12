@@ -67,7 +67,7 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdiknut OPT; do
+while getopts :cdi:knut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
@@ -76,7 +76,7 @@ while getopts :cdiknut OPT; do
         n|+n) noprepare=1         ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdiknut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdi ARG] [+-knut} [--] ARGS..."
            exit 1 ;;
     esac
 done
