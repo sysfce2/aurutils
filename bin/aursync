@@ -118,8 +118,14 @@ if ((shallow)); then
     exit 38
 fi
 
-# Copy the queue for later processing, and retrieve AUR metadata.
-aurchain "$@" | tee "$tmp"/queue | xargs -r aursearch -Fr > "$tmp"/raw
+# Copy the queue and dependency tree for later processing, and
+# retrieve AUR metadata.
+aurchain -v "$@" 3> "$tmp"/copy | tee "$tmp"/queue | xargs -r aursearch -Fr > "$tmp"/raw
+
+# Warn on packages missing in both official repositories and AUR (#67).
+while read -r pkg; do
+    warning "no results found for $pkg"
+done < <(grep -Fxvf "$tmp"/queue <(aursift -S < "$tmp"/copy))
 
 # Create pairs of pkgname and pkgbase, and pkgname and pkgver.
 jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair_base
