@@ -46,10 +46,10 @@ request() {
         exit 22
     fi
 
-    # Create a list of AUR results
+    # Create a list of AUR results.
     jshon -F "$1" -e results -a -e Name -u > list_name
 
-    # Relative complement: pkgname (all, tsort) \ pkgname (AUR)
+    # XXX: Packages without lib32 prefix are not necessarily in the AUR.
     grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
         if(arch == "i686") gsub(/^lib32-/,"")
         print
@@ -66,13 +66,14 @@ url() {
     printf '%s' "$str"
 }
 
-print3() {
-    if (command >&3) 2>/dev/null; then
-        sort -u "$1" >&3
-        exec 3<&-
+fdprint() {
+    # Check if a given file descriptor is opened. If yes, write to it.
+    # Use the /dev/fd/n file name, as >&[n] is not subject to
+    # parameter expansion.
+    if (command >/dev/fd/"$1") 2>/dev/null; then
+        sort -u >/dev/fd/"$1"
     else
-        error "$argv0: redirect fd 3 to enable verbose output"
-        exit 9
+        warning "$argv0: file descriptor $1 closed"
     fi
 }
 
@@ -129,11 +130,11 @@ cd "$tmp" || exit
 msg "Resolving dependencies..."
 chain "$@"
 
-# Write to FD 3 to not influence error reporting.
-if ((verbose)); then
-    print3 copy
-fi
-
 if curl_safe "$(sort -u copy | url)" > raw_n; then
     request raw_n
+fi
+
+# Write to FD 3 to not influence error reporting.
+if ((verbose)); then
+    fdprint 3 < copy
 fi
