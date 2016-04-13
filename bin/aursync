@@ -67,16 +67,16 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdknout OPT; do
+while getopts :cdknsut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
-        d|+d) nodeps=1            ;;
+        d|+d) nobuild=1           ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
-        o|+o) nobuild=1           ;;
+        s|+s) shallow=1           ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdknout} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdknsut} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -112,6 +112,12 @@ else
     cd "$AURDEST"
 fi
 
+# Placeholder for #88, #94
+if ((shallow)); then
+    error "$argv0: function not implemented"
+    exit 38
+fi
+
 # Copy the queue for later processing, and retrieve AUR metadata.
 aurchain "$@" | tee "$tmp"/queue | xargs -r aursearch -Fr > "$tmp"/raw
 
@@ -119,8 +125,8 @@ aurchain "$@" | tee "$tmp"/queue | xargs -r aursearch -Fr > "$tmp"/raw
 jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair_base
 jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/pair_ver
 
-# Replace package name with package base, preserving order, and
-# download build files.
+# Replace package name with package base, preserving order, copy
+# results, and download build files.
 aursplit "$tmp"/pair_base < "$tmp"/queue | tee "$tmp"/queue_base | "${download:-clone}"
 
 if ! ((noprepare)); then

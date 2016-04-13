@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.5.1.r4.g5b0fb4f
+pkgver=0.6.1.r5.g0c33039
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -21,7 +21,7 @@ pkgver() {
 check() {
   cd aurutils
 
-  # Use LC_ALL=C for chroot builds (#93)
+  # Make errors with C locale visible, even if not the default (#93)
   LC_ALL=C shellcheck -e 2016 -x bin/*
 }
 

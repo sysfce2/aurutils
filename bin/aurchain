@@ -53,7 +53,7 @@ request() {
     grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
         if(arch == "i686") gsub(/^lib32-/,"")
         print
-    }' > list_aur
+    }'
 }
 
 url() {
