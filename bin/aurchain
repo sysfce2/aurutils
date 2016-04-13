@@ -116,10 +116,18 @@ OPTIND=1
 
 cd "$tmp" || exit
 
+msg "Resolving dependencies..."
 chain "$@"
 
+# Write to FD 3 to not influence error reporting.
 if ((verbose)); then
-    sort -u copy >&2
+    if ( command >&3 ) 2>/dev/null; then
+        sort -u copy >&3
+        exec 3<&-
+    else
+        error "$argv0: bad file descriptor (fd 3)"
+        exit 9
+    fi
 fi
 
 if curl_safe "$(sort -u copy | url)" > raw_n; then
