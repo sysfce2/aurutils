@@ -115,20 +115,20 @@ fi
 # Package blacklist (#88)
 printf '%s\n' "${ignore[@]}" > "$tmp"/filter
 
-# aurchain → filter → pkgname{,pkgver}
+# aurchain => filter => pkgname{,pkgver}
 aurchain "$@" | grep -wvf "$tmp"/filter | tee "$tmp"/chain_ver | awk '{print $1}' > "$tmp"/chain_name
 
-# pkgname → json
+# pkgname => json
 xargs -a "$tmp"/chain_name -r aursearch -Fr > "$tmp"/raw
 
-# json → pkgname pkgbase
+# json => pkgname pkgbase
 jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair_base
 
-# pkgname → pkgbase → download
+# pkgname => pkgbase => download
 aursplit "$tmp"/pair_base < "$tmp"/chain_name | tee "$tmp"/chain_base | "${download:-clone}"
 
 if ! ((noprepare)); then
-    # pkgname pkgver → pkgname {up} → pkgbase {up}
+    # pkgname pkgver => pkgname {up} => pkgbase {up}
     aursift -U < "$tmp"/chain_ver | aursplit "$tmp"/pair_base > "$tmp"/chain_sync
 
     # pkgbase {all} \ pkgbase {up}
