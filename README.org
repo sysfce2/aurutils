@@ -47,6 +47,7 @@ Programs follow a subset of ~errno(3)~, or preserve command status where applica
 |------+-------------------------------|
 |    1 | Operation not permitted       |
 |    2 | No such file or directory     |
+|    9 | Bad file descriptor           |
 |   13 | Permission denied             |
 |   20 | Not a directory               |
 |   22 | Invalid argument              |
@@ -114,7 +115,7 @@ $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
 Run actions on AUR targets in total order:
 
 #+BEGIN_SRC 
-$ while read -r pkg ver; do ... done < <(aurchain foobar)
+$ while read -r pkg _; do ... done < <(aurchain foobar)
 #+END_SRC
 
 Build all packages in the /pkgbuilds/ github repository:
@@ -127,11 +128,11 @@ $ aurqueue * > queue # Remove unwanted targets
 $ aurbuild -d custom.db -r /home/packages -p /home/packages -a queue
 #+END_SRC
 
-Search for perl modules that are both in the AUR and official repositories:
+Search for Haskell modules that are neither in the AUR or official repositories:
 
 #+BEGIN_SRC 
-$ aursearch -q '^perl-.+' > pkgs
-$ grep -Fxvf <(aursift -S < pkgs) pkgs
+$ aurchain -v aura >pkgs 3>copy
+$ grep -Fxvf pkgs <(aursift -S < copy)
 #+END_SRC
 
 Build plasma-desktop-git and its dependencies in an nspawn container:
