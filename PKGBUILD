@@ -20,7 +20,9 @@ pkgver() {
 
 check() {
   cd aurutils
-  shellcheck -e 2016 -x bin/*
+
+  # Use LC_ALL=C for chroot builds (#93)
+  LC_ALL=C shellcheck -e 2016 -x bin/*
 }
 
 package() {
