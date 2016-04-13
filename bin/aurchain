@@ -125,7 +125,7 @@ if ((verbose)); then
         sort -u copy >&3
         exec 3<&-
     else
-        error "$argv0: bad file descriptor (fd 3)"
+        error "$argv0: redirect fd 3 to enable verbose output"
         exit 9
     fi
 fi
