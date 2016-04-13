@@ -67,16 +67,16 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdi:knut OPT; do
+while getopts :cdknout OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
-        d|+d) nobuild=1           ;;
-        i|+i) ignore+=("$OPTARG") ;;
+        d|+d) nodeps=1            ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
+        o|+o) nobuild=1           ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdi ARG] [+-knut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdknout} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -112,39 +112,35 @@ else
     cd "$AURDEST"
 fi
 
-# Package blacklist (#88)
-printf '%s\n' "${ignore[@]}" > "$tmp"/filter
+# Copy the queue for later processing, and retrieve AUR metadata.
+aurchain "$@" | tee "$tmp"/queue | xargs -r aursearch -Fr > "$tmp"/raw
 
-# aurchain => filter => pkgname{,pkgver}
-aurchain "$@" | grep -wvf "$tmp"/filter | tee "$tmp"/chain_ver | awk '{print $1}' > "$tmp"/chain_name
-
-# pkgname => json
-xargs -a "$tmp"/chain_name -r aursearch -Fr > "$tmp"/raw
-
-# json => pkgname pkgbase
+# Create pairs of pkgname and pkgbase, and pkgname and pkgver.
 jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair_base
+jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/pair_ver
 
-# pkgname => pkgbase => download
-aursplit "$tmp"/pair_base < "$tmp"/chain_name | tee "$tmp"/chain_base | "${download:-clone}"
+# Replace package name with package base, preserving order, and
+# download build files.
+aursplit "$tmp"/pair_base < "$tmp"/queue | tee "$tmp"/queue_base | "${download:-clone}"
 
 if ! ((noprepare)); then
-    # pkgname pkgver => pkgname {up} => pkgbase {up}
-    aursift -U < "$tmp"/chain_ver | aursplit "$tmp"/pair_base > "$tmp"/chain_sync
+    # Print updated pkgbase from versioned pairs.
+    aursift -U < "$tmp"/pair_ver | aursplit "$tmp"/pair_base > "$tmp"/pair_sync
 
-    # pkgbase {all} \ pkgbase {up}
-    grep -Fxvf "$tmp"/chain_sync "$tmp"/chain_base > "$tmp"/chain_new
+    # Relative complement: pkgbase (tsort) \ pkgbase (updated)
+    grep -Fxvf "$tmp"/pair_sync "$tmp"/queue_base > "$tmp"/queue_new
 else
-    cp "$tmp"/chain_base "$tmp"/chain_new
+    cp "$tmp"/queue_base "$tmp"/queue_new
 fi
 
 # View changes and build files in one window (#77).
 if ! ((insecure)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/chain_new | inspect
+      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue_new | inspect
     )
 fi
 
 ((nobuild)) && exit
 
-aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/chain_new)
+aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/queue_new)
 aurbuild "${aurbuild_args[@]}" # -- "${makepkg_args[@]}"
