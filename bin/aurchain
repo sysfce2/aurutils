@@ -35,7 +35,7 @@ pair() {
 }
 
 request() {
-    # pair: pkgname (all)
+    # Create pairs of package names and their dependencies.
     pair "$(count "$1")" "$1" > pair_all
 
     # Validate tsort data (#87)
@@ -46,10 +46,10 @@ request() {
         exit 22
     fi
 
-    # list: pkgname (AUR)
+    # Create a list of AUR results
     jshon -F "$1" -e results -a -e Name -u > list_name
 
-    # pkgname (all) -> pkgname (AUR)
+    # Relative complement: pkgname (all, tsort) \ pkgname (AUR)
     grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
         if(arch == "i686") gsub(/^lib32-/,"")
         print
