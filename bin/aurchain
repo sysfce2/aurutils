@@ -86,7 +86,7 @@ chain() {
     curl_safe "$(printf '%s\n' "$@" | tee copy | url)" > raw_0
 
     if [[ $(count raw_0) == 0 ]]; then
-        error "$argv0: No packages found"
+        error "$argv0: no packages found"
         exit 2
     fi
 

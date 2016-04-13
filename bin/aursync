@@ -67,16 +67,15 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdknsut OPT; do
+while getopts :cdknut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) nobuild=1           ;;
         k|+k) insecure=1          ;;
         n|+n) noprepare=1         ;;
-        s|+s) shallow=1           ;;
         u|+u) update=1            ;;
         t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdknsut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdknut} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -110,12 +109,6 @@ if [[ $download == aria ]]; then
     cd "$AURDEST"/snapshot
 else
     cd "$AURDEST"
-fi
-
-# Placeholder for #88, #94
-if ((shallow)); then
-    error "$argv0: function not implemented"
-    exit 38
 fi
 
 # Copy the queue and dependency tree for later processing, and
@@ -152,7 +145,10 @@ if ! ((insecure)); then
     )
 fi
 
-((nobuild)) && exit
+if ((nobuild)); then
+    msg "Files downloaded to $PWD"
+    exit
+fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/queue_new)
 aurbuild "${aurbuild_args[@]}" # -- "${makepkg_args[@]}"
