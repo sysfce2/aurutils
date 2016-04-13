@@ -104,11 +104,24 @@ if ((!$#)); then
     exit 1
 fi
 
+while getopts :v OPT; do
+    case $OPT in
+        v|+v) verbose=1 ;;
+        *)  plain "usage: $argv0 [+-v} [--] ARGS..."
+            exit 2
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
 cd "$tmp" || exit
 
-msg "Resolving dependencies"
 chain "$@"
 
-if curl_safe "$(sort -u < copy | url)" > raw_n; then
+if ((verbose)); then
+    sort -u copy >&2
+fi
+
+if curl_safe "$(sort -u copy | url)" > raw_n; then
     request raw_n
 fi
