@@ -38,12 +38,11 @@ revcheck() {
 clone() {
     #global aurweb
     while read -r base _; do
-        ( if cd "$base" 2>/dev/null; then
-              revcheck "$base"
-          else
-              git clone "$aurweb/$base".git
-          fi
-        ) >/dev/null
+        if [[ -d $base/.git ]]; then
+            GIT_DIR=$base/.git revcheck "$base"
+        else
+            git clone "$aurweb/$base".git
+        fi
     done
 }
 
