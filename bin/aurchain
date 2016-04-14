@@ -49,6 +49,11 @@ request() {
     # Create a list of AUR results.
     jshon -F "$1" -e results -a -e Name -u > list_name
 
+    # Warn on packages missing in both official repositories and AUR (#67)
+    while read -r pkg; do
+        warning "no results found for $pkg"
+    done < <(grep -Fxvf list_name <(aursift -S < "$2"))
+
     # XXX: Packages without lib32 prefix are not necessarily in the AUR.
     grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
         if(arch == "i686") gsub(/^lib32-/,"")
@@ -64,17 +69,6 @@ url() {
     done
 
     printf '%s' "$str"
-}
-
-fdprint() {
-    # Check if a given file descriptor can be written to. If yes,
-    # write to it.  Use the /dev/fd/n file name, as >&[n] is not
-    # subject to parameter expansion.
-    if [[ -w /dev/fd/"$1" ]]; then
-        sort -u >/dev/fd/"$1"
-    else
-        warning "$argv0: could not write to file descriptor $1"
-    fi
 }
 
 # Create a copy of the original arguments, and build a matching URL for
@@ -115,26 +109,11 @@ if ((!$#)); then
     exit 1
 fi
 
-while getopts :v OPT; do
-    case $OPT in
-        v|+v) verbose=1 ;;
-        *)  plain "usage: $argv0 [+-v} [--] ARGS..."
-            exit 2
-    esac
-done
-shift $((OPTIND - 1))
-OPTIND=1
-
 cd "$tmp" || exit
 
 msg "Resolving dependencies..."
 chain "$@"
 
 if curl_safe "$(sort -u copy | url)" > raw_n; then
-    request raw_n
-fi
-
-# Write to FD 3 to not influence error reporting.
-if ((verbose)); then
-    fdprint 3 < copy
+    request raw_n copy
 fi
