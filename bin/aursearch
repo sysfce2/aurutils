@@ -17,7 +17,7 @@ stamp() {
     if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
         # XXX: aurweb lacks a "Last-Modified" field. Instead, use head
         # to close the pipe after reading one line (exit code 141).
-        stamp_r=$(curl -s "$1" | gzip -cd 2>/dev/null | head -1 | awk -F, '{print $3}')
+        stamp_r=$(curl -s "$1" | gzip -cd | awk -F, '{print $3; exit}')
 
         if [[ $stamp_r ]]; then
             stamp_r=$(date -d "$stamp_r" '+%s')
