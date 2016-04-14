@@ -162,9 +162,11 @@ $ repofind -u custom
 
 Before filing a bug, check the following:
 
-+ Does the package conform to PKGBUILD(5)?
-+ Does the package conform to the AUR Package Guidelines?
++ Do you use the latest version of aurutils and its dependencies?
++ Does the package conform to PKGBUILD(5) and the AUR package guidelines?
++ Does the package provide the correct metadata on the AUR RPC interface?
 + Does the package build with ~makepkg -s~ ?
++ Is the problem reproducible, and not due to a misconfiguration of pacman, makepkg, sudoers, gpg or others?
 
 If yes to all, attach a debug log (~bash -x scriptname |& tee error.log~) and open a new issue at:
 
