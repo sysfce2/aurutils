@@ -110,37 +110,35 @@ else
     cd "$AURDEST"
 fi
 
+# Save temporary files in directories by context
+mkdir "$tmp"/{list,pair,tsort}
+
 # Copy the queue and dependency tree for later processing, and
 # retrieve AUR metadata.
-aurchain -v "$@" 3> "$tmp"/copy | tee "$tmp"/queue | xargs -r aursearch -Fr > "$tmp"/raw
-
-# Warn on packages missing in both official repositories and AUR (#67).
-while read -r pkg; do
-    warning "no results found for $pkg"
-done < <(grep -Fxvf "$tmp"/queue <(aursift -S < "$tmp"/copy))
+aurchain "$@" | tee "$tmp"/tsort/name | xargs -r aursearch -Fr > "$tmp"/raw
 
 # Create pairs of pkgname and pkgbase, and pkgname and pkgver.
-jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair_base
-jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/pair_ver
+jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair/base
+jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/pair/ver
 
 # Replace package name with package base, preserving order, copy
 # results, and download build files.
-aursplit "$tmp"/pair_base < "$tmp"/queue | tee "$tmp"/queue_base | "${download:-clone}"
+aursplit "$tmp"/pair/base < "$tmp"/tsort/name | tee "$tmp"/tsort/base | "${download:-clone}"
 
 if ! ((noprepare)); then
     # Print updated pkgbase from versioned pairs.
-    aursift -U < "$tmp"/pair_ver | aursplit "$tmp"/pair_base > "$tmp"/pair_sync
+    aursift -U < "$tmp"/pair/ver | aursplit "$tmp"/pair/base > "$tmp"/list/base
 
     # Relative complement: pkgbase (tsort) \ pkgbase (updated)
-    grep -Fxvf "$tmp"/pair_sync "$tmp"/queue_base > "$tmp"/queue_new
+    grep -Fxvf "$tmp"/list/base "$tmp"/tsort/base > "$tmp"/queue
 else
-    cp "$tmp"/queue_base "$tmp"/queue_new
+    cp "$tmp"/tsort/base "$tmp"/queue
 fi
 
 # View changes and build files in one window (#77).
 if ! ((insecure)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue_new | inspect
+      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect
     )
 fi
 
@@ -149,5 +147,5 @@ if ((nobuild)); then
     exit
 fi
 
-aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/queue_new)
+aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/queue)
 aurbuild "${aurbuild_args[@]}" # -- "${makepkg_args[@]}"
