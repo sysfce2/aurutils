@@ -10,9 +10,13 @@ aurqueue pkgbase [pkgbase, ...]
 
 ## Description
 
-## Operations
+aurqueue takes the names of packages and validates the dependencies using datamash. It then orders the dependency chains for the given packages.
+
+For aurqueue to work, it is assumed that the source directories are already available and that it is used in the same directory as those source directories.
 
 ## See also
+
+__datamash__(1), __tsort__(1)
 
 ## Authors
 

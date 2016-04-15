@@ -12,9 +12,13 @@ repofind [-isu ARG] [--] ARGS...
 
 ## Operations
 
-* __-i__ Find and list all file:// repos in pacman.conf
-* __-s__ Interactively select a repo to use
+* __-i__ Find and list all file:// (local) repositoroes in pacman.conf
+* __-s__ Interactively select a local repository and output the name and location to stdout
 * __-u__ Check for updates in the named repository
+
+## See also
+
+__makepkg.conf__(5)
 
 ## Authors
 

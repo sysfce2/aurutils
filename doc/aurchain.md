@@ -10,13 +10,7 @@ aurchain package [package, ...]
 
 ## Description
 
-aurchain takes a list of package names and then solves and orders the dependencies for those packages.
-
-## Operations
-
-* __-v__ Output more
-
-## See also
+aurchain takes package names and then solves and orders the dependencies for those packages using the AUR RCP interface.
 
 ## Authors
 

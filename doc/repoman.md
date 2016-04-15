@@ -10,7 +10,7 @@ repoman ARG
 
 ## Description
 
-Repoman is a wrapper for pacman which removes all unofficial repositories from the configuration. All arguments given are directly passed on to pacman
+Repoman is a wrapper for pacman which generates a temporary configuration file with only the official repositories. This configuration is then used to run pacman with the arguments passed to repoman.
 
 ## See also
 
