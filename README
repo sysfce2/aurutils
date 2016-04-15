@@ -64,12 +64,14 @@ NOTES
         Where possible, add local repositories to the _end_ of pacman.conf.
 
     Tip:
-      - Consider separate repositories for different purposes, such as version control packages.
+      - Consider separate repositories for different purposes, such as
+        version control packages.
 
     Migrating foreign packages (optional)
     -------------------------------------
     
-    This is straightforward if the built packages are still available, for example in /home/packages:
+    This is straightforward if the built packages are still available,
+    for example in /home/packages:
 
       $ cd /home/packages
       $ repose -fv custom.db
@@ -79,7 +81,8 @@ NOTES
 
       $ repose -dfv custom.db
 
-    Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
+    Without packages, check the installed files first. If needed,
+    rebuild packages with md5sum mismatches.
 
       $ pacman -Qqm | paccheck --md5sum --quiet
 
@@ -87,7 +90,8 @@ NOTES
 
       $ for b in $(pacman -Qqm); do bacman "$b"; done
 
-    To keep the repository updated when building with makepkg, set PKGDEST and create a repose alias:
+    To keep the repository updated when building with makepkg, set
+    PKGDEST and create a repose alias:
 
       $ sudo vim /etc/makepkg.conf
       $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
@@ -142,8 +146,10 @@ BUGS
     2) Does the package conform to PKGBUILD(5) and the AUR package guidelines?
     3) Does the package provide the correct metadata on the AUR RPC interface?
     4) Does the package build with makepkg -s ?
-    5) Is the problem reproducible, and not due to a misconfiguration of pacman, makepkg, sudoers, gpg or others?
+    5) Is the problem reproducible, and not due to a misconfiguration of pacman,
+       makepkg, sudoers, gpg or others?
 
-    If yes to all, attach a debug log (bash -x scriptname |& tee error.log) and open a new issue at:
+    If yes to all, attach a debug log (bash -x scriptname |& tee error.log),
+    and open a new issue at:
 
     https://www.github.com/AladW/aurutils/issues
