@@ -1,6 +1,6 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e
+set -e -o pipefail
 
 argv0=aursearch
 aurweb="https://aur.archlinux.org"
@@ -15,7 +15,7 @@ stamp() {
     declare stamp_l stamp_r fetch
     
     if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
-        # XXX: aurweb lacks a "Last-Modified" field. Instead, use head
+        # XXX: aurweb lacks a "Last-Modified" field. Instead, use awk
         # to close the pipe after reading one line (exit code 141).
         stamp_r=$(curl -s "$1" | gzip -cd | awk -F, '{print $3; exit}')
 
