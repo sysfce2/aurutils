@@ -1,0 +1,149 @@
+NAME
+
+    aurutils - helper tools for the arch user repository
+
+PROGRAMS
+
+    The below gives a short overview; see the respective documentation for details.
+
+    aurbuild
+        Build packages to a local repository. Local or nspawn builds are possible.
+
+    aurchain
+        Solve and order dependencies using the AUR RPC.
+
+    aurqueue
+        Order dependencies using .SRCINFO files.
+
+    aursearch
+        Search AUR package names by a PCRE pattern.
+
+    aursift
+        Filter packages in the Arch Linux repositories.
+
+    aursync
+        Download and build AUR packages automatically.
+
+    repofind
+        Display information on file:// repositories.
+
+    repoman
+        Run pacman, only considering the official repositories.
+
+EXIT STATUS
+
+    Programs follow a subset of errno(3), or preserve command status where applicable.
+     
+    +------+-------------------------------+
+    | Exit | Description                   |
+    +------+-------------------------------+
+    |    1 | Operation not permitted       |
+    |    2 | No such file or directory     |
+    |   13 | Permission denied             |
+    |   20 | Not a directory               |
+    |   22 | Invalid argument              |
+    |   34 | Numerical result out of range |
+    |   61 | No data available             |
+    +------+-------------------------------+
+     
+    See also EXIT STATUS in curl(1), aria2c(1).
+
+NOTES
+
+    Creating a local repository 
+    ---------------------------
+    
+      $ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
+      $ sudo install -d /home/packages -o $USER -m 700
+      $ repo-add /home/packages/custom.db.tar
+      $ sudo pacman -Syu
+
+    Warning:
+      - Avoid naming the repository "local", as this name is reserved by pacman.
+      - AUR packages migrate regularly to the official repositories.
+        Where possible, add local repositories to the _end_ of pacman.conf.
+
+    Tip:
+      - Consider separate repositories for different purposes, such as version control packages.
+
+    Migrating foreign packages (optional)
+    -------------------------------------
+    
+    This is straightforward if the built packages are still available, for example in /home/packages:
+
+      $ cd /home/packages
+      $ repose -fv custom.db
+      $ sudo pacman -Syu
+
+    To reverse this operation, repeat the procedure with --drop:
+
+      $ repose -dfv custom.db
+
+    Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
+
+      $ pacman -Qqm | paccheck --md5sum --quiet
+
+    Recreate the packages, and save them to PKGDEST, or PWD if not set:
+
+      $ for b in $(pacman -Qqm); do bacman "$b"; done
+
+    To keep the repository updated when building with makepkg, set PKGDEST and create a repose alias:
+
+      $ sudo vim /etc/makepkg.conf
+      $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
+
+EXAMPLES
+
+    Run actions on AUR targets in total order:
+
+      $ while read -r pkg _; do ... done < <(aurchain foobar)
+
+    Build all packages in the /pkgbuilds/ github repository:
+
+      $ git clone https://www.github.com/Earnestly/pkgbuilds
+      $ cd pkgbuilds
+      $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;    
+      $ aurqueue * > queue # Remove unwanted targets
+      $ aurbuild -d custom.db -r /home/packages -p /home/packages -a queue
+
+    Search for Perl modules that are both in the AUR or official repositories:
+
+      $ aursearch -q '^perl-.+' >pkgs
+      $ grep -Fxvf <(aursift -S < pkgs) pkgs
+
+    Build plasma-desktop-git and its dependencies in an nspawn container:
+
+      $ aursync -c plasma-desktop-git
+
+    Download and view build files recursively for libunity:
+
+      $ aursync -dn libunity
+
+    Build all AUR updates in a selected repository:
+
+      $ aursync -u
+
+    Print AUR updates in the "custom" repository (output similar to checkupdates):
+
+      $ repofind -u custom
+      
+    Use helpers wich honor the PACMAN variable or cower with a repository:
+
+      $ PACMAN=repoman pacaur -Syu
+      $ cower --ignorerepo=custom
+
+    Note: Unlike repofind, these only check updates for installed packages.
+
+BUGS
+
+    Before filing a bug, check the following:
+
+    1) Do you use the latest version of aurutils and its dependencies?
+    2) Does the package conform to PKGBUILD(5) and the AUR package guidelines?
+    3) Does the package provide the correct metadata on the AUR RPC interface?
+    4) Does the package build with makepkg -s ?
+    5) Is the problem reproducible, and not due to a misconfiguration of pacman, makepkg, sudoers, gpg or others?
+
+    If yes to all, attach a debug log (bash -x scriptname |& tee error.log) and open a new issue at:
+
+    https://www.github.com/AladW/aurutils/issues
