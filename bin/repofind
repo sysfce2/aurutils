@@ -2,8 +2,10 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail
 
-readonly argv0=repofind
-readonly aurweb=https://aur.archlinux.org
+argv0=repofind
+tmp=$(mktemp -d)
+
+readonly argv0 tmp
 
 repofind() {
     declare repo
@@ -40,12 +42,12 @@ reposelect() {
     pool=${avail[$repo]#file://}
 
     if [[ ! -d $pool ]]; then
-        error "$argv0: not a directory ($pool)"
+        error "$argv0: $pool: not a directory"
         exit 20
     fi
 
     if [[ ! -w $pool ]]; then
-        error "$argv0: permission denied ($pool)"
+        error "$argv0: $pool: permission denied"
         exit 13
     fi
 
@@ -53,38 +55,33 @@ reposelect() {
     printf '%s %s\n' "$repo" "$pool"
 }
 
-namever() {
-    jshon -a -e results -a -e Name -u -p -e Version -u | xargs -n2
+aurver() {
+    xargs -r aursearch -Fr | jshon -a -e results -a -e Name -u -p -e Version -u | xargs -n2
 }
 
 quickcheck() {
-    declare pkg ver
-    declare -A set_l set_r
+    declare pkg ver_r ver_a
 
     # Check if the repo is configured.
     pacconf --repo="$1" >/dev/null
 
-    # If stdin is empty, expac -S lists all sync db packages.
-    while read -r pkg ver; do
-	set_l[$pkg]=$ver
-    done < <(pacsift --exact --repo="$1" <&- | xargs -r expac -S '%n %v')
+    # Repo name/version
+    pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' > "$tmp"/struct_r
 
-    # Get remote versions from aursearch JSON output.
-    if [[ ${set_l[@]} ]]; then
-	while read -r pkg ver; do
-	    set_r[$pkg]=$ver
-	done < <(aursearch -Fr "${!set_l[@]}" | namever)
-    else
-	error "$argv0: no data available"
-	exit 61
-    fi
+    # AUR name/version
+    awk '{print $1}' "$tmp"/struct_r | aurver > "$tmp"/struct_a
 
-    for pkg in "${!set_r[@]}"; do
-	if (($(vercmp "${set_r[$pkg]}" "${set_l[$pkg]}") == 1)); then
-	    printf '%s\n' "$pkg ${set_l[$pkg]} -> ${set_r[$pkg]}"
-	fi
-    done
+    # Join on common field
+    join "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
+
+    while read -r pkg ver_r ver_a; do
+        if (($(vercmp "$ver_a" "$ver_r") == 1)); then
+            printf '%s\n' "$pkg $ver_r -> $ver_a"
+        fi
+    done < "$tmp"/struct
 }
+
+trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
