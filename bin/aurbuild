@@ -9,16 +9,17 @@ tmp=$(mktemp -d)
 readonly argv0 pwd tmp
 
 # Use an option array to allow later modification by getopts.
-makepkg_args=(-scr)
+mkpkg_args=(-crs)
+mkchr_args=(-cu)
 
 # The repo equivalent of "makepkg -i". An interesting side effect is
 # that pacman now considers packages inside the official repositories
 # as "local", and warns if they are newer than a custom counterpart.
 build_local() {
-    #global database pool root makepkg_args
+    #global database pool root mkpkg_args
     database=${database%.*}
     
-    PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
+    PKGDEST="$pool" LC_MESSAGES=C makepkg "${mkpkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
@@ -30,7 +31,7 @@ build_local() {
 # '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
 # if already available.
 build_chroot() {
-    #global database pool root
+    #global database pool root mkchr_args
     declare CHROOT=/var/lib/aurbuild
 
     if [[ ! -d $CHROOT/root ]]; then
@@ -41,7 +42,7 @@ build_chroot() {
     # Skip verification checks in the chroot instance as .gnupg paths
     # are hardcoded in makechrootpkg. Signatures are still verified
     # outside the chroot.
-    sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -c -u -r "$CHROOT" -- --skippgpcheck
+    sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -r "$CHROOT" "${mkchr_args[@]}" -- --skippgpcheck
     repose -vf "$database" -r "$root" -p "$pool"
 }
 
@@ -64,8 +65,12 @@ while getopts :a:cd:p:r: OPT; do
     esac
 done
 
-# Pass all arguments after -- to makepkg.
-makepkg_args+=("${@:$OPTIND}")
+# Pass all arguments after -- to makepkg/makechrootpkg.
+if [[ $build == build_chroot ]]; then
+    mkchr_args+=("${@:$OPTIND}")
+else
+    mkpkg_args+=("${@:$OPTIND}")
+fi
 
 if [[ ! $database || ! $pool || ! $root ]]; then
     error "$argv0: Missing arguments (-d, -p, -r)"
@@ -73,7 +78,7 @@ if [[ ! $database || ! $pool || ! $root ]]; then
 fi
 
 if [[ ! -r $queue ]]; then
-    error "$queue: Permission denied"
+    error "$argv0: $queue: Permission denied"
     exit 13
 fi
 
