@@ -65,7 +65,7 @@ quickcheck() {
     # Check if the repo is configured.
     pacconf --repo="$1" >/dev/null
 
-    # Repo name/version
+    # If stdin is empty, expac -S lists all sync db packages.
     pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' > "$tmp"/struct_r
 
     # AUR name/version
