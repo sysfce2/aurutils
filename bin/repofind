@@ -65,7 +65,8 @@ quickcheck() {
     # Check if the repo is configured.
     pacconf --repo="$1" >/dev/null
 
-    # If stdin is empty, expac -S lists all sync db packages.
+    # Use xargs --no-run-if-empty, as expac -S lists all sync packages
+    # if it has no input on stdin. expac -S - "" also works.
     pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' > "$tmp"/struct_r
 
     # AUR name/version
@@ -75,9 +76,9 @@ quickcheck() {
     join "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
 
     while read -r pkg ver_r ver_a; do
-        if (($(vercmp "$ver_a" "$ver_r") == 1)); then
-            printf '%s\n' "$pkg $ver_r -> $ver_a"
-        fi
+        case $(vercmp "$ver_r" "$ver_a") in
+            1) printf '%s %s -> %s\n' "$pkg" "$ver_r" "$ver_a"
+        esac
     done < "$tmp"/struct
 }
 
