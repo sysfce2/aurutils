@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.6.1.r23.g43b2578
+pkgver=0.6.1.r27.g510fd65
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -21,8 +21,8 @@ pkgver() {
 check() {
   cd aurutils
 
-  # Make errors with C locale visible, even if not the default (#93)
-  LC_ALL=C shellcheck -e 2016 -x bin/*
+  # Make errors with C locale visible (#93)
+  LANG=C shellcheck -e 2016 -x bin/*
 }
 
 package() {
@@ -31,7 +31,7 @@ package() {
 
   install -m755 bin/* "$pkgdir"/usr/bin/
   install -m644 LICENSE "$pkgdir"/usr/share/licenses/aurutils/
-  install -m644 CREDITS README.org "$pkgdir"/usr/share/doc/aurutils/
+  install -m644 CREDITS README "$pkgdir"/usr/share/doc/aurutils/
   install -m644 doc/*.1 "$pkgdir"/usr/share/man/man1/
 }
 
