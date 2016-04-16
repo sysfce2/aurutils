@@ -10,7 +10,7 @@ aurchain package [package, ...]
 
 ## Description
 
-aurchain takes package names and then solves and orders the dependencies for those packages using the AUR RCP interface.
+aurchain takes package names and then solves and orders the dependencies for those packages using the AUR RPC interface.
 
 ## Authors
 

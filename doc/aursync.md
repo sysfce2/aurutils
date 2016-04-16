@@ -10,7 +10,7 @@ aursync [+-cdi ARG] [+-knut] [--] ARGS...
 
 ## Description
 
-Downloads, builds and adds AUR packages automatically to a local repository (local repositories are configured with the file:// prefix). In case there are multiple local repositories configured in pacman.conf, aursync asks which repository to add a package to.
+Downloads and builds packages automatically using aurbuild. The arguments are package names.
 
 In case vifm is installed, the downloaded files are shown using vifm and can be edited. If vifm is not installed, the files are shown in less or $PAGER if configured.
 
@@ -26,7 +26,7 @@ In case vifm is installed, the downloaded files are shown using vifm and can be 
 
 ## See also
 
-__makepkg.conf__(5), __vifm__(1), __less__(1)
+__makepkg.conf__(5), __vifm__(1), __less__(1), __aurbuild__(1), __aurchain__(1), __aursift__(1), __aursearch__(1), __repofind__(1)
 
 ## Authors
 

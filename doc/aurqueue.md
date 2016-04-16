@@ -10,7 +10,7 @@ aurqueue pkgbase [pkgbase, ...]
 
 ## Description
 
-aurqueue takes the names of packages and validates the dependencies using datamash. It then orders the dependency chains for the given packages.
+aurqueue takes the names of packages and orders the dependency chains using tsort.
 
 For aurqueue to work, it is assumed that the source directories are already available and that it is used in the same directory as those source directories.
 
