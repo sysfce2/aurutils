@@ -29,9 +29,14 @@ revcheck() {
 
     # git fetch will return 0 even if nothing was fetched.
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
-        git --no-pager log --patch --stat '..@{upstream}' >> "$tmp"/"$1".diff
+        git --no-pager log --patch --stat '..@{upstream}' >> "$tmp/$1".diff
         git stash
         git merge
+    fi
+
+    # Warn on unstashed changes (#102)
+    if ! git diff --no-patch --exit-code; then
+        warning "$1: local changes found"
     fi
 }
 
