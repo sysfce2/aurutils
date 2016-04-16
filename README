@@ -133,7 +133,7 @@ EXAMPLES
       
     Use helpers wich honor the PACMAN variable or cower with a repository:
 
-      $ PACMAN=repoman pacaur -Syu
+      $ PACMAN=repoman pacaur -Syu --aur
       $ cower --ignorerepo=custom
 
     Note: Unlike repofind, these only check updates for installed packages.
