@@ -14,7 +14,7 @@ Build a package from a text file with directory names and add the resulting pack
 
 ## Operations
 
-* __-a__ A text file with directories containing a single PKGBUILD to build
+* __-a__ A text file with directories containing a PKGBUILD
 * __-c__ Build in a chroot
 * __-d__ The name of the database
 * __-p__ The pool for the built packages. The pool is the location where aurbuild will put the packages after building
