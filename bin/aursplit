@@ -11,9 +11,9 @@ getbase() {
     done < "$1"
 
     while read -r name _; do
-        if [[ ! ${seen[$name]} ]]; then
+        if [[ ! ${seen[${pkg[$name]}]} ]]; then
             printf '%s\n' "${pkg[$name]}"
-            seen[$name]=1
+            seen[${pkg[$name]}]=1
         fi
     done
 }
