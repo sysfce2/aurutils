@@ -91,18 +91,26 @@ quickcheck() {
     done < "$tmp"/struct
 }
 
+clean() {
+    declare repo
+    read -r repo _ < <(reposelect)
+
+    paccache -rk0 "$(pacman -Slq "$repo")"
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :isu: OPT; do
+while getopts :cisu: OPT; do
     case $OPT in
+        c|+c) clean      ;;
         i|+i) repofind   ;;
         s|+s) reposelect ;;
         u|+u) quickcheck "$OPTARG" ;;
-        *)    plain "usage: $argv0 [+-isu ARG} [--] ARGS..."
+        *)    plain "usage: $argv0 [+-cisu ARG} [--] ARGS..."
               exit 1 ;;
     esac
 done
