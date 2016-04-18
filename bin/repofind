@@ -1,9 +1,9 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e -o pipefail
+set -o pipefail
 
 argv0=repofind
-tmp=$(mktemp -d)
+tmp=$(mktemp -d) || exit
 
 readonly argv0 tmp
 
@@ -12,30 +12,30 @@ repofind() {
     declare -A rset
 
     for repo in $(pacconf --repo-list); do
-	rset[$repo]=$(pacconf --single --repo="$repo" Server)
+        rset[$repo]=$(pacconf --single --repo="$repo" Server)
 
-	if [[ ${rset[$repo]} =~ file:// ]]; then
-	    printf '%s %s\n' "$repo" "${rset[$repo]}"
-	fi
+        if [[ ${rset[$repo]} =~ file:// ]]; then
+            printf '%s %s\n' "$repo" "${rset[$repo]}"
+        fi
     done
 }
 
 reposelect() {
     declare repo server pool
     declare -A avail
-    
+
     while read -r repo server; do
-	avail[$repo]=$server
+        avail[$repo]=$server
     done < <(repofind)
 
     if ((${#avail[@]} > 1)); then
         select repo in "${!avail[@]}"; do
-	    break
-	done
+            break
+        done
     elif [[ ${avail[@]} ]]; then
         repo=${!avail[*]}
     else
-	error "$argv0: no file:// repository"
+        error "$argv0: no file:// repository"
         exit 2
     fi
 
@@ -56,24 +56,33 @@ reposelect() {
 }
 
 aurver() {
-    xargs -r aursearch -Fr | jshon -a -e results -a -e Name -u -p -e Version -u | xargs -n2
+    # xargs does not preserve exit status, but returns 123 if any
+    # command failed with status 1-125.
+    readarray -t arg
+
+    # With pipefail, the exit status of the pipeline is the value of
+    # the last (rightmost) failed command. Here, aursearch is of
+    # special interest.
+    if ! aursearch -Fr "${arg[@]}" | jshon -Q -a -e results -a -e Name -u -p -e Version -u | xargs -n2; then
+        return "${PIPESTATUS[0]}"
+    fi
 }
 
 quickcheck() {
     declare pkg ver_r ver_a
 
     # Check if the repo is configured.
-    pacconf --repo="$1" >/dev/null
+    pacconf --repo="$1" >/dev/null || exit $?
 
-    # Use xargs --no-run-if-empty, as expac -S lists all sync packages
-    # if it has no input on stdin.
+    # Use xargs -r as expac -S lists all sync packages if stdin is empty.
     pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' > "$tmp"/struct_r
 
     # AUR name/version
-    awk '{print $1}' "$tmp"/struct_r | aurver > "$tmp"/struct_a
-
-    # Join on common field
-    join "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
+    if awk '{print $1}' "$tmp"/struct_r | aurver > "$tmp"/struct_a; then
+        join "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
+    else
+        exit $?
+    fi
 
     while read -r pkg ver_r ver_a; do
         case $(vercmp "$ver_r" "$ver_a") in
@@ -90,11 +99,11 @@ source /usr/share/makepkg/util.sh
 
 while getopts :isu: OPT; do
     case $OPT in
-	i|+i) repofind   ;;
-	s|+s) reposelect ;;
-	u|+u) quickcheck "$OPTARG" ;;	    
-	*)    plain "usage: $argv0 [+-isu ARG} [--] ARGS..."
-	      exit 1 ;;
+        i|+i) repofind   ;;
+        s|+s) reposelect ;;
+        u|+u) quickcheck "$OPTARG" ;;
+        *)    plain "usage: $argv0 [+-isu ARG} [--] ARGS..."
+              exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
