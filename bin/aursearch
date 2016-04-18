@@ -1,6 +1,6 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e -o pipefail
+set -o pipefail
 
 argv0=aursearch
 aurweb="https://aur.archlinux.org"
@@ -17,39 +17,44 @@ stamp() {
     if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
         # XXX: aurweb lacks a "Last-Modified" field. Instead, use awk
         # to close the pipe after reading one line (exit code 141).
-        stamp_r=$(curl -s "$1" | gzip -cd | awk -F, '{print $3; exit}') || :
+        stamp_r=$(curl -s "$1" | gzip -cd | awk -F, '{print $3; exit}')
 
-        if [[ $stamp_r ]]; then
-            stamp_r=$(date -d "$stamp_r" '+%s')
-
-            if ((stamp_r > stamp_l)); then
-                fetch=1
-            fi
-        fi
+        case "${PIPESTATUS[0]}" in
+            141) stamp_r=$(date -d "$stamp_r" '+%s')
+                 if ((stamp_r > stamp_l)); then
+                     fetch=1
+                 fi ;;
+        esac
     else
         fetch=1
     fi
 
     if ((fetch)); then
-        curl -sS "$1" -o "$gz"
-        gzip -cd "$gz" | grep -ve '^#' > "${gz%.*}"
+        if curl -sS "$1" -o "$gz"; then
+            gzip -cd "$gz" | grep -ve '^#' > "${gz%.*}"
+        else
+            exit $?
+        fi
     fi
 }
 
-# The actual "match" is done by aurweb; as such, string=1 is similar
+# The actual "match" is done by aurweb; as such, string is similar
 # to grep --fixed-strings.
-match() {
-    #global string
-    if ((string)); then
-        printf '%s\n' "${@:2}"
-    else
-        stamp "$aurweb/$1".gz
-        grep -P -- "$2" "$1"
+string() {
+    printf '%s\n' "${@:2}"
+}
+
+pcre() {
+    if stamp "$aurweb/$1".gz; then
+        if ! grep -P -- "$2" "$1"; then
+            error "$argv0: no matches found"
+            exit 1
+        fi
     fi
 }
 
-# aurweb only takes GET requests, so split arguments by 150 to prevent
-# HTTP 414 errors.
+# XXX: aurweb only takes GET requests, so split arguments by 150 to
+# prevent HTTP 414 errors.
 split() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
         # URL encode @ and +
@@ -63,24 +68,29 @@ split() {
     }'
 }
 
+count() {
+    case $(jshon -a -e resultcount -u) in
+        0) error "$argv0: no matches found"
+           exit 1 ;;
+    esac
+}
+
 getjson() {
     # aria2c either dumps all errors on stdout, or doesn't display
     # them at all. Preserve exit status, and mention the log file.
-    aria2c -d "$tmp" -l "$cache"/aria2c.log --log-level=error -q -i - || ret=$?
-
-    if ((ret)); then
-        error "$argv0: see $cache/aria2c.log"
-        exit "$ret"
-    fi
-
-    # If stdin is empty, aria reports "No files to download" (even
-    # with -q) and returns 0.
-    if [[ -s "$tmp"/index.html ]]; then
-        # Merge to a single JSON structure.
-        awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+    if aria2c -d "$tmp" -l "$cache"/aria2c.log --log-level=error -q -i -; then
+        # If stdin is empty, aria reports "No files to download" (even
+        # with -q) and returns 0. When -i or -Z are set, the file name
+        # can not be changed.
+        if [[ -s "$tmp"/index.html ]]; then
+            # Merge to a single JSON structure, and check results from
+            # a copy of stdout (#96).
+            awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' | tee >(count)
+        fi
     else
-        error "$argv0: no data available"
-        exit 61
+        aria2_ret=$?
+        error "$argv0: see $cache/aria2c.log"
+        exit $aria2_ret
     fi
 }
 
@@ -94,7 +104,8 @@ brief() {
         # libmakepkg misses PURPLE and CYAN
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" \
                "$Name" "$Version" "$NumVotes" "$Description"
-    done < <(jshon -Q -C -a -e results -a -e Name -u -p -e Version \
+        # The RPC fills empty fields with "null", removing the need for jshon -C.
+    done < <(jshon -Q -a -e results -a -e Name -u -p -e Version \
                    -u -p -e NumVotes -u -p -e Description -u)
 }
 
@@ -124,7 +135,7 @@ long() {
         printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
         printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
         printf '%s\n'
-    done < <(jshon -Q -C -a -e results -a -e Name -u -p -e PackageBase -u -p -e Version \
+    done < <(jshon -Q -a -e results -a -e Name -u -p -e PackageBase -u -p -e Version \
                    -u -p -e Description -u -p -e URL -u -p -e NumVotes -u -p -e Popularity \
                    -u -p -e OutOfDate -u -p -e Maintainer -u -p -e FirstSubmitted \
                    -u -p -e LastModified -u)
@@ -138,7 +149,7 @@ source /usr/share/makepkg/util.sh
 
 while getopts :Fbqrv OPT; do
     case $OPT in
-        F|+F) string=1     ;;
+        F|+F) match=string ;;
         b|+b) list=pkgbase ;;
         q|+q) nameonly=1   ;;
         r|+r) parse=tee    ;;
@@ -149,7 +160,7 @@ shift $((OPTIND - 1))
 OPTIND=1
 
 if ((!$#)); then
-    plain "usage: $argv0 [+-Fbqrv} [--] ARGS..."
+    plain "$argv0: no targets specified"
     exit 1
 fi
 
@@ -159,7 +170,8 @@ chmod -c 700 "$cache"
 cd "$cache"
 
 if ((nameonly)); then
-    match "${list:-packages}" "$1"
-else
-    match "${list:-packages}" "$@" | split | getjson | "${parse:-brief}"
+    pcre "${list:-packages}" "$1"
+    exit
 fi
+
+"${match:-pcre}" "${list:-packages}" "$@" | split | getjson | "${parse:-brief}"
