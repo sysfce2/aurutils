@@ -113,5 +113,5 @@ while getopts :SU OPT; do
         *)    plain "usage: $argv0 [+-SU} [--] ARGS..."
     esac
 done
-shift $(( OPTIND - 1 ))
+shift $((OPTIND - 1))
 OPTIND=1

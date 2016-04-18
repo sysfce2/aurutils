@@ -1,0 +1,34 @@
+.TH REPOFIND 1 2016-04-18 AURUTILS
+.SH NAME
+repofind \- display information on file:// repositories
+.
+.SH SYNOPSIS
+.B repofind
+.OP \-is
+.OP \-u repository
+.
+.SH OPTIONS
+.B \-i
+.RS
+Find and list all file:// (local) repositories in pacman.conf
+.RE
+.
+.B \-s
+.RS
+Interactively select a local repository and output the name and
+location to stdout
+.RE
+.
+.B \-u
+.RS
+Check for updates in the named repository
+.RE
+.
+.SH SEE ALSO
+.BR makepkg.conf (5),
+.BR pacman.conf (5)
+.
+.SH AUTHORS
+.MT https://github.com/AladW
+Alad Wenter
+.ME

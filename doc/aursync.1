@@ -1,0 +1,64 @@
+.TH AURSYNC 1 2016-04-18 AURUTILS
+.SH Name
+aursync \- download and build aur packages automatically
+.
+.SH SYNOPSIS
+.B aursync
+.OP \-cdknut
+.OP pkgname
+.OP pkgname...
+.
+.SH DESCRIPTION
+Downloads and builds packages automatically using aurbuild. The
+arguments are package names.
+.P
+In case vifm is installed, the downloaded files are shown using vifm
+and can be edited. If vifm is not installed, the files are shown in
+less or $PAGER if configured.
+.
+.SH OPTIONS
+.B \-c
+.RS
+Build packages in a chroot
+.RE
+.
+.B \-d
+.RS
+Only download source files, do not build anything
+.RE
+.
+.B \-k
+.RS
+Do not view downloaded files before building
+.RE
+.
+.B \-n
+.RS
+Disable version checking for packages in the queue
+.RE
+.
+.B \-u
+.RS
+Update packages in the custom repository
+.RE
+.
+.B \-t
+.RS
+Download the PKGBUILDs using aria instead of git
+.RE
+.
+.SH SEE ALSO
+.BR vifm (1),
+.BR less (1),
+.BR aria2c (1),
+.BR git (1),
+.BR aurbuild (1),
+.BR aurchain (1),
+.BR aursift (1),
+.BR aursearch (1),
+.BR repofind (1)
+.
+.SH AUTHORS
+.MT https://github.com/AladW
+Alad Wenter
+.ME
