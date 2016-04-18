@@ -127,6 +127,10 @@ EXAMPLES
 
       $ aursync -u
 
+    Select a package that matches "pony", and build the result:
+
+      $ select a in $(aursearch -q pony); do aursync "$a"; break; done
+      
     Print AUR updates in the "custom" repository (output similar to checkupdates):
 
       $ repofind -u custom
