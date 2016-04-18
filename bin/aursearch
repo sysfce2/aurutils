@@ -68,13 +68,6 @@ split() {
     }'
 }
 
-count() {
-    case $(jshon -a -e resultcount -u) in
-        0) error "$argv0: no matches found"
-           exit 1 ;;
-    esac
-}
-
 getjson() {
     # aria2c either dumps all errors on stdout, or doesn't display
     # them at all. Preserve exit status, and mention the log file.
@@ -83,9 +76,14 @@ getjson() {
         # with -q) and returns 0. When -i or -Z are set, the file name
         # can not be changed.
         if [[ -s "$tmp"/index.html ]]; then
-            # Merge to a single JSON structure, and check results from
-            # a copy of stdout (#96).
-            awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' | tee >(count)
+            # Merge to a single JSON structure.
+            awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' | tee "$tmp"/raw
+
+            # Check for results (#96)
+            case $(jshon -F "$tmp"/raw -a -e resultcount -u) in
+                0) error "$argv0: no matches found"
+                   exit 1 ;;
+            esac
         fi
     else
         aria2_ret=$?
