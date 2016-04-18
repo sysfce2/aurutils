@@ -37,11 +37,13 @@ revcheck() {
 
 clone() {
     #global aurweb
-    while read -r base _; do
-        if [[ -d $base/.git ]]; then
-            GIT_DIR="$base"/.git GIT_WORK_TREE="$base" revcheck "$base"
+    declare b
+
+    while read -r b _; do
+        if [[ -d $b/.git ]]; then
+            GIT_DIR="$b"/.git GIT_WORK_TREE="$b" revcheck "$b"
         else
-            git clone "$aurweb/$base".git
+            git clone "$aurweb/$b".git
         fi
     done
 }
