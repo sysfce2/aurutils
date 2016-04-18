@@ -5,7 +5,7 @@ set -o pipefail
 argv0=aursearch
 aurweb="https://aur.archlinux.org"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
-tmp=$(mktemp -d)
+tmp=$(mktemp -d) || exit
 
 readonly argv0 aurweb cache tmp
 
@@ -143,7 +143,7 @@ long() {
 
 trap 'rm -rf "$tmp"' EXIT
 
-source /usr/share/makepkg/util.sh
+source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
@@ -167,7 +167,7 @@ fi
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p "$cache"
 chmod -c 700 "$cache"
-cd "$cache"
+cd "$cache" || exit
 
 if ((nameonly)); then
     pcre "${list:-packages}" "$1"
