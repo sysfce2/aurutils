@@ -55,21 +55,12 @@ reposelect() {
     printf '%s %s\n' "$repo" "$pool"
 }
 
-aurver() {
-    # xargs does not preserve exit status, but returns 123 if any
-    # command failed with status 1-125.
-    readarray -t arg
-
-    # With pipefail, the exit status of the pipeline is the value of
-    # the last (rightmost) failed command. Here, aursearch is of
-    # special interest.
-    if ! aursearch -Fr "${arg[@]}" | jshon -Q -a -e results -a -e Name -u -p -e Version -u | xargs -n2; then
-        return "${PIPESTATUS[0]}"
-    fi
+namever() {
+    jshon -Q -a -e results -a -e Name -u -p -e Version -u | xargs -n2
 }
 
 quickcheck() {
-    declare pkg ver_r ver_a
+    declare pkg ver_r ver_a argv
 
     # Check if the repo is configured.
     pacconf --repo="$1" >/dev/null || exit $?
@@ -77,11 +68,17 @@ quickcheck() {
     # Use xargs -r as expac -S lists all sync packages if stdin is empty.
     pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' > "$tmp"/struct_r
 
-    # AUR name/version
-    if awk '{print $1}' "$tmp"/struct_r | aurver > "$tmp"/struct_a; then
+    # xargs does not preserve exit status, but returns 123 if any
+    # command failed with status 1-125.
+    readarray -t argv < <(awk '{print $1}' "$tmp"/struct_r)
+
+    # With pipefail, the exit status of the pipeline is the value of
+    # the last (rightmost) failed command. Here, aursearch is of
+    # special interest.
+    if aursearch -Fr "${argv[@]}" | namever > "$tmp"/struct_a; then
         join "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
     else
-        exit $?
+        exit "${PIPESTATUS[0]}"
     fi
 
     while read -r pkg ver_r ver_a; do
