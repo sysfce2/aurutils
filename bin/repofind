@@ -65,7 +65,9 @@ quickcheck() {
     # Check if the repo is configured.
     pacconf --repo="$1" >/dev/null || exit $?
 
-    # Use xargs -r as expac -S lists all sync packages if stdin is empty.
+    # pacsift prints "repo/package" pairs, so expac results are
+    # constrained to a given repo. Use xargs -r as expac -S lists all
+    # sync packages if stdin is empty.
     pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' > "$tmp"/struct_r
 
     # xargs does not preserve exit status, but returns 123 if any
