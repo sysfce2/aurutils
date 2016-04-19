@@ -77,12 +77,13 @@ getjson() {
         # can not be changed.
         if [[ -s "$tmp"/index.html ]]; then
             # Merge to a single JSON structure.
-            awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' | tee "$tmp"/raw
+            awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$tmp"/raw
 
             # Check for results (#96)
             case $(jshon -F "$tmp"/raw -a -e resultcount -u) in
                 0) error "$argv0: no matches found"
                    exit 1 ;;
+                *) cat "$tmp"/raw ;;
             esac
         fi
     else
