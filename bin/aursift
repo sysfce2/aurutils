@@ -80,6 +80,8 @@ prepare() {
         exit 61
     fi
 
+    # XXX: This does not account for multiple repositories with
+    # duplicate package names.
     while read -r name ver; do
         repo[$name]=$ver
     done < <(expac -S '%n %v' "${!aur[@]}")
