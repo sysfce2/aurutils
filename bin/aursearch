@@ -15,15 +15,22 @@ stamp() {
     declare stamp_l stamp_r fetch
     
     if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
-        # XXX: aurweb lacks a "Last-Modified" field. Instead, use awk
-        # to close the pipe after reading one line (exit code 141).
-        stamp_r=$(curl -s "$1" | gzip -cd | awk -F, '{print $3; exit}')
+        # XXX: aurweb lacks a "Last-Modified" field. The date is
+        # instead the first line of the list. Write the result to a
+        # temporary file to prevent SIGPIPE (exit 141).
+        curl -s "$1" | gzip -cd | awk -F, '{print $3; exit}' > "$tmp"/head
 
+        # XXX: Closing stdout after one line results in "Failed to
+        # write body" (curl exit 23).
         case "${PIPESTATUS[0]}" in
-            141) stamp_r=$(date -d "$stamp_r" '+%s')
-                 if ((stamp_r > stamp_l)); then
-                     fetch=1
-                 fi ;;
+            23) read -r stamp_r < "$tmp"/head
+                read -r stamp_r < <(date -d "$stamp_r" '+%s')
+
+                if ((stamp_r > stamp_l)); then
+                    fetch=1
+                fi ;;
+            *)  error "$argv0: curl: exit code ${PIPESTATUS[0]}"
+                exit 22 ;;
         esac
     else
         fetch=1
@@ -79,7 +86,7 @@ getjson() {
             # Merge to a single JSON structure.
             awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$tmp"/raw
 
-            # Check for results (#96)
+            # Check for results, only print if non-zero (#96)
             case $(jshon -F "$tmp"/raw -a -e resultcount -u) in
                 0) error "$argv0: no matches found"
                    exit 1 ;;
@@ -88,7 +95,7 @@ getjson() {
         fi
     else
         aria2_ret=$?
-        error "$argv0: see $cache/aria2c.log"
+        error "$argv0: aria2c: see $cache/aria2c.log"
         exit $aria2_ret
     fi
 }
