@@ -59,6 +59,14 @@ namever() {
     jshon -Q -a -e results -a -e Name -u -p -e Version -u | xargs -n2
 }
 
+notify() {
+    grep -Fxvf <(awk '{print $1}' "$1") <(awk '{print $1}' "$2") | {
+        while read -r pkg; do
+            warning "$pkg is not present in AUR"
+        done
+    }
+}
+
 quickcheck() {
     declare pkg ver_r ver_a argv
 
@@ -78,7 +86,11 @@ quickcheck() {
     # the last (rightmost) failed command. Here, aursearch is of
     # special interest.
     if aursearch -Fr "${argv[@]}" | namever > "$tmp"/struct_a; then
+        # Join on first field (pkgname)
         join "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
+
+        # Notify if packages are not in AUR (#110)
+        notify "$tmp"/struct_a "$tmp"/struct_r
     else
         exit "${PIPESTATUS[0]}"
     fi
