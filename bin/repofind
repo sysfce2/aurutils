@@ -100,7 +100,7 @@ clean() {
 
 trap 'rm -rf "$tmp"' EXIT
 
-source /usr/share/makepkg/util.sh
+source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
