@@ -5,9 +5,16 @@ repofind \- display information on file:// repositories
 .SH SYNOPSIS
 .B repofind
 .OP \-is
+.OP \-c repository
 .OP \-u repository
 .
 .SH OPTIONS
+.B \-c
+.RS
+Remove cached packages (usually in /var/cache/pacman/pkg) by names in
+a given repository.
+.RE
+.
 .B \-i
 .RS
 Find and list all file:// (local) repositories in pacman.conf
