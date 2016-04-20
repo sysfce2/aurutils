@@ -110,7 +110,7 @@ clean() {
     done
 
     if [[ ${siftargs[@]} ]]; then
-        pacsift --cache --exact --null "${siftargs[@]}" | sed 's|file://||g' | xargs -r0 sudo rm -vf
+        pacsift --cache --exact --null "${siftargs[@]}" | sed -z 's|^file://||g' | xargs -r0 sudo rm -vf
     else
         error "$argv0: invalid argument"
         exit 22
