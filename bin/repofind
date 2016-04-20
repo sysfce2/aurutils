@@ -110,7 +110,7 @@ clean() {
         siftargs+=(--name="$p")
     done
     
-    pacsift --cache --exact "${siftargs[@]}" | sed 's|file://||g' | sudo xargs -r rm -v
+    pacsift --cache --exact --null "${siftargs[@]}" | sed 's|file://||g' | xargs -r0 sudo rm -vf
 }
 
 trap 'rm -rf "$tmp"' EXIT
