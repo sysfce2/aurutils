@@ -103,10 +103,14 @@ quickcheck() {
 }
 
 clean() {
-    declare repo
+    declare repo siftargs p
     read -r repo _ < <(reposelect)
 
-    paccache -rk0 "$(pacman -Slq "$repo")"
+    for p in $(pacman -Slq "$repo"); do
+        siftargs+=(--name="$p")
+    done
+    
+    pacsift --cache --exact "${siftargs[@]}" | sed 's|file://||g' | sudo xargs rm -v
 }
 
 trap 'rm -rf "$tmp"' EXIT
