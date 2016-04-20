@@ -53,7 +53,7 @@ NOTES
     Creating a local repository 
     ---------------------------
     
-      $ sudo vim /etc/pacman.conf # uncomment [custom], change Server to suit
+      $ sudoedit /etc/pacman.conf # uncomment [custom], change Server to suit
       $ sudo install -d /home/packages -o $USER -m 700
       $ repo-add /home/packages/custom.db.tar
       $ sudo pacman -Syu
