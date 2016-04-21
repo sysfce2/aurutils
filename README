@@ -121,7 +121,7 @@ EXAMPLES
 
     Download and view build files recursively for libunity:
 
-      $ aursync -dn libunity
+      $ aursync -dv libunity
 
     Build all AUR updates in a selected repository:
 
