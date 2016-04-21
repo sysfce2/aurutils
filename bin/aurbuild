@@ -17,8 +17,7 @@ mkchr_args=(-cu)
 # as "local", and warns if they are newer than a custom counterpart.
 build_local() {
     #global database pool root mkpkg_args
-    database=${database%.*}
-    
+
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${mkpkg_args[@]}"
     repose -vf "$database" -r "$root" -p "$pool"
 
@@ -31,18 +30,12 @@ build_local() {
 # '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
 # if already available.
 build_chroot() {
-    #global database pool root mkchr_args
-    declare CHROOT=/var/lib/aurbuild
-
-    if [[ ! -d $CHROOT/root ]]; then
-        sudo mkdir -p "$CHROOT"
-        sudo mkarchroot -C /etc/pacman.conf "$CHROOT"/root base base-devel
-    fi
+    #global CHROOT database pool root mkchr_args
 
     # Skip verification checks in the chroot instance as .gnupg paths
     # are hardcoded in makechrootpkg. Signatures are still verified
     # outside the chroot.
-    sudo -E PKGDEST="$pool" makechrootpkg -d "$pool" -r "$CHROOT" "${mkchr_args[@]}" -- --skippgpcheck
+    PKGDEST="$pool" makechrootpkg -d "$pool" -r "$CHROOT" "${mkchr_args[@]}" -- --skippgpcheck
     repose -vf "$database" -r "$root" -p "$pool"
 }
 
@@ -80,6 +73,20 @@ fi
 if [[ ! -r $queue ]]; then
     error "$argv0: $queue: Permission denied"
     exit 13
+fi
+
+if [[ $build == build_chroot ]]; then
+    CHROOT=/var/lib/aurbuild
+
+    if [[ ! -d $CHROOT/root ]]; then
+        sudo install -d "$CHROOT"
+        sudo mkarchroot "$CHROOT"/root base base-devel
+    fi
+
+    # Update settings from /etc/pacman.conf and includes
+    if pacconf > "$tmp"/pacman.conf; then
+        sudo cp -v "$tmp"/pacman.conf "$CHROOT"/root/etc/pacman.conf
+    fi
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)
