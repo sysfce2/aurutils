@@ -1,20 +1,30 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly argv0=aursplit
 
 getbase() {
-    declare -A pkg seen
-    declare base name
+    declare -A pkg
+    declare name base
 
-    while read -r name base; do
+    if [[ -r $1 ]]; then
+        exec 3< "$1"
+    else
+        error "$argv0: $1: permission denied"
+        exit 13
+    fi
+
+    while read -r -u 3 name base; do
         pkg[$name]=$base
-    done < "$1"
-
-    while read -r name _; do
-        if [[ ! ${seen[${pkg[$name]}]} ]]; then
-            printf '%s\n' "${pkg[$name]}"
-            seen[${pkg[$name]}]=1
-        fi
     done
+
+    # Values taken from stdin are not necessarily AUR targets (as for
+    # the array above), so check if a value is set before printing to
+    # prevent sparse files.
+    while read -r name _; do
+        if [[ ${pkg[$name]} ]]; then
+            printf '%s\n' "${pkg[$name]}"
+        fi
+    done | datamash rmdup 1
 }
 
 if [[ ! -r $1 ]]; then
@@ -22,4 +32,5 @@ if [[ ! -r $1 ]]; then
     exit 13
 fi
 
+source /usr/share/makepkg/util.sh || exit
 getbase "$1"
