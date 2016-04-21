@@ -68,15 +68,17 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdknut OPT; do
+while getopts :cdkLnut OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
-        d|+d) nobuild=1           ;;
-        k|+k) insecure=1          ;;
-        n|+n) noprepare=1         ;;
-        u|+u) update=1            ;;
-        t|+t) download=aria       ;;
-        *) plain "usage: $argv0 [+-cdknut} [--] ARGS..."
+        d|+d) nobuild=1     ;;
+        k|+k) insecure=1    ;;
+        v|+v) noversion=1   ;;
+        u|+u) update=1      ;;
+        t|+t) download=aria ;;
+        L|+L) makepkg_args+=(--log) ;;
+        n|+n) makepkg_args+=(--noconfirm) ;;
+        *) plain "usage: $argv0 [+-cdkLnut} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -127,7 +129,7 @@ jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "
 # results, and download build files.
 aursplit "$tmp"/pair/base < "$tmp"/tsort/name | tee "$tmp"/tsort/base | "${download:-clone}"
 
-if ! ((noprepare)); then
+if ! ((noversion)); then
     # Print updated pkgbase from versioned pairs.
     aursift -U < "$tmp"/pair/ver | aursplit "$tmp"/pair/base > "$tmp"/list/base
 
@@ -150,4 +152,4 @@ if ((nobuild)); then
 fi
 
 aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/queue)
-aurbuild "${aurbuild_args[@]}" # -- "${makepkg_args[@]}"
+aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
