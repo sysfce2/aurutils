@@ -74,12 +74,12 @@ NOTES
     for example in /home/packages:
 
       $ cd /home/packages
-      $ repose -fv custom.db
+      $ repose -fv custom
       $ sudo pacman -Syu
 
     To reverse this operation, repeat the procedure with --drop:
 
-      $ repose -dfv custom.db
+      $ repose -dfv custom
 
     Without packages, check the installed files first. If needed,
     rebuild packages with md5sum mismatches.
@@ -94,7 +94,7 @@ NOTES
     PKGDEST and create a repose alias:
 
       $ sudo vim /etc/makepkg.conf
-      $ alias custom='repose -vf custom.db -p /home/packages -r /home/packages'
+      $ alias custom='repose -vf custom -p /home/packages -r /home/packages'
 
 EXAMPLES
 
@@ -108,7 +108,7 @@ EXAMPLES
       $ cd pkgbuilds
       $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;    
       $ aurqueue * > queue # Remove unwanted targets
-      $ aurbuild -d custom.db -r /home/packages -p /home/packages -a queue
+      $ aurbuild -d custom -r /home/packages -p /home/packages -a queue
 
     Search for Perl modules that are both in the AUR or official repositories:
 

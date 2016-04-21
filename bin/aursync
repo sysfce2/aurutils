@@ -151,5 +151,5 @@ if ((nobuild)); then
     exit
 fi
 
-aurbuild_args+=(-d "$repo".db -r "$pool" -p "$pool" -a "$tmp"/queue)
+aurbuild_args+=(-d "$repo" -r "$pool" -p "$pool" -a "$tmp"/queue)
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
