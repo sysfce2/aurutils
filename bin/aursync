@@ -62,23 +62,29 @@ aria() {
     done
 }
 
+print() {
+    printf '%s\n' "$@"
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdkLnut OPT; do
+while getopts :cdfkLnuwt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
-        d|+d) nobuild=1     ;;
+        d|+d) deps=print    ;;
         k|+k) insecure=1    ;;
         v|+v) noversion=1   ;;
         u|+u) update=1      ;;
+        w|+w) nobuild=1     ;;
         t|+t) download=aria ;;
+        f|+f) makepkg_args+=(--force) ;;
         L|+L) makepkg_args+=(--log) ;;
         n|+n) makepkg_args+=(--noconfirm) ;;
-        *) plain "usage: $argv0 [+-cdkLnut} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdfkLnuwt} [--] ARGS..."
            exit 1 ;;
     esac
 done
@@ -119,7 +125,7 @@ mkdir "$tmp"/{list,pair,tsort}
 
 # Copy the queue and dependency tree for later processing, and
 # retrieve AUR metadata.
-aurchain "$@" | tee "$tmp"/tsort/name | xargs -r aursearch -Fr > "$tmp"/raw
+"${deps:-aurchain}" "$@" | tee "$tmp"/tsort/name | xargs -r aursearch -Fr > "$tmp"/raw
 
 # Create pairs of pkgname and pkgbase, and pkgname and pkgver.
 jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair/base
