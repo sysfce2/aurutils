@@ -27,13 +27,7 @@ pair() {
 }
 
 deps() {
-    # $1 - request data
-    awk -v FS='[<=>]' '{print $1}' \
-    <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
-    <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
-    <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
-
-    #pair "$(count "$1")" "$1" | awk '{print $2}'
+    pair "$(count "$1")" "$1" | awk '{print $2}'
 }
 
 request() {
@@ -87,7 +81,7 @@ chain() {
     fi
 
     for ((a = 1; a <= 100; ++a)); do
-        declare prev=$((--a))
+        declare -i prev=$((--a))
         deps raw_$prev > req_$prev
 
         # Remove duplicates to reduce RPC requests (#4)
