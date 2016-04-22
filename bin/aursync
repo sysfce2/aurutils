@@ -72,19 +72,19 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdfkLnuwt OPT; do
+while getopts :cdfkuvwtfLn OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) deps=print    ;;
         k|+k) insecure=1    ;;
-        v|+v) noversion=1   ;;
         u|+u) update=1      ;;
+        v|+v) noversion=1   ;;
         w|+w) nobuild=1     ;;
         t|+t) download=aria ;;
         f|+f) makepkg_args+=(--force) ;;
         L|+L) makepkg_args+=(--log) ;;
         n|+n) makepkg_args+=(--noconfirm) ;;
-        *) plain "usage: $argv0 [+-cdfkLnuwt} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdfkuvwtfLn} [--] ARGS..."
            exit 1 ;;
     esac
 done
