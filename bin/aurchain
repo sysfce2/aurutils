@@ -81,16 +81,16 @@ chain() {
     fi
 
     for ((a = 1; a <= 100; ++a)); do
-        declare -i prev=$((--a))
-        deps raw_$prev > req_$prev
+        declare -i a_sub=$((--a))
+        deps raw_$a_sub > req_$a_sub
 
         # Remove duplicates to reduce RPC requests (#4)
-        curl_safe "$(grep -Fxvf all req_$prev | url)" > raw_$a
+        curl_safe "$(grep -Fxvf all req_$a_sub | url)" > raw_$a
 
         if [[ $(count raw_$a) -lt 1 ]]; then
             break
         else
-            sort -u req_$prev >> all
+            sort -u req_$a_sub >> all
         fi
     done
 
