@@ -72,7 +72,7 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdfkuvwtfLn OPT; do
+while getopts :cdfkLnuvwt OPT; do
     case $OPT in
         c|+c) aurbuild_args+=(-c) ;;
         d|+d) deps=print    ;;
@@ -81,17 +81,17 @@ while getopts :cdfkuvwtfLn OPT; do
         v|+v) noversion=1   ;;
         w|+w) nobuild=1     ;;
         t|+t) download=aria ;;
-        f|+f) makepkg_args+=(--force) ;;
-        L|+L) makepkg_args+=(--log) ;;
+        f|+f) makepkg_args+=(--force)     ;;
+        L|+L) makepkg_args+=(--log)       ;;
         n|+n) makepkg_args+=(--noconfirm) ;;
-        *) plain "usage: $argv0 [+-cdfkuvwtfLn} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdfkLnuvwt} [--] ARGS..."
            exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# Select file:// repository
+# Select file:// repository.
 read -r repo pool < <(repofind -s)
 
 # Reuse selection for repofind (#82)
@@ -145,7 +145,7 @@ else
     cp "$tmp"/tsort/base "$tmp"/queue
 fi
 
-# View changes and build files in one window (#77).
+# View changes and build files in one window (#77)
 if ! ((insecure)); then
     ( shopt -s nullglob
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect
@@ -156,6 +156,9 @@ if ((nobuild)); then
     msg "Files downloaded to $PWD"
     exit
 fi
+
+# Remove cached packages (#85)
+repofind -c "$repo"
 
 aurbuild_args+=(-d "$repo" -r "$pool" -p "$pool" -a "$tmp"/queue)
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
