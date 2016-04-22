@@ -157,8 +157,5 @@ if ((nobuild)); then
     exit
 fi
 
-# Remove cached packages (#85)
-repofind -c "$repo"
-
 aurbuild_args+=(-d "$repo" -r "$pool" -p "$pool" -a "$tmp"/queue)
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
