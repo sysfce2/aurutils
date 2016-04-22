@@ -27,7 +27,11 @@ pair() {
 }
 
 deps() {
-    pair "$(count "$1")" "$1" | awk '{print $2}'
+    # $1 - request data
+    awk -v FS='[<=>]' '{print $1}' \
+    <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
+    <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
+    <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
 }
 
 request() {
