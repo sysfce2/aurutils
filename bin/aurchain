@@ -15,14 +15,6 @@ count() {
     jshon -F "$1" -Qe resultcount
 }
 
-deps() {
-    # $1 - request data
-    awk -v FS='[<=>]' '{print $1}' \
-    <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
-    <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
-    <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
-}
-
 pair() {
     # $1 - resultcount
     # $2 - request data
@@ -32,6 +24,16 @@ pair() {
         <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
         <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e CheckDepends -a -u)
     done
+}
+
+deps() {
+    # $1 - request data
+    awk -v FS='[<=>]' '{print $1}' \
+    <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
+    <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
+    <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
+
+    #pair "$(count "$1")" "$1" | awk '{print $2}'
 }
 
 request() {
@@ -77,18 +79,24 @@ url() {
 # URL. This continues until a certain maximum is exceeded, or no AUR
 # results are found.
 chain() {
-    curl_safe "$(printf '%s\n' "$@" | tee copy | url)" > raw_0
+    curl_safe "$(printf '%s\n' "$@" | tee all | url)" > raw_0
 
-    if [[ $(count raw_0) == 0 ]]; then
+    if [[ $(count raw_0) -lt 1 ]]; then
         error "$argv0: no packages found"
         exit 2
     fi
 
     for ((a = 1; a <= 100; ++a)); do
-        curl_safe "$(deps raw_"$((--a))" | tee -a copy | url)" > raw_$a
+        declare prev=$((--a))
+        deps raw_$prev > req_$prev
 
-        if [[ $(count raw_$a) == 0 ]]; then
+        # Remove duplicates to reduce RPC requests (#4)
+        curl_safe "$(grep -Fxvf all req_$prev | url)" > raw_$a
+
+        if [[ $(count raw_$a) -lt 1 ]]; then
             break
+        else
+            sort -u req_$prev >> all
         fi
     done
 
@@ -114,6 +122,6 @@ cd "$tmp" || exit
 msg "Resolving dependencies..."
 chain "$@"
 
-if curl_safe "$(sort -u copy | url)" > raw_n; then
-    request raw_n copy
+if curl_safe "$(sort -u all | url)" > raw_n; then
+    request raw_n all
 fi
