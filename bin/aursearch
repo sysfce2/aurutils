@@ -75,15 +75,15 @@ split() {
     }'
 }
 
+# * aria2c either dumps all errors on stdout, or doesn't display
+#   them at all. Log to a file instead, and mention it on error.
+# * If stdin is empty, aria reports "No files to download" (even
+#   with -q) and returns 0.
+# * When -i or -Z are set, the file name can not be changed.
 getjson() {
-    # aria2c either dumps all errors on stdout, or doesn't display
-    # them at all. Preserve exit status, and mention the log file.
     if aria2c -d "$tmp" -l "$cache"/aria2c.log --log-level=error -q -i -; then
-        # If stdin is empty, aria reports "No files to download" (even
-        # with -q) and returns 0. When -i or -Z are set, the file name
-        # can not be changed.
         if [[ -s "$tmp"/index.html ]]; then
-            # Merge to a single JSON structure.
+            # Merge to a single JSON structure, see jshon(1).
             awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$tmp"/raw
 
             # Check for results, only print if non-zero (#96)
@@ -94,9 +94,9 @@ getjson() {
             esac
         fi
     else
-        aria2_ret=$?
+        declare -i ret=$?
         error "$argv0: aria2c: see $cache/aria2c.log"
-        exit $aria2_ret
+        exit $ret
     fi
 }
 
