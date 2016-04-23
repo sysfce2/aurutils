@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.8.0.r0.g3db4cce
+pkgver=0.8.0.r4.g8cf86e7
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -7,6 +7,8 @@ url=https://github.com/AladW/aurutils
 license=('ISC')
 source=("git+$url")
 md5sums=('SKIP')
+conflicts=('aurutils')
+provides=('aurutils')
 depends=('pacman>=5.0' 'expac' 'jshon' 'git' 'aria2'
          'pacutils-git' 'repose-git' 'datamash-git')
 checkdepends=('shellcheck')
