@@ -2,10 +2,10 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 argv0=aurchain
-multiinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
+multinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
 tmp=$(mktemp -d) || exit
 
-readonly argv0 aurweb tmp
+readonly argv0 multinfo tmp
 
 curl_safe() {
     curl --retry 3 -sSgL "$@" || exit
@@ -36,7 +36,7 @@ deps() {
 }
 
 url() {
-    awk -v info="$multiinfo" '{
+    awk -v info="$multinfo" '{
         gsub("+","%2b")
         gsub("@","%40")
         
@@ -127,6 +127,8 @@ fi
 cd "$tmp" || exit
 
 msg "Resolving dependencies..."
-if curl_safe "$(chain "$@" | url)" > raw_n; then
+target=$(chain "$@" | url)
+
+if [[ $target ]] && curl_safe "$target"; then
     main raw_n all
 fi
