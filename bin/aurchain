@@ -120,10 +120,10 @@ jshon -F raw/n -e results -a -e Name -u > list/name
 pair "$(count raw/n)" raw/n > pair/name
 
 # Validate tsort data (#87)
-dmsort pair/name | tee tsort/name | aursift -S > list/foreign
+dmsort pair/name | tee tsort/name | aursift -S > tsort/foreign
 
 # Warn on packages missing in both official repositories and AUR (#67)
-grep -Fxvf list/name list/foreign | while read -r p; do
+grep -Fxvf list/name tsort/foreign | while read -r p; do
     warning "no results found for $p"
 done
 

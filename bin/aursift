@@ -17,6 +17,7 @@ sift() {
     declare -A pkgset
     declare all siftargs query repo n p r v
 
+    # Use an additional indexed array to preserve input order.
     while read -r p; do
         pkgset["$p"]=1
         all+=("$p")
