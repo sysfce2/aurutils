@@ -2,9 +2,10 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 argv0=aurchain
+multiinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
 tmp=$(mktemp -d) || exit
 
-readonly argv0 tmp
+readonly argv0 aurweb tmp
 
 curl_safe() {
     curl --retry 3 -sSgL "$@" || exit
@@ -35,13 +36,14 @@ deps() {
 }
 
 url() {
-    awk 'BEGIN {
-        printf "%s", "https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info"
-    } {
+    awk -v info="$multiinfo" '{
         gsub("+","%2b")
         gsub("@","%40")
         
-        printf "&arg[]=%s", $1
+        if (NR == 1)
+            printf "%s&arg[]=%s", info, $1
+        else
+            printf "&arg[]=%s", $1
     }'
 }
 
@@ -89,7 +91,6 @@ dmsort() {
     fi
 }
 
-# XXX: Does a complete run without results
 main() {
     # Create pairs of package names and their dependencies.
     pair "$(count "$1")" "$1" > pair_all
@@ -125,7 +126,6 @@ fi
 
 cd "$tmp" || exit
 
-# XXX: Runs main without results
 msg "Resolving dependencies..."
 if curl_safe "$(chain "$@" | url)" > raw_n; then
     main raw_n all
