@@ -75,6 +75,8 @@ chain() {
     if ((a > 100)); then
         error "$argv0: total requests: $((++a)) (out of range)"
         exit 34
+    else
+        sort -u all | url
     fi
 }
 
@@ -123,8 +125,6 @@ fi
 cd "$tmp" || exit
 
 msg "Resolving dependencies..."
-chain "$@"
-
-if curl_safe "$(sort -u all | url)" > raw_n; then
+if curl_safe "$(chain "$@")" > raw_n; then
     main raw_n all
 fi
