@@ -76,7 +76,7 @@ chain() {
         error "$argv0: total requests: $((++a)) (out of range)"
         exit 34
     else
-        sort -u all | url
+        sort -u all
     fi
 }
 
@@ -89,6 +89,7 @@ dmsort() {
     fi
 }
 
+# XXX: Does a complete run without results
 main() {
     # Create pairs of package names and their dependencies.
     pair "$(count "$1")" "$1" > pair_all
@@ -124,7 +125,8 @@ fi
 
 cd "$tmp" || exit
 
+# XXX: Runs main without results
 msg "Resolving dependencies..."
-if curl_safe "$(chain "$@")" > raw_n; then
+if curl_safe "$(chain "$@" | url)" > raw_n; then
     main raw_n all
 fi
