@@ -17,23 +17,21 @@ count() {
     jshon -F "$1" -Qe resultcount
 }
 
-pair() {
-    # $1 - resultcount
-    # $2 - request data
-    for ((i = 0; i < "$1"; ++i)); do
-        awk -v FS='[<=>]' 'NR == 1 { p = $1 } NR > 1 { print p, $1 }' \
-            <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e Depends -a -u) \
-            <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
-            <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e CheckDepends -a -u)
-    done
+deps() {
+    # Use -C to recover on missing fields (#111)
+    awk -v FS='[<=>]' '!/null/ {print $1}' \
+        <(jshon -CQF "$1" -e results -a -e Depends -a -u) \
+        <(jshon -CQF "$1" -e results -a -e MakeDepends -a -u) \
+        <(jshon -CQF "$1" -e results -a -e CheckDepends -a -u)
 }
 
-deps() {
-    # $1 - request data
-    awk -v FS='[<=>]' '{print $1}' \
-        <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
-        <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
-        <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
+pair() {
+    for ((i = 0; i < "$1"; ++i)); do
+        awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 && !/null/ {print p, $1}' \
+            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e Depends -a -u) \
+            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
+            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e CheckDepends -a -u)
+    done
 }
 
 url() {
