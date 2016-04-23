@@ -3,7 +3,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 argv0=aurchain
 multinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
-tmp=$(mktemp -d "$argv0".XXXXXXXXXX) || exit
+tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly argv0 multinfo tmp
 

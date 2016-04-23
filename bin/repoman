@@ -1,7 +1,13 @@
 #!/bin/bash -
 PATH=/bin:/usr/bin
-tmp=$(mktemp -d) || exit
+
+argv0=repoman
+tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 official=(core testing extra community community-testing multilib multilib-testing)
+
+readonly PATH argv0 tmp official
+
+trap 'rm -rf "$tmp"' EXIT
 
 # Regard ignored packages (#103)
 printf '%s\n%s\n' "[options]" "$(pacconf IgnorePkg IgnoreGroup)" >> "$tmp"/config

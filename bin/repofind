@@ -3,7 +3,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 argv0=repofind
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly argv0 tmp
 

@@ -4,7 +4,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 argv0=aurqueue
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 # Determine the path to each .SRCINFO, output to stdout using null
 # delimitation to prevent ARG_MAX issues.
