@@ -20,45 +20,18 @@ pair() {
     # $2 - request data
     for ((i = 0; i < "$1"; ++i)); do
         awk -v FS='[<=>]' 'NR == 1 { p = $1 } NR > 1 { print p, $1 }' \
-        <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e Depends -a -u) \
-        <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
-        <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e CheckDepends -a -u)
+            <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e Depends -a -u) \
+            <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
+            <(jshon -F "$2" -Qe results -e "$i" -e Name -u -p -e CheckDepends -a -u)
     done
 }
 
 deps() {
     # $1 - request data
     awk -v FS='[<=>]' '{print $1}' \
-    <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
-    <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
-    <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
-}
-
-request() {
-    # Create pairs of package names and their dependencies.
-    pair "$(count "$1")" "$1" > pair_all
-
-    # Validate tsort data (#87)
-    if datamash -W check < pair_all >/dev/null; then
-        tsort pair_all | tac > list_tsort
-    else
-        error "$argv0: invalid argument"
-        exit 22
-    fi
-
-    # Create a list of AUR results.
-    jshon -F "$1" -e results -a -e Name -u > list_name
-
-    # Warn on packages missing in both official repositories and AUR (#67)
-    grep -Fxvf list_name <(aursift -S < "$2") | while read -r p; do
-        warning "no results found for $p"
-    done
-
-    # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-    grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
-        if(arch == "i686") gsub(/^lib32-/,"")
-        print
-    }'
+        <(jshon -F "$1" -Qe results -a -e Depends -a -u) \
+        <(jshon -F "$1" -Qe results -a -e MakeDepends -a -u) \
+        <(jshon -F "$1" -Qe results -a -e CheckDepends -a -u)
 }
 
 url() {
@@ -105,6 +78,37 @@ chain() {
     fi
 }
 
+dmsort() {
+    if datamash -W check < "$1" >/dev/null; then
+        tsort "$1" | tac
+    else
+        error "$argv0: invalid argument"
+        exit 22
+    fi
+}
+
+main() {
+    # Create pairs of package names and their dependencies.
+    pair "$(count "$1")" "$1" > pair_all
+
+    # Validate tsort data (#87)
+    dmsort pair_all > list_tsort
+
+    # Create a list of AUR results.
+    jshon -F "$1" -e results -a -e Name -u > list_name
+
+    # Warn on packages missing in both official repositories and AUR (#67)
+    grep -Fxvf list_name <(aursift -S < "$2") | while read -r p; do
+        warning "no results found for $p"
+    done
+
+    # XXX: Packages without lib32 prefix are not necessarily in the AUR.
+    grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
+        if(arch == "i686") gsub(/^lib32-/,"")
+        print
+    }'
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
@@ -122,5 +126,5 @@ msg "Resolving dependencies..."
 chain "$@"
 
 if curl_safe "$(sort -u all | url)" > raw_n; then
-    request raw_n all
+    main raw_n all
 fi
