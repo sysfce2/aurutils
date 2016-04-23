@@ -1,5 +1,6 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -o noclobber
 
 argv0=aurchain
 multinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
@@ -61,7 +62,7 @@ chain() {
     fi
 
     for ((a = 1; a <= 100; ++a)); do
-        declare -i sub=$((--a))
+        declare -i sub=$((a-1))
         deps raw/$sub > pkg_$sub
 
         # Remove duplicates to reduce RPC requests (#4)
