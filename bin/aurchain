@@ -91,28 +91,6 @@ dmsort() {
     fi
 }
 
-main() {
-    # Create pairs of package names and their dependencies.
-    pair "$(count "$1")" "$1" > pair_all
-
-    # Validate tsort data (#87)
-    dmsort pair_all > list_tsort
-
-    # Create a list of AUR results.
-    jshon -F "$1" -e results -a -e Name -u > list_name
-
-    # Warn on packages missing in both official repositories and AUR (#67)
-    grep -Fxvf list_name <(aursift -S < "$2") | while read -r p; do
-        warning "no results found for $p"
-    done
-
-    # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-    grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
-        if(arch == "i686") gsub(/^lib32-/,"")
-        print
-    }'
-}
-
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
@@ -125,10 +103,27 @@ if ((!$#)); then
 fi
 
 cd "$tmp" || exit
-
 msg "Resolving dependencies..."
-target=$(chain "$@" | url)
 
-if [[ $target ]] && curl_safe "$target"; then
-    main raw_n all
-fi
+# Retrieve AUR metadata.
+curl_safe "$(chain "$@" | url)" > raw_n
+
+# Create a list of AUR package names.
+jshon -F raw_n -e results -a -e Name -u > list_name
+
+# Create pairs of package names and their dependencies.
+pair "$(count raw_n)" raw_n > pair_all
+
+# Validate tsort data (#87)
+dmsort pair_all | tee list_tsort | aursift -S > list_sift
+
+# Warn on packages missing in both official repositories and AUR (#67)
+grep -Fxvf list_name list_sift | while read -r p; do
+    warning "no results found for $p"
+done
+
+# XXX: Packages without lib32 prefix are not necessarily in the AUR.
+grep -Fxf list_name list_tsort | awk -v arch="$(uname -m)" '{
+    if(arch == "i686") gsub(/^lib32-/,"")
+    print
+}'
