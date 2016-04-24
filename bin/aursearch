@@ -168,11 +168,6 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if ((!$#)); then
-    plain "$argv0: no targets specified"
-    exit 1
-fi
-
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p "$cache"
 chmod -c 700 "$cache"
@@ -181,6 +176,11 @@ cd "$cache" || exit
 if ((listonly)); then
     stamp "$aurweb/${list:-packages}".gz
     exit
+fi
+
+if ((!$#)); then
+    plain "$argv0: no targets specified"
+    exit 1
 fi
 
 if ((nameonly)); then
