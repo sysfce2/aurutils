@@ -108,7 +108,6 @@ fi
 
 # Save temporary files in directories by context
 if cd "$tmp" && mkdir {list,pair,raw,tsort}; then
-    msg "Resolving dependencies..."
     chain "$@" > list/tree
 else
     exit
