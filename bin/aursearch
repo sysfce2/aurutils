@@ -18,7 +18,7 @@ stamp() {
         # XXX: aurweb lacks a "Last-Modified" field. The date is
         # instead the first line of the list. Write the result to a
         # temporary file to prevent SIGPIPE (exit 141).
-        curl -s "$1" | gzip -cd | awk -F, '{print $3; exit}' > "$tmp"/head
+        curl -v --stderr "$cache"/curl.log "$1" | gzip -cd | awk -F, '{print $3; exit}' > "$tmp"/head
 
         # XXX: Closing stdout after one line results in "Failed to
         # write body" (curl exit 23).
@@ -29,8 +29,8 @@ stamp() {
                 if ((stamp_r > stamp_l)); then
                     fetch=1
                 fi ;;
-            *)  error "$argv0: curl: exit code ${PIPESTATUS[0]}"
-                exit 22 ;;
+            *)  error "$argv0: curl: see $cache/curl.log"
+                exit "${PIPESTATUS[0]}" ;;
         esac
     else
         fetch=1
