@@ -1,0 +1,24 @@
+#compdef aursift
+
+typeset -A opt_args
+
+_aursift_opts=(
+    '-S[Filter packages in the official repositories]'
+    '-U[Filter outdated repository packages]'
+)
+
+_aursift_action_none() {
+    _arguments -s : \
+        "$_aursift_opts[@]" \
+}
+
+# main dispatcher
+_aursift() {
+    case $words[2] in
+        *) _aursift_action_none ;;
+    esac
+}
+
+_aursift "$@"
+
+# vim: set et sw=2 ts=2 ft=zsh :

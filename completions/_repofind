@@ -1,0 +1,26 @@
+#compdef repofind
+
+typeset -A opt_args
+
+_repofind_opts=(
+    '-c[Remove cached packages]'
+    '-i[List file:// repositories]'
+    '-s[Select a local repository]'
+    '-u[Check for repository updates]'
+)
+
+_repofind_action_none() {
+    _arguments -s : \
+        "$_repofind_opts[@]" \
+}
+
+# main dispatcher
+_repofind() {
+    case $words[2] in
+        *) _repofind_action_none ;;
+    esac
+}
+
+_repofind "$@"
+
+# vim: set et sw=2 ts=2 ft=zsh :

@@ -1,0 +1,27 @@
+#compdef aursearch
+
+typeset -A opt_args
+
+_aursearch_opts=(
+    '-F[Search for a fixed string]'
+    '-b[Match pkgbase]'
+    '-q[Output less]'
+    '-r[Output JSON]'
+    '-v[Output more]'
+)
+
+_aursearch_action_none() {
+    _arguments -s : \
+        "$_aursearch_opts[@]" \
+}
+
+# main dispatcher
+_aursearch () {
+    case $words[2] in
+        *) _aursearch_action_none ;;
+    esac
+}
+
+_aursearch "$@"
+
+# vim: set et sw=2 ts=2 ft=zsh :
