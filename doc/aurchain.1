@@ -1,4 +1,4 @@
-.TH AURCHAIN 1 2016-04-18 AURUTILS
+.TH AURCHAIN 1 2016-04-24 AURUTILS
 .SH NAME
 aurchain \- solve and order dependencies using the aur rpc
 .
@@ -11,8 +11,19 @@ aurchain \- solve and order dependencies using the aur rpc
 aurchain takes package names and then solves and orders the
 dependencies for those packages using the AUR RPC interface.
 .
+.SH NOTES
+As the AUR RPC is limited to GET requests, and jshon limitations with
+merged JSON structures, meta-packages with a large number of AUR
+dependencies (250+) are not supported.
+.P
+The depends_\fIarch \fRarray (as introduced with pacman 4.2) is merged
+with regular depends in the RPC. \fBaurchain \fRworkarounds this by
+strpping the \fIlib32- \fRsuffix from packages when the i686
+architecture is detected.
+.
 .SH SEE ALSO
 .BR jshon (1),
+.BR curl(1),
 .BR tsort (1),
 .BR datamash (1)
 .
