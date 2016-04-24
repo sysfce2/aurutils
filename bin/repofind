@@ -76,7 +76,7 @@ quickcheck() {
     # pacsift prints "repo/package" pairs, so expac results are
     # constrained to a given repo. Use xargs -r as expac -S lists all
     # sync packages if stdin is empty.
-    pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' > "$tmp"/struct_r
+    pacsift --exact --repo="$1" | xargs -r expac -S '%n %v' | sort -k 1b,1 > "$tmp"/struct_r
 
     # xargs does not preserve exit status, but returns 123 if any
     # command failed with status 1-125.
@@ -85,9 +85,9 @@ quickcheck() {
     # With pipefail, the exit status of the pipeline is the value of
     # the last (rightmost) failed command. Here, aursearch is of
     # special interest.
-    if aursearch -Fr "${argv[@]}" | namever > "$tmp"/struct_a; then
+    if aursearch -Fr "${argv[@]}" | namever | sort -k 1b,1 > "$tmp"/struct_a; then
         # Join on first field (pkgname)
-        join "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
+        join -a 1 "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
 
         # Notify if packages are not in AUR (#110)
         notify "$tmp"/struct_a "$tmp"/struct_r
