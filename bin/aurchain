@@ -13,12 +13,11 @@ curl_safe() {
 }
 
 count() {
-    # $1 - request data
     jshon -F "$1" -Qe resultcount
 }
 
 deps() {
-    # Use -C to recover on missing fields (#111)
+    # Use -C to recover on missing fields
     awk -v FS='[<=>]' '!/null/ {print $1}' \
         <(jshon -CQF "$1" -e results -a -e Depends -a -u) \
         <(jshon -CQF "$1" -e results -a -e MakeDepends -a -u) \
@@ -62,6 +61,9 @@ chain() {
     for ((a = 1; a <= 100; ++a)); do
         declare -i sub=$((a-1))
         deps raw/$sub > pkg_$sub
+
+        # Break if package has no dependencies
+        [[ ! -s pkg_$sub ]] && break
 
         # Remove duplicates to reduce RPC requests (#4)
         curl_safe "$(grep -Fxvf pkg pkg_$sub | url)" > raw/$a
