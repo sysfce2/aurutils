@@ -62,11 +62,14 @@ chain() {
         declare -i sub=$((a-1))
         deps raw/$sub | sort -u > pkg_$sub
 
-        # Break if package has no dependencies
-        [[ ! -s pkg_$sub ]] && break
-
         # Inverse match for known packages to reduce RPC requests (#4)
-        curl_safe "$(grep -Fxvf pkg pkg_$sub | url)" > raw/$a
+        target=$(grep -Fxvf pkg pkg_$sub | url)
+        
+        if [[ $target ]]; then            
+            curl_safe "$target" > raw/$a
+        else
+            break
+        fi
 
         if [[ $(count raw/$a) -lt 1 ]]; then
             break
