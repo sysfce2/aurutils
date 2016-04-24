@@ -155,12 +155,13 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :Fbqrv OPT; do
+while getopts :Fbqruv OPT; do
     case $OPT in
         F|+F) match=string ;;
         b|+b) list=pkgbase ;;
         q|+q) nameonly=1   ;;
         r|+r) parse=tee    ;;
+        u|+u) listonly=1   ;;
         v|+v) parse=long   ;;
     esac
 done
@@ -176,6 +177,11 @@ fi
 mkdir -p "$cache"
 chmod -c 700 "$cache"
 cd "$cache" || exit
+
+if ((listonly)); then
+    stamp "$aurweb/${list:-packages}".gz
+    exit
+fi
 
 if ((nameonly)); then
     pcre "${list:-packages}" "$1"
