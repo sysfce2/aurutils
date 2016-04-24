@@ -22,7 +22,9 @@ stamp() {
 
         # XXX: Closing stdout after one line results in "Failed to
         # write body" (curl exit 23).
-        case "${PIPESTATUS[0]}" in
+        declare -i ret=${PIPESTATUS[0]}
+
+        case "$ret" in
             23) read -r stamp_r < "$tmp"/head
                 read -r stamp_r < <(date -d "$stamp_r" '+%s')
 
@@ -30,7 +32,7 @@ stamp() {
                     fetch=1
                 fi ;;
             *)  error "$argv0: curl: see $cache/curl.log"
-                exit "${PIPESTATUS[0]}" ;;
+                exit "$ret"
         esac
     else
         fetch=1
