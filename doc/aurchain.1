@@ -12,9 +12,8 @@ aurchain takes package names and then solves and orders the
 dependencies for those packages using the AUR RPC interface.
 .
 .SH NOTES
-As the AUR RPC is limited to GET requests, and jshon limitations with
-merged JSON structures, meta-packages with a large number of AUR
-dependencies (250+) are not supported.
+Due to jshon limitations with merged JSON structures, meta-packages
+with a large number of AUR dependencies (250+) are not supported.
 .P
 The depends_\fIarch \fRarray (as introduced with pacman 4.2) is merged
 with regular depends in the RPC. \fBaurchain \fRworkarounds this by
