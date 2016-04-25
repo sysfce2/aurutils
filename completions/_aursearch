@@ -7,7 +7,6 @@ _aursearch_opts=(
     '-b[Match pkgbase]'
     '-q[Output less]'
     '-r[Output JSON]'
-    '-u[Update package list]'
     '-v[Output more]'
 )
 

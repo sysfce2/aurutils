@@ -161,7 +161,7 @@ while getopts :Fbqruv OPT; do
         b|+b) list=pkgbase ;;
         q|+q) nameonly=1   ;;
         r|+r) parse=tee    ;;
-        u|+u) listonly=1   ;;
+        y|+y) listonly=1   ;;
         v|+v) parse=long   ;;
     esac
 done
