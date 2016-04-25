@@ -84,7 +84,7 @@ if [[ $build == build_chroot ]]; then
     fi
 
     # Update settings from /etc/pacman.conf and includes
-    pacconf > "$tmp"/pacman.conf
+    pacconf --raw > "$tmp"/pacman.conf
     sudo cp -v "$tmp"/pacman.conf "$CHROOT"/root/etc/pacman.conf
 fi
 
