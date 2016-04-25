@@ -161,7 +161,6 @@ while getopts :Fbqruv OPT; do
         b|+b) list=pkgbase ;;
         q|+q) nameonly=1   ;;
         r|+r) parse=tee    ;;
-        y|+y) listonly=1   ;;
         v|+v) parse=long   ;;
     esac
 done
@@ -172,11 +171,6 @@ OPTIND=1
 mkdir -p "$cache"
 chmod -c 700 "$cache"
 cd "$cache" || exit
-
-if ((listonly)); then
-    stamp "$aurweb/${list:-packages}".gz
-    exit
-fi
 
 if ((!$#)); then
     plain "$argv0: no targets specified"
