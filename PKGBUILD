@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.8.2.r0.gb102d32
+pkgver=0.8.2.r9.g2b94fa9
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -28,10 +28,10 @@ check() {
 
 package() {
   cd aurutils
-  install -d "$pkgdir"/usr/{bin,share{/zsh/site-completions,/man/man1,{/licenses,/doc}/aurutils}}
+  install -d "$pkgdir"/usr/{bin,share{/zsh/site-functions,/man/man1,{/licenses,/doc}/aurutils}}
 
   install -m755 bin/*          "$pkgdir"/usr/bin/
-  install -m644 completions/*  "$pkgdir"/usr/share/zsh/site-completions/
+  install -m644 completions/*  "$pkgdir"/usr/share/zsh/site-functions/
   install -m644 doc/*          "$pkgdir"/usr/share/man/man1/
   install -m644 LICENSE        "$pkgdir"/usr/share/licenses/aurutils/
   install -m644 CREDITS README "$pkgdir"/usr/share/doc/aurutils/
