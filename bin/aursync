@@ -1,6 +1,6 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e -o pipefail
+set -e -o pipefail -o noclobber
 
 argv0=aursync
 aurweb=https://aur.archlinux.org
