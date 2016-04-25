@@ -34,8 +34,8 @@ build_chroot() {
 
     # Skip verification checks in the chroot instance as .gnupg paths
     # are hardcoded in makechrootpkg. Signatures are still verified
-    # outside the chroot.
-    PKGDEST="$pool" makechrootpkg "${mkchr_args[@]}" -d "$pool" -r "$CHROOT" -- --skippgpcheck
+    # outside the chroot. Preserve PKGDEST with sudo -E, see FS#44827.
+    sudo -E PKGDEST="$pool" makechrootpkg "${mkchr_args[@]}" -d "$pool" -r "$CHROOT" -- --skippgpcheck
     repose -vf "$database" -r "$root" -p "$pool"
 }
 
