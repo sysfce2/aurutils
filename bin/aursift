@@ -91,7 +91,7 @@ prepare() {
         if [[ ${repo[$name]} ]]; then
             check=$(vercmp "${repo[$name]}" "${aur[$name]}")
         else
-            # vercmp '' foo => 1 (#20)
+            # vercmp '' foo -> 1, see FS#49093.
             check=-1
         fi
 
