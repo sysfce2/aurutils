@@ -15,13 +15,11 @@ stamp() {
     declare stamp_l stamp_r fetch
     
     if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
-        # XXX: aurweb lacks a "Last-Modified" field. The date is
-        # instead the first line of the list. Write the result to a
-        # temporary file to prevent SIGPIPE (exit 141).
+        # aurweb lacks a "Last-Modified" field, see FS#49092. Print
+        # the date to a file to prevent SIGPIPE (exit 141).
         curl -v --stderr "$cache"/curl.log "$1" | gzip -cd | awk -F, '{print $3; exit}' > "$tmp"/head
 
-        # XXX: Closing stdout after one line results in "Failed to
-        # write body" (curl exit 23).
+        # curl: (23) Failed to write body
         declare -i ret=${PIPESTATUS[0]}
 
         case "$ret" in
@@ -62,8 +60,8 @@ pcre() {
     fi
 }
 
-# XXX: aurweb only takes GET requests, so split arguments by 150 to
-# prevent HTTP 414 errors.
+# aurweb only takes GET requests, see FS#49089. Build URIs with at
+# most 150 arguments to prevent HTTP 414.
 split() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
         # URL encode @ and +
