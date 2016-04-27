@@ -17,7 +17,7 @@ stamp() {
     if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
         # aurweb lacks a "Last-Modified" field, see FS#49092. Print
         # the date to a file to prevent SIGPIPE (exit 141).
-        curl -v --stderr "$cache"/curl.log "$1" | gzip -cd | awk -F, '{print $3; exit}' > "$tmp"/head
+        curl -v --stderr "$cache"/stamp.log "$1" | gzip -cd | awk -F, '{print $3; exit}' > "$tmp"/head
 
         # curl: (23) Failed to write body
         declare -i ret=${PIPESTATUS[0]}
@@ -29,7 +29,7 @@ stamp() {
                 if ((stamp_r > stamp_l)); then
                     fetch=1
                 fi ;;
-            *)  error "$argv0: curl: see $cache/curl.log"
+            *)  error "$argv0: curl: see $cache/stamp.log"
                 exit "$ret"
         esac
     else
