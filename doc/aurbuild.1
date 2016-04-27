@@ -20,33 +20,36 @@ repository on the local file system. It is configured using the
 .SH OPTIONS
 .B \-a
 .RS
-A text file with directories that contain a PKGBUILD
+A text file with directories that contain a PKGBUILD.
 .RE
 .
 .B \-c
 .RS
-Build in an nspawn container
+Build in an nspawn container.
 .RE
 .
 .B \-d
 .RS
-The name of the database
+The name of the database.
 .RE
 .
 .B \-p
 .RS
-The pool for the built packages. The pool is the location where aurbuild will put the packages after building
+The pool for the built packages. The pool is the location where
+aurbuild will put the packages after building.
 .RE
 .
 .B \-r
 .RS
-The root for the repository where the database files will live
+The root for the repository where the database files will live.
 .RE
 .P
-All arguments after -- are passed to makepkg or makechrootpkg when building in a chroot
+All arguments after -- are passed to makepkg, or makechrootpkg when
+building in a chroot.
 .
 .SH SEE ALSO
 .BR repose (1),
+.BR pacconf (1),
 .BR makepkg (8),
 .BR pacman.conf (5)
 .
@@ -54,4 +57,3 @@ All arguments after -- are passed to makepkg or makechrootpkg when building in a
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-

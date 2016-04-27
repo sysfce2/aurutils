@@ -9,7 +9,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 # Determine the path to each .SRCINFO, output to stdout using null
 # delimitation to prevent ARG_MAX issues.
 findsrc() {
-    find "$@" -maxdepth 1 -type f -name .SRCINFO -print0
+    find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
 
 # Use xargs to pass a list of paths to .SRCINFOs for processing, skip

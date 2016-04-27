@@ -5,11 +5,14 @@ set -e -o pipefail -o noclobber
 argv0=aursync
 aurweb=https://aur.archlinux.org
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
-
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
+
+# Default options
+declare -i chroot=0 insecure=0 nobuild=0 noversion=0 update=0
+declare deps=aurchain download=clone
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -49,7 +52,7 @@ clone() {
 }
 
 aria() {
-    #global tarpath tmp
+    #global aurweb tmp
     awk -v uri="$aurweb"/cgit/aur.git/snapshot '{
         gsub("+","%2b")
         gsub("@","%40")
@@ -88,8 +91,9 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# As the command-line includes package names, use a second getopts
-# loop for common make{,chroot}pkg options.
+# Use a second getopts loop for common make{,chroot}pkg options, as
+# the command line includes package names, and to ensure option
+# context is already defined.
 while getopts :D:fLnT OPT; do
     case $OPT in
         f|+f) ((chroot)) || makepkg_args+=(-f) ;;

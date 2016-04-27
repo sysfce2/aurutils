@@ -5,14 +5,11 @@ typeset -A opt_args
 _aursync_opts=(
     '-c[Build packages in a chroot]'
     '-d[Do not resolve dependencies]'
-    '-f[Rebuild existing packages]'
     '-k[Do not view source files before building]'
-    '-L[Log makepkg output]'
-    '-n[Do not wait for user input]'
+    '-t[Download source files with aria2]'
+    '-u[Update packages in a repository]'
     '-v[Disable version checking]'
     '-w[Only download source files]'
-    '-u[Update packages in a repository]'
-    '-t[Download source files with aria2]'
 )
 
 _aursync_action_none() {

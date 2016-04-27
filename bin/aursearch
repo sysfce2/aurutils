@@ -9,6 +9,10 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly argv0 aurweb cache tmp
 
+# Default options
+declare -i nameonly=0
+declare list=packages match=pcre parse=brief
+
 # $1: URI to .gz archive
 stamp() {
     declare gz=${1##*/}
