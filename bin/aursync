@@ -72,20 +72,31 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdfkLnuvwt OPT; do
+while getopts :cdhktuvw OPT; do
     case $OPT in
-        c|+c) aurbuild_args+=(-c) ;;
+        c|+c) chroot=1      ;;
         d|+d) deps=print    ;;
         k|+k) insecure=1    ;;
+        t|+t) download=aria ;;
         u|+u) update=1      ;;
         v|+v) noversion=1   ;;
         w|+w) nobuild=1     ;;
-        t|+t) download=aria ;;
-        f|+f) makepkg_args+=(--force)     ;;
-        L|+L) makepkg_args+=(--log)       ;;
-        n|+n) makepkg_args+=(--noconfirm) ;;
-        *) plain "usage: $argv0 [+-cdfkLnuvwt} [--] ARGS..."
+        *) plain "usage: $argv0 [+-cdktuvw} [--] [+-DfLnT] pkgname ..."
            exit 1 ;;
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
+# As the command-line includes package names, use a second getopts
+# loop for common make{,chroot}pkg options.
+while getopts :D:fLnT OPT; do
+    case $OPT in
+        f|+f) ((chroot)) || makepkg_args+=(-f) ;;
+        L|+L) ((chroot)) || makepkg_args+=(-L) ;;
+        D|+D) ((chroot)) && makepkg_args+=(-D "$OPTARG") ;;
+        T|+T) ((chroot)) && makepkg_args+=(-T) ;;
+        n|+n) ((chroot)) && makepkg_args+=(-n) || makepkg_args+=(--noconfirm) ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -155,6 +166,10 @@ fi
 if ((nobuild)); then
     msg "Files downloaded to $PWD"
     exit
+fi
+
+if ((chroot)); then
+    aurbuild_args+=(-c)
 fi
 
 aurbuild_args+=(-d "$repo" -r "$pool" -p "$pool" -a "$tmp"/queue)
