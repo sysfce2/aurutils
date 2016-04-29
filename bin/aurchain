@@ -102,7 +102,7 @@ source /usr/share/makepkg/util.sh || exit
 [[ -t 2 ]] && colorize
 
 if ((!$#)); then
-    error "usage: $argv0 package [package, ...]"
+    error "usage: $argv0 pkgname [pkgname...]"
     exit 1
 fi
 

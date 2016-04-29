@@ -3,13 +3,15 @@
 aurbuild \- build packages to a local repository
 .
 .SH SYNOPSIS
-.B aurbuild
-.OP \-a queue
+.SY aurbuild
 .OP \-c
+.OP \-a queue
 .OP \-d database
 .OP \-p pool
 .OP \-r root
-.OP \-- makepkg
+.OP \--
+.OP "makepkg args"
+.YS
 .
 .SH DESCRIPTION
 Build a package from a text file with directory names and add the

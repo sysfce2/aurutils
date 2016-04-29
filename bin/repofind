@@ -129,8 +129,8 @@ while getopts :c:isu: OPT; do
         i|+i) repofind   ;;
         s|+s) reposelect ;;
         u|+u) quickcheck "$OPTARG" ;;
-        *)    plain "usage: $argv0 [+-cisu ARG} [--] ARGS..."
-              exit 1 ;;
+        *) plain "usage: $argv0 [+-cisu ARG} [--] ARGS..."
+           exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))

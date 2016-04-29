@@ -113,7 +113,8 @@ while getopts :SU OPT; do
     case $OPT in
         S|+S) sift    ;;
         U|+U) prepare ;;
-        *)    plain "usage: $argv0 [+-SU} [--] ARGS..."
+        *) plain "usage: $argv0 [-S pkgname] [-U pkgname pkgver]"
+           exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))

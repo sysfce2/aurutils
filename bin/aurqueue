@@ -45,7 +45,7 @@ trap 'rm -rf "$tmp"' EXIT
 source /usr/share/makepkg/util.sh || exit
 
 if ((!$#)); then
-    error "usage: $argv0 pkgbase [pkgbase, ...]"
+    error "usage: $argv0 pkgbase [pkgbase...]"
     exit 1
 fi
 

@@ -84,7 +84,7 @@ while getopts :cdhktuvw OPT; do
         u|+u) update=1      ;;
         v|+v) noversion=1   ;;
         w|+w) nobuild=1     ;;
-        *) plain "usage: $argv0 [+-cdktuvw} [--] [+-DfLnT] pkgname ..."
+        *) plain "usage: $argv0 [+-cdktuvw} [--] [+-DfLnT] pkgname..."
            exit 1 ;;
     esac
 done
