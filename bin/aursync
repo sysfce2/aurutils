@@ -12,6 +12,7 @@ readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 # Default options
 declare -i chroot=0 insecure=0 nobuild=0 noversion=0 update=0
+declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 declare deps=aurchain download=clone
 
 viewer() {
@@ -75,36 +76,39 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :cdhktuvw OPT; do
+while getopts :B:cdfhkLtTuvw OPT; do
     case $OPT in
-        c|+c) chroot=1      ;;
-        d|+d) deps=print    ;;
-        k|+k) insecure=1    ;;
-        t|+t) download=aria ;;
-        u|+u) update=1      ;;
-        v|+v) noversion=1   ;;
-        w|+w) nobuild=1     ;;
-        *) plain "usage: $argv0 [+-cdktuvw} [--] [+-DfLnT] pkgname..."
+        B|+B) bindro=1
+              newdir=$OPTARG ;;
+        c|+c) chroot=1       ;;
+        d|+d) deps=print     ;;
+        f|+f) force=1        ;;
+        k|+k) insecure=1     ;;
+        L|+L) logdest=1      ;;
+        n|+n) namcap=1       ;;
+        t|+t) download=aria  ;;
+        T|+T) chtemp=1       ;;
+        u|+u) update=1       ;;
+        v|+v) noversion=1    ;;
+        w|+w) nobuild=1      ;;
+        *) plain "usage: $argv0 [-c] [-B newdir] [-dfhkLtTuvw] [--] pkgname..."
            exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# Use a second getopts loop for common make{,chroot}pkg options, as
-# the command line includes package names, and to ensure option
-# context is already defined.
-while getopts :D:fLnT OPT; do
-    case $OPT in
-        f|+f) ((chroot)) || makepkg_args+=(-f) ;;
-        L|+L) ((chroot)) || makepkg_args+=(-L) ;;
-        D|+D) ((chroot)) && makepkg_args+=(-D "$OPTARG") ;;
-        T|+T) ((chroot)) && makepkg_args+=(-T) ;;
-        n|+n) ((chroot)) && makepkg_args+=(-n) || makepkg_args+=(--noconfirm) ;;
-    esac
-done
-shift $((OPTIND - 1))
-OPTIND=1
+# Set makepkg args in a new list to ensure option context is already
+# defined, as getopts parses options sequentially.
+if ((chroot)); then
+    ((bindro)) && makepkg_args+=(-D "$newdir")
+    ((chtemp)) && makepkg_args+=(-T)
+    ((namcap)) && makepkg_args+=(-n)
+else
+    ((force))   && makepkg_args+=(-f)
+    ((logdest)) && makepkg_args+=(-L)
+    ((namcap))  && makepkg_args+=(--noconfirm)
+fi
 
 # Select file:// repository.
 read -r repo pool < <(repofind -s)
