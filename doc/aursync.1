@@ -4,9 +4,10 @@ aursync \- download and build aur packages automatically
 .
 .SH SYNOPSIS
 .SY aursync
-.OP \-cdktuvw
+.OP \-c
+.OP \-B newdir
+.OP \-dfhkLtTuvw
 .OP \--
-.OP \-DfLnT
 .OP pkgname...
 .YS
 .
@@ -72,15 +73,16 @@ Do not wait for user input (\fImakepkg --noconfirm\fR)
 .RE
 .
 .SS makechrootpkg
+.
+.B \-B
+.RS
+Bind a directory read-only. (\fImakechrootpkg -D\fR)
+.RE
+.
 .P
 .B \-n
 .RS
 Check a built package with namcap. (\fImakechrootpkg -n\fR)
-.RE
-.
-.B \-D
-.RS
-Bind a directory read-only. (\fImakechrootpkg -D\fR)
 .RE
 .
 .B \-T

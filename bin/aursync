@@ -101,9 +101,9 @@ OPTIND=1
 # Set makepkg args in a new list to ensure option context is already
 # defined, as getopts parses options sequentially.
 if ((chroot)); then
-    ((bindro)) && makepkg_args+=(-D "$newdir")
-    ((chtemp)) && makepkg_args+=(-T)
-    ((namcap)) && makepkg_args+=(-n)
+    ((bindro))  && makepkg_args+=(-D "$newdir")
+    ((chtemp))  && makepkg_args+=(-T)
+    ((namcap))  && makepkg_args+=(-n)
 else
     ((force))   && makepkg_args+=(-f)
     ((logdest)) && makepkg_args+=(-L)
