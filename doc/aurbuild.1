@@ -46,14 +46,20 @@ aurbuild will put the packages after building.
 The root for the repository where the database files will live.
 .RE
 .P
-All arguments after -- are passed to makepkg, or makechrootpkg when
-building in a chroot.
+All arguments after -- are passed to makepkg, or makechrootpkg when -c
+is specified.
+.
+.SH NOTES
+To prevent checksum mismatches, packages are removed from the pacman
+cache after building. \fIPKGEXT \fRis queried from \fI/etc/makepkg.conf\fR.
 .
 .SH SEE ALSO
-.BR repose (1),
 .BR pacconf (1),
-.BR makepkg (8),
-.BR pacman.conf (5)
+.BR pacini (1),
+.BR pacman (1),
+.BR repose (1),
+.BR pacman.conf (5),
+.BR makepkg (8)
 .
 .SH AUTHORS
 .MT https://github.com/AladW
