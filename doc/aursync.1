@@ -69,7 +69,7 @@ Save makepkg output. (\fImakepkg -L\fR)
 .
 .B \-n
 .RS
-Do not wait for user input (\fImakepkg --noconfirm\fR)
+Do not wait for user input. (\fImakepkg --noconfirm\fR)
 .RE
 .
 .SS makechrootpkg
@@ -79,7 +79,6 @@ Do not wait for user input (\fImakepkg --noconfirm\fR)
 Bind a directory read-only. (\fImakechrootpkg -D\fR)
 .RE
 .
-.P
 .B \-n
 .RS
 Check a built package with namcap. (\fImakechrootpkg -n\fR)
@@ -89,6 +88,10 @@ Check a built package with namcap. (\fImakechrootpkg -n\fR)
 .RS
 Build in a temporary directory. (\fImakechrootpkg -T\fR)
 .RE
+.
+.SH NOTES
+Version checks assume there are no mismatches between .SRCINFO and
+PKGBUILD files.
 .
 .SH SEE ALSO
 .BR vifm (1),
