@@ -116,7 +116,7 @@ fi
 
 # Only select a repository when building (#127)
 if ! ((nobuild)) || ((update)); then
-    read -r repo pool < <(repofind -s)
+    read -r repo root pool < <(repofind -s)
 fi
 
 # Reuse selection for repofind (#82)
@@ -186,7 +186,7 @@ if ((chroot)); then
     aurbuild_args+=(-c)
 fi
 
-aurbuild_args+=(-d "$repo" -r "$pool" -p "$pool" -a "$tmp"/queue)
+aurbuild_args+=(-d "$repo" -r "$root" -p "$pool" -a "$tmp"/queue)
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
 
 # vim: set et sw=4 sts=4 ft=sh:

@@ -9,23 +9,25 @@ readonly argv0 tmp
 
 repofind() {
     declare repo
-    declare -A rset
+    declare -A rset cset
 
     for repo in $(pacconf --repo-list); do
         rset[$repo]=$(pacconf --single --repo="$repo" Server)
+        cset[$repo]=$(pacconf CacheDir | grep -m1 -Eo ".+/$repo/$")
 
-        if [[ ${rset[$repo]} =~ file:// ]]; then
-            printf '%s %s\n' "$repo" "${rset[$repo]}"
+        if [[ ${rset[$repo]} =~ file:// ]] && [[ ${cset[$repo]} ]]; then
+            printf '%s %s %s\n' "$repo" "${rset[$repo]}" "${cset[$repo]}"
         fi
     done
 }
 
 reposelect() {
-    declare repo server pool
-    declare -A avail
+    declare repo server cachedir root pool
+    declare -A avail cache
 
-    while read -r repo server; do
+    while read -r repo server cachedir; do
         avail[$repo]=$server
+        cache[$repo]=$cachedir
     done < <(repofind)
 
     if ((${#avail[@]} > 1)); then
@@ -39,7 +41,18 @@ reposelect() {
         exit 2
     fi
 
-    pool=${avail[$repo]#file://}
+    root=${avail[$repo]#file://}
+    pool=${cache[$repo]}
+
+    if [[ ! -d $root ]]; then
+        error "$argv0: $root: not a directory"
+        exit 20
+    fi
+
+    if [[ ! -w $root ]]; then
+        error "$argv0: $root: permission denied"
+        exit 13
+    fi
 
     if [[ ! -d $pool ]]; then
         error "$argv0: $pool: not a directory"
@@ -52,7 +65,7 @@ reposelect() {
     fi
 
     msg2 "Using [$repo] repository"
-    printf '%s %s\n' "$repo" "$pool"
+    printf '%s %s %s\n' "$repo" "$root" "$pool"
 }
 
 syncver() {
@@ -99,30 +112,14 @@ quickcheck() {
     done < "$tmp"/struct
 }
 
-clean() {
-    declare p args
-
-    for p in $(pacman -Slq "$1"); do
-        args+=(--name="$p")
-    done
-
-    if [[ ${args[@]} ]]; then
-        pacsift --cache --exact --null "${args[@]}" | sed -z 's|^file://||g' | xargs -r0 sudo rm -vf
-    else
-        error "$argv0: invalid argument"
-        exit 22
-    fi
-}
-
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :c:isu: OPT; do
+while getopts :isu: OPT; do
     case $OPT in
-        c|+c) clean "$OPTARG" ;;
         i|+i) repofind   ;;
         s|+s) reposelect ;;
         u|+u) quickcheck "$OPTARG" ;;

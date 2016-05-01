@@ -39,23 +39,6 @@ build_chroot() {
     repose -vf "$database" -r "$root" -p "$pool"
 }
 
-# If a package is rebuilt (same pkgver), checksums in the database no
-# longer match cached versions. (#85)
-clean_cache() {
-    declare cache pkgext fullver filepath
-
-    read -r cache  < <(pacconf CacheDir)
-    read -r pkgext < <(pacini /etc/makepkg.conf PKGEXT | tr -d \'\")
-
-    while read -r fullver; do
-        filepath="$cache/$fullver$pkgext"
-
-        if [[ -f $filepath ]]; then
-            sudo rm -vf "$filepath"
-        fi
-    done < <(makepkg --packagelist)
-}
-
 trap 'exit' INT
 trap 'rm -rf "$tmp"' EXIT
 
@@ -111,7 +94,6 @@ exec 3< "$queue"
 while read -r -u 3 pkg _; do
     if cd "$pwd/$pkg"; then
         "${build:-build_local}"
-        "${clean:-clean_cache}"
     fi
 done
 

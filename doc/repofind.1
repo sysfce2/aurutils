@@ -5,34 +5,31 @@ repofind \- display information on file:// repositories
 .SH SYNOPSIS
 .SY repofind
 .OP \-is
-.OP \-c repository
 .OP \-u repository
 .YS
 .
 .SH OPTIONS
-.B \-c
-.RS
-Remove cached packages (usually in /var/cache/pacman/pkg) from a given
-repository.
-.RE
-.
 .B \-i
 .RS
-Find and list all file:// (local) repositories in pacman.conf
+Find and list all \fIfile:// \fR(local) repositories in \fIpacman.conf\fR,
+together with the \fIServer \fRand \fICacheDir \fRdirectives. It is
+assumed each repository has a a corresponding cache directory, with
+the trailing directory named after the repository.
 .RE
 .
 .B \-s
 .RS
-Interactively select a local repository and output the name and
-location to stdout
+Interactively select a local repository (implies \fI\-i\fR).
 .RE
 .
 .B \-u
 .RS
-Check for updates in the named repository
+Check and print AUR updates for a given repository.
 .RE
 .
 .SH SEE ALSO
+.BR aursearch (1),
+.BR pacconf (1),
 .BR makepkg.conf (5),
 .BR pacman.conf (5)
 .

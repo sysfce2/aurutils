@@ -3,7 +3,6 @@
 typeset -A opt_args
 
 _repofind_opts=(
-    '-c[Remove cached packages]'
     '-i[List file:// repositories]'
     '-s[Select a local repository]'
     '-u[Check for repository updates]'

@@ -50,30 +50,66 @@ EXIT STATUS
 
 NOTES
 
-    Creating a local repository 
-    ---------------------------
-    
-      $ sudoedit /etc/pacman.conf # uncomment [custom], change Server to suit
-      $ sudo install -d /home/packages -o $USER -m 700
-      $ repo-add /home/packages/custom.db.tar
+    IMPORTANT
+    ---------
+
+    The pool location has changed with aurutils 0.9.0. To migrate from
+    old versions, follow the steps in "Creating a local repository"
+    below, and rebuild the database:
+
+      $ mv -v /home/custompkgs/*.pkg* /var/cache/pacman/custom/
+      $ cd /home/custompkgs
+      $ repose --rebuild -vf custom -p /var/cache/pacman/custom
       $ sudo pacman -Syu
 
-    Warning:
-      - Avoid naming the repository "local", as this name is reserved by pacman.
-      - AUR packages migrate regularly to the official repositories.
-        Where possible, add local repositories to the _end_ of pacman.conf.
+    Creating a local repository 
+    ---------------------------
 
-    Tip:
-      - Consider separate repositories for different purposes, such as
-        version control packages.
+    Configure the local repository in a separate pacman configuration,
+    for example in /etc/pacman.d/custom:
+
+      [options]
+      CacheDir = /var/cache/pacman/pkg/
+      CacheDir = /var/cache/pacman/custom/
+      CleanMethod = KeepCurrent
+
+      [custom]
+      SigLevel = Optional TrustAll
+      Server = file:///home/custompkgs
+
+    Avoid naming the repository "local", as this name is reserved by
+    pacman. When using repofind(1), the trailing directory of the
+    cache path _must_ match the name of the local repository.
+
+    Include the configuration in /etc/pacman.conf:
+
+      # An example of a custom package repository.  See the pacman manpage for
+      # tips on creating your own repositories.
+      Include = /etc/pacman.d/custom
+
+    Add this line to the _end_ of pacman.conf, where possible. As AUR
+    packages migrate regularly to the official repositories, latter
+    should take precedence.
+
+    Create directories for both database and built packages:
+
+      $ sudo install -d /home/custompkgs /var/cache/pacman/custom/ -o $USER -m 700
+
+    Create an empty database, and synchronize pacman:
+
+      $ repo-add /home/custompkgs/custom.db.tar
+      $ sudo pacman -Syu
+
+    Tip: Consider separate repositories for different purposes, such
+         as version control packages.
 
     Migrating foreign packages (optional)
     -------------------------------------
     
     This is straightforward if the built packages are still available,
-    for example in /home/packages:
+    for example in /home/custompkgs:
 
-      $ cd /home/packages
+      $ cd /home/custompkgs
       $ repose -fv custom
       $ sudo pacman -Syu
 
@@ -91,10 +127,10 @@ NOTES
       $ for b in $(pacman -Qqm); do bacman "$b"; done
 
     To keep the repository updated when building with makepkg, set
-    PKGDEST and create a repose alias:
+    PKGDEST to the cache, and create a repose alias:
 
-      $ sudo vim /etc/makepkg.conf
-      $ alias custom='repose -vf custom -p /home/packages -r /home/packages'
+      $ sudoedit /etc/makepkg.conf
+      $ alias custom='repose -vf custom -r /home/custompkgs -p /var/cache/pacman/custom'
 
 EXAMPLES
 
@@ -108,7 +144,7 @@ EXAMPLES
       $ cd pkgbuilds
       $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;    
       $ aurqueue * > queue # Remove unwanted targets
-      $ aurbuild -d custom -r /home/packages -p /home/packages -a queue
+      $ aurbuild -d custom -r /home/custompkgs -p /var/cache/pacman/custom -a queue
 
     Search for Perl modules that are both in the AUR or official repositories:
 
