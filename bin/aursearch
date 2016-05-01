@@ -79,23 +79,28 @@ split() {
     }'
 }
 
+# * aria2c either dumps all errors on stdout, or doesn't display
+#   them at all. Log to a file instead, and mention it on error.
+# * If stdin is empty, aria reports "No files to download" (even
+#   with -q) and returns 0.
+# * When -i or -Z are set, the file name can not be changed.
 getjson() {
-    if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
-        # If stdin is empty, aria reports "No files to download" and
-        # returns 0. When -i or -Z are set, the file name can not be changed.
-        [[ ! -s "$tmp"/index.html ]] && return
+    if aria2c -d "$tmp" -l "$cache"/aria2c.log --log-level=error -q -i -; then
+        if [[ -s "$tmp"/index.html ]]; then
+            # Merge to a single JSON structure, see jshon(1).
+            awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$tmp"/raw
 
-        # Merge to a single JSON structure, see jshon(1).
-        awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$tmp"/raw
-
-        # Check for results, only print if non-zero (#96)
-        case $(jshon -F "$tmp"/raw -a -e resultcount -u) in
-            0) error "$argv0: no matches found"
-               exit 1 ;;
-            *) cat "$tmp"/raw ;;
-        esac
+            # Check for results, only print if non-zero (#96)
+            case $(jshon -F "$tmp"/raw -a -e resultcount -u) in
+                0) error "$argv0: no matches found"
+                   exit 1 ;;
+                *) cat "$tmp"/raw ;;
+            esac
+        fi
     else
-        exit $?
+        declare -i ret=$?
+        error "$argv0: aria2c: see $cache/aria2c.log"
+        exit $ret
     fi
 }
 
