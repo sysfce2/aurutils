@@ -43,6 +43,10 @@ clone() {
     #global aurweb
     declare b
 
+    if ! git remote get-url --all origin | grep -Fq "${aurweb#*//}"; then
+        warning "remote does not match ${aurweb#*//}"
+    fi
+
     while read -r b _; do
         if [[ -d $b/.git ]]; then
             GIT_DIR="$b"/.git GIT_WORK_TREE="$b" revcheck "$b"
