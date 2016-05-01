@@ -110,8 +110,10 @@ else
     ((namcap))  && makepkg_args+=(--noconfirm)
 fi
 
-# Select file:// repository.
-read -r repo pool < <(repofind -s)
+# Only select a repository when building (#127)
+if ! ((nobuild)) || ((update)); then
+    read -r repo pool < <(repofind -s)
+fi
 
 # Reuse selection for repofind (#82)
 if ((update)); then
