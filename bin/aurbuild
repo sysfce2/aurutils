@@ -117,4 +117,4 @@ done
 
 exec 3<&-
 
-# vim: set sw=4 sts=4:
+# vim: set et sw=4 sts=4 ft=sh:

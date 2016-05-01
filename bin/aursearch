@@ -180,3 +180,5 @@ if ((nameonly)); then
 fi
 
 "${match:-pcre}" "${list:-packages}" "$@" | split | getjson | "${parse:-brief}"
+
+# vim: set et sw=4 sts=4 ft=sh:

@@ -30,3 +30,5 @@ getbase() {
 source /usr/share/makepkg/util.sh || exit
 
 getbase "$1"
+
+# vim: set et sw=4 sts=4 ft=sh:

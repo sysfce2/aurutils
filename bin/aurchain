@@ -135,3 +135,5 @@ grep -Fxf list/name tsort/name | awk -v arch="$(uname -m)" '{
     if(arch == "i686") gsub(/^lib32-/,"")
     print
 }'
+
+# vim: set et sw=4 sts=4 ft=sh:

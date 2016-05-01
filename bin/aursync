@@ -184,3 +184,5 @@ fi
 
 aurbuild_args+=(-d "$repo" -r "$pool" -p "$pool" -a "$tmp"/queue)
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+
+# vim: set et sw=4 sts=4 ft=sh:
