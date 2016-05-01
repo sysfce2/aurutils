@@ -28,8 +28,12 @@ inspect() {
 }
 
 revcheck() {
-    #global tmp
+    #global aurweb tmp
     git fetch -v
+
+    if ! git remote get-url --all origin | grep -Fq "${aurweb#*//}"; then
+        warning "remote does not match ${aurweb#*//}"
+    fi
 
     # git fetch will return 0 even if nothing was fetched.
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
@@ -42,10 +46,6 @@ revcheck() {
 clone() {
     #global aurweb
     declare b
-
-    if ! git remote get-url --all origin | grep -Fq "${aurweb#*//}"; then
-        warning "remote does not match ${aurweb#*//}"
-    fi
 
     while read -r b _; do
         if [[ -d $b/.git ]]; then
