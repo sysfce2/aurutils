@@ -92,7 +92,7 @@ prepare() {
         else
             repo[$name]=$ver
         fi
-    done < <(pacman -Si "${!aur[@]}" | awk -F: '/^Name/ || /^Version/ {print $2}' | xargs -n2)
+    done < <(pacman -Si "${!aur[@]}" 2>/dev/null | awk -F: '/^Name/ || /^Version/ {print $2}' | xargs -n2)
 
     for name in "${!aur[@]}"; do
         if [[ ${repo[$name]} ]]; then
