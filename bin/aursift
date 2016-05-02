@@ -81,20 +81,18 @@ prepare() {
         exit 61
     fi
 
-    # XXX: expac ignores Include, pacinfo segfaults, pacman --print
-    # only lists the first package... yay.
     while read -r name ver; do
-        [[ -z $name ]] && continue
+        [[ ! $name ]] && continue
 
+        # If a package is in several repositories, take the newest version. (#105)
         if [[ ${repo[$name]} ]]; then
-            # If a package is in several repositories, take the newest version. (#105)
             case $(vercmp "$ver" "${repo[$name]}") in
                 1) repo[$name]=$ver ;;
             esac
         else
             repo[$name]=$ver
         fi
-    done < <(pacman -Si "${!aur[@]}" 2>/dev/null | awk -F: '/^Name/ || /^Version/ {print $2}' | xargs -n2)
+    done < <(expac -S '%n %v' "${!aur[@]}")
 
     for name in "${!aur[@]}"; do
         if [[ ${repo[$name]} ]]; then
