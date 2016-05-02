@@ -9,7 +9,7 @@ source=("git+$url")
 md5sums=('SKIP')
 conflicts=('aurutils')
 provides=('aurutils')
-depends=('pacman>=5.0' 'expac' 'jshon' 'git' 'aria2'
+depends=('pacman>=5.0' 'git' 'expac-git' 'jshon-git' 'aria2-git'
          'pacutils-git' 'repose-git' 'datamash-git')
 checkdepends=('shellcheck')
 makedepends=('git')
