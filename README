@@ -53,9 +53,9 @@ NOTES
     IMPORTANT
     ---------
 
-    The pool location has changed with aurutils 0.9.0. To migrate from
-    old versions, follow the steps in "Creating a local repository"
-    below, and rebuild the database:
+    The pool location will change with aurutils 0.9.0. To migrate from
+    previous versions, follow the steps in "Creating a local
+    repository" below, and rebuild the database:
 
       $ mv -v /home/custompkgs/*.pkg* /var/cache/pacman/custom/
       $ cd /home/custompkgs
