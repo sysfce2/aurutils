@@ -132,8 +132,10 @@ done
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
 grep -Fxf list/name tsort/name | awk -v arch="$(uname -m)" '{
-    if(arch == "i686") gsub(/^lib32-/,"")
-    print
+    if(arch == "i686") {
+        gsub(/^lib32-/,"")
+        gsub(/^gcc-multilib$/,"")
+    };  print
 }'
 
 # vim: set et sw=4 sts=4 ft=sh:
