@@ -85,7 +85,7 @@ prepare() {
     # duplicate package names.
     while read -r name ver; do
         repo[$name]=$ver
-    done < <(expac -S '%n %v' "${!aur[@]}")
+    done < <(pacman -Sddp --print-format '%n %v' "${!aur[@]}")
 
     for name in "${!aur[@]}"; do
         if [[ ${repo[$name]} ]]; then
