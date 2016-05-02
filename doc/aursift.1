@@ -22,8 +22,10 @@ and printed to stderr.
 .
 .B \-U
 .RS
-Compare \fIpkgname pkgver \fRagainst packages from any configured
-repository. Names of updated packages are printed to stdout.
+Compare \fIpkgname pkgver \fR strings against packages in the sync
+databases. In case packages are available in several repositories,
+only the newest version is compared. Names of updated packages are
+printed to stdout.
 .RE
 .
 .SH SEE ALSO
