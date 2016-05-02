@@ -84,6 +84,8 @@ prepare() {
     # XXX: expac ignores Include, pacinfo segfaults, pacman --print
     # only lists the first package... yay.
     while read -r name ver; do
+        [[ -z $name ]] && continue
+
         if [[ ${repo[$name]} ]]; then
             # If a package is in several repositories, take the newest version. (#105)
             case $(vercmp "$ver" "${repo[$name]}") in
