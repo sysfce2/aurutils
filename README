@@ -50,18 +50,6 @@ EXIT STATUS
 
 NOTES
 
-    IMPORTANT
-    ---------
-
-    The pool location will change with aurutils 0.9.0. To migrate from
-    previous versions, follow the steps in "Creating a local
-    repository" below, and rebuild the database:
-
-      $ mv -v /home/custompkgs/*.pkg* /var/cache/pacman/custom/
-      $ cd /home/custompkgs
-      $ repose --rebuild -vf custom -p /var/cache/pacman/custom
-      $ sudo pacman -Syu
-
     Creating a local repository 
     ---------------------------
 
@@ -103,8 +91,21 @@ NOTES
     Tip: Consider separate repositories for different purposes, such
          as version control packages.
 
-    Migrating foreign packages (optional)
-    -------------------------------------
+    Migrating the package pool
+    --------------------------
+
+    Move the built packages to the new pool:
+
+      $ mv -v /home/custompkgs/*.pkg* /var/cache/pacman/custom/
+      $ cd /home/custompkgs
+
+    Rebuild the database:
+    
+      $ repose --rebuild -vf custom -p /var/cache/pacman/custom
+      $ sudo pacman -Syu
+
+    Migrating foreign packages
+    --------------------------
     
     This is straightforward if the built packages are still available,
     for example in /home/custompkgs:
