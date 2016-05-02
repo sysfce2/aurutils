@@ -1,0 +1,76 @@
+#!/bin/bash
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -o pipefail
+
+argv0=aurcheck
+tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
+
+readonly argv0 tmp
+
+syncver() {
+    # XXX: pacsift does not list all packages in a given repo, and
+    # --print-format does not work with --list.
+    pacman -Sl "$1" | awk '{ printf "%s/%s\n", $1, $2 }' | expac -S '%n %v' -
+}
+
+aurver() {
+    jshon -Q -a -e results -a -e Name -u -p -e Version -u | xargs -n2
+}
+
+f1() {
+    awk '{print $1}' "$@"
+}
+
+quickcheck() {
+    declare pkg ver_r ver_a argv
+
+    syncver "$1" | sort -k 1b,1 > "$tmp"/struct_r
+
+    # xargs does not preserve exit status, but returns 123 if any
+    # command failed with status 1-125.
+    readarray -t argv < <(f1 "$tmp"/struct_r)
+
+    if aursearch -Fr "${argv[@]}" | aurver | sort -k 1b,1 > "$tmp"/struct_a; then
+        # Join on first field (pkgname)
+        join -a 1 "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
+
+        # Notify if packages are not in AUR (#110)
+        grep -Fxvf <(f1 "$tmp"/struct_a) <(f1 "$tmp"/struct_r) | while read -r pkg; do
+            plain "$pkg is not present in AUR"
+        done
+    else
+        # The status of aursearch is of special interest, instead of
+        # the rightmost failed command.
+        exit "${PIPESTATUS[0]}"
+    fi
+
+    while read -r pkg ver_r ver_a; do
+        case $(vercmp "$ver_r" "$ver_a") in
+            -1) printf '%s %s -> %s\n' "$pkg" "$ver_r" "$ver_a"
+        esac
+    done < "$tmp"/struct
+}
+
+usage() {
+    plain "usage: $argv0 [-q] repository"
+    exit 1
+}
+    
+trap 'rm -rf "$tmp"' EXIT
+
+source /usr/share/makepkg/util.sh || exit
+
+[[ -t 2 ]] && colorize
+
+while getopts :q OPT; do
+    case $OPT in
+        q|+q) parse=f1 ;;
+        h|+h) usage    ;;
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
+((!$#)) && usage
+
+quickcheck "$1" | "${parse:-tee}"

@@ -4,25 +4,20 @@ repofind \- display information on file:// repositories
 .
 .SH SYNOPSIS
 .SY repofind
-.OP \-is
-.OP \-u repository
+.OP \-i
+.OP \-s
 .YS
 .
 .SH OPTIONS
 .B \-i
 .RS
 Find and list all \fIfile:// \fR(local) repositories in \fIpacman.conf\fR,
-together with the \fIServer \fRand \fICacheDir \fRdirectives.
+together with the \fIServer \fRdirective.
 .RE
 .
 .B \-s
 .RS
 Interactively select a local repository (implies \fI\-i\fR).
-.RE
-.
-.B \-u
-.RS
-Check and print AUR updates for a given repository.
 .RE
 .
 .SH SEE ALSO

@@ -15,7 +15,7 @@ repofind() {
         rset[$repo]=$(pacconf --single --repo="$repo" Server)
 
         if [[ ${rset[$repo]} =~ file:// ]]; then
-            printf '%s %s %s\n' "$repo" "${rset[$repo]}"
+            printf '%s %s\n' "$repo" "${rset[$repo]}"
         fi
     done
 }
@@ -41,64 +41,7 @@ reposelect() {
 
     root=${avail[$repo]#file://}
 
-    if [[ ! -d $root ]]; then
-        error "$argv0: $root: not a directory"
-        exit 20
-    fi
-
-    if [[ ! -w $root ]]; then
-        error "$argv0: $root: permission denied"
-        exit 13
-    fi
-
-    msg2 "Using [$repo] repository"
-    printf '%s %s %s\n' "$repo" "$root"
-}
-
-syncver() {
-    # XXX: pacsift does not list all packages in a given repo, and
-    # --print-format does not work with --list.
-    pacman -Sl "$1" | awk '{printf "%s/%s\n", $1, $2}' | pacman -Sddp --print-format '%n %v' -
-}
-
-aurver() {
-    jshon -Q -a -e results -a -e Name -u -p -e Version -u | xargs -n2
-}
-
-notify() {
-    grep -Fxvf <(awk '{print $1}' "$1") <(awk '{print $1}' "$2") | {
-        while read -r pkg; do
-            plain "$pkg is not present in AUR"
-        done
-    }
-}
-
-quickcheck() {
-    declare pkg ver_r ver_a argv
-
-    syncver "$1" | sort -k 1b,1 > "$tmp"/struct_r
-
-    # xargs does not preserve exit status, but returns 123 if any
-    # command failed with status 1-125.
-    readarray -t argv < <(awk '{print $1}' "$tmp"/struct_r)
-
-    if aursearch -Fr "${argv[@]}" | aurver | sort -k 1b,1 > "$tmp"/struct_a; then
-        # Join on first field (pkgname)
-        join -a 1 "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
-
-        # Notify if packages are not in AUR (#110)
-        notify "$tmp"/struct_a "$tmp"/struct_r
-    else
-        # The status of aursearch is of special interest, instead of
-        # the rightmost failed command.
-        exit "${PIPESTATUS[0]}"
-    fi
-
-    while read -r pkg ver_r ver_a; do
-        case $(vercmp "$ver_r" "$ver_a") in
-            -1) printf '%s %s -> %s\n' "$pkg" "$ver_r" "$ver_a"
-        esac
-    done < "$tmp"/struct
+    printf '%s %s\n' "$repo" "$root"
 }
 
 trap 'rm -rf "$tmp"' EXIT
@@ -111,8 +54,7 @@ while getopts :isu: OPT; do
     case $OPT in
         i|+i) repofind   ;;
         s|+s) reposelect ;;
-        u|+u) quickcheck "$OPTARG" ;;
-        *) plain "usage: $argv0 [+-cisu ARG} [--] ARGS..."
+        *) plain "usage: $argv0 [-i] [-s]"
            exit 1 ;;
     esac
 done

@@ -71,7 +71,7 @@ aria() {
 }
 
 print() {
-    printf '%s\n' "$@"
+    printf '%s\n' -- "$@"
 }
 
 trap 'rm -rf "$tmp"' EXIT
@@ -117,12 +117,35 @@ fi
 # Only select a repository when building (#127)
 if ! ((nobuild)) || ((update)); then
     read -r repo root < <(repofind -s)
+    # Select a cache directory as package pool (#105)
     read -r pool < <(pacconf CacheDir | grep -m1 -Eo ".+/$repo/$")
+
+    msg2 "Using [$repo] repository"
+
+    if [[ ! -d $root ]]; then
+        error "$argv0: $root: not a directory"
+        exit 20
+    fi
+
+    if [[ ! -w $root ]]; then
+        error "$argv0: $root: permission denied"
+        exit 13
+    fi
+
+    if [[ ! -d $pool ]]; then
+        error "$argv0: $pool: not a directory"
+        exit 20
+    fi
+
+    if [[ ! -w $pool ]]; then
+        error "$argv0: $pool: permission denied"
+        exit 13
+    fi
 fi
 
 # Reuse selection for repofind (#82)
 if ((update)); then
-    update_targets=($(repofind -u "$repo" | awk '{print $1}'))
+    update_targets=($(aurcheck -q "$repo"))
 
     if [[ ! ${update_targets[@]} ]]; then
         msg2 "No updates available"
