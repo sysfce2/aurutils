@@ -116,7 +116,8 @@ fi
 
 # Only select a repository when building (#127)
 if ! ((nobuild)) || ((update)); then
-    read -r repo root pool < <(repofind -s)
+    read -r repo root < <(repofind -s)
+    read -r pool < <(pacconf CacheDir | grep -m1 -Eo ".+/$repo/$")
 fi
 
 # Reuse selection for repofind (#82)

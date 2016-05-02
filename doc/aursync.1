@@ -12,12 +12,15 @@ aursync \- download and build aur packages automatically
 .YS
 .
 .SH DESCRIPTION
-Downloads and builds packages automatically using aurbuild. The
-arguments are package names.
+Download and build packages automatically to a local
+repository. Package names serve as arguments.
 .P
-In case vifm is installed, the downloaded files are shown using vifm
-and can be edited. If vifm is not installed, the files are shown in
-less or $PAGER if configured.
+If vifm is installed, the downloaded files are shown using vifm and
+can be edited. If not, the files are shown in less, or $PAGER if
+configured.
+.P
+It is assumed each repository has a a corresponding cache directory,
+with the trailing directory matching the repository name.
 .
 .SH OPTIONS
 .B \-c

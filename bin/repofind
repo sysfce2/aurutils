@@ -9,25 +9,23 @@ readonly argv0 tmp
 
 repofind() {
     declare repo
-    declare -A rset cset
+    declare -A rset
 
     for repo in $(pacconf --repo-list); do
         rset[$repo]=$(pacconf --single --repo="$repo" Server)
-        cset[$repo]=$(pacconf CacheDir | grep -m1 -Eo ".+/$repo/$")
 
-        if [[ ${rset[$repo]} =~ file:// ]] && [[ ${cset[$repo]} ]]; then
-            printf '%s %s %s\n' "$repo" "${rset[$repo]}" "${cset[$repo]}"
+        if [[ ${rset[$repo]} =~ file:// ]]; then
+            printf '%s %s %s\n' "$repo" "${rset[$repo]}"
         fi
     done
 }
 
 reposelect() {
-    declare repo server cachedir root pool
-    declare -A avail cache
+    declare repo server root
+    declare -A avail
 
-    while read -r repo server cachedir; do
+    while read -r repo server; do
         avail[$repo]=$server
-        cache[$repo]=$cachedir
     done < <(repofind)
 
     if ((${#avail[@]} > 1)); then
@@ -42,7 +40,6 @@ reposelect() {
     fi
 
     root=${avail[$repo]#file://}
-    pool=${cache[$repo]}
 
     if [[ ! -d $root ]]; then
         error "$argv0: $root: not a directory"
@@ -54,18 +51,8 @@ reposelect() {
         exit 13
     fi
 
-    if [[ ! -d $pool ]]; then
-        error "$argv0: $pool: not a directory"
-        exit 20
-    fi
-
-    if [[ ! -w $pool ]]; then
-        error "$argv0: $pool: permission denied"
-        exit 13
-    fi
-
     msg2 "Using [$repo] repository"
-    printf '%s %s %s\n' "$repo" "$root" "$pool"
+    printf '%s %s %s\n' "$repo" "$root"
 }
 
 syncver() {

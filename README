@@ -66,7 +66,7 @@ NOTES
       Server = file:///home/custompkgs
 
     Avoid naming the repository "local", as this name is reserved by
-    pacman. When using repofind(1), the trailing directory of the
+    pacman. When using aursync(1), the trailing directory of the
     cache path _must_ match the name of the local repository.
 
     Include the configuration in /etc/pacman.conf:
