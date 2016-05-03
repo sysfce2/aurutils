@@ -1,13 +1,15 @@
-AURUTILS(7)                                                   Miscellaneous Information Manual                                                  AURUTILS(7)
+AURUTILS(7)            Miscellaneous Information Manual            AURUTILS(7)
 
 NAME
        aurutils - helper tools for the arch user repository
 
 PROGRAMS
-       The below gives a short overview; see the respective documentation for details.
+       The  below gives a short overview; see the respective documentation for
+       details.
 
        aurbuild
-           Build packages to a local repository. Local or nspawn builds are possible.
+           Build packages to a local repository. Local or  nspawn  builds  are
+           possible.
 
        aurchain
            Solve and order dependencies using the AUR RPC.
@@ -34,14 +36,16 @@ PROGRAMS
            Run pacman, only considering the official repositories.
 
 EXIT STATUS
-       Programs follow a subset of errno(3), or preserve command status where applicable.
+       Programs  follow a subset of errno(3), or preserve command status where
+       applicable.
 
        See also EXIT STATUS in curl(1), aria2c(1).
 
 NOTES
        Creating a local repository
 
-       Configure the local repository in a separate pacman configuration, for example in /etc/pacman.d/custom:
+       Configure the local repository in a separate pacman configuration,  for
+       example in /etc/pacman.d/custom:
 
          [options]
          CacheDir = /var/cache/pacman/pkg/
@@ -71,9 +75,11 @@ NOTES
          $ repo-add /home/custompkgs/custom.db.tar
          $ sudo pacman -Syu
 
-       Note: When using aursync(1), the trailing directory of the cache path must match the name of the local repository.
+       Note: When using aursync(1), the trailing directory of the cache path
+             must match the name of the local repository.
 
-       Tip: Consider separate repositories for different purposes, such as version control packages.
+       Tip: Consider separate repositories for different purposes, such as
+            version control packages.
 
        Moving the package pool
 
@@ -89,7 +95,8 @@ NOTES
 
        Migrating foreign packages
 
-       This is straightforward if the built packages are still available, for example in /home/custompkgs:
+       This  is straightforward if the built packages are still available, for
+       example in /home/custompkgs:
 
          $ cd /home/custompkgs
          $ repose -fv custom
@@ -99,7 +106,8 @@ NOTES
 
          $ repose -dfv custom
 
-       Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
+       Without packages, check the installed files first. If  needed,  rebuild
+       packages with md5sum mismatches.
 
          $ pacman -Qqm | paccheck --md5sum --quiet
 
@@ -107,7 +115,8 @@ NOTES
 
         $ for b in $(pacman -Qqm); do bacman "$b"; done
 
-       To keep the repository updated when building with makepkg, set PKGDEST to the cache, and create a repose alias:
+       To  keep the repository updated when building with makepkg, set PKGDEST
+       to the cache, and create a repose alias:
 
          $ sudoedit /etc/makepkg.conf
          $ alias custom='repose -vf custom -r /home/custompkgs -p /var/cache/pacman/custom'
@@ -125,7 +134,8 @@ EXAMPLES
          $ aurqueue * > queue # Remove unwanted targets
          $ aurbuild -d custom -r /home/custompkgs -p /var/cache/pacman/custom -a queue
 
-       Search for Perl modules that are both in the AUR or official repositories:
+       Search for Perl modules that are both in the AUR or official  reposito‐
+       ries:
 
          $ aursearch -q '^perl-.+' >pkgs
          $ grep -Fxvf <(aursift -S < pkgs) pkgs
@@ -146,7 +156,8 @@ EXAMPLES
 
          $ select a in $(aursearch -q pony); do aursync "$a"; break; done
 
-       Print AUR updates in the "custom" repository (output similar to checkupdates):
+       Print  AUR updates in the "custom" repository (output similar to check‐
+       updates):
 
          $ aurcheck
 
@@ -162,18 +173,22 @@ BUGS
 
        1) Do you use the latest version of aurutils and its dependencies?
 
-       2) Does the package conform to PKGBUILD(5) and the AUR package guidelines?
+       2) Does the package conform to PKGBUILD(5) and the AUR  package  guide‐
+       lines?
 
-       3) Does the package provide the correct metadata on the AUR RPC interface?
+       3)  Does the package provide the correct metadata on the AUR RPC inter‐
+       face?
 
        4) Does the package build with makepkg -s ?
 
-       5) Is the problem reproducible, and not due to a misconfiguration of pacman, makepkg, sudoers, gpg or others?
+       5) Is the problem reproducible, and not due to  a  misconfiguration  of
+       pacman, makepkg, sudoers, gpg or others?
 
        If yes to all, create a debug log:
 
          $ bash -x scriptname |& tee error.log
 
-       and attach it to a new issue on github ⟨https://www.github.com/AladW/aurutils/issues⟩
+       and      attach     it     to     a     new     issue     on     github
+       ⟨https://www.github.com/AladW/aurutils/issues⟩
 
-AURUTILS                                                                 2016-05-03                                                             AURUTILS(7)
+AURUTILS                          2016-05-03                       AURUTILS(7)
