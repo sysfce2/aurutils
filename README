@@ -188,7 +188,8 @@ BUGS
 
          $ bash -x scriptname |& tee error.log
 
-       and      attach     it     to     a     new     issue     on     github
-       ⟨https://www.github.com/AladW/aurutils/issues⟩
+       and attach it to a new issue:
+
+       https://www.github.com/AladW/aurutils/issues
 
 AURUTILS                          2016-05-03                       AURUTILS(7)
