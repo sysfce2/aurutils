@@ -1,0 +1,41 @@
+INSTALLATION
+
+  The master branch can be installed from the included PKGBUILD, or from
+  the AUR under "aurutils-git". Dependencies are typically development
+  versions, and the package may otherwise behave in unexpected ways.
+
+  The release branch is recommended for general use, and is available in
+  the AUR as "aurutils". Compability is NOT guaranteed between different
+  versions, except for patch (0.0.x) releases.
+
+USAGE
+
+  For the release branch, see the README document in
+  /usr/share/doc/aurutils/README, or online at:
+
+  https://github.com/AladW/aurutils/blob/release/README
+
+  For the master branch, see aurutils(7).
+
+TROUBLESHOOTING
+
+  Before filing a bug, check the following:
+
+  1) Do you use the latest version of aurutils and its dependencies?
+
+  2) Does the package conform to PKGBUILD(5) and the AUR package guidelines?
+
+  3) Does the package provide the correct metadata on the AUR RPC interface?
+
+  4) Does the package build with makepkg -s ?
+
+  5) Is the problem reproducible, and not due to a misconfiguration of
+     pacman, makepkg, sudoers, gpg or others?
+
+  If yes to all, create a debug log:
+
+    $ bash -x scriptname |& tee error.log
+
+  and attach it to a new issue:
+
+  https://www.github.com/AladW/aurutils/issues
