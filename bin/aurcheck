@@ -8,9 +8,8 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly argv0 tmp
 
 syncver() {
-    # XXX: pacsift does not list all packages in a given repo, and
-    # --print-format does not work with --list.
-    pacman -Sl "$1" | awk '{ printf "%s/%s\n", $1, $2 }' | expac -S '%n %v' -
+    # XXX: pacsift does not list all packages in a given repo.
+    pacsift --exact --repo="$1" | expac -S '%n %v' -
 }
 
 aurver() {
@@ -55,7 +54,7 @@ usage() {
     plain "usage: $argv0 [-q] repository"
     exit 1
 }
-    
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
