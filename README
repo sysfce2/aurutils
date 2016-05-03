@@ -155,7 +155,7 @@ EXAMPLES
        Print  AUR updates in the "custom" repository (output similar to check‐
        updates):
 
-         $ aurcheck
+         $ aurcheck custom
 
        Use helpers wich honor the PACMAN variable or cower with a repository:
 
