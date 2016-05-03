@@ -1,17 +1,13 @@
-AURUTILS(7)            Miscellaneous Information Manual            AURUTILS(7)
+AURUTILS(7)                                                   Miscellaneous Information Manual                                                  AURUTILS(7)
 
-
-
-NNAAMMEE
+NAME
        aurutils - helper tools for the arch user repository
 
-PPRROOGGRRAAMMSS
-       The  below gives a short overview; see the respective documentation for
-       details.
+PROGRAMS
+       The below gives a short overview; see the respective documentation for details.
 
        aurbuild
-           Build packages to a local repository. Local or  nspawn  builds  are
-           possible.
+           Build packages to a local repository. Local or nspawn builds are possible.
 
        aurchain
            Solve and order dependencies using the AUR RPC.
@@ -37,17 +33,15 @@ PPRROOGGRRAAMMSS
        repoman
            Run pacman, only considering the official repositories.
 
-EEXXIITT SSTTAATTUUSS
-       Programs  follow a subset of errno(3), or preserve command status where
-       applicable.
+EXIT STATUS
+       Programs follow a subset of errno(3), or preserve command status where applicable.
 
        See also EXIT STATUS in curl(1), aria2c(1).
 
-NNOOTTEESS
-       CCrreeaattiinngg aa llooccaall rreeppoossiittoorryy
+NOTES
+       Creating a local repository
 
-       Configure the local repository in a separate pacman configuration,  for
-       example in /etc/pacman.d/custom:
+       Configure the local repository in a separate pacman configuration, for example in /etc/pacman.d/custom:
 
          [options]
          CacheDir = /var/cache/pacman/pkg/
@@ -58,15 +52,15 @@ NNOOTTEESS
          SigLevel = Optional TrustAll
          Server = file:///home/custompkgs
 
-       Avoid naming the repository _l_o_c_a_l, as this name is reserved by pacman.
+       Avoid naming the repository local, as this name is reserved by pacman.
 
-       Include the configuration in _/_e_t_c_/_p_a_c_m_a_n_._c_o_n_f:
+       Include the configuration in /etc/pacman.conf:
 
          # An example of a custom package repository.  See the pacman manpage for
          # tips on creating your own repositories.
          Include = /etc/pacman.d/custom
 
-       Add _I_n_c_l_u_d_e to the eenndd of pacman.conf, where possible.
+       Add Include to the end of pacman.conf, where possible.
 
        Create directories for both database and built packages:
 
@@ -77,14 +71,11 @@ NNOOTTEESS
          $ repo-add /home/custompkgs/custom.db.tar
          $ sudo pacman -Syu
 
+       Note: When using aursync(1), the trailing directory of the cache path must match the name of the local repository.
 
-       NNoottee:: When using _a_u_r_s_y_n_c_(_1_), the trailing directory of the cache path
-             mmuusstt match the name of the local repository.
+       Tip: Consider separate repositories for different purposes, such as version control packages.
 
-       TTiipp:: Consider separate repositories for different purposes, such as
-            version control packages.
-
-       MMoovviinngg tthhee ppaacckkaaggee ppooooll
+       Moving the package pool
 
        Move the built packages to the new pool:
 
@@ -96,42 +87,37 @@ NNOOTTEESS
          $ repose --rebuild -vf custom -p /var/cache/pacman/custom
          $ sudo pacman -Syu
 
+       Migrating foreign packages
 
-       MMiiggrraattiinngg ffoorreeiiggnn ppaacckkaaggeess
-
-       This  is straightforward if the built packages are still available, for
-       example in /home/custompkgs:
+       This is straightforward if the built packages are still available, for example in /home/custompkgs:
 
          $ cd /home/custompkgs
          $ repose -fv custom
          $ sudo pacman -Syu
 
-       To reverse this operation, repeat the procedure with _-_-_d_r_o_p:
+       To reverse this operation, repeat the procedure with --drop:
 
          $ repose -dfv custom
 
-       Without packages, check the installed files first. If  needed,  rebuild
-       packages with _m_d_5_s_u_m mismatches.
+       Without packages, check the installed files first. If needed, rebuild packages with md5sum mismatches.
 
          $ pacman -Qqm | paccheck --md5sum --quiet
 
-       Recreate the packages, and save them to _P_K_G_D_E_S_T, or _P_W_D if not set:
+       Recreate the packages, and save them to PKGDEST, or PWD if not set:
 
         $ for b in $(pacman -Qqm); do bacman "$b"; done
 
-       To  keep the repository updated when building with makepkg, set _P_K_G_D_E_S_T
-       to the cache, and create a repose alias:
+       To keep the repository updated when building with makepkg, set PKGDEST to the cache, and create a repose alias:
 
          $ sudoedit /etc/makepkg.conf
          $ alias custom='repose -vf custom -r /home/custompkgs -p /var/cache/pacman/custom'
 
-
-EEXXAAMMPPLLEESS
+EXAMPLES
        Run actions on AUR targets in total order:
 
          $ while read -r pkg _; do ... done < <(aurchain foobar)
 
-       Build all packages in the _p_k_g_b_u_i_l_d_s github repository:
+       Build all packages in the pkgbuilds github repository:
 
          $ git clone https://www.github.com/Earnestly/pkgbuilds
          $ cd pkgbuilds
@@ -139,13 +125,12 @@ EEXXAAMMPPLLEESS
          $ aurqueue * > queue # Remove unwanted targets
          $ aurbuild -d custom -r /home/custompkgs -p /var/cache/pacman/custom -a queue
 
-       Search for Perl modules that are both in the AUR or official  reposito-
-       ries:
+       Search for Perl modules that are both in the AUR or official repositories:
 
          $ aursearch -q '^perl-.+' >pkgs
          $ grep -Fxvf <(aursift -S < pkgs) pkgs
 
-       Build _p_l_a_s_m_a_-_d_e_s_k_t_o_p_-_g_i_t and its dependencies in an nspawn container:
+       Build plasma-desktop-git and its dependencies in an nspawn container:
 
          $ aursync -c plasma-desktop-git
 
@@ -157,12 +142,11 @@ EEXXAAMMPPLLEESS
 
          $ aursync -u
 
-       Select a package that matches _p_o_n_y, and build the result:
+       Select a package that matches pony, and build the result:
 
          $ select a in $(aursearch -q pony); do aursync "$a"; break; done
 
-       Print  AUR updates in the "custom" repository (output similar to check-
-       updates):
+       Print AUR updates in the "custom" repository (output similar to checkupdates):
 
          $ aurcheck
 
@@ -171,32 +155,25 @@ EEXXAAMMPPLLEESS
         $ PACMAN=repoman pacaur -Syu --aur
         $ cower --ignorerepo=custom
 
+       Note: Unlike repofind, these only check updates for installed packages.
 
-       NNoottee:: Unlike repofind, these only check updates for installed packages.
-
-BBUUGGSS
+BUGS
        Before filing a bug, check the following:
 
        1) Do you use the latest version of aurutils and its dependencies?
 
-       2) Does the package conform to PKGBUILD(5) and the AUR  package  guide-
-       lines?
+       2) Does the package conform to PKGBUILD(5) and the AUR package guidelines?
 
-       3)  Does the package provide the correct metadata on the AUR RPC inter-
-       face?
+       3) Does the package provide the correct metadata on the AUR RPC interface?
 
        4) Does the package build with makepkg -s ?
 
-       5) Is the problem reproducible, and not due to  a  misconfiguration  of
-       pacman, makepkg, sudoers, gpg or others?
+       5) Is the problem reproducible, and not due to a misconfiguration of pacman, makepkg, sudoers, gpg or others?
 
        If yes to all, create a debug log:
 
          $ bash -x scriptname |& tee error.log
 
-       and      attach     it     to     a     new     issue     on     github
-       <https://www.github.com/AladW/aurutils/issues>
+       and attach it to a new issue on github ⟨https://www.github.com/AladW/aurutils/issues⟩
 
-
-
-AURUTILS                          2016-05-03                       AURUTILS(7)
+AURUTILS                                                                 2016-05-03                                                             AURUTILS(7)
