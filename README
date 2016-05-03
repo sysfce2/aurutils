@@ -12,6 +12,9 @@ PROGRAMS
     aurchain
         Solve and order dependencies using the AUR RPC.
 
+    aurcheck
+        Check packages in a given repo for AUR updates.
+
     aurqueue
         Order dependencies using .SRCINFO files.
 
