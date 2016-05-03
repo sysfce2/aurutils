@@ -34,5 +34,5 @@ package() {
   install -m644 completions/*  "$pkgdir"/usr/share/zsh/site-functions/
   install -m644 doc/*          "$pkgdir"/usr/share/man/man1/
   install -m644 LICENSE        "$pkgdir"/usr/share/licenses/aurutils/
-  install -m644 CREDITS README "$pkgdir"/usr/share/doc/aurutils/
+  install -m644 README         "$pkgdir"/usr/share/doc/aurutils/
 }

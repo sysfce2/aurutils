@@ -1,0 +1,271 @@
+'\" t
+.TH AURUTILS 7 2016-05-03 AURUTILS
+.SH NAME
+aurutils \- helper tools for the arch user repository
+.
+.SH PROGRAMS
+The below gives a short overview; see the respective documentation for
+details.
+.P
+aurbuild
+.RS 4
+Build packages to a local repository. Local or nspawn builds
+are possible.
+.RE
+.
+.P
+aurchain
+.RS 4
+Solve and order dependencies using the AUR RPC.
+.RE
+.
+.P
+aurcheck
+.RS 4
+Check packages in a given repo for AUR updates.
+.RE
+.
+.P
+aurqueue
+.RS 4
+Order dependencies using .SRCINFO files.
+.RE
+.
+.P
+aursearch
+.RS 4
+Search AUR package names by a PCRE pattern.
+.RE
+.
+.P
+aursift
+.RS 4
+Filter packages in the Arch Linux repositories.
+.RE
+.
+.P
+aursync
+.RS 4
+Download and build AUR packages automatically.
+.RE
+.
+.P
+repofind
+.RS 4
+Display information on file:// repositories.
+.RE
+.
+.P
+repoman
+.RS 4
+Run pacman, only considering the official repositories.
+.RE
+.
+.SH EXIT STATUS
+Programs follow a subset of errno(3), or preserve command status where
+applicable.
+.P
+See also EXIT STATUS in curl(1), aria2c(1).
+.
+.SH NOTES
+.B Creating a local repository 
+.P
+Configure the local repository in a separate pacman configuration,
+for example in /etc/pacman.d/custom:
+.EX
+
+  [options]
+  CacheDir = /var/cache/pacman/pkg/
+  CacheDir = /var/cache/pacman/custom/
+  CleanMethod = KeepCurrent
+
+  [custom]
+  SigLevel = Optional TrustAll
+  Server = file:///home/custompkgs
+
+.EE
+Avoid naming the repository \fIlocal\fR, as this name is reserved by
+pacman.
+.P
+Include the configuration in \fI/etc/pacman.conf\fR:
+.EX
+
+  # An example of a custom package repository.  See the pacman manpage for
+  # tips on creating your own repositories.
+  Include = /etc/pacman.d/custom
+
+.EE
+Add \fIInclude \fRto the \fBend \fRof pacman.conf, where possible.
+.P
+Create directories for both database and built packages:
+.EX
+
+  $ sudo install -d /home/custompkgs /var/cache/pacman/custom/ -o $USER -m 700
+
+.EE
+Create an empty database, and synchronize pacman:
+.EX
+
+  $ repo-add /home/custompkgs/custom.db.tar
+  $ sudo pacman -Syu
+
+.EE
+.SY Note:
+When using \fIaursync(1)\fR, the trailing directory of the
+cache path \fBmust \fRmatch the name of the local repository.
+.YS
+.
+.SY Tip:
+Consider separate repositories for different purposes, such as
+version control packages.
+.YS
+.P
+.
+.B Moving the package pool
+.P
+Move the built packages to the new pool:
+.EX
+
+  $ mv -v /home/custompkgs/*.pkg* /var/cache/pacman/custom/
+  $ cd /home/custompkgs
+
+.EE
+Rebuild the database:
+.EX
+
+  $ repose --rebuild -vf custom -p /var/cache/pacman/custom
+  $ sudo pacman -Syu
+
+.EE
+.P
+.
+.B Migrating foreign packages
+.P
+This is straightforward if the built packages are still available,
+for example in /home/custompkgs:
+.EX
+
+  $ cd /home/custompkgs
+  $ repose -fv custom
+  $ sudo pacman -Syu
+
+.EE
+To reverse this operation, repeat the procedure with \fI--drop\fR:
+.EX
+
+  $ repose -dfv custom
+
+.EE
+Without packages, check the installed files first. If needed,
+rebuild packages with \fImd5sum \fRmismatches.
+.EX
+
+  $ pacman -Qqm | paccheck --md5sum --quiet
+
+.EE
+Recreate the packages, and save them to \fIPKGDEST\fR, or \fIPWD \fRif
+not set:
+.EX
+
+ $ for b in $(pacman -Qqm); do bacman "$b"; done
+
+.EE
+To keep the repository updated when building with makepkg, set
+\fIPKGDEST \fRto the cache, and create a repose alias:
+.EX
+
+  $ sudoedit /etc/makepkg.conf
+  $ alias custom='repose -vf custom -r /home/custompkgs -p /var/cache/pacman/custom'
+
+.EE
+.
+.SH EXAMPLES
+Run actions on AUR targets in total order:
+.EX
+
+  $ while read -r pkg _; do ... done < <(aurchain foobar)
+
+.EE
+Build all packages in the \fIpkgbuilds \fRgithub repository:
+.EX
+
+  $ git clone https://www.github.com/Earnestly/pkgbuilds
+  $ cd pkgbuilds
+  $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;    
+  $ aurqueue * > queue # Remove unwanted targets
+  $ aurbuild -d custom -r /home/custompkgs -p /var/cache/pacman/custom -a queue
+
+.EE
+Search for Perl modules that are both in the AUR or official repositories:
+.EX
+
+  $ aursearch -q '^perl-.+' >pkgs
+  $ grep -Fxvf <(aursift -S < pkgs) pkgs
+
+.EE
+Build \fIplasma-desktop-git \fRand its dependencies in an nspawn container:
+.EX
+
+  $ aursync -c plasma-desktop-git
+
+.EE
+Download and view build files recursively for libunity:
+.EX
+
+  $ aursync -dv libunity
+
+.EE
+Build all AUR updates in a selected repository:
+.EX
+
+  $ aursync -u
+
+.EE
+Select a package that matches \fIpony\fR, and build the result:
+.EX
+
+  $ select a in $(aursearch -q pony); do aursync "$a"; break; done
+
+.EE
+Print AUR updates in the "custom" repository (output similar to checkupdates):
+.EX
+
+  $ aurcheck
+
+.EE
+Use helpers wich honor the PACMAN variable or cower with a repository:
+.EX
+
+ $ PACMAN=repoman pacaur -Syu --aur
+ $ cower --ignorerepo=custom
+
+.EE
+.SY Note:
+Unlike repofind, these only check updates for installed packages.
+.YS
+.
+.SH BUGS
+.nr step 1 1
+Before filing a bug, check the following:
+.P
+1) Do you use the latest version of aurutils and its dependencies?
+.P
+2) Does the package conform to PKGBUILD(5) and the AUR package guidelines?
+.P
+3) Does the package provide the correct metadata on the AUR RPC interface?
+.P
+4) Does the package build with makepkg -s ?
+.P
+5) Is the problem reproducible, and not due to a misconfiguration of pacman,
+makepkg, sudoers, gpg or others?
+.P
+If yes to all, create a debug log:
+.EX
+
+  $ bash -x scriptname |& tee error.log
+
+.EE
+and attach it to a new issue on
+.UR https://www.github.com/AladW/aurutils/issues
+github
+.UE
