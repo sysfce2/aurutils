@@ -67,9 +67,7 @@ applicable.
 .P
 See also EXIT STATUS in curl(1), aria2c(1).
 .
-.SH NOTES
-.B Creating a local repository 
-.P
+.SH CREATING A LOCAL REPOSITORY 
 Configure the local repository in a separate pacman configuration,
 for example in /etc/pacman.d/custom:
 .EX
@@ -119,10 +117,8 @@ cache path \fBmust \fRmatch the name of the local repository.
 Consider separate repositories for different purposes, such as
 version control packages.
 .YS
-.P
 .
-.B Moving the package pool
-.P
+.SH MOVING THE PACKAGE POOL
 Move the built packages to the new pool:
 .EX
 
@@ -137,10 +133,8 @@ Rebuild the database:
   $ sudo pacman -Syu
 
 .EE
-.P
 .
-.B Migrating foreign packages
-.P
+.SH MIGRATING FOREIGN PACKAGES
 This is straightforward if the built packages are still available,
 for example in /home/custompkgs:
 .EX
