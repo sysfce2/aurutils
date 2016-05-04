@@ -221,10 +221,10 @@ Select a package that matches \fIpony\fR, and build the result:
   $ select a in $(aursearch -q pony); do aursync "$a"; break; done
 
 .EE
-Print AUR updates in the "custom" repository (output similar to checkupdates):
+Print packages both in AUR and community, and compare their versions:
 .EX
 
-  $ aurcheck custom
+  $ aurcheck -a community
 
 .EE
 Use helpers wich honor the PACMAN variable or cower with a repository:
