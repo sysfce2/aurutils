@@ -6,14 +6,16 @@ argv0=aurcheck
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly argv0 tmp
+declare -i all=0
 
 syncver() {
-    # XXX: pacsift does not list all packages in a given repo.
-    pacsift --exact --repo="$1" | expac -S '%n %v' -
+    # XXX: If pacsift/expac find a package with UTF-8 characters,
+    # this package and any that follow it are not processed.
+    pacsift --exact --repo="$1" | expac -Sv '%n %v' -
 }
 
 aurver() {
-    jshon -Q -a -e results -a -e Name -u -p -e Version -u | xargs -n2
+    jshon -QC -a -e results -a -e Name -u -p -e Version -u | xargs -n2
 }
 
 f1() {
@@ -21,37 +23,39 @@ f1() {
 }
 
 quickcheck() {
-    declare pkg ver_r ver_a argv
+    declare pkg ver_s ver_a argv
 
-    syncver "$1" | sort -k 1b,1 > "$tmp"/struct_r
+    syncver "$1" | sort -k 1b,1 > "$tmp"/struct_s
 
     # xargs does not preserve exit status, but returns 123 if any
     # command failed with status 1-125.
-    readarray -t argv < <(f1 "$tmp"/struct_r)
+    readarray -t argv < <(f1 "$tmp"/struct_s)
 
     if aursearch -Fr "${argv[@]}" | aurver | sort -k 1b,1 > "$tmp"/struct_a; then
         # Join on first field (pkgname)
-        join -a 1 "$tmp"/struct_r "$tmp"/struct_a > "$tmp"/struct
+        join -a 1 "$tmp"/struct_s "$tmp"/struct_a > "$tmp"/struct
 
         # Notify if packages are not in AUR (#110)
-        grep -Fxvf <(f1 "$tmp"/struct_a) <(f1 "$tmp"/struct_r) | while read -r pkg; do
+        grep -Fxvf <(f1 "$tmp"/struct_a) <(f1 "$tmp"/struct_s) | while read -r pkg; do
             plain "$pkg is not present in AUR"
         done
     else
-        # The status of aursearch is of special interest, instead of
+        # The status of aursearch is of special interest, rather than
         # the rightmost failed command.
         exit "${PIPESTATUS[0]}"
     fi
 
-    while read -r pkg ver_r ver_a; do
-        case $(vercmp "$ver_r" "$ver_a") in
-            -1) printf '%s %s -> %s\n' "$pkg" "$ver_r" "$ver_a"
+    while read -r pkg ver_s ver_a; do
+        case $(vercmp "$ver_s" "$ver_a") in
+            -1) printf '%s %s -> %s\n' "$pkg" "$ver_s" "$ver_a" ;;
+            0) ((all)) && printf '%s %s = %s\n' "$pkg" "$ver_s" "$ver_a"   ;;
+            1) ((all)) && printf '%s %s <- %s\n' "$pkg" "$gver_s" "$ver_a" ;;
         esac
     done < "$tmp"/struct
 }
 
 usage() {
-    plain "usage: $argv0 [-q] repository"
+    plain "usage: $argv0 [-a] [-q] repository"
     exit 1
 }
 
@@ -61,8 +65,9 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :q OPT; do
+while getopts :ahq OPT; do
     case $OPT in
+        a|+a) all=1    ;;
         q|+q) parse=f1 ;;
         h|+h) usage    ;;
     esac
@@ -73,3 +78,5 @@ OPTIND=1
 ((!$#)) && usage
 
 quickcheck "$1" | "${parse:-tee}"
+
+# vim: set et sw=4 sts=4 ft=sh:

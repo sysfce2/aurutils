@@ -60,3 +60,5 @@ while getopts :isu: OPT; do
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+# vim: set et sw=4 sts=4 ft=sh:
