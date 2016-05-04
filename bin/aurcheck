@@ -49,7 +49,7 @@ quickcheck() {
         case $(vercmp "$ver_s" "$ver_a") in
             -1) printf '%s %s -> %s\n' "$pkg" "$ver_s" "$ver_a" ;;
             0) ((all)) && printf '%s %s = %s\n' "$pkg" "$ver_s" "$ver_a"   ;;
-            1) ((all)) && printf '%s %s <- %s\n' "$pkg" "$gver_s" "$ver_a" ;;
+            1) ((all)) && printf '%s %s <- %s\n' "$pkg" "$ver_s" "$ver_a" ;;
         esac
     done < "$tmp"/struct
 }
