@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.8.3.r55.g3a4f83f
+pkgver=0.8.3.r57.gede3bf1
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -35,5 +35,5 @@ package() {
   install -m644 man1/*          "$pkgdir"/usr/share/man/man1/
   install -m644 man7/*          "$pkgdir"/usr/share/man/man7/
   install -m644 LICENSE         "$pkgdir"/usr/share/licenses/aurutils/
-  install -m644 CREDITS INSTALL "$pkgdir"/usr/share/doc/aurutils/
+  install -m644 CREDITS README  "$pkgdir"/usr/share/doc/aurutils/
 }
