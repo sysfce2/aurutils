@@ -19,7 +19,7 @@ USAGE
   For the release branch, see the README document in
   /usr/share/doc/aurutils/README, or online at:
 
-  https://github.com/AladW/aurutils/blob/release/README
+  https://github.com/AladW/aurutils/blob/release-0.8.0/README
 
   For the master branch, see aurutils(7).
 
