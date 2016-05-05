@@ -11,7 +11,9 @@ declare -i all=0
 syncver() {
     # XXX: If pacsift/expac find a package with UTF-8 characters,
     # this package and any that follow it are not processed.
-    pacsift --exact --repo="$1" | expac -Sv '%n %v' -
+    pacman -Sl "$1" | awk -v repo="$1" '$1 ~ repo {
+        printf "%s/%s\n", $1, $2
+    }' | pacman -Sddp --print-format '%n %v' -
 }
 
 aurver() {
