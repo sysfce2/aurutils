@@ -11,7 +11,7 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 # Default options
-declare -i chroot=0 insecure=0 nobuild=0 noversion=0 update=0
+declare -i chroot=0 ignore=0 insecure=0 nobuild=0 noversion=0 update=0
 declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 declare deps=aurchain download=clone
 
@@ -118,6 +118,7 @@ fi
 # Only select a repository when building (#127)
 if ! ((nobuild)) || ((update)); then
     read -r repo root < <(repofind -s)
+
     # Select a cache directory as package pool (#105)
     read -r pool < <(pacconf CacheDir | grep -m1 -Eo ".+/$repo/$")
 
@@ -192,19 +193,23 @@ if ! ((noversion)); then
     # Relative complement: pkgbase (tsort) \ pkgbase (updated)
     grep -Fxvf "$tmp"/list/base "$tmp"/tsort/base > "$tmp"/queue
 else
-    cp -sv "$tmp"/tsort/base "$tmp"/queue
+    cp -vs "$tmp"/tsort/base "$tmp"/queue
 fi
 
 # Skip pkgbase in IgnorePkg (#128)
 if ((ignore)); then
-    pacconf IgnorePkg > "$tmp"/ignore
+    if grep -Fxf <(pacconf IgnorePkg) "$tmp"/queue > "$tmp"/match; then
+        while read -r i; do
+            warning "$i: ignoring package upgrade"
+        done < "$tmp"/match
 
-    grep -Fxf "$tmp"/ignore "$tmp"/queue | while read -r i; do
-        warning "$i: ignoring package"
-    done
-
-    mv -v "$tmp"/queue "$tmp"/queue_orig
-    grep -Fxvf "$tmp"/ignore "$tmp"/queue_orig > "$tmp"/queue
+        if grep -Fxvf "$tmp"/match "$tmp"/queue > "$tmp"/queue_new; then
+            mv -v "$tmp"/queue_new "$tmp"/queue
+        else
+            plain "there is nothing to do"
+            exit
+        fi
+    fi
 fi
 
 # View changes and build files in one window (#77)
