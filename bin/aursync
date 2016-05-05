@@ -147,12 +147,13 @@ fi
 
 # Reuse selection for repofind (#82)
 if ((update)); then
-    update_targets=($(aurcheck -q "$repo"))
+    # Update targets are separated by newlines, thus in IFS and added
+    # as positional parameters.
+    set -- "$@" $(aurcheck -q "$repo")
 
-    if [[ ! ${update_targets[@]} ]]; then
-        msg2 "No updates available"
-    else
-        set -- "$@" "${update_targets[@]}"
+    if ((!$#)); then
+        plain "there is nothing to do"
+        exit 0
     fi
 fi
 
@@ -191,7 +192,10 @@ if ! ((noversion)); then
     aursift -U < "$tmp"/pair/ver | aursplit "$tmp"/pair/base > "$tmp"/list/base
 
     # Relative complement: pkgbase (tsort) \ pkgbase (updated)
-    grep -Fxvf "$tmp"/list/base "$tmp"/tsort/base > "$tmp"/queue
+    if ! grep -Fxvf "$tmp"/list/base "$tmp"/tsort/base > "$tmp"/queue; then
+        plain "there is nothing to do"
+        exit 0
+    fi
 else
     cp -vs "$tmp"/tsort/base "$tmp"/queue
 fi
@@ -207,7 +211,7 @@ if ((ignore)); then
             mv -v "$tmp"/queue_new "$tmp"/queue
         else
             plain "there is nothing to do"
-            exit
+            exit 0
         fi
     fi
 fi
