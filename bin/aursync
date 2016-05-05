@@ -147,9 +147,9 @@ fi
 
 # Reuse selection for repofind (#82)
 if ((update)); then
-    # Update targets are separated by newlines, thus in IFS and added
-    # as positional parameters.
-    set -- "$@" $(aurcheck -q "$repo")
+    for p in $(aurcheck -q "$repo"); do
+        set -- "$@" "$p"
+    done
 
     if ((!$#)); then
         plain "there is nothing to do"
