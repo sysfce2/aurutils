@@ -80,13 +80,14 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfhkLntTuvw OPT; do
+while getopts :B:cdfIkLntTuvw OPT; do
     case $OPT in
         B|+B) bindro=1
               newdir=$OPTARG ;;
         c|+c) chroot=1       ;;
         d|+d) deps=print     ;;
         f|+f) force=1        ;;
+        I|+I) ignore=1       ;;
         k|+k) insecure=1     ;;
         L|+L) logdest=1      ;;
         n|+n) namcap=1       ;;
@@ -95,7 +96,7 @@ while getopts :B:cdfhkLntTuvw OPT; do
         u|+u) update=1       ;;
         v|+v) noversion=1    ;;
         w|+w) nobuild=1      ;;
-        *) plain "usage: $argv0 [-c] [-B newdir] [-dfhkLtTuvw] [--] pkgname..."
+        *) plain "usage: $argv0 [-c] [-B newdir] [-dfIkLntTuvw] [--] pkgname..."
            exit 1 ;;
     esac
 done
@@ -191,7 +192,19 @@ if ! ((noversion)); then
     # Relative complement: pkgbase (tsort) \ pkgbase (updated)
     grep -Fxvf "$tmp"/list/base "$tmp"/tsort/base > "$tmp"/queue
 else
-    cp "$tmp"/tsort/base "$tmp"/queue
+    cp -sv "$tmp"/tsort/base "$tmp"/queue
+fi
+
+# Skip pkgbase in IgnorePkg (#128)
+if ((ignore)); then
+    pacconf IgnorePkg > "$tmp"/ignore
+
+    grep -Fxf "$tmp"/ignore "$tmp"/queue | while read -r i; do
+        warning "$i: ignoring package"
+    done
+
+    mv -v "$tmp"/queue "$tmp"/queue_orig
+    grep -Fxvf "$tmp"/ignore "$tmp"/queue_orig > "$tmp"/queue
 fi
 
 # View changes and build files in one window (#77)
