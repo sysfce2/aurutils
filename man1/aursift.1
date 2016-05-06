@@ -4,7 +4,7 @@ aursift \- filter packages in the Arch Linux repositories
 .
 .SH SYNOPSIS
 .SY aursift
-.OP \-S pkgname
+.OP \-IS pkgname
 .OP \-U "pkgname pkgver"
 .YS
 .
@@ -13,6 +13,12 @@ A target is usually a package name, or a (space-separated) string of
 package name and version. Targets can be provided on stdin.
 .
 .SH OPTIONS
+.B \-I
+.RS
+Warn on targets to stderr when specified in pacman's \fIIgnorePkg \fR
+directive, otherwise print to stdout.
+.RE
+.
 .B \-S
 .RS
 Check if \fIpkgname \fRis in the official Arch Linux repositories, and

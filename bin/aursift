@@ -112,15 +112,33 @@ prepare() {
     done
 }
 
+ignore() {
+    declare p q
+    declare -A ign
+
+    while read -r p; do
+        ign[$p]=1
+    done < <(pacconf IgnorePkg)
+
+    while read -r q; do
+        if [[ ${ign[$q]} ]]; then
+            warning "$q: ignoring package upgrade"
+        else
+            printf '%s\n' "$q"
+        fi
+    done
+}
+
 source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :SU OPT; do
+while getopts :ISU OPT; do
     case $OPT in
+        I|+I) ignore  ;;
         S|+S) sift    ;;
         U|+U) prepare ;;
-        *) plain "usage: $argv0 [-S pkgname] [-U pkgname pkgver]"
+        *) plain "usage: $argv0 [-IS pkgname] [-U pkgname pkgver]"
            exit 1 ;;
     esac
 done
