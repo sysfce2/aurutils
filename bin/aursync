@@ -225,12 +225,12 @@ fi
 # Save temporary files (#116)
 if ((introspection)); then
     printf '%s\n' "$tmp" | inspect
-    tar -cJvf "$argv0-$(date -Iseconds)".tar.xz "$tmp"
+    tar -cJvf "$argv0-$$-$(date -Iseconds)".tar.xz "$tmp"
 fi
 
 if ((nobuild)); then
     msg "Files downloaded to $PWD"
-    exit
+    exit 0
 fi
 
 if ((chroot)); then

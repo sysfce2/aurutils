@@ -1,4 +1,4 @@
-.TH AURSYNC 1 2016-04-18 AURUTILS
+.TH AURSYNC 1 2016-05-06 AURUTILS
 .SH Name
 aursync \- download and build aur packages automatically
 .
@@ -6,8 +6,8 @@ aursync \- download and build aur packages automatically
 .SY aursync
 .OP \-c
 .OP \-B newdir
-.OP \-dfIkLntTuvw
-.OP \--
+.OP \-u
+.OP \-dfIkLntTvwx
 .OP pkgname...
 .YS
 .
@@ -15,12 +15,13 @@ aursync \- download and build aur packages automatically
 Download and build packages automatically to a local
 repository. Package names serve as arguments.
 .P
-If vifm is installed, the downloaded files are shown using vifm and
-can be edited. If not, the files are shown in less, or $PAGER if
-configured.
+If \fIvifm \fRis installed, the downloaded files are shown using vifm and
+can be edited. If not, the files are shown in \fIless\fR, or
+\fI$PAGER\fR if configured.
 .P
-It is assumed each repository has a a corresponding cache directory,
-with the trailing directory matching the repository name.
+Each repository must have a corresponding \fICacheDir\fR, with the
+trailing directory matching the repository name. See \fBaurutils(7)
+\fR for details.
 .
 .SH OPTIONS
 .B \-c
@@ -40,7 +41,7 @@ Do not view downloaded files before building.
 .
 .B \-I
 .RS
-Skip package bases in pacman's IgnorePkg directive.
+Skip package bases in pacman's \fIIgnorePkg \fRdirective.
 .RE
 .
 .B \-t
@@ -61,6 +62,11 @@ Disable version checking for packages in the queue.
 .B \-w
 .RS
 Only download source files, do not build anything.
+.RE
+.
+.B \-x
+.RS
+View created temporary files, and archive them by date.
 .RE
 .
 .SS makepkg
@@ -97,6 +103,18 @@ Check a built package with namcap. (\fImakechrootpkg -n\fR)
 Build in a temporary directory. (\fImakechrootpkg -T\fR)
 .RE
 .
+.SH ENVIRONMENT
+.B AURDEST
+.RS
+Determines where build files will be cloned (default:
+\fI$XDG_CACHE_HOME/aursync\fR).
+.RE
+.P
+.B TMPDIR
+.RS
+Parent directory for temporary files.
+.RE
+.
 .SH NOTES
 Version checks assume there are no mismatches between .SRCINFO and
 PKGBUILD files.
@@ -112,6 +130,7 @@ PKGBUILD files.
 .BR pacconf (1),
 .BR repofind (1)
 .BR vifm (1),
+.BR pacman.conf (5)
 .
 .SH AUTHORS
 .MT https://github.com/AladW

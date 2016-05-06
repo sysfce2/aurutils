@@ -18,7 +18,7 @@ Build packages, adding the results to a local repository (a repository
 configured with a \fIfile:// \fRprefix \fRin \fIpacman.conf\fR).
 .P
 It is assumed that build directories are located in the current
-directory, and described in a text file taken as argument.
+directory, and described in a text file which is taken as argument.
 .
 .SH OPTIONS
 .B \-a
@@ -28,7 +28,7 @@ A text file with directories containing a PKGBUILD.
 .
 .B \-c
 .RS
-Build in an nspawn container.
+Build packages with \fImakechrootpkg\fR.
 .RE
 .
 .B \-d
@@ -38,7 +38,7 @@ The name of the database.
 .
 .B \-p
 .RS
-The pool for the built packages. The pool is the location where
+The pool for the built packages. The \fBpool \fIis the location where
 aurbuild will put the packages after building.
 .RE
 .
@@ -47,8 +47,8 @@ aurbuild will put the packages after building.
 The root for the repository where the database files will live.
 .RE
 .P
-All arguments after -- are passed to makepkg, or makechrootpkg when -c
-is specified.
+All arguments after -- are passed to \fImakepkg\fR, or
+\fImakechrootpkg \fRwhen \fI-c \fRis specified.
 .
 .SH NOTES
 It is recommended to use a pacman cache directory (\fICacheDir\fR) as
@@ -59,6 +59,7 @@ packages, and any cached versions.
 .BR pacconf (1),
 .BR pacman (1),
 .BR repose (1),
+.BR makepkg.conf (5),
 .BR pacman.conf (5),
 .BR makepkg (8)
 .
