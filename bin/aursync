@@ -225,9 +225,6 @@ fi
 # Save temporary files (#116)
 if ((introspection)); then
     printf '%s\n' "$tmp" | inspect 2
-    ( cd "$tmp" # avoid /tmp/argv0 paths in archive
-      tar -cJv -f "${TMPDIR:-/tmp}/$argv0-$$-$(date +%Y%m%d_%H%M%S)".tar.xz ./*
-    )
 fi
 
 if ((nobuild)); then
