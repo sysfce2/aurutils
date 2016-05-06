@@ -9,7 +9,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly argv0 multinfo tmp
 
 curl_safe() {
-    curl --retry 3 -sSgL "$1" || exit
+    curl --retry 3 -sSgL --fail "$1" || exit
 }
 
 count() {
