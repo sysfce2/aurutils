@@ -97,7 +97,7 @@ while getopts :B:cdfIkLntTuvwx OPT; do
         v|+v) noversion=1     ;;
         w|+w) nobuild=1       ;;
         x|+x) introspection=1 ;;
-        *) plain "usage: $argv0 [-c] [-B newdir] [-dfIkLntTuvwx] [--] pkgname..."
+        *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLntTvwx] [--] pkgname..."
            exit 1 ;;
     esac
 done
