@@ -225,7 +225,7 @@ fi
 # Save temporary files (#116)
 if ((introspection)); then
     printf '%s\n' "$tmp" | inspect
-    tar -cJvf "$argv0-$$-$(date -Iseconds)".tar.xz "$tmp"
+    tar -cJvf "$argv0-$$-$(date +%Y%m%d_%H%M%S)".tar.xz "$tmp"
 fi
 
 if ((nobuild)); then
