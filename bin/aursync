@@ -12,7 +12,7 @@ readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 # Default options
 declare -i chroot=0 ignore=0 insecure=0 nobuild=0 noversion=0 update=0
-declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
+declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0 introspection=0
 declare deps=aurchain download=clone
 
 viewer() {
@@ -80,23 +80,24 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfIkLntTuvw OPT; do
+while getopts :B:cdfIkLntTuvwx OPT; do
     case $OPT in
         B|+B) bindro=1
-              newdir=$OPTARG ;;
-        c|+c) chroot=1       ;;
-        d|+d) deps=print     ;;
-        f|+f) force=1        ;;
-        I|+I) ignore=1       ;;
-        k|+k) insecure=1     ;;
-        L|+L) logdest=1      ;;
-        n|+n) namcap=1       ;;
-        t|+t) download=aria  ;;
-        T|+T) chtemp=1       ;;
-        u|+u) update=1       ;;
-        v|+v) noversion=1    ;;
-        w|+w) nobuild=1      ;;
-        *) plain "usage: $argv0 [-c] [-B newdir] [-dfIkLntTuvw] [--] pkgname..."
+              newdir=$OPTARG  ;;
+        c|+c) chroot=1        ;;
+        d|+d) deps=print      ;;
+        f|+f) force=1         ;;
+        I|+I) ignore=1        ;;
+        k|+k) insecure=1      ;;
+        L|+L) logdest=1       ;;
+        n|+n) namcap=1        ;;
+        t|+t) download=aria   ;;
+        T|+T) chtemp=1        ;;
+        u|+u) update=1        ;;
+        v|+v) noversion=1     ;;
+        w|+w) nobuild=1       ;;
+        x|+x) introspection=1 ;;
+        *) plain "usage: $argv0 [-c] [-B newdir] [-dfIkLntTuvwx] [--] pkgname..."
            exit 1 ;;
     esac
 done
@@ -173,40 +174,40 @@ else
 fi
 
 # Save temporary files in directories by context
-mkdir "$tmp"/{list,pair,tsort}
+mkdir "$tmp"/{struct,sync,tsort}
 
 # Copy the queue and dependency tree for later processing, and
 # retrieve AUR metadata.
-"${deps:-aurchain}" "$@" | tee "$tmp"/tsort/name | xargs -r aursearch -Fr > "$tmp"/raw
+"${deps:-aurchain}" "$@" | tee "$tmp"/tsort/pkgname | xargs -r aursearch -Fr > "$tmp"/aur.json
 
 # Create pairs of pkgname and pkgbase, and pkgname and pkgver.
-jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/pair/base
-jshon -F "$tmp"/raw -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/pair/ver
+jshon -F "$tmp"/aur.json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/struct/pkgbase
+jshon -F "$tmp"/aur.json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/struct/pkgver
 
 # Replace package name with package base, preserving order, copy
 # results, and download build files.
-aursplit "$tmp"/pair/base < "$tmp"/tsort/name | tee "$tmp"/tsort/base | "${download:-clone}"
+aursplit "$tmp"/struct/pkgbase < "$tmp"/tsort/pkgname | tee "$tmp"/tsort/pkgbase | "${download:-clone}"
 
 if ! ((noversion)); then
     # Print updated pkgbase from versioned pairs.
-    aursift -U < "$tmp"/pair/ver | aursplit "$tmp"/pair/base > "$tmp"/list/base
+    aursift -U < "$tmp"/struct/pkgver | aursplit "$tmp"/struct/pkgbase > "$tmp"/sync/pkgbase
 
-    # Relative complement: pkgbase (tsort) \ pkgbase (updated)
-    if ! grep -Fxvf "$tmp"/list/base "$tmp"/tsort/base > "$tmp"/queue; then
+    # Relative complement: pkgbase (tsort) \ pkgbase (sync)
+    if ! grep -Fxvf "$tmp"/sync/pkgbase "$tmp"/tsort/pkgbase > "$tmp"/queue; then
         plain "there is nothing to do"
         exit 0
     fi
 else
-    cp -sv "$tmp"/tsort/base "$tmp"/queue
+    cp -sv "$tmp"/tsort/pkgbase "$tmp"/queue
 fi
 
 # Skip pkgbase in IgnorePkg (#128)
-if ((ignore)) && grep -Fxf <(pacconf IgnorePkg) "$tmp"/queue > "$tmp"/match; then
+if ((ignore)) && grep -Fxf <(pacconf IgnorePkg) "$tmp"/queue > "$tmp"/ignore; then
     while read -r i; do
         warning "$i: ignoring package upgrade"
-    done < "$tmp"/match
+    done < "$tmp"/ignore
 
-    if grep -Fxvf "$tmp"/match "$tmp"/queue > "$tmp"/queue_new; then
+    if grep -Fxvf "$tmp"/ignore "$tmp"/queue > "$tmp"/queue_new; then
         mv -v "$tmp"/queue_new "$tmp"/queue
     else
         plain "there is nothing to do"
@@ -219,6 +220,12 @@ if ! ((insecure)); then
     ( shopt -s nullglob
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect
     )
+fi
+
+# Save temporary files (#116)
+if ((introspection)); then
+    printf '%s\n' "$tmp" | inspect
+    tar -cJvf "$argv0-$(date -Iseconds)".tar.xz "$tmp"
 fi
 
 if ((nobuild)); then
