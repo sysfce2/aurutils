@@ -197,7 +197,7 @@ if ! ((noversion)); then
         exit 0
     fi
 else
-    cp -vs "$tmp"/tsort/base "$tmp"/queue
+    cp -sv "$tmp"/tsort/base "$tmp"/queue
 fi
 
 # Skip pkgbase in IgnorePkg (#128)

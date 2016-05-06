@@ -6,7 +6,7 @@ aursync \- download and build aur packages automatically
 .SY aursync
 .OP \-c
 .OP \-B newdir
-.OP \-dfhkLtTuvw
+.OP \-dfIkLntTuvw
 .OP \--
 .OP pkgname...
 .YS
@@ -38,6 +38,11 @@ Do not resolve dependencies.
 Do not view downloaded files before building.
 .RE
 .
+.B \-I
+.RS
+Skip package bases in pacman's IgnorePkg directive.
+.RE
+.
 .B \-t
 .RS
 Download the PKGBUILDs using aria instead of git.
@@ -45,7 +50,7 @@ Download the PKGBUILDs using aria instead of git.
 .
 .B \-u
 .RS
-Update AUR packages in a local repository.
+Update AUR packages in a selected local repository.
 .RE
 .
 .B \-v
@@ -97,15 +102,16 @@ Version checks assume there are no mismatches between .SRCINFO and
 PKGBUILD files.
 .
 .SH SEE ALSO
-.BR vifm (1),
-.BR less (1),
 .BR aria2c (1),
-.BR git (1),
 .BR aurbuild (1),
 .BR aurchain (1),
-.BR aursift (1),
 .BR aursearch (1),
+.BR aursift (1),
+.BR git (1),
+.BR less (1),
+.BR pacconf (1),
 .BR repofind (1)
+.BR vifm (1),
 .
 .SH AUTHORS
 .MT https://github.com/AladW
