@@ -201,18 +201,16 @@ else
 fi
 
 # Skip pkgbase in IgnorePkg (#128)
-if ((ignore)); then
-    if grep -Fxf <(pacconf IgnorePkg) "$tmp"/queue > "$tmp"/match; then
-        while read -r i; do
-            warning "$i: ignoring package upgrade"
-        done < "$tmp"/match
+if ((ignore)) && grep -Fxf <(pacconf IgnorePkg) "$tmp"/queue > "$tmp"/match; then
+    while read -r i; do
+        warning "$i: ignoring package upgrade"
+    done < "$tmp"/match
 
-        if grep -Fxvf "$tmp"/match "$tmp"/queue > "$tmp"/queue_new; then
-            mv -v "$tmp"/queue_new "$tmp"/queue
-        else
-            plain "there is nothing to do"
-            exit 0
-        fi
+    if grep -Fxvf "$tmp"/match "$tmp"/queue > "$tmp"/queue_new; then
+        mv -v "$tmp"/queue_new "$tmp"/queue
+    else
+        plain "there is nothing to do"
+        exit 0
     fi
 fi
 
