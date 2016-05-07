@@ -182,7 +182,7 @@ mkdir "$tmp"/{struct,sync,tsort}
 
 # Copy the queue and dependency tree for later processing, and
 # retrieve AUR metadata.
-"${deps:-aurchain}" "$@" | tee "$tmp"/tsort/pkgname | xargs -r aursearch -Fr > "$tmp"/aur.json
+"${deps:-aurchain}" "$@" | "${ignore:-tee}" | tee "$tmp"/tsort/pkgname | xargs -r aursearch -Fr > "$tmp"/aur.json
 
 # Create pairs of pkgname and pkgbase, and pkgname and pkgver.
 jshon -F "$tmp"/aur.json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/struct/pkgbase
@@ -190,7 +190,7 @@ jshon -F "$tmp"/aur.json -a -e results -a -e Name -u -p -e Version -u | xargs -n
 
 # Replace package name with package base, preserving order, copy
 # results, and download build files.
-aursplit "$tmp"/struct/pkgbase < "$tmp"/tsort/pkgname | "${ignore:-tee}" | tee "$tmp"/tsort/pkgbase | "${download:-clone}"
+aursplit "$tmp"/struct/pkgbase < "$tmp"/tsort/pkgname | tee "$tmp"/tsort/pkgbase | "${download:-clone}"
 
 if ! ((noversion)); then
     # Print updated pkgbase from versioned pairs.
