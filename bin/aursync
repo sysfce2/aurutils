@@ -204,9 +204,10 @@ fi
 # Skip pkgbase in IgnorePkg (#128)
 if ((ignore)); then
     aursift -I < "$tmp"/queue > "$tmp"/queue_new
-    mv -v "$tmp"/{queue_new,queue}
-    
-    if [[ ! -s "$tmp"/queue ]]; then
+
+    if [[ -s "$tmp"/queue_new ]]; then
+        mv -v "$tmp"/{queue_new,queue}
+    else
         plain "there is nothing to do"
         exit 0
     fi
