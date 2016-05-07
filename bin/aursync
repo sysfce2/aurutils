@@ -12,7 +12,7 @@ readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 # Default options
 declare -i chroot=0 ignore=0 insecure=0 nobuild=0 noversion=0 update=0
-declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0 introspection=0
+declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 declare deps=aurchain download=clone
 
 viewer() {
@@ -80,7 +80,7 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfIkLntTuvwx OPT; do
+while getopts :B:cdfIkLntTuvw OPT; do
     case $OPT in
         B|+B) bindro=1
               newdir=$OPTARG  ;;
@@ -96,8 +96,7 @@ while getopts :B:cdfIkLntTuvwx OPT; do
         u|+u) update=1        ;;
         v|+v) noversion=1     ;;
         w|+w) nobuild=1       ;;
-        x|+x) introspection=1 ;;
-        *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLntTvwx] [--] pkgname..."
+        *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLntTvw] [--] pkgname..."
            exit 1 ;;
     esac
 done
@@ -218,11 +217,6 @@ if ! ((insecure)); then
     ( shopt -s nullglob
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect 1
     )
-fi
-
-# Save temporary files (#116)
-if ((introspection)); then
-    printf '%s\n' "$tmp" | inspect 2
 fi
 
 if ((nobuild)); then
