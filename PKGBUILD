@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.8.3.r79.g7325709
+pkgver=0.8.3.r79.g12bdc3f
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -23,17 +23,10 @@ pkgver() {
 
 check() {
   cd aurutils
-  LANG=C shellcheck -e 2016 -x bin/*
+  ./make.sh check
 }
 
 package() {
   cd aurutils
-  install -d "$pkgdir"/usr/{bin,share{/zsh/site-functions,/man/{man1,man7},{/licenses,/doc}/aurutils}}
-
-  install -m755 bin/*           "$pkgdir"/usr/bin/
-  install -m644 completions/*   "$pkgdir"/usr/share/zsh/site-functions/
-  install -m644 man1/*          "$pkgdir"/usr/share/man/man1/
-  install -m644 man7/*          "$pkgdir"/usr/share/man/man7/
-  install -m644 LICENSE         "$pkgdir"/usr/share/licenses/aurutils/
-  install -m644 CREDITS README  "$pkgdir"/usr/share/doc/aurutils/
+  ./make.sh install "$pkgdir"
 }
