@@ -74,6 +74,16 @@ print() {
     printf '%s\n' -- "$@"
 }
 
+# Skip packages in IgnorePkg (#128)
+ignorepkg() {
+    #global ignore
+    if ((ignore)); then
+        aursift -I
+    else
+        tee
+    fi
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
@@ -185,7 +195,7 @@ jshon -F "$tmp"/aur.json -a -e results -a -e Name -u -p -e Version -u | xargs -n
 
 # Replace package name with package base, preserving order, copy
 # results, and download build files.
-aursplit "$tmp"/struct/pkgbase < "$tmp"/tsort/pkgname | tee "$tmp"/tsort/pkgbase | "${download:-clone}"
+aursplit "$tmp"/struct/pkgbase < "$tmp"/tsort/pkgname | ignorepkg | tee "$tmp"/tsort/pkgbase | "${download:-clone}"
 
 if ! ((noversion)); then
     # Print updated pkgbase from versioned pairs.
@@ -198,18 +208,6 @@ if ! ((noversion)); then
     fi
 else
     cp -sv "$tmp"/tsort/pkgbase "$tmp"/queue
-fi
-
-# Skip pkgbase in IgnorePkg (#128)
-if ((ignore)); then
-    aursift -I < "$tmp"/queue > "$tmp"/queue_new
-
-    if [[ -s "$tmp"/queue_new ]]; then
-        mv -v "$tmp"/{queue_new,queue}
-    else
-        plain "there is nothing to do"
-        exit 0
-    fi
 fi
 
 # View changes and build files in one window (#77)
