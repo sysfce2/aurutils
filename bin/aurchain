@@ -16,14 +16,7 @@ count() {
     jshon -QF "$1" -e resultcount
 }
 
-deps() {
-    # Use -C to recover on missing fields
-    awk -v FS='[<=>]' '!/null/ {print $1}' \
-        <(jshon -CQF "$1" -e results -a -e Depends -a -u) \
-        <(jshon -CQF "$1" -e results -a -e MakeDepends -a -u) \
-        <(jshon -CQF "$1" -e results -a -e CheckDepends -a -u)
-}
-
+# XXX: May not work if package has no dependencies.
 pair() {
     for ((i = 0; i < "$1"; ++i)); do
         awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 && !/null/ {print p, $1}' \
@@ -45,13 +38,16 @@ url() {
     }'
 }
 
-# Create a copy of the original arguments, and build a matching URL for
-# AurJson. If there is at least one result, parse the request data for
-# dependencies, append them to the original copy, and build a new
-# URL. This continues until a certain maximum is exceeded, or no AUR
-# results are found.
+f1() {
+    awk '{print $1}' "$@"
+}
+
+f2() {
+    awk '{print $2}' "$@"
+}
+
 chain() {
-    curl_safe "$(printf '%s\n' "$@" | tee pkg | url)" > raw/0
+    curl_safe "$(printf '%s\n' "$@" | tee pkg/n | url)" > raw/0
 
     if [[ $(count raw/0) -lt 1 ]]; then
         error "$argv0: no packages found"
@@ -60,35 +56,40 @@ chain() {
 
     for ((a = 1; a <= 100; ++a)); do
         declare -i sub=$((a-1))
-        deps raw/$sub | sort -u > pkg_$sub
 
-        # Inverse match for known packages to reduce RPC requests (#4)
-        target=$(grep -Fxvf pkg pkg_$sub | url)
-        
+        # Create pairs of packages and their dependencies.
+        pair "$(count raw/$sub)" raw/$sub > struct/$sub
+
+        # Make a list of known packages to reduce RPC requests. (#4)
+        f1 struct/$sub | sort -u >> aur/pkgname
+        f2 struct/$sub | sort -u > pkg/$sub
+
+        # Query dependencies (f2) not in the known list.
+        target=$(grep -Fxvf pkg/n pkg/$sub | url)
+
         if [[ $target ]]; then            
             curl_safe "$target" > raw/$a
         else
             break
         fi
 
+        cat struct/$sub >> struct/n
+
         if [[ $(count raw/$a) -lt 1 ]]; then
             break
         else
-            cat pkg_$sub >> pkg
+            cat pkg/$sub >> pkg/n
         fi
     done
 
     if ((a > 100)); then
         error "$argv0: total requests: $((++a)) (out of range)"
         exit 34
-    else
-        sort -u pkg
     fi
-}
 
-dmsort() {
-    if datamash -W check < "$1" >/dev/null; then
-        tsort "$1" | tac
+    # Validate tsort data (#87)
+    if datamash -W check < struct/n >/dev/null; then
+        tsort struct/n | tac
     else
         error "$argv0: invalid argument"
         exit 22
@@ -106,32 +107,21 @@ if ((!$#)); then
     exit 1
 fi
 
-# Save temporary files in directories by context
-if cd "$tmp" && mkdir {list,pair,raw,tsort}; then
-    chain "$@" > list/tree
-else
+# Save temporary files in directories by context.
+if ! cd "$tmp" || ! mkdir {aur,pkg,struct,raw}; then
     exit
 fi
 
-# Retrieve AUR metadata.
-curl_safe "$(url < list/tree)" > raw/n
-
-# Create a list of AUR package names.
-jshon -F raw/n -e results -a -e Name -u > list/name
-
-# Create pairs of package names and their dependencies.
-pair "$(count raw/n)" raw/n > pair/name
-
-# Validate tsort data (#87)
-dmsort pair/name | tee tsort/name | aursift -S > tsort/foreign
+# Generate dependency tree.
+chain "$@" > aur/tree
 
 # Warn on packages missing in both official repositories and AUR (#67)
-grep -Fxvf list/name tsort/foreign | while read -r p; do
+grep -Fxvf aur/pkgname <(aursift -S < aur/tree) | while read -r p; do
     warning "no results found for $p"
 done
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf list/name tsort/name | awk -v arch="$(uname -m)" '{
+grep -Fxf aur/pkgname aur/tree | awk -v arch="$(uname -m)" '{
     if(arch == "i686") {
         gsub(/^lib32-/,"")
         gsub(/^gcc-multilib$/,"")
