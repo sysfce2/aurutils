@@ -16,7 +16,7 @@ count() {
     jshon -QF "$1" -e resultcount
 }
 
-# XXX: May not work if package has no dependencies.
+# XXX: May not work if a package has no dependencies.
 pair() {
     for ((i = 0; i < "$1"; ++i)); do
         awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 && !/null/ {print p, $1}' \
@@ -46,6 +46,7 @@ f2() {
     awk '{print $2}' "$@"
 }
 
+# XXX: Remove redundancy from pkg/.. and struct/.. files (comm?)
 chain() {
     curl_safe "$(printf '%s\n' "$@" | tee pkg/n | url)" > raw/0
 
@@ -62,7 +63,7 @@ chain() {
 
         # Make a list of known packages to reduce RPC requests. (#4)
         f1 struct/$sub | sort -u >> aur/pkgname
-        f2 struct/$sub | sort -u > pkg/$sub
+        f2 struct/$sub | sort -u >  pkg/$sub
 
         # Query dependencies (f2) not in the known list.
         target=$(grep -Fxvf pkg/n pkg/$sub | url)
