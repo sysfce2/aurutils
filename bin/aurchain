@@ -12,6 +12,18 @@ curl_safe() {
     curl --retry 3 -sSgL --fail "$1" || exit
 }
 
+url() {
+    awk -v info="$multinfo" '{
+        gsub("+","%2b")
+        gsub("@","%40")
+
+        if (NR == 1)
+            printf "%s&arg[]=%s", info, $1
+        else
+            printf "&arg[]=%s", $1
+    }'
+}
+
 count() {
     jshon -QF "$1" -e resultcount
 }
@@ -20,35 +32,22 @@ count() {
 pair() {
     for ((i = 0; i < "$1"; ++i)); do
         awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 && !/null/ {print p, $1}' \
-            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e Depends -a -u) \
-            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
-            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e CheckDepends -a -u)
+        <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e Depends -a -u) \
+        <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
+        <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e CheckDepends -a -u)
     done
 }
 
-url() {
-    awk -v info="$multinfo" '{
-        gsub("+","%2b")
-        gsub("@","%40")
-        
-        if (NR == 1)
-            printf "%s&arg[]=%s", info, $1
-        else
-            printf "&arg[]=%s", $1
-    }'
-}
-
 f1() {
-    awk '{print $1}' "$@"
+    awk '{print $1}' "$@" | sort -u
 }
 
 f2() {
-    awk '{print $2}' "$@"
+    awk '{print $2}' "$@" | sort -u
 }
 
-# XXX: Remove redundancy from pkg/.. and struct/.. files (comm?)
 chain() {
-    curl_safe "$(printf '%s\n' "$@" | tee pkg/n | url)" > raw/0
+    curl_safe "$(printf '%s\n' "$@" | url)" > raw/0
 
     if [[ $(count raw/0) -lt 1 ]]; then
         error "$argv0: no packages found"
@@ -58,15 +57,13 @@ chain() {
     for ((a = 1; a <= 30; ++a)); do
         declare -i sub=$((a-1))
 
-        # Create pairs of packages and their dependencies.
         pair "$(count raw/$sub)" raw/$sub > struct/$sub
 
-        # Make a list of known packages to reduce RPC requests. (#4)
-        f1 struct/$sub | sort -u >> aur/pkgname
-        f2 struct/$sub | sort -u >  pkg/$sub
+        f1 struct/$sub >> aur/pkgname
+        f1 struct/$sub >> aur/seen
 
-        # Query dependencies (f2) not in the known list.
-        target=$(grep -Fxvf pkg/n pkg/$sub | url)
+        # Avoid querying duplicates (#4)
+        target=$(grep -Fxvf aur/seen <(f2 struct/$sub) | url)
 
         if [[ $target ]]; then            
             curl_safe "$target" > raw/$a
@@ -79,7 +76,7 @@ chain() {
         if [[ $(count raw/$a) -lt 1 ]]; then
             break
         else
-            cat pkg/$sub >> pkg/n
+            f2 struct/$sub >> aur/seen
         fi
     done
 
@@ -109,7 +106,7 @@ if ((!$#)); then
 fi
 
 # Save temporary files in directories by context.
-if ! cd "$tmp" || ! mkdir {aur,pkg,struct,raw}; then
+if ! cd "$tmp" || ! mkdir {aur,raw,struct}; then
     exit
 fi
 
