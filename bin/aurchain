@@ -7,9 +7,10 @@ multinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly argv0 multinfo tmp
+declare -i all=0
 
 curl_safe() {
-    curl --retry 3 -sSgL --fail "$1" || exit
+    curl --retry 3 -fgLsS --compressed "$1" || exit
 }
 
 url() {
@@ -100,6 +101,16 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
+while getopts :a OPT; do
+    case $OPT in
+        a|+a) all=1 ;;
+        *) error "usage: $argv0 [-a] pkgname..."
+           exit 2
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
 if ((!$#)); then
     error "usage: $argv0 pkgname [pkgname...]"
     exit 1
@@ -110,20 +121,13 @@ if ! cd "$tmp" || ! mkdir {aur,raw,struct}; then
     exit
 fi
 
-# Generate dependency tree.
+# Generate dependency tree and pkgname list (aur/pkgname).
 chain "$@" > aur/tree
 
-# Warn on packages missing in both official repositories and AUR (#67)
-grep -Fxvf aur/pkgname <(aursift -S < aur/tree) | while read -r p; do
-    warning "no results found for $p"
-done
-
-# XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf aur/pkgname aur/tree | awk -v arch="$(uname -m)" '{
-    if(arch == "i686") {
-        gsub(/^lib32-/,"")
-        gsub(/^gcc-multilib$/,"")
-    };  print
-}'
+if ((all)); then
+    cat aur/tree
+else
+    grep -Fxf aur/pkgname aur/tree
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
