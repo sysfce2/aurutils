@@ -216,12 +216,12 @@ jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xarg
 jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/aur/pkgver
 
 # Warn on packages missing in both official repositories and AUR (#67)
-grep -Fxvf aur/pkgname <(aursift -S < tsort/tree) | while read -r pkg; do
+grep -Fxvf "$tmp"/aur/pkgname <(aursift -S < "$tmp"/tsort/tree) | while read -r pkg; do
     warning "no results found for $pkg"
 done
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf aur/pkgname tsort/tree | x86_filter | ignore | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
+grep -Fxf "$tmp"/aur/pkgname tsort/tree | x86_filter | ignore | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
 
 # Download build files by pkgbase.
 msg "Retrieving build files..."
