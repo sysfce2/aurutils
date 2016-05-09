@@ -11,9 +11,8 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 # Default options
-declare -i chroot=0 insecure=0 nobuild=0 noversion=0 update=0
-declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
-declare deps=aurchain download=clone ignore=tee
+declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 update=0 ignorepkg=0 snapshot=0
+declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -45,13 +44,13 @@ revcheck() {
 
 clone() {
     #global aurweb
-    declare b
+    declare base
 
-    while read -r b _; do
-        if [[ -d $b/.git ]]; then
-            GIT_DIR="$b"/.git GIT_WORK_TREE="$b" revcheck "$b"
+    while read -r base _; do
+        if [[ -d $base/.git ]]; then
+            GIT_DIR="$base"/.git GIT_WORK_TREE="$base" revcheck "$base"
         else
-            git clone "$aurweb/$b".git
+            git clone "$aurweb/$base".git
         fi
     done
 }
@@ -70,13 +69,40 @@ aria() {
     done
 }
 
-print() {
-    printf '%s\n' -- "$@"
+download() {
+    #global snapshot
+    if ((snapshot)); then
+        aria
+    else
+        clone
+    fi
 }
 
-# Skip packages in IgnorePkg (#128)
-sift() {
-    aursift -I
+gendeps() {
+    #global print
+    if ((nodeps)); then
+        printf '%s\n' -- "$@"
+    else
+        aurchain -a "$@"
+    fi
+}
+
+ignore() {
+    #global ignorepkg
+    if ((ignorepkg)); then
+        aursift -I
+    else
+        tee
+    fi
+}
+
+x86_filter() {
+    awk -v arch="$(uname -m)" '{
+        if(arch == "i686") {
+            gsub(/^lib32-/,"")
+            gsub(/^gcc-multilib$/,"")
+        };  print
+    }'
 }
 
 trap 'rm -rf "$tmp"' EXIT
@@ -88,19 +114,19 @@ source /usr/share/makepkg/util.sh
 while getopts :B:cdfIkLntTuvw OPT; do
     case $OPT in
         B|+B) bindro=1
-              newdir=$OPTARG  ;;
-        c|+c) chroot=1        ;;
-        d|+d) deps=print      ;;
-        f|+f) force=1         ;;
-        I|+I) ignore=sift     ;;
-        k|+k) insecure=1      ;;
-        L|+L) logdest=1       ;;
-        n|+n) namcap=1        ;;
-        t|+t) download=aria   ;;
-        T|+T) chtemp=1        ;;
-        u|+u) update=1        ;;
-        v|+v) noversion=1     ;;
-        w|+w) nobuild=1       ;;
+              newdir=$OPTARG ;;
+        c|+c) chroot=1       ;;
+        d|+d) nodeps=1       ;;
+        f|+f) force=1        ;;
+        I|+I) ignorepkg=1    ;;
+        k|+k) insecure=1     ;;
+        L|+L) logdest=1      ;;
+        n|+n) namcap=1       ;;
+        t|+t) snapshot=1     ;;
+        T|+T) chtemp=1       ;;
+        u|+u) update=1       ;;
+        v|+v) noversion=1    ;;
+        w|+w) nobuild=1      ;;
         *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLntTvw] [--] pkgname..."
            exit 1 ;;
     esac
@@ -171,30 +197,39 @@ fi
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
-if [[ $download == aria ]]; then
+if ((snapshot)); then
     cd "$AURDEST"/snapshot
 else
     cd "$AURDEST"
 fi
 
 # Save temporary files in directories by context
-mkdir "$tmp"/{struct,sync,tsort}
+mkdir "$tmp"/{aur,sync,tsort}
 
-# Copy the queue and dependency tree for later processing, and
-# retrieve AUR metadata.
-"${deps:-aurchain}" "$@" | "${ignore:-tee}" | tee "$tmp"/tsort/pkgname | xargs -r aursearch -Fr > "$tmp"/aur.json
+# Retrieve the full AUR dependency tree and corresponding metadata.
+msg "Resolving dependencies..."
+gendeps "$@" | tee "$tmp"/tsort/tree | xargs -r aursearch -Fr > "$tmp"/aur/json
 
-# Create pairs of pkgname and pkgbase, and pkgname and pkgver.
-jshon -F "$tmp"/aur.json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/struct/pkgbase
-jshon -F "$tmp"/aur.json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/struct/pkgver
+# Create pkgname/pkgbase and pkgname/pkgver pairs.
+jshon -F "$tmp"/aur/json -a -e results -a -e Name -u > "$tmp"/aur/pkgname
+jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/aur/pkgbase
+jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/aur/pkgver
 
-# Replace package name with package base, preserving order, copy
-# results, and download build files.
-aursplit "$tmp"/struct/pkgbase < "$tmp"/tsort/pkgname | tee "$tmp"/tsort/pkgbase | "${download:-clone}"
+# Warn on packages missing in both official repositories and AUR (#67)
+grep -Fxvf aur/pkgname <(aursift -S < tsort/tree) | while read -r pkg; do
+    warning "no results found for $pkg"
+done
+
+# XXX: Packages without lib32 prefix are not necessarily in the AUR.
+grep -Fxf aur/pkgname tsort/tree | x86_filter | ignore | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
+
+# Download build files by pkgbase.
+msg "Retrieving build files..."
+download < "$tmp"/tsort/pkgbase
 
 if ! ((noversion)); then
     # Print updated pkgbase from versioned pairs.
-    aursift -U < "$tmp"/struct/pkgver | aursplit "$tmp"/struct/pkgbase > "$tmp"/sync/pkgbase
+    aursift -U < "$tmp"/aur/pkgver | aursplit "$tmp"/aur/pkgbase > "$tmp"/sync/pkgbase
 
     # Relative complement: pkgbase (tsort) \ pkgbase (sync)
     if ! grep -Fxvf "$tmp"/sync/pkgbase "$tmp"/tsort/pkgbase > "$tmp"/queue; then

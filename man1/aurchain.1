@@ -4,6 +4,7 @@ aurchain \- solve and order dependencies using the aur rpc
 .
 .SH SYNOPSIS
 .SY aurchain
+.OP \-a
 .OP pkgname
 .OP pkgname...
 .YS
@@ -12,11 +13,11 @@ aurchain \- solve and order dependencies using the aur rpc
 aurchain takes package names and then solves and orders the
 dependencies for those packages using the AUR RPC interface.
 .
-.SH NOTES
-The depends_\fIarch \fRarray (as introduced with pacman 4.2) is merged
-with regular depends in the RPC. \fBaurchain \fRworkarounds this by
-stripping the \fIlib32- \fRsuffix from packages and \fIgcc-multilib
-\fRwhen the i686 architecture is detected.
+.SH OPTIONS
+.B \-a
+.RS
+Print the full dependency tree, instead of only AUR packages.
+.RE
 .
 .SH SEE ALSO
 .BR jshon (1),
