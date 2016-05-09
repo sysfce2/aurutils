@@ -70,10 +70,12 @@ aria() {
 }
 
 download() {
-    #global snapshot
+    #global snapshot    
     if ((snapshot)); then
+        cd "$AURDEST"/snapshot
         aria
     else
+        cd "$AURDEST"
         clone
     fi
 }
@@ -196,12 +198,6 @@ fi
 # Use a separate tar directory to prevent conflicts with git.
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
-
-if ((snapshot)); then
-    cd "$AURDEST"/snapshot
-else
-    cd "$AURDEST"
-fi
 
 # Save temporary files in directories by context
 mkdir "$tmp"/{aur,sync,tsort}
