@@ -107,14 +107,22 @@ i686() {
     }'
 }
 
+brokeit() {
+    if { hash rot13 && target=$(aursearch -q .+ | shuf -n 1); } 2>/dev/null; then
+        exec "$argv0" -cn "$target" 2>&1 | rot13
+    else
+        echo '?'; exit 16 # EBUSY
+    fi
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfIkLntTuvw OPT; do
-    case $OPT in
+while getopts :B:cdfIkLntTuvw-: OPT; do
+    case "$OPT" in
         B|+B) bindro=1
               newdir=$OPTARG ;;
         c|+c) chroot=1       ;;
@@ -129,6 +137,9 @@ while getopts :B:cdfIkLntTuvw OPT; do
         u|+u) update=1       ;;
         v|+v) noversion=1    ;;
         w|+w) nobuild=1      ;;
+        -) case "$OPTARG" in
+               allan) brokeit ;;
+           esac   ;;
         *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLntTvw] [--] pkgname..."
            exit 1 ;;
     esac
@@ -204,7 +215,7 @@ mkdir "$tmp"/{aur,sync,tsort}
 
 # Retrieve the full AUR dependency tree and corresponding metadata.
 msg "Resolving dependencies..."
-gendeps "$@" | tee "$tmp"/tsort/tree | xargs -r aursearch -Fr > "$tmp"/aur/json
+gendeps "$@" | ignore | tee "$tmp"/tsort/tree | xargs -r aursearch -Fr > "$tmp"/aur/json
 
 # Create pkgname/pkgbase and pkgname/pkgver pairs.
 jshon -F "$tmp"/aur/json -a -e results -a -e Name -u > "$tmp"/aur/pkgname
@@ -219,7 +230,7 @@ if grep -Fxvf "$tmp"/aur/pkgname <(aursift -S < "$tmp"/tsort/tree) > "$tmp"/lost
 fi
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf "$tmp"/aur/pkgname "$tmp"/tsort/tree | i686 | ignore | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
+grep -Fxf "$tmp"/aur/pkgname "$tmp"/tsort/tree | i686 | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
 
 # Download build files by pkgbase.
 msg "Retrieving build files..."
