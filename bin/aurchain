@@ -29,7 +29,6 @@ count() {
     jshon -QF "$1" -e resultcount
 }
 
-# XXX: May not work if a package has no dependencies.
 pair() {
     for ((i = 0; i < "$1"; ++i)); do
         awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 {

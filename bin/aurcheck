@@ -34,7 +34,7 @@ quickcheck() {
     if aursearch -Fr "${argv[@]}" | aurver | sort -k 1b,1 > "$tmp"/struct_a; then
         # Join on first field (pkgname)
         join "$tmp"/struct_s "$tmp"/struct_a > "$tmp"/struct
-        
+
         # Notify if packages are not in AUR (#110)
         grep -Fxvf <(f1 "$tmp"/struct_a) <(f1 "$tmp"/struct_s) | while read -r pkg; do
             plain "$pkg is not present in AUR"
