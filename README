@@ -10,18 +10,13 @@ INSTALLATION
   the AUR under "aurutils-git". Dependencies are typically development
   versions, and the package may otherwise behave in unexpected ways.
 
-  The release branch is recommended for general use, and is available in
-  the AUR as "aurutils". Compability is NOT guaranteed between different
-  versions, except for patch (0.0.x) releases.
+  The latest release version is recommended for general use, and is
+  available in the AUR under "aurutils". Compability is NOT guaranteed
+  between different versions, except for patch (0.0.x) releases.
 
 USAGE
 
-  For the release branch, see the README document in
-  /usr/share/doc/aurutils/README, or online at:
-
-  https://github.com/AladW/aurutils/blob/release-0.8.0/README
-
-  For the master branch, see aurutils(7).
+  See aurutils(7) for examples and general information.
 
 TROUBLESHOOTING
 
