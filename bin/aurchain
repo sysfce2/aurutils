@@ -32,10 +32,11 @@ count() {
 # XXX: May not work if a package has no dependencies.
 pair() {
     for ((i = 0; i < "$1"; ++i)); do
-        awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 && !/null/ {print p, $1}' \
-        <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e Depends -a -u) \
-        <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
-        <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e CheckDepends -a -u)
+        awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 {
+           if($0 != "null") print p, $1; else print p, p
+        }' <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e Depends -a -u) \
+           <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
+           <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e CheckDepends -a -u)
     done
 }
 
@@ -63,6 +64,8 @@ chain() {
         f1 struct/$sub >> aur/pkgname
         f1 struct/$sub >> aur/seen
 
+        sort -u struct/$sub >> struct/n
+
         # Avoid querying duplicates (#4)
         target=$(grep -Fxvf aur/seen <(f2 struct/$sub) | url)
 
@@ -71,8 +74,6 @@ chain() {
         else
             break
         fi
-
-        cat struct/$sub >> struct/n
 
         if [[ $(count raw/$a) -lt 1 ]]; then
             break
