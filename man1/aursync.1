@@ -7,7 +7,7 @@ aursync \- download and build aur packages automatically
 .OP \-c
 .OP \-B newdir
 .OP \-u
-.OP \-dfIkLntTvw
+.OP \-dfIkLnNtTvw
 .OP pkgname...
 .YS
 .
@@ -33,15 +33,20 @@ Build packages with makechrootpkg. (\fIaurbuild -c\fR)
 .RS
 Do not resolve dependencies.
 .RE
+..
+.B \-I
+.RS
+Skip package names in pacman's \fIIgnorePkg \fRdirective.
+.RE
 .
 .B \-k
 .RS
 Do not view downloaded files before building.
 .RE
 .
-.B \-I
+.B \-N
 .RS
-Skip package names in pacman's \fIIgnorePkg \fRdirective.
+Do not update existing git directories.
 .RE
 .
 .B \-t

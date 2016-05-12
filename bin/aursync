@@ -10,9 +10,9 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-# Default options
-declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 update=0 ignorepkg=0 snapshot=0
-declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
+declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 nofetch=0 # disable flags
+declare -i update=0 ignore=0 snapshot=0 # feature flags
+declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0 # makepkg flags
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -43,12 +43,14 @@ revcheck() {
 }
 
 clone() {
-    #global aurweb
+    #global aurweb nofetch
     declare base
 
     while read -r base _; do
         if [[ -d $base/.git ]]; then
-            GIT_DIR="$base"/.git GIT_WORK_TREE="$base" revcheck "$base"
+            if ! ((nofetch)); then
+                GIT_DIR="$base"/.git GIT_WORK_TREE="$base" revcheck "$base"
+            fi
         else
             git clone "$aurweb/$base".git
         fi
@@ -89,9 +91,9 @@ gendeps() {
     fi
 }
 
-ignore() {
-    #global ignorepkg
-    if ((ignorepkg)); then
+ignorepkg() {
+    #global ignore
+    if ((ignore)); then
         aursift -I
     else
         tee
@@ -121,17 +123,18 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfIkLntTuvw-: OPT; do
+while getopts :B:cdfIkLnNtTuvw-: OPT; do
     case "$OPT" in
         B|+B) bindro=1
               newdir=$OPTARG ;;
         c|+c) chroot=1       ;;
         d|+d) nodeps=1       ;;
         f|+f) force=1        ;;
-        I|+I) ignorepkg=1    ;;
+        I|+I) ignore=1       ;;
         k|+k) insecure=1     ;;
         L|+L) logdest=1      ;;
         n|+n) namcap=1       ;;
+        N|+N) nofetch=1      ;;
         t|+t) snapshot=1     ;;
         T|+T) chtemp=1       ;;
         u|+u) update=1       ;;
@@ -140,7 +143,7 @@ while getopts :B:cdfIkLntTuvw-: OPT; do
         -) case "$OPTARG" in
                allan) brokeit ;;
            esac   ;;
-        *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLntTvw] [--] pkgname..."
+        *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLnNtTvw] [--] pkgname..."
            exit 1 ;;
     esac
 done
@@ -215,7 +218,7 @@ mkdir "$tmp"/{aur,sync,tsort}
 
 # Retrieve the full AUR dependency tree and corresponding metadata.
 msg "Resolving dependencies..."
-gendeps "$@" | ignore | tee "$tmp"/tsort/tree | xargs -r aursearch -Fr > "$tmp"/aur/json
+gendeps "$@" | ignorepkg | tee "$tmp"/tsort/tree | xargs -r aursearch -Fr > "$tmp"/aur/json
 
 # Create pkgname/pkgbase and pkgname/pkgver pairs.
 jshon -F "$tmp"/aur/json -a -e results -a -e Name -u > "$tmp"/aur/pkgname
