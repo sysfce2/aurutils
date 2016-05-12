@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.9.0.r3.gd104db0
+pkgver=0.9.0.r6.g338b08b
 pkgrel=1
 pkgdesc='helper tools for the aur'
 arch=('any')
@@ -28,5 +28,5 @@ check() {
 
 package() {
   cd aurutils
-  make DESTDIR="$pkgdir" install
+  make DESTDIR="$pkgdir/" PREFIX="/usr" install
 }
