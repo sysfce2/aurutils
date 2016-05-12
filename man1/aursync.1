@@ -7,7 +7,7 @@ aursync \- download and build aur packages automatically
 .OP \-c
 .OP \-B newdir
 .OP \-u
-.OP \-dfIkLnNtTvw
+.OP \-dfLntT
 .OP pkgname...
 .YS
 .
@@ -24,79 +24,92 @@ trailing directory matching the repository name. See \fBaurutils(7)
 \fR for details.
 .
 .SH OPTIONS
-.B \-c
+.B \-c, --chroot
 .RS
 Build packages with makechrootpkg. (\fIaurbuild -c\fR)
 .RE
+.P
 .
-.B \-d
+.B \-t, --tar
 .RS
-Do not resolve dependencies.
+Download AUR snapshots (\fI.tar.gz\fR) instead of cloning git
+directories.
 .RE
-..
-.B \-I
-.RS
-Skip package names in pacman's \fIIgnorePkg \fRdirective.
-.RE
+.P
 .
-.B \-k
-.RS
-Do not view downloaded files before building.
-.RE
-.
-.B \-N
-.RS
-Do not update existing git directories.
-.RE
-.
-.B \-t
-.RS
-Download the PKGBUILDs using aria instead of git.
-.RE
-.
-.B \-u
+.B \-u, --update
 .RS
 Update AUR packages in a selected local repository.
 .RE
+.P
 .
-.B \-v
+.B \--ignore
 .RS
-Disable version checking for packages in the queue.
+Skip package names in pacman's \fIIgnorePkg \fRdirective.
 .RE
+.P
 .
-.B \-w
+.B \--insecure
+.RS
+Do not view downloaded files before building.
+.RE
+.P
+.
+.B \--nobuild
 .RS
 Only download source files, do not build anything.
 .RE
+.P
+.
+.B \--nodeps
+.RS
+Do not resolve dependencies.
+.RE
+.P
+.
+.B \--nofetch
+.RS
+Do not update existing git directories.
+.RE
+.P
+.
+.B \--noversion
+.RS
+Disable version checking for packages in the queue.
+.RE
+.P
 .
 .SS makepkg
-.P
 .B \-f
 .RS
 Overwrite built packages. (\fImakepkg -f\fR)
 .RE
+.P
 .
 .B \-L
 .RS
 Save makepkg output. (\fImakepkg -L\fR)
 .RE
+.P
 .
 .B \-n
 .RS
 Do not wait for user input. (\fImakepkg --noconfirm\fR)
 .RE
+.P
 .
 .SS makechrootpkg
-.
 .B \-B
 .RS
 Bind a directory read-only. (\fImakechrootpkg -D\fR)
 .RE
+.P
 .
 .B \-n
 .RS
 Check a built package with namcap. (\fImakechrootpkg -n\fR)
 .RE
+.P
 .
 .B \-T
 .RS

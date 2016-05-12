@@ -123,27 +123,30 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfIkLnNtTuvw-: OPT; do
+while getopts :B:cdfLntTu-: OPT; do
     case "$OPT" in
         B|+B) bindro=1
               newdir=$OPTARG ;;
         c|+c) chroot=1       ;;
-        d|+d) nodeps=1       ;;
         f|+f) force=1        ;;
-        I|+I) ignore=1       ;;
-        k|+k) insecure=1     ;;
         L|+L) logdest=1      ;;
         n|+n) namcap=1       ;;
-        N|+N) nofetch=1      ;;
         t|+t) snapshot=1     ;;
         T|+T) chtemp=1       ;;
         u|+u) update=1       ;;
-        v|+v) noversion=1    ;;
-        w|+w) nobuild=1      ;;
         -) case "$OPTARG" in
-               allan) brokeit ;;
+               chroot)    chroot=1    ;;
+               ignore)    ignore=1    ;;
+               insecure)  insecure=1  ;;
+               nobuild)   nobuild=1   ;;
+               nodeps)    nodeps=1    ;;
+               nofetch)   nofetch=1   ;;
+               noversion) noversion=1 ;;
+               tar)       snapshot=1  ;;
+               update)    update=1    ;;
+               allan)     brokeit     ;;
            esac   ;;
-        *) plain "usage: $argv0 [-c] [-B newdir] [-u] [-dfIkLnNtTvw] [--] pkgname..."
+        *) plain "usage: $argv0 [-c] [-B newdir] [-dfLntT] [-u] [--] pkgname..."
            exit 1 ;;
     esac
 done
