@@ -12,7 +12,7 @@ INSTALLATION
 
   The latest release version is recommended for general use, and is
   available in the AUR under "aurutils". Compability is NOT guaranteed
-  between different versions, except for patch (0.0.x) releases.
+  between different versions.
 
 USAGE
 
