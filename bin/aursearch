@@ -10,62 +10,64 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly argv0 aurweb cache tmp
 
 # Default options
-declare -i nameonly=0
-declare list=packages match=pcre parse=brief
+declare -i nameonly=0 string=0 raw=0 verbose=0
+declare list=packages
 
-# $1: URI to .gz archive
-stamp() {
-    declare gz=${1##*/}
-    declare stamp_l stamp_r fetch
-    
-    if stamp_l=$(stat --format '%Y' "${gz%.*}" 2>/dev/null); then
-        # aurweb lacks a "Last-Modified" field, see FS#49092. Print
-        # the date to a file to prevent SIGPIPE (exit 141).
-        curl -v --stderr "$cache"/stamp.log "$1" | gzip -cd | awk -F, '{print $3; exit}' > "$tmp"/head
-
-        # curl: (23) Failed to write body
-        declare -i ret=${PIPESTATUS[0]}
-
-        case "$ret" in
-            23) read -r stamp_r < "$tmp"/head
-                read -r stamp_r < <(date -d "$stamp_r" '+%s')
-
-                if ((stamp_r > stamp_l)); then
-                    fetch=1
-                fi ;;
-            *)  error "$argv0: curl: see $cache/stamp.log"
-                exit "$ret"
-        esac
+# $1: .gz archive (URI)
+# $2: .gz archive (name)
+fetch() {
+    if curl -sS "$1" -o "$2"; then
+        gunzip -f "$2"
     else
-        fetch=1
+        exit
     fi
+}
 
-    if ((fetch)); then
-        if curl -sS "$1" -o "$gz"; then
-            gzip -cd "$gz" | grep -ve '^#' > "${gz%.*}"
-        else
-            exit $?
+# $1: .gz archive (URI)
+sync_list() {
+    declare gz=${1##*/}
+    declare li=${gz%.*}
+
+    declare stamp_l stamp_r epoch_l epoch_r
+
+    if [[ -f $li ]]; then
+        # Use HTTP date to compare the generation date (first line).
+        # https://bugs.archlinux.org/task/49092
+        read -r stamp_l < <(awk -F', ' '{print $3; exit}' "$li")
+        read -r stamp_r < <(curl -fsSI "$1" | awk -F', ' '/^Date:/ {print $2}')
+
+        read -r epoch_l < <(date -d "$stamp_l" '+%s')
+        read -r epoch_r < <(date -d "$stamp_r" '+%s')
+
+        # The update interval is set to 5 minutes by default.
+        # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
+        if ((epoch_r - epoch_l > 300)); then
+            fetch "$1" "$gz"
         fi
+    else
+        fetch "$1" "$gz"
     fi
 }
 
 # The actual "match" is done by aurweb; as such, string is similar
 # to grep --fixed-strings.
-string() {
-    printf '%s\n' "${@:2}"
-}
+match() {
+    #global string
+    if ((string)); then
+        printf '%s\n' "${@:2}"
+    else
+        sync_list "$aurweb/$1".gz || return
 
-pcre() {
-    if stamp "$aurweb/$1".gz; then
-        if ! grep -P -- "$2" "$1"; then
+        # Remove the generation date before matching.
+        if ! grep -P -- "$2" <(tail -n +2 "$1"); then
             error "$argv0: no matches found"
             exit 1
         fi
     fi
 }
 
-# aurweb only takes GET requests, see FS#49089. Build URIs with at
-# most 150 arguments to prevent HTTP 414.
+# Split by 150 arguments to prevent HTTP 414.
+# https://bugs.archlinux.org/task/49089
 split() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
         # URL encode @ and +
@@ -146,6 +148,17 @@ long() {
                    -u -p -e LastModified -u)
 }
 
+parse() {
+    #global raw verbose
+    if ((raw)); then
+        tee
+    elif ((verbose)); then
+        long
+    else
+        brief
+    fi
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
@@ -154,11 +167,11 @@ source /usr/share/makepkg/util.sh || exit
 
 while getopts :Fbqruv OPT; do
     case $OPT in
-        F|+F) match=string ;;
+        F|+F) string=1     ;;
         b|+b) list=pkgbase ;;
         q|+q) nameonly=1   ;;
-        r|+r) parse=tee    ;;
-        v|+v) parse=long   ;;
+        r|+r) raw=1        ;;
+        v|+v) verbose=1    ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -175,10 +188,10 @@ if ((!$#)); then
 fi
 
 if ((nameonly)); then
-    pcre "${list:-packages}" "$1"
+    match "${list:-packages}" "$1"
     exit
 fi
 
-"${match:-pcre}" "${list:-packages}" "$@" | split | getjson | "${parse:-brief}"
+match "${list:-packages}" "$@" | split | getjson | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
