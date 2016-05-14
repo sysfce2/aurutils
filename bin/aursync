@@ -228,8 +228,11 @@ jshon -F "$tmp"/aur/json -a -e results -a -e Name -u > "$tmp"/aur/pkgname
 jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/aur/pkgbase
 jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/aur/pkgver
 
+# Include command-line arguments to check for missing packages (#139)
+cat <(printf '%s\n' "$@") <(aursift -S < "$tmp"/tsort/tree) > "$tmp"/foreign
+
 # Warn on packages missing in both official repositories and AUR (#67)
-grep -Fxvf "$tmp"/aur/pkgname <(aursift -S < "$tmp"/tsort/tree) | while read -r pkg; do
+grep -Fxvf "$tmp"/aur/pkgname "$tmp"/foreign | while read -r pkg; do
     warning "no results found for $pkg"
 done || true
 
