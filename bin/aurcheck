@@ -23,6 +23,7 @@ f1() {
 }
 
 quickcheck() {
+    #global all tmp
     declare pkg ver_s ver_a argv
 
     syncver "$1" | sort -k 1b,1 > "$tmp"/struct_s
