@@ -70,14 +70,17 @@ match() {
 # https://bugs.archlinux.org/task/49089
 split() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
-        # URL encode @ and +
         gsub("+","%2b")
         gsub("@","%40")
 
-        if (NR == 1 || (NR % 150) == 0)
-            printf "\n%s&arg[]=%s", rpc, $0
-        else
+        if (NR == 1)
+            printf "%s&arg[]=%s", rpc, $0
+        if (NR > 1)
             printf "&arg[]=%s", $0
+        if (NR % 150 == 0)
+            printf "\n%s&arg[]=%s", rpc, $0
+    } END {
+        printf "\n"
     }'
 }
 
