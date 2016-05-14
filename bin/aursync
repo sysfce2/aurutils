@@ -229,11 +229,9 @@ jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xarg
 jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/aur/pkgver
 
 # Warn on packages missing in both official repositories and AUR (#67)
-if grep -Fxvf "$tmp"/aur/pkgname <(aursift -S < "$tmp"/tsort/tree) > "$tmp"/lost; then
-    while read -r pkg; do
-        warning "no results found for $pkg"
-    done < "$tmp"/lost
-fi
+grep -Fxvf "$tmp"/aur/pkgname <(aursift -S < "$tmp"/tsort/tree) | while read -r pkg; do
+    warning "no results found for $pkg"
+done || true
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
 grep -Fxf "$tmp"/aur/pkgname "$tmp"/tsort/tree | i686 | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
