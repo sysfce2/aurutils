@@ -1,7 +1,7 @@
 pkgname=aurutils-git
-pkgver=0.9.0.r6.g338b08b
+pkgver=0.9.0.r8.gd4521be
 pkgrel=1
-pkgdesc='helper tools for the aur'
+pkgdesc='helper tools for the arch user repository'
 arch=('any')
 url=https://github.com/AladW/aurutils
 license=('ISC')
@@ -28,5 +28,5 @@ check() {
 
 package() {
   cd aurutils
-  make DESTDIR="$pkgdir/" PREFIX="/usr" install
+  make DESTDIR="$pkgdir" PREFIX="/usr" install
 }
