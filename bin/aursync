@@ -159,6 +159,11 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
+if ((!$#)) && ((!update)); then
+    error "$argv0: no targets specified"
+    exit 1
+fi
+
 # Set makepkg args in a new list to ensure option context is already
 # defined, as getopts parses options sequentially.
 if ((chroot)); then
@@ -171,13 +176,8 @@ else
     ((namcap))  && makepkg_args+=(--noconfirm)
 fi
 
-if ! ((update)) && ((!$#)); then
-    error "$argv0: no targets specified"
-    exit 1
-fi
-
 # Only select a repository when building (#127)
-if ! ((nobuild)) || ((update)); then
+if ((!nobuild)) || ((update)); then
     read -r repo root < <(repofind -s)
 
     # Select a cache directory as package pool (#105)
@@ -243,7 +243,7 @@ missing "$tmp"/aur/pkgname "$tmp"/foreign || true
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
 grep -Fxf "$tmp"/aur/pkgname "$tmp"/tsort/tree | i686 | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
 
-if ! ((noversion)); then
+if ((!noversion)); then
     # Print updated pkgbase from versioned pairs.
     aursift -U < "$tmp"/aur/pkgver | aursplit "$tmp"/aur/pkgbase > "$tmp"/sync/pkgbase
 
@@ -260,7 +260,7 @@ msg "Downloading build files..."
 download < "$tmp"/queue
 
 # View changes and build files in one window (#77)
-if ! ((insecure)); then
+if ((!insecure)); then
     ( shopt -s nullglob
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect 1
     )
