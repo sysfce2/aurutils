@@ -100,6 +100,13 @@ ignorepkg() {
     fi
 }
 
+cachedir() {
+    if ! pacconf CacheDir | grep -m1 -Eo ".+/$repo/$"; then
+        error "$argv0: cache directory not configured"
+        exit 1
+    fi
+}
+
 missing() {
     grep -Fxvf "$1" "$2" | while read -r pkg; do
         warning "no results found for $pkg"
@@ -159,7 +166,7 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if ((!$#)) && ((!update)); then
+if ! (($# + update)); then
     error "$argv0: no targets specified"
     exit 1
 fi
@@ -181,7 +188,7 @@ if ((!nobuild)) || ((update)); then
     read -r repo root < <(repofind -s)
 
     # Select a cache directory as package pool (#105)
-    read -r pool < <(pacconf CacheDir | grep -m1 -Eo ".+/$repo/$")
+    read -r pool < <(cachedir)
 
     msg2 "Using [$repo] repository"
 
