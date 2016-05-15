@@ -165,6 +165,11 @@ else
     ((namcap))  && makepkg_args+=(--noconfirm)
 fi
 
+if ! ((update)) && ((!$#)); then
+    error "$argv0: no targets specified"
+    exit 1
+fi
+
 # Only select a repository when building (#127)
 if ! ((nobuild)) || ((update)); then
     read -r repo root < <(repofind -s)
@@ -205,11 +210,6 @@ if ((update)); then
         plain "there is nothing to do"
         exit 0
     fi
-fi
-
-if ((!$#)); then
-    error "$argv0: no targets specified"
-    exit 1
 fi
 
 # Use a separate tar directory to prevent conflicts with git.
