@@ -100,6 +100,12 @@ ignorepkg() {
     fi
 }
 
+missing() {
+    grep -Fxvf "$1" "$2" | while read -r pkg; do
+        warning "no results found for $pkg"
+    done
+}
+
 i686() {
     awk -v arch="$(uname -m)" '{
         if(arch == "i686") {
@@ -232,16 +238,10 @@ jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n
 cat <(printf '%s\n' "$@") <(aursift -S < "$tmp"/tsort/tree) > "$tmp"/foreign
 
 # Warn on packages missing in both official repositories and AUR (#67)
-grep -Fxvf "$tmp"/aur/pkgname "$tmp"/foreign | while read -r pkg; do
-    warning "no results found for $pkg"
-done || true
+missing "$tmp"/aur/pkgname "$tmp"/foreign || true
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
 grep -Fxf "$tmp"/aur/pkgname "$tmp"/tsort/tree | i686 | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
-
-# Download build files by pkgbase.
-msg "Retrieving build files..."
-download < "$tmp"/tsort/pkgbase
 
 if ! ((noversion)); then
     # Print updated pkgbase from versioned pairs.
@@ -255,6 +255,9 @@ if ! ((noversion)); then
 else
     cp -sv "$tmp"/tsort/pkgbase "$tmp"/queue
 fi
+
+msg "Downloading build files..."
+download < "$tmp"/queue
 
 # View changes and build files in one window (#77)
 if ! ((insecure)); then
