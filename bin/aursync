@@ -263,7 +263,7 @@ else
     cp -sv "$tmp"/tsort/pkgbase "$tmp"/queue
 fi
 
-msg "Downloading build files..."
+msg "Retrieving build files..."
 download < "$tmp"/queue
 
 # View changes and build files in one window (#77)
