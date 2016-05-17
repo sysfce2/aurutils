@@ -5,6 +5,7 @@ set -e -o pipefail -o noclobber
 argv0=aursync
 aurweb=https://aur.archlinux.org
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
+
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
