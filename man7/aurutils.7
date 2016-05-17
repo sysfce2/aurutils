@@ -73,13 +73,13 @@ for example in /etc/pacman.d/custom:
 .EX
 
   [options]
-  CacheDir = /var/cache/pacman/pkg/
-  CacheDir = /var/cache/pacman/custom/
+  CacheDir = /var/cache/pacman/pkg
+  CacheDir = /var/cache/pacman/custom
   CleanMethod = KeepCurrent
 
   [custom]
   SigLevel = Optional TrustAll
-  Server = file:///home/custompkgs
+  Server = file:///var/cache/pacman/custom
 
 .EE
 Avoid naming the repository \fIlocal\fR, as this name is reserved by
@@ -95,22 +95,29 @@ Include the configuration in \fI/etc/pacman.conf\fR:
 .EE
 Add \fIInclude \fRto the \fBend \fRof pacman.conf, where possible.
 .P
-Create directories for both database and built packages:
+Create the repository root and database:
 .EX
 
-  $ sudo install -d /home/custompkgs /var/cache/pacman/custom/ -o $USER -m 700
+  $ sudo install -d /var/cache/pacman/custom -o $USER -m 700
+  $ repo-add /var/cache/pacman/custom/custom.db.tar
 
 .EE
-Create an empty database, and synchronize pacman:
+If packages are already available, use repose instead of repo-add:
 .EX
 
-  $ repo-add /home/custompkgs/custom.db.tar
+  $ cd /var/cache/pacman/custom
+  $ repose -vf custom.db
+
+.EE
+Synchronize pacman:
+.EX
+
   $ sudo pacman -Syu
 
 .EE
 .SY Note:
-When using \fIaursync(1)\fR, the trailing directory of the
-cache path \fBmust \fRmatch the name of the local repository.
+When using \fIaursync(1)\fR, the repository root must also be a
+package cache directory.
 .YS
 .
 .SY Tip:
@@ -118,40 +125,12 @@ Consider separate repositories for different purposes, such as
 version control packages.
 .YS
 .
-.SH MOVING THE PACKAGE POOL
-Move the built packages to the new pool:
-.EX
-
-  $ mv -v /home/custompkgs/*.pkg* /var/cache/pacman/custom/
-  $ cd /home/custompkgs
-
-.EE
-Rebuild the database:
-.EX
-
-  $ repose --rebuild -vf custom -p /var/cache/pacman/custom
-  $ sudo pacman -Syu
-
-.EE
-.
 .SH MIGRATING FOREIGN PACKAGES
-This is straightforward if the built packages are still available,
-for example in /home/custompkgs:
-.EX
-
-  $ cd /home/custompkgs
-  $ repose -fv custom
-  $ sudo pacman -Syu
-
-.EE
-To reverse this operation, repeat the procedure with \fI--drop\fR:
-.EX
-
-  $ repose -dfv custom
-
-.EE
-Without packages, check the installed files first. If needed,
-rebuild packages with \fImd5sum \fRmismatches.
+If built packages are available, move them to the new location, and
+follow the instructions in \fBCreating a local repository\fR.
+.P
+Without packages, verify the installed files first. If needed, rebuild
+packages with \fImd5sum \fRmismatches.
 .EX
 
   $ pacman -Qqm | paccheck --md5sum --quiet
@@ -169,7 +148,7 @@ To keep the repository updated when building with makepkg, set
 .EX
 
   $ sudoedit /etc/makepkg.conf
-  $ alias custom='repose -vf custom -r /home/custompkgs -p /var/cache/pacman/custom'
+  $ alias custom='repose -vf custom -r /var/cache/pacman/custom -p /var/cache/pacman/custom'
 
 .EE
 .
@@ -224,10 +203,10 @@ Select a package that matches \fIpony\fR, and build the result:
 Print packages both in AUR and community, and compare their versions:
 .EX
 
-  $ aurcheck -a community
+  $ aurcheck -a community 2>/dev/null
 
 .EE
-Use helpers wich honor the PACMAN variable or cower with a repository:
+Use helpers wich honor the \fIPACMAN \fRvariable or cower with a repository:
 .EX
 
  $ PACMAN=repoman pacaur -Syu --aur

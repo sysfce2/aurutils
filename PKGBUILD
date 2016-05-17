@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=0.9.0.r11.g82b0788
+pkgver=0.9.1.r1.g5991dcf
 pkgrel=1
 pkgdesc='helper tools for the arch user repository'
 arch=('any')
@@ -9,7 +9,7 @@ source=("git+$url")
 md5sums=('SKIP')
 conflicts=('aurutils')
 provides=('aurutils')
-depends=('pacman>=5.0' 'git' 'expac-git' 'jshon-git' 'aria2-git'
+depends=('pacman>=5.0' 'git' 'expac' 'jshon' 'aria2'
          'pacutils-git' 'repose-git' 'datamash-git')
 checkdepends=('shellcheck')
 makedepends=('git')

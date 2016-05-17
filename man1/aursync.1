@@ -15,13 +15,12 @@ aursync \- download and build aur packages automatically
 Download and build packages automatically to a local
 repository. Package names serve as arguments.
 .P
-If \fIvifm \fRis installed, the downloaded files are shown using vifm and
-can be edited. If not, the files are shown in \fIless\fR, or
+If \fIvifm \fRis installed, the downloaded files are shown using vifm
+and can be edited. If not, the files are shown in \fIless\fR, or
 \fI$PAGER\fR if configured.
 .P
-Each repository must have a corresponding \fICacheDir\fR, with the
-trailing directory matching the repository name. See \fBaurutils(7)\fR
-for details.
+Each repository must have a \fICacheDir\fR which matches
+\fIServer\fR. See \fBaurutils(7)\fR for details.
 .
 .SH OPTIONS
 .B \-c, --chroot
