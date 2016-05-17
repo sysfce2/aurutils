@@ -38,7 +38,7 @@ build_local() {
     #global database pool root mkpkg_args
 
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${mkpkg_args[@]}"
-    repose -vf "$database" -r "$root" -p "$pool"
+    repose "$db_sign" -vf "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
     sudo pacman -Syu --config="$tmp"/config
@@ -55,7 +55,7 @@ build_chroot() {
     # are hardcoded in makechrootpkg. Signatures are still verified
     # outside the chroot. Preserve PKGDEST with sudo -E, see FS#44827.
     sudo -E PKGDEST="$pool" makechrootpkg "${mkchr_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
-    repose -vf "$database" -r "$root" -p "$pool"
+    repose "$db_sign" -vf "$database" -r "$root" -p "$pool"
 }
 
 trap 'exit' INT
@@ -117,6 +117,10 @@ if ((chroot)); then
     # Retrieve settings from pacman.conf and Include directives.
     pacconf --raw > "$tmp"/pacman.conf
     sudo cp -v "$tmp"/pacman.conf "$CHROOT"/root/etc/pacman.conf
+fi
+
+if ((sign)); then
+    db_sign=--sign
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)
