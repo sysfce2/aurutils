@@ -166,7 +166,7 @@ Build all packages in the \fIpkgbuilds \fRgithub repository:
   $ cd pkgbuilds
   $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;    
   $ aurqueue * > queue # Remove unwanted targets
-  $ aurbuild -d custom -r /home/custompkgs -p /var/cache/pacman/custom -a queue
+  $ aurbuild -d custom -r /var/cache/pacman/custom -p /var/cache/pacman/custom -a queue
 
 .EE
 Search for Perl modules that are both in the AUR or official repositories:
