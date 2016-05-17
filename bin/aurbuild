@@ -12,6 +12,7 @@ declare -i chroot=0 sign=0
 # Use an option array to allow later modification by getopts.
 mkpkg_args=(-crs)
 mkchr_args=(-cu)
+rps_args=(-vf)
 
 # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
 # not being set. Use a separate function to always sign packages
@@ -38,7 +39,7 @@ build_local() {
     #global database pool root mkpkg_args
 
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${mkpkg_args[@]}"
-    repose "$db_sign" -vf "$database" -r "$root" -p "$pool"
+    repose "${rps_args[@]}" "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
     sudo pacman -Syu --config="$tmp"/config
@@ -55,7 +56,7 @@ build_chroot() {
     # are hardcoded in makechrootpkg. Signatures are still verified
     # outside the chroot. Preserve PKGDEST with sudo -E, see FS#44827.
     sudo -E PKGDEST="$pool" makechrootpkg "${mkchr_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
-    repose "$db_sign" -vf "$database" -r "$root" -p "$pool"
+    repose "${rps_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
 trap 'exit' INT
@@ -72,7 +73,8 @@ while getopts a:cd:p:r:s OPT; do
         d|+d) database="$OPTARG" ;;
         p|+p) pool="$OPTARG"     ;;
         r|+r) root="$OPTARG"     ;;
-        s|+s) sign=1             ;;
+        s|+s) rps_args+=(--sign)
+              sign=1             ;;
         *) plain "usage: $argv0 [-cs] -a <queue> -d <db> -p <pool> -r <root> [--] ARGS"
            exit 1 ;;
     esac
@@ -117,10 +119,6 @@ if ((chroot)); then
     # Retrieve settings from pacman.conf and Include directives.
     pacconf --raw > "$tmp"/pacman.conf
     sudo cp -v "$tmp"/pacman.conf "$CHROOT"/root/etc/pacman.conf
-fi
-
-if ((sign)); then
-    db_sign=--sign
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)
