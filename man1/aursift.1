@@ -1,31 +1,31 @@
 .TH AURSIFT 1 2016-03-30 AURUTILS
 .SH NAME
 aursift \- filter packages in the Arch Linux repositories
-.
+
 .SH SYNOPSIS
 .SY aursift
 .OP \-IS pkgname
 .OP \-U "pkgname pkgver"
 .YS
-.
+
 .SH DESCRIPTION
 A target is usually a package name, or a (space-separated) string of
 package name and version. Targets can be provided on stdin.
-.
+
 .SH OPTIONS
 .B \-I
 .RS
 Warn on targets to stderr when specified in pacman's \fIIgnorePkg \fR
 directive, otherwise print to stdout.
 .RE
-.
+
 .B \-S
 .RS
 Check if \fIpkgname \fRis in the official Arch Linux repositories, and
 print it to stdout if not. Virtual packages, when found, are solved
 and printed to stderr.
 .RE
-.
+
 .B \-U
 .RS
 Compare \fIpkgname pkgver \fR strings against packages in the sync
@@ -33,12 +33,12 @@ databases. In case packages are available in several repositories,
 only the newest version is compared. Names of updated packages are
 printed to stdout.
 .RE
-.
+
 .SH SEE ALSO
 .BR expac (1),
 .BR pacsift (1),
 .BR vercmp (1)
-.
+
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter

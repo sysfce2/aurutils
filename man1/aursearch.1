@@ -1,56 +1,56 @@
 .TH AURSEARCH 1 2016-04-24 AURUTILS
 .SH NAME
 aursearch \- search AUR package names by pcre pattern
-.
+
 .SH SYNOPSIS
 .SY aursearch
 .OP \-bqrv
 .I pattern
 .OP -F string
 .YS
-.
+
 .SH DESCRIPTION
 Search the AUR for packages. The argument is a PCRE pattern which is
 matched against the AUR.
-,
+
 .SH OPTIONS
 .B \-F
 .RS
 Search for a fixed string instead of a PCRE pattern
 .RE
-.
+
 .B \-b
 .RS
 Match pkgbase instead of pkgname
 .RE
-.
+
 .B \-q
 .RS
 Output less
 .RE
-.
+
 .B \-r
 .RS
 Output JSON from AUR RPC
 .RE
-.
+
 .B \-v
 .RS
 Output more
 .RE
-.
+
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150
 arguments to avoid HTTP 414 errors. The results are merged to a single
 JSON structure.
-.P
+
 PCRE searches are done by matching a pattern against packages.gz, and
 querying the result with the RPC. This is done as the AUR itself has
 no regex support.
-.
+
 .SH SEE ALSO
 .BR curl(1), aria2c(1), jshon(1), pcrepattern (3)
-.
+
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
