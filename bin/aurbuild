@@ -7,10 +7,29 @@ pwd=$PWD
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
 readonly argv0 pwd tmp
+declare -i chroot=0 sign=0
 
 # Use an option array to allow later modification by getopts.
 mkpkg_args=(-crs)
 mkchr_args=(-cu)
+
+# Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
+# not being set. Use a separate function to always sign packages
+# outside the chroot. (#130)
+sign_pkg() {
+    #global pool GPGKEY
+    declare gpgargs i
+
+    gpgargs=(--verbose --detach-sign --no-armor)
+
+    if [[ $GPGKEY ]]; then
+        gpgargs+=(-u "$GPGKEY")
+    fi
+
+    for i in $(makepkg --packagelist); do
+        find "$pool" -type f -regex ".+/$i.pkg.+?" -execdir gpg "${gpgargs[@]}" {} \;
+    done
+}
 
 # The repo equivalent of "makepkg -i". An interesting side effect is
 # that pacman now considers packages inside the official repositories
@@ -46,36 +65,48 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :a:cd:p:r: OPT; do
+while getopts a:cd:p:r:s OPT; do
     case $OPT in
         a|+a) queue="$OPTARG"    ;;
-        c|+c) build=build_chroot ;;
+        c|+c) chroot=1           ;;
         d|+d) database="$OPTARG" ;;
         p|+p) pool="$OPTARG"     ;;
         r|+r) root="$OPTARG"     ;;
-        *) plain "usage: $argv0 [-c] -a <queue> -d <database> -p <pool> -r <root> [--] [makepkg args]"
+        s|+s) sign=1             ;;
+        *) plain "usage: $argv0 [-cs] -a <queue> -d <db> -p <pool> -r <root> [--] ARGS"
            exit 1 ;;
     esac
 done
 
+# Check for blank arguments besides missing ones.
+re_blank='^[[:space:]]*$'
+
+if [[ $queue =~ $re_blank || $database =~ $re_blank || $pool =~ $re_blank || $root =~ $re_blank ]]; then
+    error "$argv0: missing arguments"
+    exit 1
+fi
+
+if [[ ! -r $queue ]]; then
+    error "$argv0: $queue: permission denied"
+    exit 13
+fi
+
+if ! pacconf --repo="$database" >/dev/null; then
+    exit 22
+fi
+
+# Canonicalize paths to avoid issues with chdir and relative paths.
+pool=$(realpath -e "$pool")
+root=$(realpath -e "$root")
+
 # Pass all arguments after -- to makepkg/makechrootpkg.
-if [[ $build == build_chroot ]]; then
+if ((chroot)); then
     mkchr_args+=("${@:$OPTIND}")
 else
     mkpkg_args+=("${@:$OPTIND}")
 fi
 
-if [[ ! $database || ! $pool || ! $root ]]; then
-    error "$argv0: Missing arguments (-d, -p, -r)"
-    exit 1
-fi
-
-if [[ ! -r $queue ]]; then
-    error "$argv0: $queue: Permission denied"
-    exit 13
-fi
-
-if [[ $build == build_chroot ]]; then
+if ((chroot)); then
     CHROOT=/var/lib/aurbuild
 
     if [[ ! -d $CHROOT/root ]]; then
@@ -83,7 +114,7 @@ if [[ $build == build_chroot ]]; then
         sudo mkarchroot "$CHROOT"/root base base-devel
     fi
 
-    # Update settings from /etc/pacman.conf and includes
+    # Retrieve settings from pacman.conf and Include directives.
     pacconf --raw > "$tmp"/pacman.conf
     sudo cp -v "$tmp"/pacman.conf "$CHROOT"/root/etc/pacman.conf
 fi
@@ -93,7 +124,15 @@ exec 3< "$queue"
 
 while read -r -u 3 pkg _; do
     if cd "$pwd/$pkg"; then
-        "${build:-build_local}"
+        if ((chroot)); then
+            build_chroot
+        else
+            build_local
+        fi
+
+        if ((sign)); then
+            sign_pkg
+        fi
     fi
 done
 
