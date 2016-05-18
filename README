@@ -7,8 +7,7 @@ SYNOPSIS
 INSTALLATION
 
   The master branch can be installed from the included PKGBUILD, or from
-  the AUR under "aurutils-git". Dependencies are typically development
-  versions, and the package may otherwise behave in unexpected ways.
+  the AUR under "aurutils-git". 
 
   The latest release version is recommended for general use, and is
   available in the AUR under "aurutils". Compability is NOT guaranteed
