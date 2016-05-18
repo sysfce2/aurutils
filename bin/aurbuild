@@ -10,9 +10,9 @@ readonly argv0 pwd tmp
 declare -i chroot=0 sign=0
 
 # Use an option array to allow later modification by getopts.
-mkpkg_args=(-crs)
-mkchr_args=(-cu)
-rps_args=(-vf)
+p_args=(-crs)
+c_args=(-cu)
+r_args=(-vf)
 
 # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
 # not being set. Use a separate function to always sign packages
@@ -36,10 +36,10 @@ sign_pkg() {
 # that pacman now considers packages inside the official repositories
 # as "local", and warns if they are newer than a custom counterpart.
 build_local() {
-    #global database pool root mkpkg_args
+    #global database pool root p_args r_args
 
-    PKGDEST="$pool" LC_MESSAGES=C makepkg "${mkpkg_args[@]}"
-    repose "${rps_args[@]}" "$database" -r "$root" -p "$pool"
+    PKGDEST="$pool" LC_MESSAGES=C makepkg "${p_args[@]}"
+    repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
     sudo pacman -Syu --config="$tmp"/config
@@ -50,13 +50,13 @@ build_local() {
 # '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
 # if already available.
 build_chroot() {
-    #global CHROOT database pool root mkchr_args
+    #global CHROOT database pool root c_args r_args
 
     # Skip verification checks in the chroot instance as .gnupg paths
     # are hardcoded in makechrootpkg. Signatures are still verified
     # outside the chroot. Preserve PKGDEST with sudo -E, see FS#44827.
-    sudo -E PKGDEST="$pool" makechrootpkg "${mkchr_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
-    repose "${rps_args[@]}" "$database" -r "$root" -p "$pool"
+    sudo -E PKGDEST="$pool" makechrootpkg "${c_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
+    repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
 trap 'exit' INT
@@ -73,7 +73,7 @@ while getopts a:cd:p:r:s OPT; do
         d|+d) database="$OPTARG" ;;
         p|+p) pool="$OPTARG"     ;;
         r|+r) root="$OPTARG"     ;;
-        s|+s) rps_args+=(--sign)
+        s|+s) r_args+=(--sign)
               sign=1             ;;
         *) plain "usage: $argv0 [-cs] -a <queue> -d <db> -p <pool> -r <root> [--] ARGS"
            exit 1 ;;
@@ -103,9 +103,9 @@ root=$(realpath -e "$root")
 
 # Pass all arguments after -- to makepkg/makechrootpkg.
 if ((chroot)); then
-    mkchr_args+=("${@:$OPTIND}")
+    c_args+=("${@:$OPTIND}")
 else
-    mkpkg_args+=("${@:$OPTIND}")
+    p_args+=("${@:$OPTIND}")
 fi
 
 if ((chroot)); then
