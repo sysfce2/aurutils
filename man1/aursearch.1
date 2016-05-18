@@ -1,12 +1,13 @@
-.TH AURSEARCH 1 2016-04-24 AURUTILS
+.TH AURSEARCH 1 2016-05-18 AURUTILS
 .SH NAME
 aursearch \- search AUR package names by pcre pattern
 
 .SH SYNOPSIS
 .SY aursearch
 .OP \-bqrv
-.I pattern
+.OP \-t seconds
 .OP -F string
+.I pattern
 .YS
 
 .SH DESCRIPTION
@@ -16,38 +17,45 @@ matched against the AUR.
 .SH OPTIONS
 .B \-F
 .RS
-Search for a fixed string instead of a PCRE pattern
+Search for a fixed string instead of a PCRE pattern.
 .RE
 
 .B \-b
 .RS
-Match pkgbase instead of pkgname
+Match pkgbase instead of pkgname.
 .RE
 
 .B \-q
 .RS
-Output less
+Only display package names.
 .RE
 
 .B \-r
 .RS
-Output JSON from AUR RPC
+Output JSON from AUR RPC.
+.RE
+
+.B \-t
+.RS
+Set the delay before the package list is updated. (default: 5 minutes)
 .RE
 
 .B \-v
 .RS
-Output more
+Display more package information.
 .RE
 
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150
-arguments to avoid HTTP 414 errors. The results are merged to a single
-JSON structure.
+arguments to avoid HTTP 414 errors (FS#49089). The results are merged
+to a single JSON structure.
 
-PCRE searches are done by matching a pattern against packages.gz, and
-querying the result with the RPC. This is done as the AUR itself has
-no regex support.
+PCRE searches are done by matching a pattern against
+\fIpackages.gz\fR, and querying the result with the RPC. This is done
+as the AUR itself has no regex support (FS#49099).
 
+aurweb generates \fIpackages.gz \fRevery 5 minutes, so setting the
+delay to a lower value has no benefit.
 .SH SEE ALSO
 .BR curl(1), aria2c(1), jshon(1), pcrepattern (3)
 

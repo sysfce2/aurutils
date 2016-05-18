@@ -10,7 +10,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly argv0 aurweb cache tmp
 
 # Default options
-declare -i nameonly=0 string=0 raw=0 verbose=0
+declare -i nameonly=0 string=0 raw=0 verbose=0 delay=300
 declare list=packages
 
 # $1: .gz archive (URI)
@@ -25,6 +25,7 @@ fetch() {
 
 # $1: .gz archive (URI)
 sync_list() {
+    #global delay
     declare gz=${1##*/}
     declare li=${gz%.*}
 
@@ -41,7 +42,7 @@ sync_list() {
 
         # The update interval is set to 5 minutes by default.
         # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
-        if ((epoch_r - epoch_l > 300)); then
+        if ((epoch_r - epoch_l > delay)); then
             fetch "$1" "$gz"
         fi
     else
@@ -168,12 +169,13 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :Fbqruv OPT; do
+while getopts :Fbqrut:v OPT; do
     case $OPT in
         F|+F) string=1     ;;
         b|+b) list=pkgbase ;;
         q|+q) nameonly=1   ;;
         r|+r) raw=1        ;;
+        t|+t) delay="$OPTARG" ;;
         v|+v) verbose=1    ;;
     esac
 done
