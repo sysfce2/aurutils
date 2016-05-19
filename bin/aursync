@@ -124,6 +124,11 @@ brokeit() {
     fi
 }
 
+usage() {
+    plain "usage: $argv0 [-c] [-B newdir] [-dfLnstT] [-u] [--] pkgname..."
+    exit 1
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh
@@ -154,9 +159,9 @@ while getopts :B:cdfLnstTu-: OPT; do
                tar)       snapshot=1  ;;
                update)    update=1    ;;
                allan)     brokeit     ;;
-           esac   ;;
-        *) plain "usage: $argv0 [-c] [-B newdir] [-dfLnstT] [-u] [--] pkgname..."
-           exit 1 ;;
+               *) usage ;;
+           esac  ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
