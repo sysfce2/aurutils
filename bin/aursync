@@ -72,17 +72,6 @@ aria() {
     done
 }
 
-download() {
-    #global snapshot
-    if ((snapshot)); then
-        cd "$AURDEST"/snapshot
-        aria
-    else
-        cd "$AURDEST"
-        clone
-    fi
-}
-
 gendeps() {
     #global print
     if ((nodeps)); then
@@ -223,42 +212,53 @@ fi
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
-# Save temporary files in directories by context
-mkdir "$tmp"/{aur,sync,tsort}
+# Text processing is done in the temporary directory.
+cd "$tmp"
+
+# Save files in directories by context.
+mkdir {aur,sync,tsort}
 
 # Retrieve the full AUR dependency tree and corresponding metadata.
 msg "Resolving dependencies..."
-gendeps "$@" | ignorepkg | tee "$tmp"/tsort/tree | xargs -r aursearch -Fr > "$tmp"/aur/json
+gendeps "$@" | ignorepkg | tee tsort/tree | xargs -r aursearch -Fr > aur/json
 
 # Create pkgname/pkgbase and pkgname/pkgver pairs.
-jshon -F "$tmp"/aur/json -a -e results -a -e Name -u > "$tmp"/aur/pkgname
-jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > "$tmp"/aur/pkgbase
-jshon -F "$tmp"/aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > "$tmp"/aur/pkgver
+jshon -F aur/json -a -e results -a -e Name -u > aur/pkgname
+jshon -F aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > aur/pkgbase
+jshon -F aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > aur/pkgver
 
 # Include command-line arguments to check for missing packages (#139)
-cat <(printf '%s\n' "$@") <(aursift -S < "$tmp"/tsort/tree) > "$tmp"/foreign
+cat <(printf '%s\n' "$@") <(aursift -S < tsort/tree) > foreign
 
 # Warn on packages missing in both official repositories and AUR (#67)
-missing "$tmp"/aur/pkgname "$tmp"/foreign || true
+missing aur/pkgname foreign || true
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf "$tmp"/aur/pkgname "$tmp"/tsort/tree | i686 | aursplit "$tmp"/aur/pkgbase > "$tmp"/tsort/pkgbase
+grep -Fxf aur/pkgname tsort/tree | i686 | aursplit aur/pkgbase > tsort/pkgbase
 
 if ((!noversion)); then
     # Print updated pkgbase from versioned pairs.
-    aursift -U < "$tmp"/aur/pkgver | aursplit "$tmp"/aur/pkgbase > "$tmp"/sync/pkgbase
+    aursift -U < aur/pkgver | aursplit aur/pkgbase > sync/pkgbase
 
     # Relative complement: pkgbase (tsort) \ pkgbase (sync)
-    if ! grep -Fxvf "$tmp"/sync/pkgbase "$tmp"/tsort/pkgbase > "$tmp"/queue; then
+    if ! grep -Fxvf sync/pkgbase tsort/pkgbase > queue; then
         plain "there is nothing to do"
         exit 0
     fi
 else
-    cp -sv "$tmp"/tsort/pkgbase "$tmp"/queue
+    cp -sv tsort/pkgbase queue
 fi
 
+# Switch to the build directory, and download files by pkgbase.
 msg "Retrieving build files..."
-download < "$tmp"/queue
+
+if ((snapshot)); then
+    cd "$AURDEST"/snapshot
+    aria  < "$tmp"/queue
+else
+    cd "$AURDEST"
+    clone < "$tmp"/queue
+fi
 
 # View changes and build files in one window (#77)
 if ((!insecure)); then
@@ -269,7 +269,7 @@ fi
 
 if ((nobuild)); then
     msg "Files downloaded to $PWD"
-    exit 0
+    exit
 fi
 
 if ((chroot)); then
