@@ -39,24 +39,30 @@ build_local() {
     #global database pool root p_args r_args
 
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${p_args[@]}"
-    repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
+
+    # Set LANG=C to allow libalpm to fully read the database, even
+    # when the locale is not set.
+    # https://bugs.archlinux.org/task/49342#comment147145
+    LANG=C repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
     sudo pacman -Syu --config="$tmp"/config
 }
 
-# With an nspawn container, packages are always built against latest
-# official packages, and are upgraded together on a local -Syu.  As
-# '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
-# if already available.
+# * With an nspawn container, packages are always built against latest
+#   official packages, and are upgraded together on a local -Syu.
+# * As '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
+#   if already available.
 build_chroot() {
     #global CHROOT database pool root c_args r_args
 
-    # Skip verification checks in the chroot instance as .gnupg paths
-    # are hardcoded in makechrootpkg. Signatures are still verified
-    # outside the chroot. Preserve PKGDEST with sudo -E, see FS#44827.
+    # * Preserve PKGDEST with sudo -E.
+    #   https://bugs.archlinux.org/task/44827
+    # * Skip verification checks inside the chroot as .gnupg paths are hardcoded
+    #   in makechrootpkg. Signatures are still verified outside the chroot.
+    #   https://git.archlinux.org/devtools.git/commit/?id=86045b9
     sudo -E PKGDEST="$pool" makechrootpkg "${c_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
-    repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
+    LANG=C repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
 trap 'exit' INT
