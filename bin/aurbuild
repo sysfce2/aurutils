@@ -62,6 +62,7 @@ build_chroot() {
     #   in makechrootpkg. Signatures are still verified outside the chroot.
     #   https://git.archlinux.org/devtools.git/commit/?id=86045b9
     sudo -E PKGDEST="$pool" makechrootpkg "${c_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
+
     LANG=C repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
@@ -86,16 +87,13 @@ while getopts a:cd:p:r:s OPT; do
     esac
 done
 
-# Check for blank arguments besides missing ones.
-re_blank='^[[:space:]]*$'
-
-if [[ $queue =~ $re_blank || $database =~ $re_blank || $pool =~ $re_blank || $root =~ $re_blank ]]; then
-    error "$argv0: missing arguments"
+if [[ ! $queue || ! $database || ! $pool || ! $root ]]; then
+    error "$argv0: empty arguments"
     exit 1
 fi
 
 if [[ ! -r $queue ]]; then
-    error "$argv0: $queue: permission denied"
+    error "$argv0: \'$queue\': permission denied"
     exit 13
 fi
 
