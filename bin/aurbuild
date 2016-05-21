@@ -80,9 +80,8 @@ while getopts a:cd:p:r:s OPT; do
         d|+d) database="$OPTARG" ;;
         p|+p) pool="$OPTARG"     ;;
         r|+r) root="$OPTARG"     ;;
-        s|+s) r_args+=(--sign)
-              sign=1             ;;
-        *) plain "usage: $argv0 [-cs] -a <queue> -d <db> -p <pool> -r <root> [--] ARGS"
+        s|+s) sign=1             ;;
+        *) plain "usage: $argv0 [-cs] -a <queue> -d <repo> -p <pool> -r <root> [--] ARGS"
            exit 1 ;;
     esac
 done
@@ -110,6 +109,10 @@ if ((chroot)); then
     c_args+=("${@:$OPTIND}")
 else
     p_args+=("${@:$OPTIND}")
+fi
+
+if ((sign)); then
+    r_args+=(--sign)
 fi
 
 if ((chroot)); then

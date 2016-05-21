@@ -243,7 +243,7 @@ if ((!noversion)); then
     # Relative complement: pkgbase (tsort) \ pkgbase (sync)
     if ! grep -Fxvf sync/pkgbase tsort/pkgbase > queue; then
         plain "there is nothing to do"
-        exit 0
+        exit
     fi
 else
     cp -sv tsort/pkgbase queue
