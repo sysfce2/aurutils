@@ -119,8 +119,10 @@ Parent directory for temporary files.
 .RE
 
 .SH NOTES
-Version checks assume there are no mismatches between .SRCINFO and
-PKGBUILD files.
+Version checks assume there are no mismatches between \fI.SRCINFO
+\fRand \fIPKGBUILD \fRfiles. When enabled (\fI--noversion\fR is not
+specified), build files are only retrieved if the remote (RPC) version
+is newer than a version in the pacman sync database.
 
 The depends_\fIarch \fRarray (as introduced with pacman 4.2) is merged
 with regular depends in the RPC. \fBaursync \fRworkarounds this by

@@ -59,13 +59,8 @@ clone() {
 }
 
 aria() {
-    #global aurweb tmp
-    awk -v uri="$aurweb"/cgit/aur.git/snapshot '{
-        gsub("+","%2b")
-        gsub("@","%40")
-
-        printf "%s/%s.tar.gz\n", uri, $1
-    }' | aria2c -d "$tmp" -i -
+    #global tmp
+    aria2c -d "$tmp" -i -
 
     for ar in "$tmp"/*.tar.gz; do
         tar xvf "$ar"
@@ -226,6 +221,7 @@ gendeps "$@" | ignorepkg | tee tsort/tree | xargs -r aursearch -Fr > aur/json
 jshon -F aur/json -a -e results -a -e Name -u > aur/pkgname
 jshon -F aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > aur/pkgbase
 jshon -F aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > aur/pkgver
+jshon -F aur/json -a -e results -a -e Name -u -p -e URLPath -u | xargs -n2 > aur/urlpath
 
 # Include command-line arguments to check for missing packages (#139)
 cat <(printf '%s\n' "$@") <(aursift -S < tsort/tree) > foreign
@@ -254,7 +250,8 @@ msg "Retrieving build files..."
 
 if ((snapshot)); then
     cd "$AURDEST"/snapshot
-    aria  < "$tmp"/queue
+    grep -Fwf "$tmp"/queue "$tmp"/aur/urlpath | awk -v uri="$aurweb" '{
+        printf "%s/%s\n", uri, $2 }' | aria
 else
     cd "$AURDEST"
     clone < "$tmp"/queue
