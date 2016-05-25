@@ -60,7 +60,7 @@ clone() {
 
 aria() {
     #global tmp
-    aria2c -d "$tmp" -i -
+    awk -v uri="$aurweb" '{printf "%s/%s\n", uri, $2}' | aria2c -d "$tmp" -i -
 
     for ar in "$tmp"/*.tar.gz; do
         tar xvf "$ar"
@@ -207,22 +207,17 @@ fi
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
-# Text processing is done in the temporary directory.
-cd "$tmp"
-
 # Save files in directories by context.
+cd_safe "$tmp"
 mkdir {aur,sync,tsort}
 
 # Retrieve the full AUR dependency tree and corresponding metadata.
 msg "Resolving dependencies..."
 gendeps "$@" | ignorepkg | tee tsort/tree | xargs -r aursearch -Fr > aur/json
 
-# Create pkgname/pkgbase and pkgname/pkgver pairs.
-jshon -F aur/json -a -e results -a -e Name -u > aur/pkgname
-jshon -F aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > aur/pkgbase
-jshon -F aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > aur/pkgver
-
-# Retrieve percent-encoded URL paths.
+jshon -F aur/json -a -e results -a -e Name -u                                     > aur/pkgname
+jshon -F aur/json -a -e results -a -e Name -u -p -e PackageBase -u    | xargs -n2 > aur/pkgbase
+jshon -F aur/json -a -e results -a -e Name -u -p -e Version -u        | xargs -n2 > aur/pkgver
 jshon -F aur/json -a -e results -a -e PackageBase -u -p -e URLPath -u | xargs -n2 > aur/urlpath
 
 # Include command-line arguments to check for missing packages (#139)
@@ -251,11 +246,10 @@ fi
 msg "Retrieving build files..."
 
 if ((snapshot)); then
-    cd "$AURDEST"/snapshot
-    grep -Fwf "$tmp"/queue "$tmp"/aur/urlpath | awk -v uri="$aurweb" '{
-        printf "%s/%s\n", uri, $2 }' | aria
+    cd_safe "$AURDEST"/snapshot
+    grep -Fwf "$tmp"/queue "$tmp"/aur/urlpath | aria
 else
-    cd "$AURDEST"
+    cd_safe "$AURDEST"
     clone < "$tmp"/queue
 fi
 
@@ -267,7 +261,7 @@ if ((!insecure)); then
 fi
 
 if ((nobuild)); then
-    msg "Files downloaded to $PWD"
+    msg "Build files saved to $PWD"
     exit
 fi
 
