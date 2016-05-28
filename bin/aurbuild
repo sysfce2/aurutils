@@ -10,7 +10,7 @@ readonly argv0 pwd tmp
 declare -i chroot=0 sign=0
 
 # Use an option array to allow later modification by getopts.
-p_args=(-crs)
+p_args=(-cs)
 c_args=(-cu)
 r_args=(-vf)
 
