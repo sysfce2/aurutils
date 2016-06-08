@@ -124,7 +124,7 @@ if ((chroot)); then
     fi
 
     # Retrieve settings from pacman.conf and Include directives.
-    sudo cp -v <(pacconf --raw) "$CHROOT"/root/etc/pacman.conf
+    pacconf --raw | sudo tee "$CHROOT"/root/etc/pacman.conf > /dev/null
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)
