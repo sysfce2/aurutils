@@ -46,7 +46,7 @@ build_local() {
     LANG=C repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
-    sudo pacman -Syu --config="$tmp"/config
+    sudo pacman -Syu --config="$tmp"/config --noprogressbar
 }
 
 # * With an nspawn container, packages are always built against latest
