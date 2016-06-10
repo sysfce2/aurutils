@@ -109,7 +109,7 @@ brokeit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-c] [-B newdir] [-dfLnstT] [-u] [--] pkgname..."
+    plain "usage: $argv0 [-c] [-B newdir] [-dfkLnstT] [-u] [--] pkgname..."
     exit 1
 }
 
@@ -119,13 +119,14 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfLnstTu-: OPT; do
+while getopts :B:cdfkLnstTu-: OPT; do
     case "$OPT" in
         B|+B) bindro=1
               newdir=$OPTARG ;;
         c|+c) chroot=1       ;;
         f|+f) force=1        ;;
         L|+L) logdest=1      ;;
+        k|+k) keep=1         ;;
         n|+n) namcap=1       ;;
         s|+s) sign=1         ;;
         t|+t) snapshot=1     ;;
@@ -135,7 +136,6 @@ while getopts :B:cdfLnstTu-: OPT; do
                chroot)    chroot=1    ;;
                ignore)    ignore=1    ;;
                insecure)  insecure=1  ;;
-               keep)      keep=1      ;;
                nobuild)   nobuild=1   ;;
                nodeps)    nodeps=1    ;;
                nofetch)   nofetch=1   ;;
