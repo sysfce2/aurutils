@@ -121,6 +121,8 @@ if ((chroot)); then
     if [[ ! -d $CHROOT/root ]]; then
         sudo install -d "$CHROOT"
         sudo mkarchroot "$CHROOT"/root base base-devel
+    else
+        sudo arch-nspawn "$CHROOT"/root pacman -Syu --noconfirm
     fi
 
     # Retrieve settings from pacman.conf and Include directives.
