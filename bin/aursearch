@@ -9,7 +9,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly argv0 aurweb tmp
 
 # Default options
-declare -i nameonly=0 string=0 raw=0 verbose=0 pkgbase=0
+declare -i nameonly=0 string=0 raw=0 verbose=0
 
 # The actual "match" is done by aurweb; as such, string is similar
 # to grep --fixed-strings.
