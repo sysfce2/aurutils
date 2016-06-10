@@ -5,7 +5,6 @@ aursearch \- search AUR package names by pcre pattern
 .SH SYNOPSIS
 .SY aursearch
 .OP \-bqrv
-.OP \-t seconds
 .OP -F string
 .I pattern
 .YS
@@ -35,11 +34,6 @@ Only display package names.
 Output JSON from AUR RPC.
 .RE
 
-.B \-t
-.RS
-Set the delay before the package list is updated. (default: 5 minutes)
-.RE
-
 .B \-v
 .RS
 Display more package information.
@@ -53,9 +47,6 @@ to a single JSON structure.
 PCRE searches are done by matching a pattern against
 \fIpackages.gz\fR, and querying the result with the RPC. This is done
 as the AUR itself has no regex support (FS#49099).
-
-aurweb generates \fIpackages.gz \fRevery 5 minutes, so setting the
-delay to a lower value has no benefit.
 
 .SH SEE ALSO
 .BR aria2c (1),

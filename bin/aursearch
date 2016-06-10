@@ -4,66 +4,21 @@ set -o pipefail
 
 argv0=aursearch
 aurweb="https://aur.archlinux.org"
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
-readonly argv0 aurweb cache tmp
+readonly argv0 aurweb tmp
 
 # Default options
-declare -i nameonly=0 string=0 raw=0 verbose=0 delay=300
-declare list=packages
-
-# $1: .gz archive (URI)
-# $2: .gz archive (name)
-fetch() {
-    if curl -sS "$1" -o "$2"; then
-        gunzip -f "$2"
-    else
-        exit
-    fi
-}
-
-# $1: .gz archive (URI)
-sync_list() {
-    #global delay
-    declare gz=${1##*/}
-    declare li=${gz%.*}
-
-    declare stamp_l stamp_r epoch_l epoch_r
-
-    if [[ -f $li ]]; then
-        # Use HTTP date to compare the generation date (first line).
-        # https://bugs.archlinux.org/task/49092
-        read -r stamp_l < <(awk -F', ' '{print $3; exit}' "$li")
-        read -r stamp_r < <(curl -fsSI "$1" | awk -F', ' '/^Date:/ {print $2}')
-
-        read -r epoch_l < <(date -d "$stamp_l" '+%s')
-        read -r epoch_r < <(date -d "$stamp_r" '+%s')
-
-        # The update interval is set to 5 minutes by default.
-        # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
-        if ((epoch_r - epoch_l > delay)); then
-            fetch "$1" "$gz"
-        fi
-    else
-        fetch "$1" "$gz"
-    fi
-}
+declare -i nameonly=0 string=0 raw=0 verbose=0 pkgbase=0
 
 # The actual "match" is done by aurweb; as such, string is similar
 # to grep --fixed-strings.
 match() {
-    #global string
+    #global string ag_args
     if ((string)); then
-        printf '%s\n' "${@:2}"
+        printf '%s\n' "$@"
     else
-        sync_list "$aurweb/$1".gz || return
-
-        # Remove the generation date before matching.
-        if ! grep -P -- "$2" <(tail -n +2 "$1"); then
-            error "$argv0: no matches found"
-            exit 1
-        fi
+        aurgrep "${ag_args[@]}" "$1"
     fi
 }
 
@@ -171,21 +126,15 @@ source /usr/share/makepkg/util.sh || exit
 
 while getopts :Fbqrut:v OPT; do
     case $OPT in
-        F|+F) string=1     ;;
-        b|+b) list=pkgbase ;;
-        q|+q) nameonly=1   ;;
-        r|+r) raw=1        ;;
-        t|+t) delay="$OPTARG" ;;
-        v|+v) verbose=1    ;;
+        F|+F) string=1      ;;
+        b|+b) ag_args+=(-b) ;;
+        q|+q) nameonly=1    ;;
+        r|+r) raw=1         ;;
+        v|+v) verbose=1     ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
-
-# Operations are done in the cache directory, unless said otherwise.
-mkdir -p "$cache"
-chmod -c 700 "$cache"
-cd "$cache" || exit
 
 if ((!$#)); then
     plain "$argv0: no targets specified"
@@ -193,10 +142,10 @@ if ((!$#)); then
 fi
 
 if ((nameonly)); then
-    match "${list:-packages}" "$1"
+    match "$1"
     exit
 fi
 
-match "${list:-packages}" "$@" | split | getjson | parse
+match "$@" | split | getjson | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
