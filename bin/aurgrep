@@ -65,7 +65,7 @@ fi
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p     "$cache"
 chmod -c 700 "$cache"
-cd "$cache" || exit
+cd_safe "$cache"
 
 # Takes an URI to a compressed package list
 sync_list "$aurweb/$list" || exit

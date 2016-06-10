@@ -117,9 +117,8 @@ if ((!$#)); then
 fi
 
 # Save temporary files in directories by context.
-if ! cd "$tmp" || ! mkdir {aur,raw,struct}; then
-    exit
-fi
+cd_safe "$tmp"
+mkdir {aur,raw,struct} || exit
 
 # Generate dependency tree and pkgname list (aur/pkgname).
 chain "$@" > aur/tree
