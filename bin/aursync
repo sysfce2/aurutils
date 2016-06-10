@@ -12,7 +12,7 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 nofetch=0 # disable flags
-declare -i update=0 ignore=0 snapshot=0 sign=0 # feature flags
+declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0 # feature flags
 declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0 keep=0 # makepkg flags
 
 viewer() {
@@ -100,14 +100,6 @@ i686() {
     }'
 }
 
-brokeit() {
-    if { hash rot13 && target=$(aursearch -q .+ | shuf -n 1); } 2>/dev/null; then
-        exec "$argv0" -cn "$target" 2>&1 | rot13
-    else
-        echo '?'; exit 16 # EBUSY
-    fi
-}
-
 usage() {
     plain "usage: $argv0 [-c] [-B newdir] [-dfkLnstT] [-u] [--] pkgname..."
     exit 1
@@ -143,7 +135,7 @@ while getopts :B:cdfkLnstTu-: OPT; do
                sign)      sign=1      ;;
                tar)       snapshot=1  ;;
                update)    update=1    ;;
-               allan)     brokeit     ;;
+               allan)     rotate=1    ;;
                *) usage ;;
            esac  ;;
         *) usage ;;
@@ -151,6 +143,14 @@ while getopts :B:cdfkLnstTu-: OPT; do
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+if ((rotate)); then
+    if { hash rot13 && target=$(aurgrep .+ | shuf -n 1); } 2>/dev/null; then
+        exec bash -c "{ \"$argv0\" -cn \"$target\" && repo-elephant; } 2>&1 | rot13"
+    else
+        echo '?'; exit 16 # EBUSY
+    fi
+fi
 
 if ! (($# + update)); then
     error "$argv0: no targets specified"
