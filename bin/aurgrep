@@ -62,6 +62,10 @@ else
     list=packages.gz
 fi
 
+source /usr/share/makepkg/util.sh || exit
+
+[[ -t 2 ]] && colorize
+
 # Operations are done in the cache directory, unless said otherwise.
 mkdir -p     "$cache"
 chmod -c 700 "$cache"
