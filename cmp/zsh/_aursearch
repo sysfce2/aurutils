@@ -5,7 +5,6 @@ typeset -A opt_args
 _aursearch_opts=(
     '-F[Search for a fixed string]'
     '-b[Match pkgbase]'
-    '-q[Output less]'
     '-r[Output JSON]'
     '-v[Output more]'
 )

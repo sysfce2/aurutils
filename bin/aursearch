@@ -9,7 +9,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly argv0 aurweb tmp
 
 # Default options
-declare -i nameonly=0 string=0 raw=0 verbose=0
+declare -i string=0 raw=0 verbose=0
 
 # The actual "match" is done by aurweb; as such, string is similar
 # to grep --fixed-strings.
@@ -124,11 +124,10 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :Fbqru:v OPT; do
+while getopts :Fbru:v OPT; do
     case $OPT in
         F|+F) string=1      ;;
         b|+b) ag_args+=(-b) ;;
-        q|+q) nameonly=1    ;;
         r|+r) raw=1         ;;
         v|+v) verbose=1     ;;
     esac
@@ -139,11 +138,6 @@ OPTIND=1
 if ((!$#)); then
     plain "$argv0: no targets specified"
     exit 1
-fi
-
-if ((nameonly)); then
-    match "$1"
-    exit
 fi
 
 match "$@" | split | getjson | parse

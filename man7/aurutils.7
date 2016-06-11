@@ -172,7 +172,7 @@ Build all packages in the \fIpkgbuilds \fRgithub repository:
 Search for Perl modules that are both in the AUR or official repositories:
 .EX
 
-  $ aursearch -q '^perl-.+' >pkgs
+  $ aurgrep '^perl-.+' >pkgs
   $ grep -Fxvf <(aursift -S < pkgs) pkgs
 
 .EE
@@ -197,7 +197,7 @@ Build all AUR updates in a selected repository:
 Select a package that matches \fIpony\fR, and build the result:
 .EX
 
-  $ select a in $(aursearch -q pony); do aursync "$a"; break; done
+  $ select a in $(aurgrep pony); do aursync "$a"; break; done
 
 .EE
 Print packages both in AUR and community, and compare their versions:
