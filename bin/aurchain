@@ -47,6 +47,14 @@ f2() {
     awk '{print $2}' "$@" | sort -u
 }
 
+dmsort() {
+    if hash datamash 2>/dev/null; then
+        datamash -W check < "$1" >/dev/null || return
+    fi
+
+    tsort "$1"
+}
+
 chain() {
     curl_safe "$(printf '%s\n' "$@" | url)" > raw/0
 
@@ -86,10 +94,7 @@ chain() {
         exit 34
     fi
 
-    # Validate tsort data (#87)
-    if datamash -W check < struct/n >/dev/null; then
-        tsort struct/n | tac
-    else
+    if ! dmsort struct/n; then
         error "$argv0: invalid argument"
         exit 22
     fi
@@ -124,9 +129,9 @@ mkdir {aur,raw,struct} || exit
 chain "$@" > aur/tree
 
 if ((all)); then
-    cat aur/tree
+    tac aur/tree
 else
-    grep -Fxf aur/pkgname aur/tree
+    grep -Fxf aur/pkgname aur/tree | tac
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

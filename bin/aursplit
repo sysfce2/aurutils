@@ -24,7 +24,7 @@ getbase() {
         if [[ ${pkg[$name]} ]]; then
             printf '%s\n' "${pkg[$name]}"
         fi
-    done | datamash rmdup 1
+    done | awk '!x[$0]++'
 }
 
 source /usr/share/makepkg/util.sh || exit
