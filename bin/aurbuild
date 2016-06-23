@@ -63,14 +63,18 @@ build_chroot() {
     if [[ ${GNUPGHOME:-$HOME/.gnupg} != $HOME/.gnupg ]]; then
         warning "GNUPGHOME is set to a non-standard path"
     fi
-    # * Skip verification checks inside the chroot as .gnupg paths are hardcoded
-    #   in makechrootpkg. Signatures are still verified outside the chroot.
-    #   https://git.archlinux.org/devtools.git/commit/?id=86045b9
+
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
+trap_exit() {
+    if [[ ! $- =~ x ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
 trap 'exit' INT
-trap 'rm -rf "$tmp"' EXIT
+trap 'trap_exit' EXIT
 
 source /usr/share/makepkg/util.sh
 
@@ -88,7 +92,7 @@ while getopts a:cd:p:r:s OPT; do
            exit 1 ;;
     esac
 done
-shift (($OPTIND - 1))
+shift $((OPTIND - 1))
 OPTIND=1
 
 if [[ ! $queue || ! $database || ! $pool || ! $root ]]; then
