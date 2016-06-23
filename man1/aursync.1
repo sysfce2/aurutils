@@ -7,7 +7,7 @@ aursync \- download and build aur packages automatically
 .OP \-c
 .OP \-B newdir
 .OP \-u
-.OP \-dfkLnstT
+.OP \-dfLnstT
 .OP pkgname...
 .YS
 
@@ -90,11 +90,6 @@ Save makepkg output. (\fImakepkg -L\fR)
 .B \-n
 .RS
 Do not wait for user input. (\fImakepkg --noconfirm\fR)
-.RE
-
-.B \-k
-.RS
-Do not remove dependencies installed during the build process. (unset \fImakepkg -r\fR)
 .RE
 
 .SS makechrootpkg
