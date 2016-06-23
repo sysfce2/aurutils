@@ -3,9 +3,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 argv0=repofind
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
-
-readonly PS4 argv0 tmp
+readonly PS4 argv0
 
 repofind() {
     declare repo
@@ -43,8 +41,6 @@ reposelect() {
 
     printf '%s %s\n' "$repo" "$root"
 }
-
-trap 'rm -rf "$tmp"' EXIT
 
 source /usr/share/makepkg/util.sh || exit
 

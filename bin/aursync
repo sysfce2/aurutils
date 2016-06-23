@@ -9,7 +9,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
-readonly argv0 aurweb tmp XDG_CACHE_HOME AURDEST
+readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 nofetch=0 # disable flags
 declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0 # feature flags
@@ -101,24 +101,29 @@ i686() {
 }
 
 usage() {
-    plain "usage: $argv0 [-c] [-B newdir] [-dfkLnstT] [-u] [--] pkgname..."
+    plain "usage: $argv0 [-c] [-B newdir] [-dfLnstT] [-u] [--] pkgname..."
     exit 1
 }
 
-trap 'rm -rf "$tmp"' EXIT
+trap_exit() {
+    if [[ ! $- =~ x ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+trap 'trap_exit' EXIT
 
 source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfkLnstTu-: OPT; do
+while getopts :B:cdfLnstTu-: OPT; do
     case "$OPT" in
         B|+B) bindro=1
               newdir=$OPTARG ;;
         c|+c) chroot=1       ;;
         f|+f) force=1        ;;
         L|+L) logdest=1      ;;
-        k|+k) keep=1         ;;
         n|+n) namcap=1       ;;
         s|+s) sign=1         ;;
         t|+t) snapshot=1     ;;
@@ -160,14 +165,25 @@ fi
 # Set makepkg args in a new list to ensure option context is already
 # defined, as getopts parses options sequentially.
 if ((chroot)); then
+    makepkg_args=(-cu)
+
     ((bindro))  && makepkg_args+=(-D "$newdir")
     ((chtemp))  && makepkg_args+=(-T)
     ((namcap))  && makepkg_args+=(-n)
 else
+    makepkg_args=(-crs)
+
     ((force))   && makepkg_args+=(-f)
     ((logdest)) && makepkg_args+=(-L)
     ((namcap))  && makepkg_args+=(--noconfirm)
-    ((!keep))   && makepkg_args+=(-r)
+fi
+
+if ((chroot)); then
+    aurbuild_args+=(-c)
+fi
+
+if ((sign)); then
+    aurbuild_args+=(-s)
 fi
 
 # Only select a repository when building (#127)
@@ -265,14 +281,6 @@ fi
 if ((nobuild)); then
     msg "Build files saved to $PWD"
     exit
-fi
-
-if ((chroot)); then
-    aurbuild_args+=(-c)
-fi
-
-if ((sign)); then
-    aurbuild_args+=(-s)
 fi
 
 aurbuild_args+=(-d "$repo" -r "$root" -p "$root" -a "$tmp"/queue)
