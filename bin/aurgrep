@@ -5,9 +5,8 @@ set -o pipefail
 argv0=aurgrep
 aurweb="https://aur.archlinux.org"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
-readonly argv0 aurweb cache tmp
+readonly PS4 argv0 aurweb cache tmp
 
 declare -i delay=300
 

@@ -6,7 +6,7 @@ argv0=aurbuild
 pwd=$PWD
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
-readonly argv0 pwd tmp
+readonly PS4 argv0 pwd tmp
 declare -i chroot=0 sign=0
 
 # Use an option array to allow later modification by getopts.

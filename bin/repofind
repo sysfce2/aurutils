@@ -5,7 +5,7 @@ set -o pipefail
 argv0=repofind
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
-readonly argv0 tmp
+readonly PS4 argv0 tmp
 
 repofind() {
     declare repo

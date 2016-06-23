@@ -1,7 +1,8 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+argv0=aursift
 
-readonly argv0=aursift
+readonly PS4 argv0
 
 # Takes a set of package names to create "package virtual" pairs, querying
 # both provides and replaces fields.

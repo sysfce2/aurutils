@@ -1,6 +1,8 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly argv0=aursplit
+argv0=aursplit
+
+readonly PS4 argv0
 
 getbase() {
     declare -A pkg

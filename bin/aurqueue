@@ -6,6 +6,8 @@ set -o pipefail
 argv0=aurqueue
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
+readonly PS4 argv0 tmp
+
 # Determine the path to each .SRCINFO, output to stdout using null
 # delimitation to prevent ARG_MAX issues.
 findsrc() {
@@ -38,7 +40,13 @@ dmsort() {
     tsort "$1"
 }
 
-trap 'rm -rf "$tmp"' EXIT
+trap_exit() {
+    if [[ ! $- =~ x ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+trap 'trap_exit' EXIT
 
 source /usr/share/makepkg/util.sh || exit
 

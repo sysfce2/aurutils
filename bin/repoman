@@ -1,13 +1,20 @@
 #!/bin/bash -
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 PATH=/bin:/usr/bin
 
 argv0=repoman
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 official=(core testing extra community community-testing multilib multilib-testing)
 
-readonly PATH argv0 tmp official
+readonly PS4 PATH argv0 tmp official
 
-trap 'rm -rf "$tmp"' EXIT
+trap_exit() {
+    if [[ ! $- =~ x ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+trap 'trap_exit' EXIT
 
 # Regard ignored packages (#103)
 printf '%s\n%s\n' "[options]" "$(pacconf IgnorePkg IgnoreGroup)" >> "$tmp"/config

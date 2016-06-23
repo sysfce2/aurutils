@@ -6,7 +6,7 @@ argv0=aursearch
 aurweb="https://aur.archlinux.org"
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
-readonly argv0 aurweb tmp
+readonly PS4 argv0 aurweb tmp
 
 # Default options
 declare -i string=0 raw=0 verbose=0
@@ -118,7 +118,13 @@ parse() {
     fi
 }
 
-trap 'rm -rf "$tmp"' EXIT
+trap_exit() {
+    if [[ ! $- =~ x ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+trap 'trap_exit' EXIT
 
 source /usr/share/makepkg/util.sh || exit
 

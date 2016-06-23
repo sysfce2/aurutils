@@ -6,7 +6,7 @@ argv0=aurchain
 multinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
-readonly argv0 multinfo tmp
+readonly PS4 argv0 multinfo tmp
 declare -i all=0
 
 curl_safe() {
