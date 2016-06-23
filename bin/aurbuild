@@ -10,9 +10,9 @@ readonly argv0 pwd tmp
 declare -i chroot=0 sign=0
 
 # Use an option array to allow later modification by getopts.
-p_args=(-cs)
-c_args=(-cu)
-r_args=(-vf)
+makepkg_args=(-Lcrs)
+makechrootpkg_args=(-cu)
+repose_args=(-vf)
 
 # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
 # not being set. Use a separate function to always sign packages
@@ -36,14 +36,14 @@ sign_pkg() {
 # that pacman now considers packages inside the official repositories
 # as "local", and warns if they are newer than a custom counterpart.
 build_local() {
-    #global database pool root p_args r_args
+    #global database pool root makepkg_args repose_args
 
-    PKGDEST="$pool" LC_MESSAGES=C makepkg "${p_args[@]}"
+    PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
 
     # Set LANG=C to allow libalpm to fully read the database, even
     # when the locale is not set.
     # https://bugs.archlinux.org/task/49342#comment147145
-    LANG=C repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
+    LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
     sudo pacman -Syu --config="$tmp"/config --noprogressbar
@@ -54,16 +54,16 @@ build_local() {
 # * As '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
 #   if already available.
 build_chroot() {
-    #global CHROOT database pool root c_args r_args
+    #global CHROOT database pool root makechrootpkg_args repose_args
 
     # * Preserve PKGDEST with sudo -E.
     #   https://bugs.archlinux.org/task/44827
     # * Skip verification checks inside the chroot as .gnupg paths are hardcoded
     #   in makechrootpkg. Signatures are still verified outside the chroot.
     #   https://git.archlinux.org/devtools.git/commit/?id=86045b9
-    sudo -E PKGDEST="$pool" makechrootpkg "${c_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
+    sudo -E PKGDEST="$pool" makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
 
-    LANG=C repose "${r_args[@]}" "$database" -r "$root" -p "$pool"
+    LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
 trap 'exit' INT
@@ -85,6 +85,8 @@ while getopts a:cd:p:r:s OPT; do
            exit 1 ;;
     esac
 done
+shift (($OPTIND - 1))
+OPTIND=1
 
 if [[ ! $queue || ! $database || ! $pool || ! $root ]]; then
     error "$argv0: empty arguments"
@@ -104,15 +106,17 @@ fi
 pool=$(realpath -e "$pool")
 root=$(realpath -e "$root")
 
-# Pass all arguments after -- to makepkg/makechrootpkg.
-if ((chroot)); then
-    c_args+=("${@:$OPTIND}")
-else
-    p_args+=("${@:$OPTIND}")
+# Reset option array if arguments are specified after --
+if (($#)); then
+    if ((chroot)); then
+        makechrootpkg_args+=("$@")
+    else
+        makepkg_args+=("$@")
+    fi
 fi
 
 if ((sign)); then
-    r_args+=(--sign)
+    repose_args+=(--sign)
 fi
 
 if ((chroot)); then
