@@ -56,13 +56,16 @@ build_local() {
 build_chroot() {
     #global CHROOT database pool root makechrootpkg_args repose_args
 
-    # * Preserve PKGDEST with sudo -E.
-    #   https://bugs.archlinux.org/task/44827
+    # Preserve PKGDEST with sudo -E. (#120)
+    sudo -E PKGDEST="$pool" makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT"
+
+    # makechrootpkg does not support GNUPGHOME. (#151)
+    if [[ ${GNUPGHOME:-$HOME/.gnupg} != $HOME/.gnupg ]]; then
+        warning "GNUPGHOME is set to a non-standard path"
+    fi
     # * Skip verification checks inside the chroot as .gnupg paths are hardcoded
     #   in makechrootpkg. Signatures are still verified outside the chroot.
     #   https://git.archlinux.org/devtools.git/commit/?id=86045b9
-    sudo -E PKGDEST="$pool" makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT" -- --skippgpcheck
-
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
