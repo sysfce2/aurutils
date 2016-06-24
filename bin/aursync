@@ -86,7 +86,7 @@ ignorepkg() {
 }
 
 missing() {
-    grep -Fxvf "$1" "$2" | while read -r pkg; do
+    grep -Fxvf "$1" "$2" | while read -r pkg _; do
         warning "no results found for $pkg"
     done
 }
@@ -100,8 +100,16 @@ i686() {
     }'
 }
 
+getsource() {
+    while read -r pkg _; do
+        ( cd "$pkg"
+          makepkg --verifysource
+        )
+    done
+}
+
 usage() {
-    plain "usage: $argv0 [-c] [-B newdir] [-dfLnstT] [-u] [--] pkgname..."
+    plain "usage: $argv0 [-c] [-B newdir] [-fLnstT] [-u] [--] pkgname..."
     exit 1
 }
 
@@ -117,7 +125,7 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cdfLnstTu-: OPT; do
+while getopts :B:cfLnstTu-: OPT; do
     case "$OPT" in
         B|+B) bindro=1
               newdir=$OPTARG ;;
@@ -131,6 +139,7 @@ while getopts :B:cdfLnstTu-: OPT; do
         u|+u) update=1       ;;
         -) case "$OPTARG" in
                chroot)    chroot=1    ;;
+               allsrc)    allsrc=1  ;;
                ignore)    ignore=1    ;;
                insecure)  insecure=1  ;;
                nobuild)   nobuild=1   ;;
@@ -278,8 +287,12 @@ if ((!insecure)); then
     )
 fi
 
+if ((allsrc)); then
+    getsource < "$tmp"/queue
+fi
+
 if ((nobuild)); then
-    msg "Build files saved to $PWD"
+    msg "Sources saved to $PWD"
     exit
 fi
 
