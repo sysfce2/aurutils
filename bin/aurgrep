@@ -8,6 +8,8 @@ cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
 
 readonly PS4 argv0 aurweb cache tmp
 
+# The update interval is set to 5 minutes by default.
+# https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
 declare -i delay=300
 
 # $1: .gz archive (URI)
@@ -34,8 +36,6 @@ sync_list() {
         read -r epoch_l < <(date -d "$(awk -F', ' '{print $3; exit}' "$un")" '+%s')
         read -r epoch_r < <(date -d "$(curl -fsSI "$1" | awk -F', ' '/^Date:/ {print $2}')" '+%s')
 
-        # The update interval is set to 5 minutes by default.
-        # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
         if ((epoch_r - epoch_l > delay)); then
             fetch "$1" "$gz"
         fi
