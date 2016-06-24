@@ -58,7 +58,7 @@ build_chroot() {
 
     # makechrootpkg does not support GNUPGHOME. (#151)
     if [[ ${GNUPGHOME:-$HOME/.gnupg} != $HOME/.gnupg ]]; then
-        warning "GNUPGHOME is set to a non-standard path"
+        warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
     # Preserve PKGDEST with sudo -E. (#120)
