@@ -57,19 +57,21 @@ fi
 
 [[ -t 2 ]] && colorize
 
-if findsrc "$@" | tee >(allnames > "$tmp"/base) | gendeps > "$tmp"/all; then
+cd_safe "$tmp"
+
+if findsrc "$@" > info; then
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
     # named after pkgbase, differences must be replaced in the initial
     # graph before matching the original arguments.
-    dmsort "$tmp"/all | aursplit "$tmp"/base > "$tmp"/queue
+    dmsort <(gendeps < info) | aursplit <(allnames < info) | tac > queue
 
     # The base assumption is to have packages and their dependencies
     # already available, so instead of filtering packages in the official
     # repositories, we simply remove those that weren't there in the first
     # place. As an added benefit, any directory with SRCINFO files can now
     # be included in the queue.
-    grep -Fxf <(printf '%s\n' "$@") "$tmp"/queue | tac
+    grep -Fxf <(printf '%s\n' "$@") queue
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
