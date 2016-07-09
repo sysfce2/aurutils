@@ -21,12 +21,12 @@ getbase() {
 
     # Values taken from stdin are not necessarily AUR targets (as for
     # the array above), so check if a value is set before printing to
-    # prevent sparse files.
+    # prevent sparse files. Duplicates are removed from the bottom up.
     while read -r name _; do
         if [[ ${pkg[$name]} ]]; then
             printf '%s\n' "${pkg[$name]}"
         fi
-    done | awk '!x[$0]++'
+    done | tac | awk '!x[$0]++' | tac
 }
 
 source /usr/share/makepkg/util.sh || exit
