@@ -27,6 +27,7 @@ reposelect() {
     done < <(repofind)
 
     if ((${#avail[@]} > 1)); then
+        PS3='Select a repository: '
         select repo in "${!avail[@]}"; do
             break
         done
