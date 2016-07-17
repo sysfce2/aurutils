@@ -62,7 +62,7 @@ build_chroot() {
 
     makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT"
 
-    if [[ ${PKGDEST:-$PWD} != $pool ]]; then
+    if [[ ${PKGDEST:-$PWD} != "$pool" ]]; then
         for i in "${pkglist[@]}"; do
             find "${PKGDEST:-$PWD}" -type f -regex ".+/$i.pkg.+?" -execdir mv -v {} -t "$pool" \;
         done
