@@ -49,9 +49,9 @@ build_chroot() {
     fi
 
     # XXX Move build products manually: PKGDEST is not preserved (#120) in makechrootpkg,
-    # and variables on the sudo command line and sudo -E are subject to sudoers policy. 
+    # while variables on the sudo command line and sudo -E are subject to sudoers policy. 
     # Specifiying PKGDEST like this doesn't work anyway; variables in /etc/makepkg.conf
-    # take precedence, before ~$SUDO_USER/.makepkg.conf and $PWD, respectively.
+    # and (after that) ~$SUDO_USER/.makepkg.conf take precedence over an existing PKGDEST.
     # Unlike makepkg, a different config file can also not be set from the command line.
     # Note: Quotes are NOT removed from PKGDEST!
     PKGDEST=$(pacini /etc/pacman.conf PKGDEST)
