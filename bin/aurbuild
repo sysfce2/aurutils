@@ -56,7 +56,7 @@ build_chroot() {
     # Note: Quotes are NOT removed from PKGDEST!
     PKGDEST=$(pacini /etc/pacman.conf PKGDEST)
 
-    if [[ ! $PKGDEST ]]; then
+    if [[ ! $PKGDEST && -r ~/.makepkg.conf ]]; then
         PKGDEST=$(pacini ~/.makepkg.conf PKGDEST)
     fi
 
