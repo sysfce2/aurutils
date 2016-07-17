@@ -164,7 +164,7 @@ Build all packages in the \fIpkgbuilds \fRgithub repository:
 
   $ git clone https://www.github.com/Earnestly/pkgbuilds
   $ cd pkgbuilds
-  $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \;    
+  $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \\;
   $ aurqueue * > queue # Remove unwanted targets
   $ aurbuild -d custom -r /var/cache/pacman/custom -p /var/cache/pacman/custom -a queue
 
