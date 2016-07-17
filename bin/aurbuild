@@ -3,10 +3,10 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
 argv0=aurbuild
-pwd=$PWD
+base=$PWD
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
-readonly PS4 argv0 pwd tmp
+readonly PS4 argv0 base tmp
 declare -i chroot=0 sign_pkg=0
 
 # Use an option array to allow later modification by getopts.
@@ -34,13 +34,13 @@ build_local() {
     sudo pacman -Syu --config="$tmp"/config --noprogressbar
 }
 
-# * With an nspawn container, packages are always built against latest
-#   official packages, and are upgraded together on a local -Syu.
-# * As '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
-#   if already available.
+# With an nspawn container, packages are always built against the latest
+# official packages, and are upgraded together on a local -Syu. 
+# '/pkgdest' is hardcoded in makechrootpkg, so packages are rebuilt even if
+# already available. Build products are moved to a fixed location afterwards.
 build_chroot() {
     #global CHROOT GPGKEY database pool root makechrootpkg_args repose_args sign_pkg
-    declare gpgargs pkglist i
+    declare i gpgargs pkglist PKGDEST
     readarray -t pkglist < <(makepkg --packagelist)
 
     # makechrootpkg does not support GNUPGHOME. (#151)
@@ -48,13 +48,25 @@ build_chroot() {
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
+    # XXX Move build products manually: PKGDEST is not preserved (#120) in makechrootpkg,
+    # and variables on the sudo command line and sudo -E are subject to sudoers policy. 
+    # Specifiying PKGDEST like this doesn't work anyway; variables in /etc/makepkg.conf
+    # take precedence, before ~$SUDO_USER/.makepkg.conf and $PWD, respectively.
+    # Unlike makepkg, a different config file can also not be set from the command line.
+    # Note: Quotes are NOT removed from PKGDEST!
+    PKGDEST=$(pacini /etc/pacman.conf PKGDEST)
+
+    if [[ ! $PKGDEST ]]; then
+        PKGDEST=$(pacini ~/.makepkg.conf PKGDEST)
+    fi
+
     makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT"
 
-    # Move build products manually, as PKGDEST is not preserved (#120) and variables
-    # on the sudo command line are subject to sudoers policy.
-    for i in "${pkglist[@]}"; do
-        find . -type f -regex ".+/$i.pkg.+?" -execdir mv -v {} -t "$pool" \;
-    done
+    if [[ ${PKGDEST:-$PWD} != $pool ]]; then
+        for i in "${pkglist[@]}"; do
+            find "${PKGDEST:-$PWD}" -type f -regex ".+/$i.pkg.+?" -execdir mv -v {} -t "$pool" \;
+        done
+    fi
 
     # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
     # not being set. (#130)
@@ -163,7 +175,7 @@ fi
 exec 3< "$queue"
 
 while read -r -u 3 pkg _; do
-    if cd "$pwd/$pkg"; then
+    if cd "$base/$pkg"; then
         if ((chroot)); then
             build_chroot
         else
