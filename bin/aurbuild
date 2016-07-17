@@ -64,7 +64,7 @@ build_chroot() {
 
     if [[ ${PKGDEST:-$PWD} != "$pool" ]]; then
         for i in "${pkglist[@]}"; do
-            find "${PKGDEST:-$PWD}" -type f -regex ".+/$i.pkg.+?" -execdir mv {} -t "$pool" \;
+            find "${PKGDEST:-$PWD}" -type f -regex ".+/$i.pkg.+?" -execdir mv -v {} -t "$pool" \;
         done
     fi
 
