@@ -53,11 +53,14 @@ build_chroot() {
     # Specifiying PKGDEST like this doesn't work anyway; variables in /etc/makepkg.conf
     # and (after that) ~$SUDO_USER/.makepkg.conf take precedence over an existing PKGDEST.
     # Unlike makepkg, a different config file can also not be set from the command line.
-    # Note: Quotes are NOT removed from PKGDEST!
     PKGDEST=$(pacini /etc/pacman.conf PKGDEST)
 
     if [[ ! $PKGDEST && -r ~/.makepkg.conf ]]; then
         PKGDEST=$(pacini ~/.makepkg.conf PKGDEST)
+    fi
+
+    if [[ $PKGDEST ]]; then
+        dequote PKGDEST
     fi
 
     makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT"
@@ -83,6 +86,12 @@ build_chroot() {
     fi
 
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
+}
+
+dequote() {
+    declare -n sub=$1
+    sub=${sub#\"}; sub=${sub%\"}
+    sub=${sub#\'}; sub=${sub%\'}
 }
 
 trap_exit() {
