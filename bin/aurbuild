@@ -7,36 +7,21 @@ pwd=$PWD
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
 readonly PS4 argv0 pwd tmp
-declare -i chroot=0 sign=0
+declare -i chroot=0 sign_pkg=0
 
 # Use an option array to allow later modification by getopts.
 makepkg_args=(-Lcrs)
 makechrootpkg_args=(-cu)
 repose_args=(-vf)
 
-# Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
-# not being set. Use a separate function to always sign packages
-# outside the chroot. (#130)
-sign_pkg() {
-    #global pool GPGKEY
-    declare gpgargs i
-
-    gpgargs=(--verbose --detach-sign --no-armor)
-
-    if [[ $GPGKEY ]]; then
-        gpgargs+=(-u "$GPGKEY")
-    fi
-
-    for i in $(makepkg --packagelist); do
-        find "$pool" -type f -regex ".+/$i.pkg.+?" -execdir gpg "${gpgargs[@]}" {} \;
-    done
-}
-
 # The repo equivalent of "makepkg -i". An interesting side effect is
 # that pacman now considers packages inside the official repositories
 # as "local", and warns if they are newer than a custom counterpart.
 build_local() {
-    #global database pool root makepkg_args repose_args
+    #global database pool root makepkg_args repose_args sign_pkg
+    if ((sign_pkg)); then
+        makepkg_args+=(--sign)
+    fi
 
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
 
@@ -54,15 +39,36 @@ build_local() {
 # * As '/pkgdest' is hardcoded in makechrootpkg, packages are rebuilt even
 #   if already available.
 build_chroot() {
-    #global CHROOT database pool root makechrootpkg_args repose_args
+    #global CHROOT GPGKEY database pool root makechrootpkg_args repose_args sign_pkg
+    declare gpgargs pkglist i
+    readarray -t < <(makepkg --packagelist)
 
     # makechrootpkg does not support GNUPGHOME. (#151)
     if [[ ${GNUPGHOME:-$HOME/.gnupg} != $HOME/.gnupg ]]; then
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    # Preserve PKGDEST with sudo -E. (#120)
-    sudo -E PKGDEST="$pool" makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT"
+    makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT"
+
+    # Move build products manually, as PKGDEST is not preserved (#120) and variables
+    # on the sudo command line are subject to sudoers policy.
+    for i in "${pkglist[@]}"; do
+        find . -type f -regex ".+/$i.pkg.+?" -execdir mv -v {} -t "$pool" \;
+    done
+
+    # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
+    # not being set. (#130)
+    if ((sign_pkg)); then
+        gpgargs=(--verbose --detach-sign --no-armor)
+
+        if [[ $GPGKEY ]]; then
+            gpgargs+=(-u "$GPGKEY")
+        fi
+
+        for i in "${pkglist[@]}"; do
+            find "$pool" -type f -regex ".+/$i.pkg.+?" -execdir gpg "${gpgargs[@]}" {} \;
+        done
+    fi
 
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 }
@@ -82,12 +88,13 @@ source /usr/share/makepkg/util.sh
 
 while getopts a:cd:p:r:s OPT; do
     case $OPT in
-        a|+a) queue="$OPTARG"    ;;
-        c|+c) chroot=1           ;;
+        a|+a) queue="$OPTARG" ;;
+        c|+c) chroot=1 ;;
         d|+d) database="$OPTARG" ;;
-        p|+p) pool="$OPTARG"     ;;
-        r|+r) root="$OPTARG"     ;;
-        s|+s) sign=1             ;;
+        p|+p) pool="$OPTARG" ;;
+        r|+r) root="$OPTARG" ;;
+        s|+s) repose_args+=(--sign)
+              sign_pkg=1 ;;
         *) plain "usage: $argv0 [-cs] -a <queue> -d <repo> -p <pool> -r <root> [--] ARGS"
            exit 1 ;;
     esac
@@ -122,10 +129,6 @@ if (($#)); then
     fi
 fi
 
-if ((sign)); then
-    repose_args+=(--sign)
-fi
-
 if ((chroot)); then
     CHROOT=/var/lib/aurbuild
 
@@ -152,10 +155,6 @@ while read -r -u 3 pkg _; do
             build_chroot
         else
             build_local
-        fi
-
-        if ((sign)); then
-            sign_pkg
         fi
     fi
 done
