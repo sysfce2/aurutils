@@ -105,20 +105,33 @@ OPTIND=1
 if [[ ! $queue || ! $database || ! $pool || ! $root ]]; then
     error "$argv0: empty arguments"
     exit 1
-fi
-
-if [[ ! -r $queue ]]; then
+elif [[ ! -r $queue ]]; then
     error "$argv0: \'$queue\': permission denied"
     exit 13
-fi
-
-if ! pacconf --repo="$database" >/dev/null; then
+elif [[ -d $queue ]]; then
+    error "$argv0: \'$queue\': is a directory"
+    exit 21
+elif ! pacconf --repo="$database" >/dev/null; then
     exit 22
 fi
 
 # Canonicalize paths to avoid issues with chdir and relative paths.
 pool=$(realpath -e "$pool")
 root=$(realpath -e "$root")
+
+if [[ ! -d $root ]]; then
+    error "$argv0: $root: not a directory"
+    exit 20
+elif [[ ! -d $pool ]]; then
+    error "$argv0: $pool: not a directory"
+    exit 20
+elif [[ ! -w $root ]]; then
+    error "$argv0: $root: permission denied"
+    exit 13
+elif [[ ! -w $pool ]]; then
+    error "$argv0: $pool: permission denied"
+    exit 13
+fi
 
 # Reset option array if arguments are specified after --
 if (($#)); then

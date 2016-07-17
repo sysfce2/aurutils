@@ -198,23 +198,12 @@ fi
 # Only select a repository when building (#127)
 if ((!nobuild)) || ((update)); then
     read -r repo root < <(repofind -s)
-
     msg2 "Using [$repo] repository"
 
     # Use a cache directory as package pool (#105)
     if ! grep -Fqxf <(printf '%s\n' "$root") <(pacconf CacheDir); then
         error "$argv0: cache directory not configured"
         exit 1
-    fi
-
-    if [[ ! -d $root ]]; then
-        error "$argv0: $root: not a directory"
-        exit 20
-    fi
-
-    if [[ ! -w $root ]]; then
-        error "$argv0: $root: permission denied"
-        exit 13
     fi
 fi
 
