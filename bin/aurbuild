@@ -41,7 +41,7 @@ build_local() {
 build_chroot() {
     #global CHROOT GPGKEY database pool root makechrootpkg_args repose_args sign_pkg
     declare gpgargs pkglist i
-    readarray -t < <(makepkg --packagelist)
+    readarray -t pkglist < <(makepkg --packagelist)
 
     # makechrootpkg does not support GNUPGHOME. (#151)
     if [[ ${GNUPGHOME:-$HOME/.gnupg} != $HOME/.gnupg ]]; then
@@ -119,18 +119,18 @@ fi
 pool=$(realpath -e "$pool")
 root=$(realpath -e "$root")
 
-if [[ ! -d $root ]]; then
-    error "$argv0: $root: not a directory"
-    exit 20
-elif [[ ! -d $pool ]]; then
-    error "$argv0: $pool: not a directory"
-    exit 20
-elif [[ ! -w $root ]]; then
+if [[ ! -w $root ]]; then
     error "$argv0: $root: permission denied"
     exit 13
 elif [[ ! -w $pool ]]; then
     error "$argv0: $pool: permission denied"
     exit 13
+elif [[ ! -d $root ]]; then
+    error "$argv0: $root: not a directory"
+    exit 20
+elif [[ ! -d $pool ]]; then
+    error "$argv0: $pool: not a directory"
+    exit 20
 fi
 
 # Reset option array if arguments are specified after --
