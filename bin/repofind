@@ -59,7 +59,7 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :ik:s: OPT; do
+while getopts :ik:s OPT; do
     case $OPT in
         i|+i) repofind   ;;
         s|+s) reposelect ;;
