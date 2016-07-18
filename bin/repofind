@@ -18,6 +18,18 @@ repofind() {
     done
 }
 
+repocheck() {
+    declare -A rset
+    rset[$1]=$(pacconf --single --repo="$1" Server) || exit
+
+    if [[ ${rset[$1]} =~ file:// ]]; then
+        printf '%s %s\n' "$1" "${rset[$1]}"
+    else
+        error "$argv0: $1: not a file:// repository"
+        exit 1
+    fi
+}
+
 reposelect() {
     declare repo server root
     declare -A avail
@@ -47,11 +59,12 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :isu: OPT; do
+while getopts :ik:s: OPT; do
     case $OPT in
         i|+i) repofind   ;;
         s|+s) reposelect ;;
-        *) plain "usage: $argv0 [-i] [-s]"
+        k|+k) repocheck "$OPTARG" ;;
+        *) plain "usage: $argv0 [-i] [-s] [-k repo]"
            exit 1 ;;
     esac
 done
