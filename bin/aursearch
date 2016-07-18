@@ -41,35 +41,13 @@ split() {
 }
 
 getjson() {
-    if hash aria2c 2>/dev/null; then
-        json_aria
-    else
-        build_cmd | json_xargs
-    fi
-}
-
-build_cmd() {
-    while IFS= read -r uri; do
-        printf '%s\n' "curl -fgLs --retry 2 --retry-delay 0 \"$uri\" --create-dirs -o \"$tmp\"/curl/$(uuidgen -t)"
-    done
-}
-
-json_xargs() {
-    if xargs -I{} -P 10 /bin/sh -c {}; then
-        json_count <(json_merge "$tmp"/curl/*)
-    else
-        error "$argv0: remote I/O error"
-        exit 121
-    fi
-}
-
-json_aria() {
     if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
         # Check if files were retrieved (return 1 if empty stdin)
         if [[ ! -s "$tmp"/index.html ]]; then
             return 1
         fi
-        json_count <(json_merge "$tmp"/index.html*)
+        json_merge "$tmp"/index.html* > "$tmp"/raw
+        json_count "$tmp"/raw
     else
         exit $?
     fi
