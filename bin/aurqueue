@@ -41,7 +41,7 @@ dmsort() {
 }
 
 trap_exit() {
-    if [[ -o xtrace ]]; then
+    if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
