@@ -60,7 +60,7 @@ json_merge() {
 
 # Check for results, only print if non-zero (#96)
 json_count() {
-    if (($(jshon -F "$1" -a -e resultcount -u))); then
+    if [[ $(jshon -F "$1" -e 0 -e resultcount -u) > 0 ]]; then
         cat "$1"
     else
         error "$argv0: no matches found"
