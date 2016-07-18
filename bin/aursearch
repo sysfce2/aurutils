@@ -9,16 +9,16 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly PS4 argv0 aurweb tmp
 
 # Default options
-declare -i string=0 raw=0 verbose=0
+declare -i string=0 parser=1
 
 # The actual "match" is done by aurweb; as such, string is similar
 # to grep --fixed-strings.
 match() {
-    #global string ag_args
+    #global string aurgrep_args
     if ((string)); then
         printf '%s\n' "$@"
     else
-        aurgrep "${ag_args[@]}" "$1"
+        aurgrep "${aurgrep_args[@]}" "$1"
     fi
 }
 
@@ -41,23 +41,61 @@ split() {
 }
 
 getjson() {
+    if hash aria2c 2>/dev/null; then
+        json_aria
+    else
+        build_cmd | json_xargs
+    fi
+}
+
+build_cmd() {
+    while IFS= read -r uri; do
+        printf '%s\n' "curl -fgLs --retry 2 --retry-delay 0 \"$uri\" --create-dirs -o \"$tmp\"/curl/$(uuidgen -t)"
+    done
+}
+
+json_xargs() {
+    if xargs -I{} -P 10 /bin/sh -c {}; then
+        json_count <(json_merge "$tmp"/curl/*)
+    else
+        error "$argv0: remote I/O error"
+        exit 121
+    fi
+}
+
+json_aria() {
     if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
-        # If stdin is empty, aria reports "No files to download" and
-        # returns 0. When -i or -Z are set, the file name can not be changed.
-        [[ ! -s "$tmp"/index.html ]] && return
-
-        # Merge to a single JSON structure, see jshon(1).
-        awk '{print}' "$tmp"/index.html* | sed -e '1i[' -e '$!s/$/,/' -e '$a]' > "$tmp"/raw
-
-        # Check for results, only print if non-zero (#96)
-        case $(jshon -F "$tmp"/raw -a -e resultcount -u) in
-            0) error "$argv0: no matches found"
-               exit 1 ;;
-            *) cat "$tmp"/raw ;;
-        esac
+        # Check if files were retrieved (return 1 if empty stdin)
+        if [[ ! -s "$tmp"/index.html ]]; then
+            return 1
+        fi
+        json_count <(json_merge "$tmp"/index.html*)
     else
         exit $?
     fi
+}
+
+# Merge to single JSON structure, see jshon(1).
+json_merge() {
+    awk '{print}' "$@" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+}
+
+# Check for results, only print if non-zero (#96)
+json_count() {
+    if (($(jshon -F "$1" -a -e resultcount -u))); then
+        cat "$1"
+    else
+        error "$argv0: no matches found"
+        exit 1
+    fi
+}
+
+json_parse() {
+    case "$parser" in
+        0) tee   ;;
+        1) brief ;;
+        2) long  ;;
+    esac
 }
 
 brief() {
@@ -107,19 +145,8 @@ long() {
                    -u -p -e LastModified -u)
 }
 
-parse() {
-    #global raw verbose
-    if ((raw)); then
-        tee
-    elif ((verbose)); then
-        long
-    else
-        brief
-    fi
-}
-
 trap_exit() {
-    if [[ ! $- =~ x ]]; then
+    if [[ -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
@@ -132,10 +159,10 @@ source /usr/share/makepkg/util.sh || exit
 
 while getopts :Fbru:v OPT; do
     case $OPT in
-        F|+F) string=1      ;;
-        b|+b) ag_args+=(-b) ;;
-        r|+r) raw=1         ;;
-        v|+v) verbose=1     ;;
+        F|+F) string=1 ;;
+        b|+b) aurgrep_args+=(-b) ;;
+        r|+r) parser=0 ;;
+        v|+v) parser=2 ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -146,6 +173,6 @@ if ((!$#)); then
     exit 1
 fi
 
-match "$@" | split | getjson | parse
+match "$@" | split | getjson | json_parse
 
 # vim: set et sw=4 sts=4 ft=sh:
