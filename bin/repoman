@@ -9,7 +9,7 @@ official=(core testing extra community community-testing multilib multilib-testi
 readonly PS4 PATH argv0 tmp official
 
 trap_exit() {
-    if [[ ! $- =~ x ]]; then
+    if [[ -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }

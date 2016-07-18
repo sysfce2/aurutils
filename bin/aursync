@@ -114,7 +114,7 @@ usage() {
 }
 
 trap_exit() {
-    if [[ ! $- =~ x ]]; then
+    if [[ -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
