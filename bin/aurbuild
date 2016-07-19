@@ -14,9 +14,6 @@ makepkg_args=(-Lcrs)
 makechrootpkg_args=(-cu)
 repose_args=(-vf)
 
-# The repo equivalent of "makepkg -i". An interesting side effect is
-# that pacman now considers packages inside the official repositories
-# as "local", and warns if they are newer than a custom counterpart.
 build_local() {
     #global database pool root makepkg_args repose_args sign_pkg
     if ((sign_pkg)); then
@@ -34,10 +31,6 @@ build_local() {
     sudo pacman -Syu --config="$tmp"/config --noprogressbar
 }
 
-# With an nspawn container, packages are always built against the latest
-# official packages, and are upgraded together on a local -Syu. 
-# '/pkgdest' is hardcoded in makechrootpkg, so packages are rebuilt even if
-# already available. Build products are moved to a fixed location afterwards.
 build_chroot() {
     #global CHROOT GPGKEY database pool root makechrootpkg_args repose_args sign_pkg
     declare i gpgargs pkglist PKGDEST
@@ -136,7 +129,7 @@ elif ! pacconf --repo="$database" >/dev/null; then
     exit 22
 fi
 
-# Canonicalize paths to avoid issues with chdir and relative paths.
+# Canonicalize paths to avoid relative path issues (#130)
 pool=$(realpath -e "$pool")
 root=$(realpath -e "$root")
 
@@ -176,7 +169,6 @@ if ((chroot)); then
         sudo arch-nspawn "$CHROOT"/root pacman -Syu --noconfirm
     fi
 
-    # Retrieve settings from pacman.conf and Include directives.
     pacconf --raw | sudo tee "$CHROOT"/root/etc/pacman.conf > /dev/null
 fi
 
