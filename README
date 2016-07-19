@@ -12,8 +12,8 @@ SYNOPSIS
 
 INSTALLATION
 
-  The master branch can be installed from the included PKGBUILD,
-  Makefile, or from the AUR under "aurutils-git".
+  The master branch can be installed from the included Makefile,
+  or from the AUR under "aurutils-git".
 
   https://aur.archlinux.org/packages/aurutils-git
 
