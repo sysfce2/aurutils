@@ -11,9 +11,9 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 nofetch=0 # disable flags
-declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0 # feature flags
-declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0 # makepkg flags
+declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 nofetch=0
+declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0
+declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -138,18 +138,19 @@ while getopts :B:cfLnstTu-: OPT; do
         T|+T) chtemp=1       ;;
         u|+u) update=1       ;;
         -) case "$OPTARG" in
-               chroot)    chroot=1    ;;
-               allsrc)    allsrc=1    ;;
-               ignore)    ignore=1    ;;
-               insecure)  insecure=1  ;;
-               nobuild)   nobuild=1   ;;
-               nodeps)    nodeps=1    ;;
-               nofetch)   nofetch=1   ;;
-               noversion) noversion=1 ;;
-               sign)      sign=1      ;;
-               tar)       snapshot=1  ;;
-               update)    update=1    ;;
-               allan)     rotate=1    ;;
+               chroot)    chroot=1     ;;
+               allsrc)    allsrc=1     ;;
+               ignore)    ignore=1     ;;
+               insecure)  insecure=1   ;;
+               nobuild)   nobuild=1    ;;
+               nodeps)    nodeps=1     ;;
+               nofetch)   nofetch=1    ;;
+               noversion) noversion=1  ;;
+               repo)      repo=$OPTARG ;;
+               sign)      sign=1       ;;
+               tar)       snapshot=1   ;;
+               update)    update=1     ;;
+               allan)     rotate=1     ;;
                *) usage ;;
            esac  ;;
         *) usage ;;
@@ -197,7 +198,11 @@ fi
 
 # Only select a repository when building (#127)
 if ((!nobuild)) || ((update)); then
-    read -r repo root < <(repofind -s)
+    if [[ $repo ]]; then
+        read -r root < <(repofind -p "$repo")
+    else
+        read -r repo root < <(repofind -s)
+    fi
     msg2 "Using [$repo] repository"
 
     # Use a cache directory as package pool (#105)

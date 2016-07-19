@@ -79,6 +79,11 @@ Do not update existing git directories.
 Disable version checking for packages in the queue.
 .RE
 
+.B \--repo
+.RS
+Use the specified repository instead of an interactive selection.
+.RE
+
 .SS makepkg
 The default set of options is \fImakepkg -crs\fR.
 
@@ -128,10 +133,10 @@ Parent directory for temporary files.
 .RE
 
 .SH NOTES
-Version checks assume there are no mismatches between \fI.SRCINFO
-\fRand \fIPKGBUILD \fRfiles. When enabled (\fI--noversion\fR is not
-specified), build files are only retrieved if the remote (RPC) version
-is newer than a version in the pacman sync database.
+When version checks are enabled (\fI--noversion\fR is not specified),
+build files are only retrieved if the remote (RPC) version is newer
+than a version in the pacman database. Checks assume there are no
+mismatches between \fI.SRCINFO\fR and \fIPKGBUILD\fR files.
 
 The depends_\fIarch \fRarray (as introduced with pacman 4.2) is merged
 with regular depends in the RPC. \fBaursync \fRworkarounds this by

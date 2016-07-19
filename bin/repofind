@@ -5,7 +5,7 @@ set -o pipefail
 argv0=repofind
 readonly PS4 argv0
 
-repofind() {
+repolist() {
     declare repo
     declare -A rset
 
@@ -18,15 +18,14 @@ repofind() {
     done
 }
 
-repocheck() {
-    declare -A rset
-    rset[$1]=$(pacconf --single --repo="$1" Server) || exit
+getpath() {
+    declare rpath
+    rpath=$(pacconf --single --repo="$1" Server) || exit
 
-    if [[ ${rset[$1]} =~ file:// ]]; then
-        printf '%s %s\n' "$1" "${rset[$1]}"
+    if [[ $rpath =~ file:// ]]; then
+        printf '%s\n' "$rpath"
     else
-        error "$argv0: $1: not a file:// repository"
-        exit 1
+        exit 2
     fi
 }
 
@@ -59,11 +58,11 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :ik:s OPT; do
+while getopts :lp:s OPT; do
     case $OPT in
-        i|+i) repofind   ;;
+        l|+l) repolist   ;;
         s|+s) reposelect ;;
-        k|+k) repocheck "$OPTARG" ;;
+        p|+p) getpath "$OPTARG" ;;
         *) plain "usage: $argv0 [-i] [-s] [-k repo]"
            exit 1 ;;
     esac
