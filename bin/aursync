@@ -199,7 +199,8 @@ fi
 # Only select a repository when building (#127)
 if ((!nobuild)) || ((update)); then
     if [[ $repo ]]; then
-        read -r root < <(repofind -p "$repo")
+        read -r root < <(pacconf --single --repo="$repo" Server)
+        root=${root#file://}
     else
         read -r repo root < <(repofind -s)
     fi

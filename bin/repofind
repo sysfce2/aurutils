@@ -19,17 +19,6 @@ repolist() {
     done
 }
 
-getpath() {
-    declare rpath
-    rpath=$(pacconf --single --repo="$1" Server) || exit
-
-    if [[ $rpath =~ ^$scheme ]]; then
-        printf '%s\n' "${rpath#$scheme}"
-    else
-        exit 2
-    fi
-}
-
 reposelect() {
     declare repo server root
     declare -A avail
@@ -59,11 +48,10 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :lp:s OPT; do
+while getopts :ls OPT; do
     case $OPT in
         l|+l) repolist   ;;
         s|+s) reposelect ;;
-        p|+p) getpath "$OPTARG" ;;
         *) plain "usage: $argv0 [-i] [-s] [-k repo]"
            exit 1 ;;
     esac
