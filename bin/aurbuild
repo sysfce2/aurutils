@@ -45,7 +45,7 @@ build_chroot() {
         [[ -r $i ]] && conf_avail+=("$i")
     done
 
-    sed -i "s@PKGDEST=/PKGDEST=$pool@g" <(cat -s "${conf_avail[@]}") > "$tmp"/makepkg.conf
+    sed "s@PKGDEST=@PKGDEST=$pool@g" <(cat -s "${conf_avail[@]}") > "$tmp"/makepkg.conf
 
     makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" \
                   -M "$tmp"/makepkg.conf "${makechrootpkg_args[@]}"
