@@ -33,7 +33,7 @@ build_local() {
 
 build_chroot() {
     #global CHROOT GPGKEY database pool root makechrootpkg_args repose_args sign_pkg
-    declare i gpgargs pkglist PKGDEST
+    declare i gpgargs pkglist conf_avail
     readarray -t pkglist < <(makepkg --packagelist)
 
     # makechrootpkg does not support GNUPGHOME. (#151)
@@ -41,28 +41,14 @@ build_chroot() {
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    # XXX Move build products manually: PKGDEST is not preserved (#120) in makechrootpkg,
-    # while variables on the sudo command line and sudo -E are subject to sudoers policy. 
-    # Specifying PKGDEST like this doesn't work anyway; variables in /etc/makepkg.conf
-    # and (after that) ~$SUDO_USER/.makepkg.conf take precedence over an existing PKGDEST.
-    # Unlike makepkg, a different config file can also not be set from the command line.
-    PKGDEST=$(pacini /etc/pacman.conf PKGDEST)
+    for i in "${XDG_CONFIG_HOME:-$HOME/.config}"/pacman/makepkg.conf /etc/makepkg.conf; do
+        [[ -r $i ]] && conf_avail+=("$i")
+    done
 
-    if [[ ! $PKGDEST && -r ~/.makepkg.conf ]]; then
-        PKGDEST=$(pacini ~/.makepkg.conf PKGDEST)
-    fi
+    sed -i "s@PKGDEST=/PKGDEST=$pool@g" <(cat -s "${conf_avail[@]}") > "$tmp"/makepkg.conf
 
-    if [[ $PKGDEST ]]; then
-        dequote PKGDEST
-    fi
-
-    makechrootpkg "${makechrootpkg_args[@]}" -d "$pool" -d "$root" -r "$CHROOT"
-
-    if [[ ${PKGDEST:-$PWD} != "$pool" ]]; then
-        for i in "${pkglist[@]}"; do
-            find "${PKGDEST:-$PWD}" -type f -regex ".+/$i.pkg.+?" -execdir mv -v {} -t "$pool" \;
-        done
-    fi
+    makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" \
+                  -M "$tmp"/makepkg.conf "${makechrootpkg_args[@]}"
 
     # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
     # not being set. (#130)
@@ -79,12 +65,6 @@ build_chroot() {
     fi
 
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
-}
-
-dequote() {
-    declare -n sub=$1
-    sub=${sub#\"}; sub=${sub%\"}
-    sub=${sub#\'}; sub=${sub%\'}
 }
 
 trap_exit() {
