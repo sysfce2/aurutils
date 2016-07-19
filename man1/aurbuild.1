@@ -14,7 +14,7 @@ aurbuild \- build packages to a local repository
 .YS
 
 .SH DESCRIPTION
-Build packages, adding the results to a local repository (a repository
+Build packages, adding the results to a local repository (usually
 configured with a \fIfile:// \fRprefix \fRin \fIpacman.conf\fR).
 
 It is assumed that build directories are located in the current
@@ -73,9 +73,6 @@ the current system, and the container is fully upgraded (\fIpacman
 -Syu\fR). Changes to the pacman database are \fBnot \fRpropagated to
 the local system; packages must be installed and updated separately,
 typically through \fIpacman -Syu <package_name>\fR.
-
-aurbuild itself makes no assumption on the \fIfile://\fR prefix, though
-the repository pool and root must be writeable by the calling user.
 
 .SH SEE ALSO
 .BR pacconf (1),

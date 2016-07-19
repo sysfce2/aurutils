@@ -3,7 +3,8 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 argv0=repofind
-readonly PS4 argv0
+scheme='file://'
+readonly PS4 argv0 scheme
 
 repolist() {
     declare repo
@@ -12,7 +13,7 @@ repolist() {
     for repo in $(pacconf --repo-list); do
         rset[$repo]=$(pacconf --single --repo="$repo" Server)
 
-        if [[ ${rset[$repo]} =~ file:// ]]; then
+        if [[ ${rset[$repo]} =~ ^$scheme ]]; then
             printf '%s %s\n' "$repo" "${rset[$repo]}"
         fi
     done
@@ -22,8 +23,8 @@ getpath() {
     declare rpath
     rpath=$(pacconf --single --repo="$1" Server) || exit
 
-    if [[ $rpath =~ file:// ]]; then
-        printf '%s\n' "$rpath"
+    if [[ $rpath =~ ^$scheme ]]; then
+        printf '%s\n' "${rpath#$scheme}"
     else
         exit 2
     fi
@@ -35,7 +36,7 @@ reposelect() {
 
     while read -r repo server; do
         avail[$repo]=$server
-    done < <(repofind)
+    done < <(repolist)
 
     if ((${#avail[@]} > 1)); then
         PS3='Select a repository: '
@@ -45,11 +46,11 @@ reposelect() {
     elif [[ ${avail[@]} ]]; then
         repo=${!avail[*]}
     else
-        error "$argv0: no file:// repository"
+        error "$argv0: no $scheme repository"
         exit 2
     fi
 
-    root=${avail[$repo]#file://}
+    root=${avail[$repo]#$scheme}
 
     printf '%s %s\n' "$repo" "$root"
 }
