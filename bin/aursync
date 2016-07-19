@@ -139,7 +139,7 @@ while getopts :B:cfLnstTu-: OPT; do
         u|+u) update=1       ;;
         -) case "$OPTARG" in
                chroot)    chroot=1    ;;
-               allsrc)    allsrc=1  ;;
+               allsrc)    allsrc=1    ;;
                ignore)    ignore=1    ;;
                insecure)  insecure=1  ;;
                nobuild)   nobuild=1   ;;
