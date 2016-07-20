@@ -33,7 +33,7 @@ build_local() {
 }
 
 build_chroot() {
-    #global GNUPGHOME makepkg_conf pool root makechrootpkg_args GPGKEY repose_args database
+    #global HOME GNUPGHOME GPGKEY CHROOT makepkg_conf pool root makechrootpkg_args repose_args database
     declare p pkglist gpgargs
     readarray -t pkglist < <(makepkg --packagelist)
 
@@ -84,6 +84,11 @@ trap_exit() {
     fi
 }
 
+usage() {
+    plain "usage: $argv0 [-cs] -a <queue> -d <repo> -p <pool> -r <root> [--] ARGS"
+    exit 1
+}
+
 trap 'exit' INT
 trap 'trap_exit' EXIT
 
@@ -100,31 +105,27 @@ while getopts a:cd:p:r:s OPT; do
         r|+r) root="$OPTARG" ;;
         s|+s) repose_args+=(--sign)
               sign_pkg=1 ;;
-        *) plain "usage: $argv0 [-cs] -a <queue> -d <repo> -p <pool> -r <root> [--] ARGS"
-           exit 1 ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
 if [[ ! $queue || ! $database || ! $pool || ! $root ]]; then
-    error "$argv0: empty arguments"
-    exit 1
-elif [[ ! -r $queue ]]; then
-    error "$argv0: \'$queue\': permission denied"
-    exit 13
-elif [[ -d $queue ]]; then
-    error "$argv0: \'$queue\': is a directory"
-    exit 21
-elif ! pacconf --repo="$database" >/dev/null; then
-    exit 22
+    usage
 fi
 
 # Canonicalize paths to avoid relative path issues (#130)
 pool=$(realpath -e "$pool")
 root=$(realpath -e "$root")
 
-if [[ ! -w $root ]]; then
+if [[ ! -r $queue ]]; then
+    error "$argv0: permission denied ($queue)"
+    exit 13
+elif [[ -d $queue ]]; then
+    error "$argv0: is a directory ($queue)"
+    exit 21
+elif [[ ! -w $root ]]; then
     error "$argv0: $root: permission denied"
     exit 13
 elif [[ ! -w $pool ]]; then
@@ -136,6 +137,8 @@ elif [[ ! -d $root ]]; then
 elif [[ ! -d $pool ]]; then
     error "$argv0: $pool: not a directory"
     exit 20
+elif ! pacconf --repo="$database" >/dev/null; then
+    exit 22
 fi
 
 # Reset option array if arguments are specified after --
