@@ -31,40 +31,24 @@ build_local() {
 }
 
 build_chroot() {
-    #global HOME GNUPGHOME GPGKEY CHROOT makepkg_conf pool root makechrootpkg_args repose_args database
-    declare p pkglist gpgargs
-    readarray -t pkglist < <(makepkg --packagelist)
+    #global HOME GNUPGHOME GPGKEY CHROOT pool root makechrootpkg_args repose_args database
+    declare p gpgargs
 
     # makechrootpkg does not support GNUPGHOME. (#151)
     if [[ ${GNUPGHOME:-$HOME/.gnupg} != $HOME/.gnupg ]]; then
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    # makechrootpkg loads PKGDEST from the user's makepkg.conf, and if unset,
-    # from /etc/makepkg.conf.
-    # See also: https://bugs.archlinux.org/task/44827
-    if [[ -r ${XDG_CONFIG_HOME:=$HOME/.config}/pacman/makepkg.conf ]]; then
-        makepkg_conf=$XDG_CONFIG_HOME/pacman/makepkg.conf
-    elif [[ -r $HOME/.makepkg.conf ]]; then
-        makepkg_conf=$HOME/.makepkg.conf
-    else
-        error "$argv0: $USER: makepkg.conf not found"
-        exit 2
-    fi
-
-    # XXX As makechrootpkg has no --config option, use a section in the user configuration. 
-    # This section is removed on exit, as to not influence an PKGDEST outside aurbuild.
-    if (( $(grep -c %aurbuild "$makepkg_conf") != 2 )); then
-        error "$argv0: $makepkg_conf: %aurbuild not found"
-        exit 2
-    else
-        sed -i "/%aurbuild/,/%aurbuild/c\#%aurbuild\nPKGDEST=\"$pool\"\n#%aurbuild" "$makepkg_conf"
-    fi
-
-    makechrootpkg -d "$pool" -d "$root" -r "$CHROOT"  "${makechrootpkg_args[@]}"
+    # makechrootpkg load_vars() reads PKGDEST from /etc/makepkg.conf,
+    # _if_ this variable was not set already. Similarly, when not in
+    # /etc/makepkg.conf, it is read from ~/.makepkg.conf.  Note that
+    # variables specified on the command line are subject to sudo
+    # policy; without the ALL privilege, setenv or SETENV: is
+    # required.  See sudo(8) and sudoers(5) for details.
+    sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" "${makechrootpkg_args[@]}"
 
     # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
-    # not being set. (#130)
+    # not being set; sign packages manually. (#130)
     if ((sign_pkg)); then
         gpgargs=(--verbose --detach-sign --no-armor)
 
@@ -72,7 +56,7 @@ build_chroot() {
             gpgargs+=(-u "$GPGKEY")
         fi
 
-        for p in "${pkglist[@]}"; do
+        for p in $(makepkg --packagelist); do
             find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir gpg "${gpgargs[@]}" {} \;
         done
     fi
@@ -81,11 +65,6 @@ build_chroot() {
 }
 
 trap_exit() {
-    #global makepkg_conf
-    if ((chroot)); then
-        sed -i '/%aurbuild/,/%aurbuild/{//!d}' "$makepkg_conf"
-    fi  
-
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
