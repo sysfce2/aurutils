@@ -7,20 +7,7 @@ aurweb="https://aur.archlinux.org"
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly PS4 argv0 aurweb tmp
-
-# Default options
-declare -i string=0 parser=1
-
-# The actual "match" is done by aurweb; as such, string is similar
-# to grep --fixed-strings.
-match() {
-    #global string aurgrep_args
-    if ((string)); then
-        printf '%s\n' "$@"
-    else
-        aurgrep "${aurgrep_args[@]}" "$1"
-    fi
-}
+declare -i list=1 format=0
 
 # Split by 150 arguments to prevent HTTP 414.
 # https://bugs.archlinux.org/task/49089
@@ -40,19 +27,6 @@ split() {
     }'
 }
 
-getjson() {
-    if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
-        # Check if files were retrieved (return 1 if empty stdin)
-        if [[ ! -s "$tmp"/index.html ]]; then
-            return 1
-        fi
-        json_merge "$tmp"/index.html* > "$tmp"/raw
-        json_count "$tmp"/raw
-    else
-        exit $?
-    fi
-}
-
 # Merge to single JSON structure, see jshon(1).
 json_merge() {
     awk '{print}' "$@" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
@@ -68,11 +42,31 @@ json_count() {
     fi
 }
 
-json_parse() {
-    case "$parser" in
-        0) tee   ;;
-        1) brief ;;
-        2) long  ;;
+getjson() {
+    if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
+        if [[ ! -s "$tmp"/index.html ]]; then
+            return 1
+        fi
+        json_merge "$tmp"/index.html* > "$tmp"/raw
+        json_count "$tmp"/raw
+    else
+        exit $?
+    fi
+}
+
+match() {
+    case "$1" in
+        0) printf '%s\n' "${@:2}" ;;
+        1) aurgrep    "$2" ;;
+        2) aurgrep -b "$2" ;;
+    esac
+}
+
+parse() {
+    case "$1" in
+        0) brief ;;
+        1) long  ;;
+        2) tee   ;;
     esac
 }
 
@@ -83,10 +77,8 @@ brief() {
         read -r NumVotes
         read -r Description
     }; do
-        # libmakepkg misses PURPLE and CYAN
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" \
                "$Name" "$Version" "$NumVotes" "$Description"
-        # The RPC fills empty fields with "null", removing the need for jshon -C.
     done < <(jshon -Q -a -e results -a -e Name -u -p -e Version \
                    -u -p -e NumVotes -u -p -e Description -u)
 }
@@ -135,12 +127,12 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :Fbru:v OPT; do
+while getopts :Fbrv OPT; do
     case $OPT in
-        F|+F) string=1 ;;
-        b|+b) aurgrep_args+=(-b) ;;
-        r|+r) parser=0 ;;
-        v|+v) parser=2 ;;
+        F|+F) list=0   ;; # fixed
+        b|+b) list=2   ;; # pkgbase (1: pkgname)
+        r|+r) format=2 ;; # json
+        v|+v) format=1 ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -151,6 +143,6 @@ if ((!$#)); then
     exit 1
 fi
 
-match "$@" | split | getjson | json_parse
+match "$list" "$@" | split | getjson | parse "$format"
 
 # vim: set et sw=4 sts=4 ft=sh:
