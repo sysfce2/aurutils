@@ -45,7 +45,7 @@ build_chroot() {
         [[ -r $i ]] && conf_avail+=("$i")
     done
 
-    sed "s@PKGDEST=@PKGDEST=$pool@g" <(cat -s "${conf_avail[@]}") > "$tmp"/makepkg.conf
+    cat -s "${conf_avail[@]}" <(printf '%s=%s' PKGDEST "$pool") > "$tmp"/makepkg.conf
 
     makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" \
                   -M "$tmp"/makepkg.conf "${makechrootpkg_args[@]}"
@@ -148,7 +148,6 @@ if ((chroot)); then
         # this updates the root once before starting package build process to prevent that
         sudo arch-nspawn "$CHROOT"/root pacman -Syu --noconfirm
     fi
-
     pacconf --raw | sudo tee "$CHROOT"/root/etc/pacman.conf > /dev/null
 fi
 
