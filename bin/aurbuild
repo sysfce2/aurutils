@@ -97,9 +97,12 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ ! $queue || ! $database || ! $pool || ! $root ]]; then
-    usage
-fi
+for arg in queue database pool root; do
+    [[ ! ${!arg} ]] && error "$argv0: $arg: missing argument"
+    err=1
+done
+
+((err)) && usage
 
 # Canonicalize paths to avoid relative path issues (#130)
 pool=$(realpath -e "$pool")
