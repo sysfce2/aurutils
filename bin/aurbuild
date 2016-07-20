@@ -4,13 +4,11 @@ set -e
 
 argv0=aurbuild
 base=$PWD
-makepkg_conf=${XDG_CONFIG_HOME:-$HOME/.config}/pacman/makepkg.conf
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
 readonly PS4 argv0 base makepkg_conf tmp
 declare -i chroot=0 sign_pkg=0
 
-# Use an option array to allow later modification by getopts.
 makepkg_args=(-Lcrs)
 makechrootpkg_args=(-cu)
 repose_args=(-vf)
@@ -42,13 +40,22 @@ build_chroot() {
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    if [[ ! -r $makepkg_conf ]]; then
-        error "$argv0: $makepkg_conf: permission denied"
-        exit 13
+    # makechrootpkg loads PKGDEST from the user's makepkg.conf, and if unset,
+    # from /etc/makepkg.conf.
+    # See also: https://bugs.archlinux.org/task/44827
+    if [[ -r ${XDG_CONFIG_HOME:=$HOME/.config}/pacman/makepkg.conf ]]; then
+        makepkg_conf=$XDG_CONFIG_HOME/pacman/makepkg.conf
+    elif [[ -r $HOME/.makepkg.conf ]]; then
+        makepkg_conf=$HOME/.makepkg.conf
+    else
+        error "$argv0: $USER: makepkg.conf not found"
+        exit 2
     fi
 
+    # XXX As makechrootpkg has no --config option, use a section in the user configuration. 
+    # This section is removed on exit, as to not influence an PKGDEST outside aurbuild.
     if (( $(grep -c %aurbuild "$makepkg_conf") != 2 )); then
-        error "$argv0: $makepkg_conf: no %aurbuild section"
+        error "$argv0: $makepkg_conf: %aurbuild not found"
         exit 2
     else
         sed -i "/%aurbuild/,/%aurbuild/c\#%aurbuild\nPKGDEST=\"$pool\"\n#%aurbuild" "$makepkg_conf"
