@@ -98,8 +98,10 @@ shift $((OPTIND - 1))
 OPTIND=1
 
 for arg in queue database pool root; do
-    [[ ! ${!arg} ]] && error "$argv0: $arg: missing argument"
-    err=1
+    if [[ ! ${!arg} ]]; then
+        error "$argv0: $arg: missing argument"
+        err=1
+    fi
 done
 
 ((err)) && usage
@@ -133,9 +135,9 @@ fi
 # Reset option array if arguments are specified after --
 if (($#)); then
     if ((chroot)); then
-        makechrootpkg_args+=("$@")
+        makechrootpkg_args=("$@")
     else
-        makepkg_args+=("$@")
+        makepkg_args=("$@")
     fi
 fi
 
