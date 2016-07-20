@@ -33,7 +33,7 @@ build_local() {
 
 build_chroot() {
     #global CHROOT GPGKEY database pool root makechrootpkg_args repose_args sign_pkg
-    declare i gpgargs pkglist conf_avail
+    declare i gpgargs pkglist
     readarray -t pkglist < <(makepkg --packagelist)
 
     # makechrootpkg does not support GNUPGHOME. (#151)
@@ -41,14 +41,14 @@ build_chroot() {
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    for i in "${XDG_CONFIG_HOME:-$HOME/.config}"/pacman/makepkg.conf /etc/makepkg.conf; do
-        [[ -r $i ]] && conf_avail+=("$i")
-    done
+    if (( $(grep -c %aurbuild /etc/makepkg.conf) != 2 )); then
+        error "$argv0: /etc/makepkg.conf: no %aurbuild section"
+        exit 2
+    else
+        sudo sed -i "/%aurbuild/,/%aurbuild/c\%aurbuild\nPKGDEST=\"$pool\"\n%aurbuild\n" /etc/makepkg.conf
+    fi
 
-    cat -s "${conf_avail[@]}" <(printf '%s=%s' PKGDEST "$pool") > "$tmp"/makepkg.conf
-
-    makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" \
-                  -M "$tmp"/makepkg.conf "${makechrootpkg_args[@]}"
+    sudo makechrootpkg -d "$pool" -d "$root" -r "$CHROOT"  "${makechrootpkg_args[@]}"
 
     # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
     # not being set. (#130)
@@ -68,6 +68,10 @@ build_chroot() {
 }
 
 trap_exit() {
+    if ((chroot)); then
+        sudo sed -i '/%aurbuild/,/%aurbuild/{//!d}' /etc/makepkg.conf
+    fi  
+
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
