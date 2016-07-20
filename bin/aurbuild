@@ -4,9 +4,10 @@ set -e
 
 argv0=aurbuild
 base=$PWD
+makepkg_conf=/etc/makepkg.conf
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
-readonly PS4 argv0 base tmp
+readonly PS4 argv0 base makepkg_conf tmp
 declare -i chroot=0 sign_pkg=0
 
 # Use an option array to allow later modification by getopts.
@@ -32,8 +33,8 @@ build_local() {
 }
 
 build_chroot() {
-    #global CHROOT GPGKEY database pool root makechrootpkg_args repose_args sign_pkg
-    declare i gpgargs pkglist
+    #global GNUPGHOME makepkg_conf pool root makechrootpkg_args GPGKEY repose_args database
+    declare p pkglist gpgargs
     readarray -t pkglist < <(makepkg --packagelist)
 
     # makechrootpkg does not support GNUPGHOME. (#151)
@@ -41,14 +42,19 @@ build_chroot() {
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    if (( $(grep -c %aurbuild /etc/makepkg.conf) != 2 )); then
-        error "$argv0: /etc/makepkg.conf: no %aurbuild section"
-        exit 2
-    else
-        sudo sed -i "/%aurbuild/,/%aurbuild/c\%aurbuild\nPKGDEST=\"$pool\"\n%aurbuild\n" /etc/makepkg.conf
+    if [[ ! -r $makepkg_conf ]]; then
+        error "$argv0: $makepkg_conf: permission denied"
+        exit 13
     fi
 
-    sudo makechrootpkg -d "$pool" -d "$root" -r "$CHROOT"  "${makechrootpkg_args[@]}"
+    if (( $(grep -c %aurbuild "$makepkg_conf") != 2 )); then
+        error "$argv0: $makepkg_conf: no %aurbuild section"
+        exit 2
+    else
+        sudo sed -i "/%aurbuild/,/%aurbuild/c\%aurbuild\nPKGDEST=\"$pool\"\n%aurbuild\n" "$makepkg_conf"
+    fi
+
+    makechrootpkg -d "$pool" -d "$root" -r "$CHROOT"  "${makechrootpkg_args[@]}"
 
     # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY
     # not being set. (#130)
@@ -59,8 +65,8 @@ build_chroot() {
             gpgargs+=(-u "$GPGKEY")
         fi
 
-        for i in "${pkglist[@]}"; do
-            find "$pool" -type f -regex ".+/$i.pkg.+?" -execdir gpg "${gpgargs[@]}" {} \;
+        for p in "${pkglist[@]}"; do
+            find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir gpg "${gpgargs[@]}" {} \;
         done
     fi
 
@@ -68,8 +74,9 @@ build_chroot() {
 }
 
 trap_exit() {
+    #global makepkg_conf
     if ((chroot)); then
-        sudo sed -i '/%aurbuild/,/%aurbuild/{//!d}' /etc/makepkg.conf
+        sudo sed -i '/%aurbuild/,/%aurbuild/{//!d}' "$makepkg_conf"
     fi  
 
     if [[ ! -o xtrace ]]; then
