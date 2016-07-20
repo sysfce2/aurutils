@@ -4,7 +4,7 @@ set -e
 
 argv0=aurbuild
 base=$PWD
-makepkg_conf=/etc/makepkg.conf
+makepkg_conf=${XDG_CONFIG_HOME:-$HOME/.config}/pacman/makepkg.conf
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
 readonly PS4 argv0 base makepkg_conf tmp
@@ -51,7 +51,7 @@ build_chroot() {
         error "$argv0: $makepkg_conf: no %aurbuild section"
         exit 2
     else
-        sudo sed -i "/%aurbuild/,/%aurbuild/c\#%aurbuild\nPKGDEST=\"$pool\"\n#%aurbuild\n" "$makepkg_conf"
+        sed -i "/%aurbuild/,/%aurbuild/c\#%aurbuild\nPKGDEST=\"$pool\"\n#%aurbuild\n" "$makepkg_conf"
     fi
 
     makechrootpkg -d "$pool" -d "$root" -r "$CHROOT"  "${makechrootpkg_args[@]}"
@@ -76,7 +76,7 @@ build_chroot() {
 trap_exit() {
     #global makepkg_conf
     if ((chroot)); then
-        sudo sed -i '/%aurbuild/,/%aurbuild/{//!d}' "$makepkg_conf"
+        sed -i '/%aurbuild/,/%aurbuild/{//!d}' "$makepkg_conf"
     fi  
 
     if [[ ! -o xtrace ]]; then
