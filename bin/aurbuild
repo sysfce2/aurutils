@@ -51,7 +51,7 @@ build_chroot() {
         error "$argv0: $makepkg_conf: no %aurbuild section"
         exit 2
     else
-        sudo sed -i "/%aurbuild/,/%aurbuild/c\%aurbuild\nPKGDEST=\"$pool\"\n%aurbuild\n" "$makepkg_conf"
+        sudo sed -i "/%aurbuild/,/%aurbuild/c\#%aurbuild\nPKGDEST=\"$pool\"\n#%aurbuild\n" "$makepkg_conf"
     fi
 
     makechrootpkg -d "$pool" -d "$root" -r "$CHROOT"  "${makechrootpkg_args[@]}"
