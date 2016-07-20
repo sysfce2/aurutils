@@ -206,7 +206,7 @@ if ((!nobuild)) || ((update)); then
     fi
 
     # Use a cache directory as package pool (#105)
-    if ! grep -Fqxf <(printf '%s\n' "$root") <(pacconf CacheDir); then
+    if ! grep -qx "$root" <(pacconf CacheDir); then
         error "$argv0: $root: not a cache directory"
         exit 1
     elif [[ ! -d $root ]]; then
@@ -217,7 +217,7 @@ if ((!nobuild)) || ((update)); then
         exit 13
     fi
 
-    msg2 "Using [$repo] repository"        
+    msg2 "Using [$repo] repository"
 fi
 
 # Reuse selection for repofind (#82)
