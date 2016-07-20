@@ -8,7 +8,10 @@ https://github.com/vodik
     repose advice
 
 https://github.com/runical
-    man pages
+    man pages, testing
+
+https://projects.archlinux.org
+    makechrootpkg advice
 
 https://github.com/halfwit
     testing
@@ -17,7 +20,10 @@ https://gitlab.com/u/fbt
     misc
 
 Upstream authors
-    aurweb, jshon, pacutils, expac, repose, makepkg, aria2, datamash
+    aurweb, jshon, pacutils, expac, repose, makepkg, devtools, aria2, datamash, vifm, shellcheck
 
 Ideas
-    pacaur, bauerbill, pkgbuilder
+    cower, pacaur, bauerbill, pkgbuilder
+
+See also
+    repoctl <https://github.com/cassandra/repoctl>
