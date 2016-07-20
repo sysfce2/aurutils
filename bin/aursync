@@ -204,13 +204,20 @@ if ((!nobuild)) || ((update)); then
     else
         read -r repo root < <(repofind -s)
     fi
-    msg2 "Using [$repo] repository"
 
     # Use a cache directory as package pool (#105)
     if ! grep -Fqxf <(printf '%s\n' "$root") <(pacconf CacheDir); then
-        error "$argv0: cache directory not configured"
+        error "$argv0: $root: not a cache directory"
         exit 1
+    elif [[ ! -d $root ]]; then
+        error "$argv0: $root: not a directory"
+        exit 20
+    elif [[ ! -w $root ]]; then
+        error "$argv0: $root: permission denied"
+        exit 13
     fi
+
+    msg2 "Using [$repo] repository"        
 fi
 
 # Reuse selection for repofind (#82)
