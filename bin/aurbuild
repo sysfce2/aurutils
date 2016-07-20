@@ -140,15 +140,15 @@ if ((chroot)); then
     CHROOT=/var/lib/aurbuild
 
     if [[ ! -d $CHROOT/root ]]; then
+        pacconf --raw > "$tmp"/pacman.conf
         sudo install -d "$CHROOT"
-        sudo mkarchroot "$CHROOT"/root base base-devel
+        sudo mkarchroot "$CHROOT"/root -C "$tmp"/pacman.conf base base-devel
     else
         # since makechrootpkg restores the user chroot to the state from root chroot
         # base and base-devel packages are reupdated before each package build
         # this updates the root once before starting package build process to prevent that
         sudo arch-nspawn "$CHROOT"/root pacman -Syu --noconfirm
     fi
-    pacconf --raw | sudo tee "$CHROOT"/root/etc/pacman.conf > /dev/null
 fi
 
 # Read from FD 3 to choose providers with makepkg (#21)
