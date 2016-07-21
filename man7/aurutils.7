@@ -2,7 +2,7 @@
 .TH AURUTILS 7 2016-05-03 AURUTILS
 .SH NAME
 aurutils \- helper tools for the arch user repository
-.
+
 .SH PROGRAMS
 The below gives a short overview; see the respective documentation for
 details.
@@ -12,61 +12,61 @@ details.
 Build packages to a local repository. Local or nspawn builds
 are possible.
 .RE
-.
+
 .P
 .BR aurchain (1)
 .RS 4
 Solve and order dependencies using the AUR RPC.
 .RE
-.
+
 .P
 .BR aurcheck (1)
 .RS 4
 Check packages in a given repo for AUR updates.
 .RE
-.
+
 .P
 .BR aurqueue (1)
 .RS 4
 Order dependencies using .SRCINFO files.
 .RE
-.
+
 .P
 .BR aursearch (1)
 .RS 4
 Search AUR package names by a PCRE pattern.
 .RE
-.
+
 .P
 .BR aursift (1)
 .RS 4
 Filter packages in the Arch Linux repositories.
 .RE
-.
+
 .P
 .BR aursync (1)
 .RS 4
 Download and build AUR packages automatically.
 .RE
-.
+
 .P
 .BR repofind (1)
 .RS 4
 Display information on file:// repositories.
 .RE
-.
+
 .P
 .BR repoman (1)
 .RS 4
 Run pacman, only considering the official repositories.
 .RE
-.
+
 .SH EXIT STATUS
 Programs follow a subset of errno(3), or preserve command status where
 applicable.
 .P
 See also EXIT STATUS in curl(1), aria2c(1).
-.
+
 .SH CREATING A LOCAL REPOSITORY 
 Configure the local repository in a separate pacman configuration,
 for example in /etc/pacman.d/custom:
@@ -119,12 +119,12 @@ Synchronize pacman:
 When using \fIaursync(1)\fR, the repository root must also be a
 package cache directory.
 .YS
-.
+
 .SY Tip:
 Consider separate repositories for different purposes, such as
 version control packages.
 .YS
-.
+
 .SH MIGRATING FOREIGN PACKAGES
 If built packages are available, move them to the new location, and
 follow the instructions in \fBCreating a local repository\fR.
@@ -151,7 +151,7 @@ To keep the repository updated when building with makepkg, set
   $ alias custom='repose -vf custom -r /var/cache/pacman/custom -p /var/cache/pacman/custom'
 
 .EE
-.
+
 .SH EXAMPLES
 Run actions on AUR targets in total order:
 .EX
@@ -172,8 +172,14 @@ Build all packages in the \fIpkgbuilds \fRgithub repository:
 Search for Perl modules that are both in the AUR or official repositories:
 .EX
 
-  $ aurgrep '^perl-.+' >pkgs
+  $ aurgrep '^perl-.+' > pkgs
   $ grep -Fxvf <(aursift -S < pkgs) pkgs
+
+.EE
+Search for packages with both 'wm' and 'git' in the name:
+.EX
+
+  $ aursearch '(?.*=wm)(?.*=git)'
 
 .EE
 Build \fIplasma-desktop-git \fRand its dependencies in an nspawn container:
@@ -216,7 +222,7 @@ Use helpers wich honor the \fIPACMAN \fRvariable or cower with a repository:
 .SY Note:
 Unlike repofind, these only check updates for installed packages.
 .YS
-.
+
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
