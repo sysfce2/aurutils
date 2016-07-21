@@ -45,7 +45,7 @@ sync_list() {
 }
 
 while getopts :bt OPT; do
-    case $OPT in
+    case "$OPT" in
         b|+b) pkgbase=1     ;;
         t|+t) delay=$OPTARG ;;
     esac
@@ -72,7 +72,7 @@ cd_safe "$cache"
 sync_list "$aurweb/$list" || exit
 
 # Remove the generation date before matching.
-if ! grep -P -- "$1" <(tail -n +2 "${list%.*}"); then
+if ! pcregrep "$@" <(tail -n +2 "${list%.*}"); then
     error "$argv0: no matches found"
     exit 1
 fi
