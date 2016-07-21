@@ -146,11 +146,12 @@ while getopts :B:cfLnstTu-: OPT; do
                nodeps)    nodeps=1     ;;
                nofetch)   nofetch=1    ;;
                noversion) noversion=1  ;;
-               repo)      repo=$OPTARG ;;
                sign)      sign=1       ;;
                tar)       snapshot=1   ;;
                update)    update=1     ;;
                allan)     rotate=1     ;;
+               repo) repo=${!OPTIND}
+                     shift ;;
                *) usage ;;
            esac  ;;
         *) usage ;;
