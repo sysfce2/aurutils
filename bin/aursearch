@@ -47,6 +47,7 @@ getjson() {
         if [[ ! -s "$tmp"/index.html ]]; then
             return 1
         fi
+
         json_merge "$tmp"/index.html* > "$tmp"/raw
         json_count "$tmp"/raw
     else
@@ -55,11 +56,21 @@ getjson() {
 }
 
 match() {
-    case "$1" in
-        0) printf '%s\n' "${@:2}" ;;
-        1) aurgrep    "$2" ;;
-        2) aurgrep -b "$2" ;;
-    esac
+    declare e ptr
+
+    if (($1)); then
+        for e in "${@:2}"; do
+            ptr+=(-e "$e")
+        done
+
+        if (($1 == 2)); then
+            aurgrep -b -- "${ptr[@]}"
+        else
+            aurgrep -- "${ptr[@]}"
+        fi
+    else
+        printf '%s\n' "${@:2}"
+    fi
 }
 
 parse() {

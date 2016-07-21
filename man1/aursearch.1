@@ -10,8 +10,9 @@ aursearch \- search AUR package names by pcre pattern
 .YS
 
 .SH DESCRIPTION
-Search the AUR for packages. The argument is a PCRE pattern which is
-matched against the AUR.
+\fBaursearch\fR searches the AUR by a PCRE pattern. If the query
+contains multiple patterns, the union of all pattern results is
+returned.
 
 .SH OPTIONS
 .B \-F
@@ -39,9 +40,10 @@ As the AUR RPC is limited to GET requests, queries are split by 150
 arguments to avoid HTTP 414 errors (FS#49089). The results are merged
 to a single JSON structure.
 
-PCRE searches are done by matching a pattern against
-\fIpackages.gz\fR, and querying the result with the RPC. This is done
-as the AUR itself has no regex support (FS#49099).
+PCRE searches are done by matching regular expressions against
+\fIpackages.gz\fR or \fIpkgbase.gz\fR, and querying the result with
+the RPC. This is done as the AUR itself has no regex support
+(FS#49099).
 
 .SH SEE ALSO
 .BR aria2c (1),
