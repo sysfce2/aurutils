@@ -147,7 +147,7 @@ if ((chroot)); then
     if [[ ! -d $CHROOT/root ]]; then
         pacconf --raw > "$tmp"/pacman.conf
         sudo install -d "$CHROOT"
-        sudo mkarchroot "$CHROOT"/root -C "$tmp"/pacman.conf base base-devel
+        sudo mkarchroot -C "$tmp"/pacman.conf "$CHROOT"/root base base-devel
     else
         # since makechrootpkg restores the user chroot to the state from root chroot
         # base and base-devel packages are reupdated before each package build
