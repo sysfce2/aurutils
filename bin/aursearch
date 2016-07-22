@@ -7,7 +7,8 @@ aurweb="https://aur.archlinux.org"
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly PS4 argv0 aurweb tmp
-declare -i list=1 format=0
+format=short
+list=pkgname
 
 # Split by 150 arguments to prevent HTTP 414.
 # https://bugs.archlinux.org/task/49089
@@ -27,61 +28,22 @@ split() {
     }'
 }
 
-# Merge to single JSON structure, see jshon(1).
-json_merge() {
-    awk '{print}' "$@" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
-}
-
-# Check for results, only print if non-zero (#96)
-json_count() {
-    if [[ $(jshon -F "$1" -e 0 -e resultcount -u) -gt 0 ]]; then
-        cat "$1"
-    else
-        error "$argv0: no matches found"
-        exit 1
-    fi
-}
-
 getjson() {
     if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
-        if [[ ! -s "$tmp"/index.html ]]; then
-            return 1
-        fi
+        declare out=("$tmp"/index.html*)
 
-        json_merge "$tmp"/index.html* > "$tmp"/raw
-        json_count "$tmp"/raw
+        if [[ -s ${out[0]} && $(jshon -F "${out[0]}" -e resultcount -u) -gt 0 ]]; then
+            awk '{print}' "${out[@]}" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+        else
+            error "$argv0: no results found"
+            exit 1
+        fi
     else
         exit $?
     fi
 }
 
-match() {
-    declare e ptr
-
-    if (($1 > 0)); then
-        for e in "${@:2}"; do
-            ptr+=(-e "$e")
-        done
-
-        if (($1 == 2)); then
-            aurgrep -b -- "${ptr[@]}"
-        else
-            aurgrep -- "${ptr[@]}"
-        fi
-    else
-        printf '%s\n' "${@:2}"
-    fi
-}
-
-parse() {
-    case "$1" in
-        0) brief ;;
-        1) long  ;;
-        2) tee   ;;
-    esac
-}
-
-brief() {
+json_short() {
     while {
         read -r Name
         read -r Version
@@ -94,7 +56,7 @@ brief() {
                    -u -p -e NumVotes -u -p -e Description -u)
 }
 
-long() {
+json_long() {
     while {
         read -r Name
         read -r PackageBase
@@ -126,6 +88,34 @@ long() {
                    -u -p -e LastModified -u)
 }
 
+match() {
+    declare e ptr args
+
+    for e in "${@:2}"; do
+        ptr+=(-e "$e")
+    done            
+
+    case "$1" in
+        pkgbase)
+            args+=(-b)
+            ;;&
+        pkgname|pkgbase)
+            aurgrep "${args[@]}" -- "${ptr[@]}"
+            ;;
+        fixed)
+            printf '%s\n' "${@:2}"
+            ;;
+    esac
+}
+
+parse() {
+    case "$1" in
+        short) json_short ;;
+        long)  json_long  ;;
+        none)  tee ;;
+    esac
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -140,10 +130,10 @@ source /usr/share/makepkg/util.sh || exit
 
 while getopts :Fbrv OPT; do
     case $OPT in
-        F|+F) list=0   ;; # fixed
-        b|+b) list=2   ;; # pkgbase (1: pkgname)
-        r|+r) format=2 ;; # json
-        v|+v) format=1 ;;
+        F|+F) list=fixed   ;;
+        b|+b) list=pkgbase ;;
+        r|+r) format=none  ;;
+        v|+v) format=long  ;;
     esac
 done
 shift $((OPTIND - 1))
