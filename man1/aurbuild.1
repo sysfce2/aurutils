@@ -1,4 +1,4 @@
-.TH AURBUILD 1 2016-07-19 AURUTILS
+.TH AURBUILD 1 2016-07-24 AURUTILS
 .SH NAME
 aurbuild \- build packages to a local repository
 
@@ -60,19 +60,18 @@ It is recommended to use a pacman cache directory (\fICacheDir\fR) as
 the package pool. This avoids checksum mismatches between built
 packages, and any cached versions.
 
-When building locally (outside a container), \fIpacman -Syu \fR is
-run while restricted to a local repository. This is comparable to
-\fImakepkg -i\fR, but without subsequent package installation (if a
-package was installed before, it is updated to the latest available
-version). An interesting side-effect is that pacman considers packages
-inside the official repositories "local", and warns if they are newer
-than any custom counterpart.
+When building locally (outside a container), \fIpacman -Syu \fR is run
+while restricted to a local repository. This is comparable to \fImakepkg
+-i\fR, but without subsequent package installation (if a package was
+installed before, it is updated to the latest available version). An
+interesting side-effect is that pacman considers packages inside the
+official repositories "local", and warns if they are newer than any
+custom counterpart.
 
-When building with makechrootpkg, the mirrorlist is updated to match
-the current system, and the container is fully upgraded (\fIpacman
--Syu\fR). Changes to the pacman database are \fBnot \fRpropagated to
-the local system; packages must be installed and updated separately,
-typically through \fIpacman -Syu <package_name>\fR.
+When building with makechrootpkg, and the container is fully upgraded
+(\fIpacman -Syu\fR). Changes to the pacman database are \fBnot
+\fRpropagated to the local system; packages must be installed and
+updated separately, typically through \fIpacman -Syu <package_name>\fR.
 
 .SH SEE ALSO
 .BR pacconf (1),
@@ -87,3 +86,5 @@ typically through \fIpacman -Syu <package_name>\fR.
 .MT https://github.com/AladW
 Alad Wenter
 .ME
+
+# vim: set textwidth=72:
