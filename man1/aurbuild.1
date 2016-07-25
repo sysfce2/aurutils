@@ -68,9 +68,9 @@ interesting side-effect is that pacman considers packages inside the
 official repositories "local", and warns if they are newer than any
 custom counterpart.
 
-When building with makechrootpkg, and the container is fully upgraded
-(\fIpacman -Syu\fR). Changes to the pacman database are \fBnot
-\fRpropagated to the local system; packages must be installed and
+When building with makechrootpkg, the template ("root") container is
+first upgraded with \fIpacman -Syu. Changes to the pacman database are
+\fBnot \fRpropagated to the local system; packages must be installed and
 updated separately, typically through \fIpacman -Syu <package_name>\fR.
 
 .SH SEE ALSO
