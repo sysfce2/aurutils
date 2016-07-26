@@ -72,7 +72,4 @@ cd_safe "$cache"
 sync_list "$aurweb/$list" || exit
 
 # Remove the generation date before matching.
-if ! pcregrep "$@" <(tail -n +2 "${list%.*}"); then
-    error "$argv0: no matches found"
-    exit 1
-fi
+pcregrep "$@" <(tail -n +2 "${list%.*}")
