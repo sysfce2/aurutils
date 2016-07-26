@@ -3,7 +3,7 @@
 typeset -A opt_args
 
 _repofind_opts=(
-    '-i[List file:// repositories]'
+    '-l[List file:// repositories]'
     '-s[Select a local repository]'
 )
 

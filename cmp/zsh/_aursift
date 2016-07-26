@@ -3,8 +3,9 @@
 typeset -A opt_args
 
 _aursift_opts=(
-    '-S[Filter packages in the official repositories]'
-    '-U[Filter outdated repository packages]'
+    '-I[Warn on IgnorePkg match]'
+    '-S[Filter official packages]'
+    '-U[Filter outdated packages]'
 )
 
 _aursift_action_none() {

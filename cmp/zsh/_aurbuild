@@ -8,6 +8,7 @@ _aurbuild_opts=(
     '-d[Name of the database]'
     '-p[Pool for built packages]'
     '-r[Root for the repository]'
+    '-s[Sign packages and database]'
     '--[makepkg options]'
 )
 

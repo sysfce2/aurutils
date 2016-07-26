@@ -4,14 +4,17 @@ typeset -A opt_args
 
 _aursync_opts=(
     {-c,--chroot}'[Build packages in a chroot]'
+    {-s,--sign}'[Sign packages and database]'
     {-t,--tar}'[Download tar snapshots]'
     {-u,--update}'[Update AUR packages]'
+    --allsrc'[Retrieve sources first]'
     --ignore'[Skip packages in IgnorePkg]'
     --insecure'[Do not view build files]'
     --nobuild'[Only download build files]'
     --nodeps'[Do not resolve dependencies]'
-    --nofetch'[Do not update git direcotires]'
+    --nofetch'[Do not update git directories]'
     --noversion'[Disable version checks]'
+    --repo'[Use a specified repository]'
 )
 
 _aursync_action_none() {
