@@ -24,23 +24,19 @@ quickcheck() {
     #global all tmp
     declare pkg ver_s ver_a argv
 
-    syncver "$1" | sort -k 1b,1 > "$tmp"/struct_s
+    syncver "$1" | sort -k 1b,1 > "$tmp"/struct_sync
 
-    # xargs does not preserve exit status, but returns 123 if any
-    # command failed with status 1-125.
-    readarray -t argv < <(f1 "$tmp"/struct_s)
+    # xargs returns 123 if any command failed with status 1-125.
+    readarray -t argv < <(f1 "$tmp"/struct_sync)
 
-    if aursearch -Fr "${argv[@]}" | aurver | sort -k 1b,1 > "$tmp"/struct_a; then
-        # Join on first field (pkgname)
-        join "$tmp"/struct_s "$tmp"/struct_a > "$tmp"/struct
+    if aursearch -Fr "${argv[@]}" | aurver | sort -k 1b,1 > "$tmp"/struct_aur; then
+        join "$tmp"/struct_sync "$tmp"/struct_aur > "$tmp"/struct
 
         # Notify if packages are not in AUR (#110)
-        grep -Fxvf <(f1 "$tmp"/struct_a) <(f1 "$tmp"/struct_s) | while read -r pkg; do
+        grep -Fxvf <(f1 "$tmp"/struct_aur) <(f1 "$tmp"/struct_sync) | while read -r pkg; do
             plain "$pkg is not present in AUR"
         done
     else
-        # The status of aursearch is of special interest, rather than
-        # the rightmost failed command.
         exit "${PIPESTATUS[0]}"
     fi
 
