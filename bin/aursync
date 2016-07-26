@@ -233,15 +233,12 @@ if ((update)); then
     fi
 fi
 
-# Use a separate tar directory to prevent conflicts with git.
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
-# Save files in directories by context.
 cd_safe "$tmp"
 mkdir {aur,sync,tsort}
 
-# Retrieve the full AUR dependency tree and corresponding metadata.
 msg "Resolving dependencies..."
 gendeps "$@" | ignorepkg | tee tsort/tree | xargs -r aursearch -Fr > aur/json
 
@@ -272,7 +269,6 @@ else
     cp -sv tsort/pkgbase queue
 fi
 
-# Switch to the build directory, and download files by pkgbase.
 msg "Retrieving build files..."
 
 if ((snapshot)); then

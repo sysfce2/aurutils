@@ -39,12 +39,7 @@ build_chroot() {
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    # makechrootpkg load_vars() reads PKGDEST from /etc/makepkg.conf,
-    # _if_ this variable was not set already. Similarly, when not in
-    # /etc/makepkg.conf, it is read from ~/.makepkg.conf.  Note that
-    # variables specified on the command line are subject to sudo
-    # policy; without the ALL privilege, setenv or SETENV: is
-    # required.  See sudo(8) and sudoers(5) for details.
+    # Specify PKGDEST on the sudo command line (#120)
     sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" "${makechrootpkg_args[@]}"
 
     # Using pinentry inside the chroot fails due to DISPLAY and GPG_TTY

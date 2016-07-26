@@ -127,7 +127,6 @@ if ((!$#)); then
     exit 1
 fi
 
-# Save temporary files in directories by context.
 cd_safe "$tmp"
 mkdir {aur,raw,struct} || exit
 
