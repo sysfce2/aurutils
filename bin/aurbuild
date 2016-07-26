@@ -111,22 +111,22 @@ pool=$(realpath -e "$pool")
 root=$(realpath -e "$root")
 
 if [[ ! -r $queue ]]; then
-    error "$argv0: permission denied ($queue)"
+    error "$argv0: queue file $queue could not be read"
     exit 13
 elif [[ -d $queue ]]; then
-    error "$argv0: is a directory ($queue)"
+    error "$argv0: queue file $queue is a directory"
     exit 21
 elif [[ ! -w $root ]]; then
-    error "$argv0: $root: permission denied"
+    error "$argv0: repository root $root is not writeable"
     exit 13
 elif [[ ! -w $pool ]]; then
-    error "$argv0: $pool: permission denied"
+    error "$argv0: repository pool $pool is not writeable"
     exit 13
 elif [[ ! -d $root ]]; then
-    error "$argv0: $root: not a directory"
+    error "$argv0: repository root $root is not a directory"
     exit 20
 elif [[ ! -d $pool ]]; then
-    error "$argv0: $pool: not a directory"
+    error "$argv0: repository pool $pool is not a directory"
     exit 20
 elif ! pacconf --repo="$database" >/dev/null; then
     exit 22

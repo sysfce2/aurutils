@@ -208,13 +208,13 @@ if ((!nobuild)) || ((update)); then
 
     # Use a cache directory as package pool (#105)
     if ! grep -qx "$root" <(pacconf CacheDir); then
-        error "$argv0: $root: not a cache directory"
+        error "$argv0: repository root $root is not a cache directory"
         exit 1
     elif [[ ! -d $root ]]; then
-        error "$argv0: $root: not a directory"
+        error "$argv0: repository root $root is not a directory"
         exit 20
     elif [[ ! -w $root ]]; then
-        error "$argv0: $root: permission denied"
+        error "$argv0: repository root $root is not writeable"
         exit 13
     fi
 
