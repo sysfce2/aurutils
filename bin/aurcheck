@@ -9,8 +9,6 @@ readonly PS4 argv0 tmp
 declare -i all=0
 
 syncver() {
-    # XXX: If pacsift/expac find a package with UTF-8 characters,
-    # this package and any that follow it are not processed.
     pacman -Sl "$1" | awk '{printf "%s/%s\n", $1, $2}' | pacman -Sddp --print-format '%n %v' -
 }
 
