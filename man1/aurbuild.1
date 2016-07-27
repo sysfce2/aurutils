@@ -68,22 +68,22 @@ interesting side-effect is that pacman considers packages inside the
 official repositories "local", and warns if they are newer than any
 custom counterpart.
 
-Before building with \fImakechrootpkg\fR, the template ("root") container
+Before building with \fBmakechrootpkg\fR, the template ("root") container
 is first upgraded with \fIpacman -Syu\fR. Changes to the pacman database
 are \fBnot \fRpropagated to the local system; packages must be installed
 and updated separately, typically through \fIpacman -Syu
 <package_name>\fR.
 
 Package conflicts inside the container must be solved manually, as
-\fImakechrootpkg\fR uses \fImakepkg --confirm -s\fR internally. For
+\fBmakechrootpkg\fR uses \fImakepkg --confirm -s\fR internally. For
 example, to replace gcc\fR with \fBgcc-multilib\fR in the container, run
 \fIarch-nspawn /var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
 
-\fImakechrootpkg\fR reads -DEST, PACKAGER and MAKEFLAGS from
-/etc/makepkg.conf (and after that, ~/.makepkg.conf), on the condition
-that these variables are unavailable in the environment.  Note that
-variables specified on the sudo command line (such as \fIPKGDEST\fR by
-\fBaurbuild\fI) are subject to sudo policy; see sudo(8) and sudoers(5).
+\fBmakechrootpkg\fR reads -DEST, PACKAGER and MAKEFLAGS from
+/etc/makepkg.conf (and after that, ~/.makepkg.conf), \fBif\fR these
+variables are unavailable in the environment.  Note that variables
+specified on the sudo command line (such as \fIPKGDEST\fR by
+\fBaurbuild\fR) are subject to sudo policy; see sudo(8) and sudoers(5).
 
 .SH SEE ALSO
 .BR pacconf (1),
