@@ -128,7 +128,10 @@ fi
 
 if ((chroot)); then
     if [[ $machine ]]; then
-        setarch "$machine"
+        if ! grep -qx "$machine" <(setarch --list); then
+            error "$argv0: $machine: unknown architecture"
+            exit 95
+        fi
     else
         machine=$(uname -m)
     fi
@@ -138,7 +141,7 @@ if ((chroot)); then
 
     if [[ ! -d $CHROOT ]]; then
         sudo install -d "$CHROOT"
-        sudo mkarchroot -C "$tmp"/pacman.conf "$CHROOT"/root base base-devel
+        sudo setarch "$machine" mkarchroot -C "$tmp"/pacman.conf "$CHROOT"/root base base-devel
     else
         sudo arch-nspawn "$CHROOT"/root pacman -Syu --noconfirm
     fi
