@@ -94,11 +94,14 @@ Package conflicts inside the container must be solved manually, as
 example, to replace gcc\fR with \fBgcc-multilib\fR, run \fIarch-nspawn
 /var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
 
+For signature verification to work, gpg2(1) configuration must be
+stored in ~/.gnupg. See Github issue #151 for details.
+
 \fBmakechrootpkg\fR reads -DEST, PACKAGER and MAKEFLAGS from
 /etc/makepkg.conf (and after that, ~/.makepkg.conf), \fBif\fR these
 variables are unavailable in the environment.  Note that variables
 specified on the sudo command line (such as \fIPKGDEST\fR by
-\fBaurbuild\fR) are subject to sudo policy; see sudo(8) and sudoers(5).
+\fBaurbuild\fR) depend on sudo policy; see sudo(8) and sudoers(5).
 
 .SH SEE ALSO
 .BR pacconf (1),
