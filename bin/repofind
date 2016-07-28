@@ -46,12 +46,14 @@ reposelect() {
 
 source /usr/share/makepkg/util.sh || exit
 
-[[ -t 2 ]] && colorize
+if [[ -t 2 ]]; then
+    colorize
+fi
 
 while getopts :ls OPT; do
     case $OPT in
-        l|+l) repolist   ;;
-        s|+s) reposelect ;;
+        l) repolist   ;;
+        s) reposelect ;;
         *) plain "usage: $argv0 [-i] [-s] [-k repo]"
            exit 1 ;;
     esac

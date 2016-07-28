@@ -132,13 +132,15 @@ ignore() {
 
 source /usr/share/makepkg/util.sh || exit
 
-[[ -t 2 ]] && colorize
+if [[ -t 2 ]]; then
+    colorize
+fi
 
 while getopts :ISU OPT; do
     case $OPT in
-        I|+I) ignore  ;;
-        S|+S) sift    ;;
-        U|+U) prepare ;;
+        I) ignore  ;;
+        S) sift    ;;
+        U) prepare ;;
         *) plain "usage: $argv0 [-IS pkgname] [-U pkgname pkgver]"
            exit 1 ;;
     esac

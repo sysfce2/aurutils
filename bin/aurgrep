@@ -46,8 +46,8 @@ sync_list() {
 
 while getopts :bt OPT; do
     case "$OPT" in
-        b|+b) pkgbase=1     ;;
-        t|+t) delay=$OPTARG ;;
+        b) pkgbase=1     ;;
+        t) delay=$OPTARG ;;
     esac
 done
 shift $((OPTIND - 1))

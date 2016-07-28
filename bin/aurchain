@@ -114,7 +114,7 @@ source /usr/share/makepkg/util.sh || exit
 
 while getopts :a OPT; do
     case $OPT in
-        a|+a) all=1 ;;
+        a) all=1 ;;
         *) error "usage: $argv0 [-a] pkgname..."
            exit 2
     esac
