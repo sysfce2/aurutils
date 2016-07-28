@@ -127,17 +127,16 @@ if (($#)); then
 fi
 
 if ((chroot)); then
-    if [[ $machine ]]; then
+    if [[ ${machine:=$(uname -m)} ]]; then
         if ! grep -qx "$machine" <(setarch --list); then
             error "$argv0: $machine: unknown architecture"
-            exit 95
+            exit 38
+        else
+            CHROOT=/var/lib/aurbuild/$machine
+            repose_args+=(-m "$machine")
         fi
-    else
-        machine=$(uname -m)
     fi
 
-    CHROOT=/var/lib/aurbuild/$machine
-    repose_args+=(-m "$machine")
     pacconf --raw > "$tmp"/pacman.conf
     
     if [[ ! -d $CHROOT ]]; then
