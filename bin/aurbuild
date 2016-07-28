@@ -30,6 +30,7 @@ build_chroot() {
     #global HOME GNUPGHOME GPGKEY CHROOT pool root makechrootpkg_args repose_args database
     declare p gpgargs
 
+    # Preserve PKGDEST for makechrootpkg (#120)
     sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" "${makechrootpkg_args[@]}"
 
     # As pinentry relies on GPG_TTY and DISPLAY, sign packages outside the chroot. (#130)
