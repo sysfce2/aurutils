@@ -133,7 +133,7 @@ if ((chroot)); then
         machine=$(uname -m)
     fi
 
-    CHROOT=/var/lib/aurbuild_$machine
+    CHROOT=/var/lib/aurbuild/$machine
     pacconf --raw > "$tmp"/pacman.conf
 
     if [[ ! -d $CHROOT ]]; then
