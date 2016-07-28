@@ -57,7 +57,6 @@ trap_exit() {
 
 usage() {
     plain "usage: $argv0 [-cs] -a <queue> -d <repo> -p <pool> -r <root> [--] ARGS"
-    exit 1
 }
 
 trap 'exit' INT
@@ -77,7 +76,7 @@ while getopts a:cd:m:p:r:s OPT; do
         r|+r) root=$OPTARG ;;
         s|+s) repose_args+=(--sign)
               sign_pkg=1 ;;
-        *) usage ;;
+        *) usage; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -90,11 +89,13 @@ for arg in queue database pool root; do
     fi
 done
 
-((err)) && usage
+if ((err)); then
+    usage; exit 1
+fi
 
 # Canonicalize paths to avoid relative path issues (#130)
-pool=$(realpath -e "$pool")
-root=$(realpath -e "$root")
+pool=$(realpath -e -- "$pool")
+root=$(realpath -e -- "$root")
 
 if [[ ! -r $queue ]]; then
     error "$argv0: queue file $queue could not be read"
