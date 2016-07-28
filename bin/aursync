@@ -120,10 +120,11 @@ trap_exit() {
 }
 
 trap 'trap_exit' EXIT
-
 source /usr/share/makepkg/util.sh
 
-[[ -t 2 ]] && colorize
+if [[ -t 2 ]]; then
+    colorize
+fi
 
 TEMP=$(getopt -o B:cfLnstTu -l allan,allsrc,chroot,ignore,nobuild,nodeps,nofetch,nover,noview,sign,tar,update,repo: -n "$argv0" -- "$@")
 eval set -- "$TEMP"
