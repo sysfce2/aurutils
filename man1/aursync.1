@@ -54,11 +54,6 @@ Retrieve all sources before building. (\fI makepkg --verifysource\fR)
 Skip package names in pacman's \fIIgnorePkg \fRdirective.
 .RE
 
-.B \--insecure
-.RS
-Do not view downloaded files before building.
-.RE
-
 .B \--nobuild
 .RS
 Only download source files, do not build anything.
@@ -74,9 +69,14 @@ Do not resolve dependencies.
 Do not update existing git directories.
 .RE
 
-.B \--noversion
+.B \--nover
 .RS
 Disable version checking for packages in the queue.
+.RE
+
+.B \--noview
+.RS
+Do not view downloaded files before building.
 .RE
 
 .B \--repo
@@ -133,7 +133,7 @@ Parent directory for temporary files.
 .RE
 
 .SH NOTES
-When version checks are enabled (\fI--noversion\fR is not specified),
+When version checks are enabled (\fI--nover\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
 than a version in the pacman database. Checks assume there are no
 mismatches between \fI.SRCINFO\fR and \fIPKGBUILD\fR files.
