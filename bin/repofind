@@ -54,7 +54,7 @@ while getopts :ls OPT; do
     case $OPT in
         l) repolist   ;;
         s) reposelect ;;
-        *) plain "usage: $argv0 [-i] [-s] [-k repo]"
+        *) plain "usage: $argv0 [-l] [-s]"
            exit 1 ;;
     esac
 done
