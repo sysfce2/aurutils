@@ -137,8 +137,9 @@ if ((chroot)); then
     fi
 
     CHROOT=/var/lib/aurbuild/$machine
+    repose_args+=(-m "$machine")
     pacconf --raw > "$tmp"/pacman.conf
-
+    
     if [[ ! -d $CHROOT ]]; then
         sudo install -d "$CHROOT"
         sudo setarch "$machine" mkarchroot -C "$tmp"/pacman.conf "$CHROOT"/root base base-devel
