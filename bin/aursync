@@ -11,7 +11,7 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i insecure=0 nobuild=0 noversion=0 nodeps=0 nofetch=0
+declare -i noview=0 nobuild=0 nover=0 nodeps=0 nofetch=0
 declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0
 declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 
@@ -125,40 +125,31 @@ source /usr/share/makepkg/util.sh
 
 [[ -t 2 ]] && colorize
 
-while getopts :B:cfLnstTu-: OPT; do
-    case "$OPT" in
-        B|+B) bindro=1
-              newdir=$OPTARG ;;
-        c|+c) chroot=1       ;;
-        f|+f) force=1        ;;
-        L|+L) logdest=1      ;;
-        n|+n) namcap=1       ;;
-        s|+s) sign=1         ;;
-        t|+t) snapshot=1     ;;
-        T|+T) chtemp=1       ;;
-        u|+u) update=1       ;;
-        -) case "$OPTARG" in
-               chroot)    chroot=1     ;;
-               allsrc)    allsrc=1     ;;
-               ignore)    ignore=1     ;;
-               insecure)  insecure=1   ;;
-               nobuild)   nobuild=1    ;;
-               nodeps)    nodeps=1     ;;
-               nofetch)   nofetch=1    ;;
-               noversion) noversion=1  ;;
-               sign)      sign=1       ;;
-               tar)       snapshot=1   ;;
-               update)    update=1     ;;
-               allan)     rotate=1     ;;
-               repo) repo=${!OPTIND}
-                     shift ;;
-               *) usage ;;
-           esac  ;;
-        *) usage ;;
+TEMP=$(getopt -o B:cfLnstTu -l allan,allsrc,chroot,ignore,nobuild,nodeps,nofetch,nover,noview,sign,tar,update,repo: -n "$argv0" -- "$@")
+eval set -- "$TEMP"
+
+while true; do
+    case "$1" in
+        -B) bindro=1; newdir=$2; shift 2 ;;
+        -L) logdest=1; shift ;;
+        -n) namcap=1; shift ;;
+        -T) chtemp=1; shift ;;
+        -c|--chroot) chroot=1; shift ;;
+        -f|--force)  force=1; shift ;;
+        -s|--sign)   sign=1; shift ;;
+        -u|--update) update=1; shift ;;
+        -t|--tar)    snapshot=1; shift ;;
+        --allan)  rotate=1; shift ;;
+        --allsrc) allsrc=1; shift ;;
+        --ignore) ignore=1; shift ;;
+        --nodeps) nodeps=1; shift ;;
+        --nover)  nover=1; shift ;;
+        --noview) noview=1; shift ;;
+        --repo)   repo=$2; shift 2 ;;
+	--) shift; break ;;
+	*) usage ;;
     esac
 done
-shift $((OPTIND - 1))
-OPTIND=1
 
 if ((rotate)); then
     if { hash rot13 && target=$(aurgrep .+ | shuf -n 1); } 2>/dev/null; then
@@ -177,13 +168,11 @@ fi
 # defined, as getopts parses options sequentially.
 if ((chroot)); then
     makepkg_args=(-cu)
-
     ((bindro))  && makepkg_args+=(-D "$newdir")
     ((chtemp))  && makepkg_args+=(-T)
     ((namcap))  && makepkg_args+=(-n)
 else
     makepkg_args=(-crs)
-
     ((force))   && makepkg_args+=(-f)
     ((logdest)) && makepkg_args+=(-L)
     ((namcap))  && makepkg_args+=(--noconfirm)
@@ -256,7 +245,7 @@ missing aur/pkgname foreign || true
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
 grep -Fxf aur/pkgname tsort/tree | i686 | aursplit aur/pkgbase > tsort/pkgbase
 
-if ((!noversion)); then
+if ((!nover)); then
     # Print updated pkgbase from versioned pairs.
     aursift -U < aur/pkgver | aursplit aur/pkgbase > sync/pkgbase
 
@@ -280,7 +269,7 @@ else
 fi
 
 # View changes and build files in one window (#77)
-if ((!insecure)); then
+if ((!noview)); then
     ( shopt -s nullglob
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect 1
     )
