@@ -20,10 +20,6 @@ build_local() {
     fi
 
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
-
-    # Set LANG=C to allow libalpm to fully read the database, even
-    # when the locale is not set.
-    # https://bugs.archlinux.org/task/49342#comment147145
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
     printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
@@ -39,7 +35,6 @@ build_chroot() {
         warning "GNUPGHOME is not set to $HOME/.gnupg"
     fi
 
-    # Specify PKGDEST on the sudo command line. (#120)
     sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$CHROOT" "${makechrootpkg_args[@]}"
 
     # As pinentry relies on GPG_TTY and DISPLAY, sign packages outside the chroot. (#130)
@@ -150,9 +145,6 @@ if ((chroot)); then
         sudo install -d "$CHROOT"
         sudo mkarchroot -C "$tmp"/pacman.conf "$CHROOT"/root base base-devel
     else
-        # since makechrootpkg restores the user chroot to the state from root chroot
-        # base and base-devel packages are reupdated before each package build
-        # this updates the root once before starting package build process to prevent that
         sudo arch-nspawn "$CHROOT"/root pacman -Syu --noconfirm
     fi
 fi

@@ -7,6 +7,7 @@ aurbuild \- build packages to a local repository
 .OP \-cs
 .OP \-a queue
 .OP \-d database
+.OP \-m machine
 .OP \-p pool
 .OP \-r root
 .OP \--
@@ -39,6 +40,11 @@ Build packages with \fImakechrootpkg\fR.
 The name of the database.
 .RE
 
+.B \-m
+.RS
+Set the machine name for the container.
+.RE
+
 .B \-p
 .RS
 The pool for the built packages. The \fBpool \fRis the location where
@@ -68,16 +74,25 @@ interesting side-effect is that pacman considers packages inside the
 official repositories "local", and warns if they are newer than any
 custom counterpart.
 
-Before building with \fBmakechrootpkg\fR, the template ("root") container
-is first upgraded with \fIpacman -Syu\fR. Changes to the pacman database
-are \fBnot \fRpropagated to the local system; packages must be installed
-and updated separately, typically through \fIpacman -Syu
-<package_name>\fR.
+Databases are built with \fILANG=C\fR to avoid libalpm from skipping
+entries if the locale is not set. See FS#49342 for details.
+.br
+.UR https://bugs.archlinux.org/task/49342#comment147145
+.UE
+
+.SS Building with \fBmakechrootpkg\fR
+The template ("root") container is upgraded with \fIpacman -Syu\fR
+prior to building. This is done as the "user" container is restored to
+the "root" container before each build (\fImakechrootpkg -c\fR).
+
+Changes to the pacman database are \fBnot\fR propagated from the
+container to the local system; packages must be installed and updated
+separately, typically through \fIpacman -Syu <package_name>\fR.
 
 Package conflicts inside the container must be solved manually, as
 \fBmakechrootpkg\fR uses \fImakepkg --confirm -s\fR internally. For
-example, to replace gcc\fR with \fBgcc-multilib\fR in the container, run
-\fIarch-nspawn /var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
+example, to replace gcc\fR with \fBgcc-multilib\fR, run \fIarch-nspawn
+/var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
 
 \fBmakechrootpkg\fR reads -DEST, PACKAGER and MAKEFLAGS from
 /etc/makepkg.conf (and after that, ~/.makepkg.conf), \fBif\fR these
