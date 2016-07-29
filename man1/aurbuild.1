@@ -62,10 +62,6 @@ Sign built packages and the database with gpg.
 .RE
 
 .SH NOTES
-It is recommended to use a pacman cache directory (\fICacheDir\fR) as
-the package pool. This avoids checksum mismatches between built
-packages, and any cached versions.
-
 When building locally (outside a container), \fIpacman -Syu \fR is run
 while restricted to a local repository. This is comparable to \fImakepkg
 -i\fR, but without subsequent package installation (if a package was
