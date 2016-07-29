@@ -125,8 +125,13 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-TEMP=$(getopt -o B:cfLnstTu -l allan,allsrc,chroot,ignore,nobuild,nodeps,nofetch,nover,noview,sign,tar,update,repo: -n "$argv0" -- "$@")
-eval set -- "$TEMP"
+longopts=allan,allsrc,chroot,ignore,nobuild,nodeps,nofetch,nover,noview,sign,tar,update,repo:
+
+if TEMP=$(getopt -o B:cfLnstTu -l "$longopts" -n "$argv0" -- "$@"); then
+    eval set -- "$TEMP"
+else
+    usage
+fi
 
 while true; do
     case "$1" in
@@ -150,7 +155,6 @@ while true; do
         --repo)      repo=$2;    shift 2 ;;
 	--) shift
             break ;;
-	*)  usage ;;
     esac
 done
 
