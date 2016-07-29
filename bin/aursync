@@ -27,7 +27,7 @@ clone() {
 
             ( cd "$base"
               git fetch -v # returns 0 even if nothing was fetched
-              
+
               if [[ $(git remote get-url --all origin) =~ ${1#*//} ]]; then
                   warning "remote does not match ${1#*//}"
               fi
@@ -236,10 +236,10 @@ jshon -F results.json -a -e results -a -e PackageBase -u -p -e URLPath -u | xarg
 # Include command-line arguments to check for missing packages (#139)
 cat <(printf '%s\n' "$@") <(aursift -S < tree) > norepo
 
-if grep -Fxvf aur/pkgname norepo > nomatch; then
-   while read -r pkg _; do
-       warning "no results found for $pkg"
-   done < nomatch
+if nomatch=($(grep -Fxvf aur/pkgname norepo)); then
+    for pkg in "${nomatch[@]}"; do
+        warning "no results found for $pkg"
+    done
 fi
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
