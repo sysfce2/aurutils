@@ -28,7 +28,7 @@ clone() {
             ( cd "$base"
               git fetch -v # returns 0 even if nothing was fetched
 
-              if [[ $(git remote get-url --all origin) =~ ${1#*//} ]]; then
+              if [[ ! $(git remote get-url --all origin) =~ ${1#*//} ]]; then
                   warning "remote does not match ${1#*//}"
               fi
 
