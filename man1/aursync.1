@@ -46,7 +46,7 @@ Update AUR packages in a selected local repository.
 
 .B \--allsrc
 .RS
-Retrieve all sources before building. (\fI makepkg --verifysource\fR)
+Retrieve all sources before building. (\fImakepkg --verifysource\fR)
 .RE
 
 .B \--ignore
@@ -87,12 +87,12 @@ Use the specified repository instead of an interactive selection.
 .SS makepkg
 The default set of options is \fImakepkg -crs\fR.
 
-.B \-f
+.B \-f, --force
 .RS
 Overwrite built packages. (\fImakepkg -f\fR)
 .RE
 
-.B \-L
+.B \-L, --log
 .RS
 Save makepkg output. (\fImakepkg -L\fR)
 .RE
@@ -105,7 +105,7 @@ Do not wait for user input. (\fImakepkg --noconfirm\fR)
 .SS makechrootpkg
 The default set of options is \fImakechrootpkg -cu\fR.
 
-.B \-B
+.B \-B, --bind
 .RS
 Bind a directory read-only. (\fImakechrootpkg -D\fR)
 .RE
@@ -115,7 +115,7 @@ Bind a directory read-only. (\fImakechrootpkg -D\fR)
 Check a built package with namcap. (\fImakechrootpkg -n\fR)
 .RE
 
-.B \-T
+.B \-T, --temp
 .RS
 Build in a temporary directory. (\fImakechrootpkg -T\fR)
 .RE
@@ -138,13 +138,13 @@ build files are only retrieved if the remote (RPC) version is newer
 than a version in the pacman database. Checks assume there are no
 mismatches between \fI.SRCINFO\fR and \fIPKGBUILD\fR files.
 
-The depends_\fIarch \fRarray (as introduced with pacman 4.2) is merged
-with regular depends in the RPC. \fBaursync \fRworkarounds this by
-stripping the \fIlib32- \fRsuffix from packages and \fIgcc-multilib
-\fRwhen the i686 architecture is detected.
+Architecture-specific depends (as introduced with pacman 4.2) are
+merged with regular depends in RPC queries. \fBaursync \fRworkarounds
+this by stripping the \fIlib32- \fRsuffix from packages, and removing
+\fIgcc-multilib \fRwhen the i686 architecture is detected.
 
 \fItar\fR snapshots are extracted to the \fI$AURDEST/snapshot\fR
-directory to avoid conflicts with git.
+directory, in order to avoid conflicts with git.
 
 .SH SEE ALSO
 .BR aria2c (1),
