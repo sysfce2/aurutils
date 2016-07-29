@@ -11,9 +11,78 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i noview=0 nobuild=0 nover=0 nodeps=0 nofetch=0
+declare -i view=1 build=1 ver=1 deps=1 fetch=1
 declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0
 declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
+
+# $1: origin (URI)
+# $2: git fetch (bool)
+# stdin: pkgbase
+clone() {
+    declare base
+
+    while read -r base _; do
+        if [[ -d $base/.git ]]; then
+            (($2)) || continue
+
+            ( cd "$base"
+              git fetch -v # returns 0 even if nothing was fetched
+              
+              if [[ $(git remote get-url --all origin) =~ ${1#*//} ]]; then
+                  warning "remote does not match ${1#*//}"
+              fi
+
+              if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
+                  git --no-pager log --patch --stat '..@{upstream}' >> "$tmp/$base".diff
+                  git reset --hard HEAD
+                  git merge
+              fi
+            )
+        else
+            git clone "$1/$base".git
+        fi
+    done
+}
+
+# $1: origin (URI)
+# $2: workdir
+# stdin: pkgbase
+aria() {
+    awk -v uri="$1" '{printf "%s/%s\n", uri, $2}' | aria2c -d "$2" -i -
+
+    for ar in "$2"/*.tar.gz; do
+        tar xvf "$ar"
+    done
+}
+
+# $1: tree (bool)
+gendeps() {
+    if (($1)); then
+        aurchain -a "${@:2}"
+    else
+        printf -- '%s\n' "${@:2}"
+    fi
+}
+
+# $1: IgnorePkg (bool)
+# stdin: pkgname
+ignorepkg() {
+    if (($1)); then
+        aursift -I
+    else
+        tee
+    fi
+}
+
+# stdin: pkgname
+i686() {
+    awk -v arch="$(uname -m)" '{
+        if(arch == "i686") {
+            gsub(/^lib32-/,"")
+            gsub(/^gcc-multilib$/,"")
+        };  print
+    }'
+}
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -27,96 +96,26 @@ inspect() {
     xargs -i find {} -maxdepth "$1" | viewer
 }
 
-revcheck() {
-    #global aurweb tmp
-    git fetch -v
-
-    if ! git remote get-url --all origin | grep -Fq "${aurweb#*//}"; then
-        warning "remote does not match ${aurweb#*//}"
-    fi
-
-    # git fetch will return 0 even if nothing was fetched.
-    if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
-        git --no-pager log --patch --stat '..@{upstream}' >> "$tmp/$1".diff
-        git reset --hard HEAD
-        git merge
-    fi
-}
-
-clone() {
-    #global aurweb nofetch
+# stdin: pkgbase
+getsource() {
     declare base
 
     while read -r base _; do
-        if [[ -d $base/.git ]]; then
-            if ! ((nofetch)); then
-                GIT_DIR="$base"/.git GIT_WORK_TREE="$base" revcheck "$base"
-            fi
-        else
-            git clone "$aurweb/$base".git
-        fi
-    done
-}
-
-aria() {
-    #global aurweb tmp
-    awk -v uri="$aurweb" '{printf "%s/%s\n", uri, $2}' | aria2c -d "$tmp" -i -
-
-    for ar in "$tmp"/*.tar.gz; do
-        tar xvf "$ar"
-    done
-}
-
-gendeps() {
-    #global nodeps
-    if ((nodeps)); then
-        printf -- '%s\n' "$@"
-    else
-        aurchain -a "$@"
-    fi
-}
-
-ignorepkg() {
-    #global ignore
-    if ((ignore)); then
-        aursift -I
-    else
-        tee
-    fi
-}
-
-missing() {
-    grep -Fxvf "$1" "$2" | while read -r pkg _; do
-        warning "no results found for $pkg"
-    done
-}
-
-i686() {
-    awk -v arch="$(uname -m)" '{
-        if(arch == "i686") {
-            gsub(/^lib32-/,"")
-            gsub(/^gcc-multilib$/,"")
-        };  print
-    }'
-}
-
-getsource() {
-    while read -r pkg _; do
-        ( cd "$pkg"
+        ( cd "$base"
           makepkg --verifysource
         )
     done
-}
-
-usage() {
-    plain "usage: $argv0 [-c] [-B newdir] [-fLnstT] [-u] [--] pkgname..."
-    exit 1
 }
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
+}
+
+usage() {
+    plain "usage: $argv0 [-c] [-B newdir] [-fLnstT] [-u] [--] pkgname..."
+    exit 1
 }
 
 trap 'trap_exit' EXIT
@@ -131,24 +130,27 @@ eval set -- "$TEMP"
 
 while true; do
     case "$1" in
-        -B) bindro=1; newdir=$2; shift 2 ;;
-        -L) logdest=1; shift ;;
-        -n) namcap=1; shift ;;
-        -T) chtemp=1; shift ;;
-        -c|--chroot) chroot=1; shift ;;
-        -f|--force)  force=1; shift ;;
-        -s|--sign)   sign=1; shift ;;
-        -u|--update) update=1; shift ;;
+        -B|--bind)   bindro=1;
+                     newdir=$2;  shift 2 ;;
+        -c|--chroot) chroot=1;   shift ;;
+        -f|--force)  force=1;    shift ;;
+        -L|--log)    logdest=1;  shift ;;
+        -n)          namcap=1;   shift ;;
+        -s|--sign)   sign=1;     shift ;;
+        -T|--temp)   chtemp=1;   shift ;;
+        -u|--update) update=1;   shift ;;
         -t|--tar)    snapshot=1; shift ;;
-        --allan)  rotate=1; shift ;;
-        --allsrc) allsrc=1; shift ;;
-        --ignore) ignore=1; shift ;;
-        --nodeps) nodeps=1; shift ;;
-        --nover)  nover=1; shift ;;
-        --noview) noview=1; shift ;;
-        --repo)   repo=$2; shift 2 ;;
-	--) shift; break ;;
-	*) usage ;;
+        --allan)     rotate=1;   shift ;;
+        --allsrc)    allsrc=1;   shift ;;
+        --ignore)    ignore=1;   shift ;;
+        --nobuild)   build=0;    shift ;;
+        --nodeps)    deps=0;     shift ;;
+        --nover)     ver=0;      shift ;;
+        --noview)    view=0;     shift ;;
+        --repo)      repo=$2;    shift 2 ;;
+	--) shift
+            break ;;
+	*)  usage ;;
     esac
 done
 
@@ -166,8 +168,9 @@ if ! (($# + update)); then
 fi
 
 # Set makepkg args in a new list to ensure option context is already
-# defined, as getopts parses options sequentially.
+# defined, as getopt parses options from left to right.
 if ((chroot)); then
+    aurbuild_args+=(-c)
     makepkg_args=(-cu)
     ((bindro))  && makepkg_args+=(-D "$newdir")
     ((chtemp))  && makepkg_args+=(-T)
@@ -179,24 +182,18 @@ else
     ((namcap))  && makepkg_args+=(--noconfirm)
 fi
 
-if ((chroot)); then
-    aurbuild_args+=(-c)
-fi
-
 if ((sign)); then
     aurbuild_args+=(-s)
 fi
 
-# Only select a repository when building (#127)
-if ((!nobuild)) || ((update)); then
-    if [[ $repo ]]; then
-        read -r root < <(pacconf --single --repo="$repo" Server)
+if ((build)) || ((update)); then
+    if [[ $root ]]; then
+        root=$(pacconf --single --repo="$repo" Server)
         root=${root#file://}
     else
         read -r repo root < <(repofind -s)
     fi
 
-    # Use a cache directory as package pool (#105)
     if ! grep -qx "$root" <(pacconf CacheDir); then
         error "$argv0: repository root $root is not a cache directory"
         exit 1
@@ -206,12 +203,11 @@ if ((!nobuild)) || ((update)); then
     elif [[ ! -w $root ]]; then
         error "$argv0: repository root $root is not writeable"
         exit 13
+    else
+        msg2 "Using [$repo] repository"
     fi
-
-    msg2 "Using [$repo] repository"
 fi
 
-# Reuse selection for repofind (#82)
 if ((update)); then
     for p in $(aurcheck -q "$repo"); do
         set -- "$@" "$p"
@@ -227,50 +223,53 @@ mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
-mkdir {aur,sync,tsort}
+mkdir aur
 
 msg "Resolving dependencies..."
-gendeps "$@" | ignorepkg | tee tsort/tree | xargs -r aursearch -Fr > aur/json
+gendeps "$deps" "$@" | ignorepkg "$ignore" | tee tree | xargs -r aursearch -Fr > results.json
 
-jshon -F aur/json -a -e results -a -e Name -u > aur/pkgname
-jshon -F aur/json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > aur/pkgbase
-jshon -F aur/json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > aur/pkgver
-jshon -F aur/json -a -e results -a -e PackageBase -u -p -e URLPath -u | xargs -n2 > aur/urlpath
+jshon -F results.json -a -e results -a -e Name -u > aur/pkgname
+jshon -F results.json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > aur/pkgbase
+jshon -F results.json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > aur/pkgver
+jshon -F results.json -a -e results -a -e PackageBase -u -p -e URLPath -u | xargs -n2 > aur/urlpath
 
 # Include command-line arguments to check for missing packages (#139)
-cat <(printf '%s\n' "$@") <(aursift -S < tsort/tree) > foreign
+cat <(printf '%s\n' "$@") <(aursift -S < tree) > norepo
 
-# Warn on packages missing in both official repositories and AUR (#67)
-missing aur/pkgname foreign || true
+if grep -Fxvf aur/pkgname norepo > nomatch; then
+   while read -r pkg _; do
+       warning "no results found for $pkg"
+   done < nomatch
+fi
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf aur/pkgname tsort/tree | i686 | aursplit aur/pkgbase > tsort/pkgbase
+grep -Fxf aur/pkgname tree | i686 | aursplit aur/pkgbase > aur/tsort
 
-if ((!nover)); then
-    # Print updated pkgbase from versioned pairs.
-    aursift -U < aur/pkgver | aursplit aur/pkgbase > sync/pkgbase
+if ((ver)); then
+    # pkgver -> pkgver (sync) -> pkgbase (sync)
+    aursift -U < aur/pkgver | aursplit aur/pkgbase > aur/sync
 
-    # Relative complement: pkgbase (tsort) \ pkgbase (sync)
-    if ! grep -Fxvf sync/pkgbase tsort/pkgbase > queue; then
+    # pkgbase (tsort) \ pkgbase (sync)
+    if ! grep -Fxvf aur/sync aur/tsort > queue; then
         plain "there is nothing to do"
         exit
     fi
 else
-    cp -sv tsort/pkgbase queue
+    cp -sv aur/tsort queue
 fi
 
 msg "Retrieving build files..."
 
 if ((snapshot)); then
     cd_safe "$AURDEST"/snapshot
-    grep -Fwf "$tmp"/queue "$tmp"/aur/urlpath | aria
+    grep -Fwf "$tmp"/queue "$tmp"/aur/urlpath | aria "$aurweb" "$tmp"
 else
     cd_safe "$AURDEST"
-    clone < "$tmp"/queue
+    clone "$aurweb" "$fetch" < "$tmp"/queue
 fi
 
 # View changes and build files in one window (#77)
-if ((!noview)); then
+if ((view)); then
     ( shopt -s nullglob
       printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect 1
     )
@@ -280,12 +279,11 @@ if ((allsrc)); then
     getsource < "$tmp"/queue
 fi
 
-if ((nobuild)); then
+if ((build)); then
+    aurbuild_args+=(-d "$repo" -r "$root" -p "$root" -a "$tmp"/queue)
+    aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+else
     msg "Sources saved to $PWD"
-    exit
 fi
-
-aurbuild_args+=(-d "$repo" -r "$root" -p "$root" -a "$tmp"/queue)
-aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
 
 # vim: set et sw=4 sts=4 ft=sh:
