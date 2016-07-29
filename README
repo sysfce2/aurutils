@@ -8,8 +8,6 @@ SYNOPSIS
   repositories, rather than foreign (installed by "pacman -U")
   packages.
   
-  https://bbs.archlinux.org/viewtopic.php?id=210621
-
 INSTALLATION
 
   The master branch can be installed from the included Makefile,
@@ -20,6 +18,10 @@ INSTALLATION
   The release version is available in the AUR under "aurutils".
 
   https://aur.archlinux.org/packages/aurutils
+
+  Upgrade notices are posted to the Arch forums:
+
+  https://bbs.archlinux.org/viewtopic.php?id=210621
 
 USAGE
 
