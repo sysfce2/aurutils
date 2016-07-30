@@ -1,4 +1,5 @@
 #!/bin/bash -
+# -*- indent-tabs-mode: nil; -*-
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 PATH=/bin:/usr/bin
 
@@ -26,3 +27,5 @@ for i in "${official[@]}"; do
 done
 
 pacman --config="$tmp"/config "$@"
+
+# vim: set et sw=4 sts=4 ft=sh:
