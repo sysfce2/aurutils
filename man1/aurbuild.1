@@ -45,15 +45,16 @@ The name of the database.
 Set the machine name for the container.
 .RE
 
-.B \-p
-.RS
-The pool for the built packages. The \fBpool \fRis the location where
-aurbuild will put the packages after building.
-.RE
-
 .B \-r
 .RS
 The root for the repository where the database files will live.
+.RE
+
+.B \-p
+.RS
+The pool for the built packages. The \fBpool \fRis the location where
+aurbuild will put the packages after building. This defaults to the
+value of the repository root.
 .RE
 
 .B \-s
