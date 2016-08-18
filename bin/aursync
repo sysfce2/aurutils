@@ -287,7 +287,7 @@ if ((allsrc)); then
 fi
 
 if ((build)); then
-    aurbuild_args+=(-d "$repo" -r "$root" -p "$root" -a "$tmp"/queue)
+    aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
     aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
 else
     msg "Sources saved to $PWD"
