@@ -7,7 +7,8 @@ argv0=repofind
 scheme='file://'
 readonly PS4 argv0 scheme
 
-repolist() {
+repo_list() {
+    #global scheme
     declare repo
     declare -A rset
 
@@ -20,13 +21,14 @@ repolist() {
     done
 }
 
-reposelect() {
+repo_select() {
+    #global scheme
     declare repo server root
     declare -A avail
 
     while read -r repo server; do
         avail[$repo]=$server
-    done < <(repolist)
+    done < <(repo_list)
 
     if ((${#avail[@]} > 1)); then
         PS3='Select a repository: '
@@ -40,9 +42,41 @@ reposelect() {
         exit 2
     fi
 
-    root=${avail[$repo]#$scheme}
+    root=${avail[$repo]#*://}
 
-    printf '%s %s\n' "$repo" "$root"
+    if dir_is_rw "$root"; then
+        printf '%s %s\n' "$repo" "$root"
+    else
+        exit $?
+    fi
+}
+
+repo_path() {
+    declare server root
+    server=$(pacconf --single --repo="$1" Server)
+
+    root=${server#*://}
+    
+    if dir_is_rw "$root"; then
+        printf '%s\n' "$root"
+    else
+        exit $?
+    fi
+}
+
+dir_is_rw() {
+    if [[ ! -r $1 ]]; then
+        error "$argv0: repository path $1 is not readable"
+        return 13
+    elif [[ ! -w $1 ]]; then
+        error "$argv0: repository path $1 is not writeable"
+        return 13
+    elif [[ ! -d $1 ]]; then
+        error "$argv0: repository path $1 is not a directory"
+        return 20
+    else
+        return 0
+    fi
 }
 
 source /usr/share/makepkg/util.sh || exit
@@ -51,11 +85,12 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :ls OPT; do
-    case $OPT in
-        l) repolist   ;;
-        s) reposelect ;;
-        *) plain "usage: $argv0 [-l] [-s]"
+while getopts :p:ls OPT; do
+    case "$OPT" in
+        l) repo_list ;;
+        p) repo_path "$OPTARG" ;;
+        s) repo_select ;;
+        *) plain "usage: $argv0 [-l] [-p <repo>] [-s]"
            exit 1 ;;
     esac
 done
