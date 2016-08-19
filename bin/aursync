@@ -197,7 +197,8 @@ if ((build)) || ((update)); then
     if [[ $repo ]]; then
         root=$(repofind -p "$repo")
     else
-        read -r repo root < <(repofind -s)
+        dest=$(repofind -s)
+        read -r repo root <<< "$dest"
     fi
 
     if ! grep -qx "$root" <(pacconf CacheDir); then
