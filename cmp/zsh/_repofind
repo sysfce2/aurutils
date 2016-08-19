@@ -3,7 +3,9 @@
 typeset -A opt_args
 
 _repofind_opts=(
+    '-c[Canonicalize directory path]'
     '-l[List file:// repositories]'
+    '-p[Retrieve repository path]'
     '-s[Select a local repository]'
 )
 
