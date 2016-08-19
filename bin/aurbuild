@@ -100,7 +100,7 @@ fi
 for arg in queue database pool root; do
     if [[ -z ${!arg} ]]; then
         error "$argv0: $arg: missing argument"
-        err=1
+        err++
     fi
 done
 
