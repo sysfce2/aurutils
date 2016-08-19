@@ -194,25 +194,18 @@ if ((sign)); then
 fi
 
 if ((build)) || ((update)); then
-    if [[ $root ]]; then
-        root=$(pacconf --single --repo="$repo" Server)
-        root=${root#file://}
+    if [[ $repo ]]; then
+        root=$(repofind -p "$repo")
     else
         read -r repo root < <(repofind -s)
     fi
 
     if ! grep -qx "$root" <(pacconf CacheDir); then
-        error "$argv0: repository root $root is not a cache directory"
+        error "$argv0: repository path $root is not a cache directory"
         exit 1
-    elif [[ ! -d $root ]]; then
-        error "$argv0: repository root $root is not a directory"
-        exit 20
-    elif [[ ! -w $root ]]; then
-        error "$argv0: repository root $root is not writeable"
-        exit 13
-    else
-        msg2 "Using [$repo] repository"
     fi
+
+    msg2 "Using [$repo] repository"
 fi
 
 if ((update)); then
