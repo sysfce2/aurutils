@@ -16,7 +16,7 @@ repo_list() {
         rset[$repo]=$(pacconf --single --repo="$repo" Server)
 
         if [[ ${rset[$repo]} =~ ^$scheme ]]; then
-            printf '%s %s\n' "$repo" "${rset[$repo]}"
+            printf '%s\t%s\n' "$repo" "${rset[$repo]}"
         fi
     done
 }
@@ -45,7 +45,7 @@ repo_select() {
     root=${avail[$repo]#*://}
 
     if dir_is_rw "$root"; then
-        printf '%s %s\n' "$repo" "$root"
+        printf '%s\t%s\n' "$repo" "$root"
     else
         exit $?
     fi
