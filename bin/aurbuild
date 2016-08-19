@@ -93,14 +93,14 @@ if (($#)); then
     fi
 fi
 
-if [[ -z ${!database} ]]; then
+if [[ -z $database ]]; then
     error "$argv0: database: missing argument"
     usage; exit 1
 elif ! pacconf --repo="$database" >/dev/null; then
     exit 22
 fi
 
-if [[ -z ${!queue} ]]; then
+if [[ -z $queue ]]; then
     error "$argv0: queue: missing argument"
     usage; exit 1
 elif [[ ! -r $queue || -d $queue ]]; then
@@ -109,13 +109,13 @@ elif [[ ! -r $queue || -d $queue ]]; then
 fi
 
 if [[ $root ]]; then
-    root=$(realpath -e -- "$root")
+    root=$(repofind -c "$root")
 else
     root=$(repofind -p "$database")
 fi
 
 if [[ $pool ]]; then
-    pool=$(realpath -e -- "$pool")
+    pool=$(repofind -c "$pool")
 else
     pool=$root
 fi
