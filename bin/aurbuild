@@ -103,7 +103,10 @@ fi
 if [[ -z $queue ]]; then
     error "$argv0: queue: missing argument"
     usage; exit 1
-elif [[ ! -r $queue || -d $queue ]]; then
+elif [[ -r $queue && ! -d $queue ]]; then
+    # Read from FD 3 to choose providers with makepkg (#21)
+    exec 3< "$queue"
+else
     error "$argv0: queue: must be a readable file"
     exit 13
 fi
@@ -139,9 +142,6 @@ if ((chroot)); then
         sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
     fi
 fi
-
-# Read from FD 3 to choose providers with makepkg (#21)
-exec 3< "$queue"
 
 while read -r -u 3 pkg _; do
     if cd "$base/$pkg"; then
