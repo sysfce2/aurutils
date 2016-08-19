@@ -230,9 +230,9 @@ msg "Resolving dependencies..."
 gendeps "$deps" "$@" | ignorepkg "$ignore" | tee tree | xargs -r aursearch -Fr > results.json
 
 jshon -F results.json -a -e results -a -e Name -u > aur/pkgname
-jshon -F results.json -a -e results -a -e Name -u -p -e PackageBase -u | xargs -n2 > aur/pkgbase
-jshon -F results.json -a -e results -a -e Name -u -p -e Version -u | xargs -n2 > aur/pkgver
-jshon -F results.json -a -e results -a -e PackageBase -u -p -e URLPath -u | xargs -n2 > aur/urlpath
+printf '%s\t%s\n' $(jshon -F results.json -a -e results -a -e Name -u -p -e PackageBase -u)    > aur/pkgbase
+printf '%s\t%s\n' $(jshon -F results.json -a -e results -a -e Name -u -p -e Version -u)        > aur/pkgver
+printf '%s\t%s\n' $(jshon -F results.json -a -e results -a -e PackageBase -u -p -e URLPath -u) > aur/urlpath
 
 # Include command-line arguments to check for missing packages (#139)
 cat <(printf '%s\n' "$@") <(aursift -S < tree) > norepo
