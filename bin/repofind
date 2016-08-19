@@ -67,6 +67,17 @@ repo_path() {
     fi
 }
 
+repo_canonicalize() {
+    local dest
+    dest=$(realpath -e -- "$1")
+
+    if dir_is_rw "$dest"; then
+        printf '%s\n' "$dest"
+    else
+        exit $?
+    fi
+}
+
 dir_is_rw() {
     if [[ ! -r $1 ]]; then
         error "$argv0: repository path $1 is not readable"
@@ -88,12 +99,13 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :p:ls OPT; do
+while getopts :c:p:ls OPT; do
     case "$OPT" in
+        c) repo_canonicalize "$OPTARG" ;;
         l) repo_list ;;
         p) repo_path "$OPTARG" ;;
         s) repo_select ;;
-        *) plain "usage: $argv0 [-l] [-p <repo>] [-s]"
+        *) plain "usage: $argv0 [-c <path>] [-l] [-p <repo>] [-s]"
            exit 1 ;;
     esac
 done
