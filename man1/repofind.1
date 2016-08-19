@@ -4,12 +4,19 @@ repofind \- display information on file:// repositories
 
 .SH SYNOPSIS
 .SY repofind
+.OP \-c <path>
 .OP \-l
 .OP \-p <repo>
 .OP \-s
 .YS
 
 .SH OPTIONS
+.B \-c
+.RS
+Canonicalize a given path, and check if it is writeable and a
+directory.
+.RE
+
 .B \-l
 .RS
 Find and list all \fIfile:// \fR(local) repositories in \fIpacman.conf\fR,
