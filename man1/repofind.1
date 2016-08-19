@@ -1,10 +1,11 @@
-.TH REPOFIND 1 2016-07-19 AURUTILS
+.TH REPOFIND 1 2016-08-19 AURUTILS
 .SH NAME
 repofind \- display information on file:// repositories
 
 .SH SYNOPSIS
 .SY repofind
 .OP \-l
+.OP \-p <repo>
 .OP \-s
 .YS
 
@@ -15,13 +16,18 @@ Find and list all \fIfile:// \fR(local) repositories in \fIpacman.conf\fR,
 together with the \fIServer \fRdirective.
 .RE
 
+.B \-p
+.RS
+Retrieve the path of a given repository, and check if it is writeable
+and a directory.
+.RE
+
 .B \-s
 .RS
 Interactively select a local repository (implies \fI\-i\fR).
 .RE
 
 .SH SEE ALSO
-.BR aursearch (1),
 .BR pacconf (1),
 .BR makepkg.conf (5),
 .BR pacman.conf (5),
