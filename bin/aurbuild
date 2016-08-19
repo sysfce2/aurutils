@@ -8,7 +8,7 @@ base=$PWD
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
 readonly PS4 argv0 base tmp
-declare -i chroot=0 sign_pkg=0 err=0
+declare -i chroot=0 sign_pkg=0
 
 makepkg_args=(-Lcrs)
 makechrootpkg_args=(-cu)
