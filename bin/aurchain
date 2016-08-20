@@ -33,7 +33,10 @@ count() {
 pair() {
     for ((i = 0; i < "$1"; ++i)); do
         awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 {
-           if($0 != "null") print p, $1; else print p, p
+        if ($0 != "null")
+            printf("%s\t%s\n", p, $1);
+        else
+            printf("%s\t%s\n", p, p);
         }' <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e Depends -a -u) \
            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
            <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e CheckDepends -a -u)
@@ -57,9 +60,9 @@ dmsort() {
 }
 
 chain() {
-    curl_safe "$(printf '%s\n' "$@" | url)" > raw/0
+    curl_safe "$(printf '%s\n' "$@" | url)" > json/0
 
-    if [[ $(count raw/0) -lt 1 ]]; then
+    if [[ $(count json/0) -lt 1 ]]; then
         error "$argv0: no packages found"
         exit 1
     fi
@@ -67,26 +70,26 @@ chain() {
     for ((a = 1; a <= 30; ++a)); do
         declare -i sub=$((a-1))
 
-        pair "$(count raw/$sub)" raw/$sub > struct/$sub
+        pair "$(count json/$sub)" json/$sub > tsv/$sub
 
-        f1 struct/$sub >> aur/pkgname
-        f1 struct/$sub >> aur/seen
+        f1 tsv/$sub >> pkgname
+        f1 tsv/$sub >> seen
 
-        sort -u struct/$sub >> struct/n
+        sort -u tsv/$sub >> tsv/n
 
         # Avoid querying duplicates (#4)
-        target=$(grep -Fxvf aur/seen <(f2 struct/$sub) | url)
+        target=$(grep -Fxvf seen <(f2 tsv/$sub) | url)
 
         if [[ $target ]]; then            
-            curl_safe "$target" > raw/$a
+            curl_safe "$target" > json/$a
         else
             break
         fi
 
-        if [[ $(count raw/$a) -lt 1 ]]; then
+        if [[ $(count json/$a) -lt 1 ]]; then
             break
         else
-            f2 struct/$sub >> aur/seen
+            f2 tsv/$sub >> seen
         fi
     done
 
@@ -95,7 +98,7 @@ chain() {
         exit 34
     fi
 
-    if ! dmsort struct/n; then
+    if ! dmsort tsv/n; then
         error "$argv0: invalid argument"
         exit 22
     fi
@@ -129,15 +132,15 @@ if ((!$#)); then
 fi
 
 cd_safe "$tmp"
-mkdir {aur,raw,struct} || exit
+mkdir {json,tsv} || exit
 
-# Generate dependency tree and pkgname list (aur/pkgname).
-chain "$@" > aur/tree
+# Generate dependency tree and pkgname list (pkgname).
+chain "$@" > tree
 
 if ((all)); then
-    tac aur/tree
+    tac tree
 else
-    grep -Fxf aur/pkgname aur/tree | tac
+    grep -Fxf pkgname tree | tac
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
