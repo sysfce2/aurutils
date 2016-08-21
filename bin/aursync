@@ -1,5 +1,5 @@
 #!/bin/bash
-# -*- indent-tabs-mode: nil; -*-
+# shellcheck disable=SC2046
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 
@@ -211,9 +211,7 @@ if ((build)) || ((update)); then
 fi
 
 if ((update)); then
-    for p in $(aurcheck -q "$repo"); do
-        set -- "$@" "$p"
-    done
+    set -- "$@" $(aurcheck -q "$repo")
 
     if ((!$#)); then
         plain "there is nothing to do"
