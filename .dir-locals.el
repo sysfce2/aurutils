@@ -1,5 +1,7 @@
 ;;; Directory Local Variables
 ;;; For more information see (info "(emacs) Directory Variables")
 
-((sh-mode
+((awk-mode
+  (indent-tabs-mode))
+ (sh-mode
   (indent-tabs-mode)))
