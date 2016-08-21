@@ -12,12 +12,13 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i view=1 build=1 ver=1 deps=1 fetch=1
+declare -i view=1 build=1 chkver=1 deps=1 fetch=1
 declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0
 declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 
 # $1: origin (URI)
-# $2: git fetch (bool)
+# $2: git fetch (1/0)
+# $3: diff directory
 # stdin: pkgbase
 clone() {
     declare base
@@ -34,7 +35,7 @@ clone() {
               fi
 
               if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
-                  git --no-pager log --patch --stat '..@{upstream}' >> "$tmp/$base".diff
+                  git --no-pager log --patch --stat '..@{upstream}' >> "$3/$base"
                   git reset --hard HEAD
                   git merge
               fi
@@ -56,7 +57,7 @@ aria() {
     done
 }
 
-# $1: tree (bool)
+# $1: tree (1/0)
 gendeps() {
     if (($1)); then
         aurchain -a "${@:2}"
@@ -65,7 +66,7 @@ gendeps() {
     fi
 }
 
-# $1: IgnorePkg (bool)
+# $1: IgnorePkg (1/0)
 # stdin: pkgname
 ignorepkg() {
     if (($1)); then
@@ -151,7 +152,7 @@ while true; do
         --ignore)    ignore=1;   shift ;;
         --nobuild)   build=0;    shift ;;
         --nodeps)    deps=0;     shift ;;
-        --nover)     ver=0;      shift ;;
+        --nover)     chkver=0;   shift ;;
         --noview)    view=0;     shift ;;
         --repo)      repo=$2;    shift 2 ;;
         --) shift
@@ -224,55 +225,55 @@ mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
-mkdir aur
+mkdir {tsv,json,diff}
 
 msg "Resolving dependencies..."
-gendeps "$deps" "$@" | ignorepkg "$ignore" | tee tree | xargs -r aursearch -Fr > results.json
+gendeps "$deps" "$@" | ignorepkg "$ignore" | tee queue_pre | xargs -r aursearch -Fr > json/results
 
-jshon -F results.json -a -e results -a -e Name -u > aur/pkgname
-printf '%s\t%s\n' $(jshon -F results.json -a -e results -a -e Name -u -p -e PackageBase -u)    > aur/pkgbase
-printf '%s\t%s\n' $(jshon -F results.json -a -e results -a -e Name -u -p -e Version -u)        > aur/pkgver
-printf '%s\t%s\n' $(jshon -F results.json -a -e results -a -e PackageBase -u -p -e URLPath -u) > aur/urlpath
+jshon -F json/results -a -e results -a -e Name -u > tsv/pkgname
+printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e PackageBase -u)    > tsv/pkgbase
+printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e Version -u)        > tsv/pkgver
+printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e PackageBase -u -p -e URLPath -u) > tsv/urlpath
 
 # Include command-line arguments to check for missing packages (#139)
-cat <(printf '%s\n' "$@") <(aursift -S < tree) > norepo
+printf '%s\n' "$@" $(aursift -S < queue_pre) > foreign
 
-if nomatch=($(grep -Fxvf aur/pkgname norepo)); then
+if nomatch=($(grep -Fxvf tsv/pkgname foreign)); then
     for pkg in "${nomatch[@]}"; do
         warning "no results found for $pkg"
     done
 fi
 
 # XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf aur/pkgname tree | i686 | aursplit aur/pkgbase > aur/tsort
+grep -Fxf tsv/pkgname queue_pre | i686 | aursplit tsv/pkgbase > queue_aur
 
-if ((ver)); then
+if ((chkver)); then
     # pkgver -> pkgver (sync) -> pkgbase (sync)
-    aursift -U < aur/pkgver | aursplit aur/pkgbase > aur/sync
+    aursift -U < tsv/pkgver | aursplit tsv/pkgbase > updated
 
     # pkgbase (tsort) \ pkgbase (sync)
-    if ! grep -Fxvf aur/sync aur/tsort > queue; then
+    if ! grep -Fxvf updated queue_aur > queue; then
         plain "there is nothing to do"
         exit
     fi
 else
-    cp -sv aur/tsort queue
+    cp -sv queue_aur queue
 fi
 
 msg "Retrieving build files..."
 
 if ((snapshot)); then
     cd_safe "$AURDEST"/snapshot
-    grep -Fwf "$tmp"/queue "$tmp"/aur/urlpath | aria "$aurweb" "$tmp"
+    grep -Fwf "$tmp"/queue "$tmp"/tsv/urlpath | aria "$aurweb" "$tmp"
 else
     cd_safe "$AURDEST"
-    clone "$aurweb" "$fetch" < "$tmp"/queue
+    clone "$aurweb" "$fetch" "$tmp"/diff < "$tmp"/queue
 fi
 
 # View changes and build files in one window (#77)
 if ((view)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/*.diff | cat - "$tmp"/queue | inspect 1
+      printf '%s\n' "$tmp"/diff/* | cat - "$tmp"/queue | inspect 1
     )
 fi
 
