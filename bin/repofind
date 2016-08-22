@@ -67,7 +67,7 @@ repo_path() {
 }
 
 repo_canonicalize() {
-    local dest
+    declare dest
     dest=$(realpath -e -- "$1")
 
     if dir_is_rw "$dest"; then
