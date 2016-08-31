@@ -30,7 +30,7 @@ split() {
 
 getjson() {
     if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
-        declare out=("$tmp"/index.html*)
+        declare out=("$tmp"/index*html*)
 
         if [[ -s ${out[0]} && $(jshon -F "${out[0]}" -e resultcount -u) -gt 0 ]]; then
             awk '{print}' "${out[@]}" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
