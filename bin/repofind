@@ -43,11 +43,8 @@ repo_select() {
 
     root=${avail[$repo]#*://}
 
-    if dir_is_rw "$root"; then
-        printf '%s\t%s\n' "$repo" "$root"
-    else
-        exit $?
-    fi
+    dir_is_rw "$root"
+    printf '%s\t%s\n' "$repo" "$root"
 }
 
 repo_path() {
@@ -59,36 +56,28 @@ repo_path() {
         exit 22
     fi
 
-    if dir_is_rw "$root"; then
-        printf '%s\n' "$root"
-    else
-        exit $?
-    fi
+    dir_is_rw "$root"
+    printf '%s\n' "$root"
 }
 
 repo_canonicalize() {
     declare dest
     dest=$(realpath -e -- "$1")
 
-    if dir_is_rw "$dest"; then
-        printf '%s\n' "$dest"
-    else
-        exit $?
-    fi
+    dir_is_rw "$dest"
+    printf '%s\n' "$dest"
 }
 
 dir_is_rw() {
     if [[ ! -r $1 ]]; then
         error "$argv0: repository path $1 is not readable"
-        return 13
+        exit 13
     elif [[ ! -w $1 ]]; then
         error "$argv0: repository path $1 is not writeable"
-        return 13
+        exit 13
     elif [[ ! -d $1 ]]; then
         error "$argv0: repository path $1 is not a directory"
-        return 20
-    else
-        return 0
+        exit 20
     fi
 }
 
