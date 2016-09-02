@@ -102,6 +102,19 @@ specified on the sudo command line (such as \fIPKGDEST\fR by
 \fBaurbuild\fR) depend on sudo policy; see \fBsudo\fR(8) and
 \fBsudoers\fR(5).
 
+.SS Avoiding password prompts
+makepkg must be run as a regular user as of version 4.2, with
+privileged operations done via \fIsudo\fR. As such, \fIaurbuild\fR can
+not be run directly as root. To avoid password prompts,
+\fBsudoers(5)\fR can be used instead.
+
+For example:
+.EX
+
+%build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
+%build localhost = (root) NOPASSWD: /usr/bin/arch-nspawn /var/lib/aurbuild/x86_64/root pacman -Syu --noconfirm
+
+.EE
 .SH SEE ALSO
 .BR pacconf (1),
 .BR pacman (1),
