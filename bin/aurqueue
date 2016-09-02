@@ -19,16 +19,16 @@ findsrc() {
 # dependencies on stdout.
 gendeps() {
     xargs -0i awk -v FS='[<=>]' '
-          /pkgbase/                     {base = $2; print $2, $2}
-          /^\t(make|check)?depends/     {print base, $2}
-          /^$/                          {nextfile}
+          /pkgbase/                 {B = $2; printf("%s\t%s\n", B, B)}
+          /^\t(make|check)?depends/ {printf("%s\t%s\n", B, $2)}
+          /^$/                      {nextfile}
     ' {}
 }
 
 allnames() {
     xargs -0i awk -v FS='[<=>]' '
-          /pkgbase/ {base = $2}
-          /pkgname/ {print $2, base}
+          /pkgbase/ {B = $2}
+          /pkgname/ {printf("%s\t%s\n", $2, B)}
     ' {}
 }
 
