@@ -129,6 +129,11 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
+if getopt -T || (($? != 4)); then
+    error "$argv0: util-linux getopt required"
+    exit 22
+fi
+
 longopts=allan,allsrc,chroot,help,ignore,nobuild,nodeps,nofetch,nover,noview,sign,tar,update,repo:
 
 if TEMP=$(getopt -o B:cfhLnstTu -l "$longopts" -n "$argv0" -- "$@"); then
