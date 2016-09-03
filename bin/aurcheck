@@ -9,7 +9,7 @@ readonly PS4 argv0 tmp
 declare -i all=0
 
 syncver() {
-    pacman -Sl "$1" | awk '{printf "%s/%s\n", $1, $2}' | pacman -Sddp --print-format '%n\t%v' -
+    pacsift --repo="$1" | expac -S '%n\t%v' -
 }
 
 aurver() {
