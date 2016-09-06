@@ -42,12 +42,8 @@ pair() {
     done
 }
 
-f1() {
-    awk '{print $1}' "$@" | sort -u
-}
-
-f2() {
-    awk '{print $2}' "$@" | sort -u
+fld() {
+    awk -v F="$1" '{print $(F)}' "$@" | sort -u
 }
 
 dmsort() {
@@ -71,13 +67,13 @@ chain() {
 
         pair "$(count json/$sub)" json/$sub > tsv/$sub
 
-        f1 tsv/$sub >> pkgname
-        f1 tsv/$sub >> seen
+        fld 1 tsv/$sub >> pkgname
+        fld 1 tsv/$sub >> seen
 
         sort -u tsv/$sub >> tsv/n
 
         # Avoid querying duplicates (#4)
-        target=$(grep -Fxvf seen <(f2 tsv/$sub) | url)
+        target=$(grep -Fxvf seen <(fld 2 tsv/$sub) | url)
 
         if [[ $target ]]; then            
             curl_safe "$target" > json/$a
@@ -88,7 +84,7 @@ chain() {
         if [[ $(count json/$a) -lt 1 ]]; then
             break
         else
-            f2 tsv/$sub >> seen
+            fld 2 tsv/$sub >> seen
         fi
     done
 
