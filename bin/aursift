@@ -8,7 +8,9 @@ readonly PS4 argv0
 # both provides and replaces fields.
 provides() {
     expac '%n %R %S' -S "$@" | awk '{
-        for(i = 2; i <= NF; ++i) { print $1, $i | "sort -u" }
+        for(i = 2; i <= NF; ++i) {
+	    printf("%s\t%s\n", $1, $i) | "sort -u"
+	}
     }'
 }
 
@@ -16,7 +18,7 @@ provides() {
 # packages not provided in the official repositories.
 sift() {
     declare -A pkgset
-    declare all siftargs query repo n p r v
+    declare all siftargs query repo n p v
 
     # Use an additional indexed array to preserve input order.
     while read -r p; do
@@ -33,8 +35,8 @@ sift() {
         siftargs+=(--satisfies="$p")
     done
 
-    for r in testing core extra community community-testing multilib multilib-testing; do
-        siftargs+=(--repo="$r")
+    for p in testing core extra community community-testing multilib multilib-testing; do
+        siftargs+=(--repo="$p")
     done
 
     # Close standard input for pacsift to allow --sync.
@@ -70,7 +72,7 @@ sift() {
 # Read "pkgname pkgver" strings from stdin, find and compare
 # repository versions, and print updated packages on stdout.
 prepare() {
-    declare name ver siftargs check
+    declare name ver check
     declare -A aur repo
 
     while read -r name ver; do
@@ -93,7 +95,7 @@ prepare() {
         else
             repo[$name]=$ver
         fi
-    done < <(expac -S '%n %v' "${!aur[@]}")
+    done < <(expac -S '%n\t%v' "${!aur[@]}")
 
     for name in "${!aur[@]}"; do
         if [[ ${repo[$name]} ]]; then
@@ -114,18 +116,18 @@ prepare() {
 }
 
 ignore() {
-    declare p q
+    declare name
     declare -A ign
 
-    while read -r p; do
-        ign[$p]=1
+    while read -r name; do
+        ign[$name]=1
     done < <(pacconf IgnorePkg)
 
-    while read -r q; do
-        if [[ ${ign[$q]} ]]; then
-            warning "$q: ignoring package upgrade"
+    while read -r name; do
+        if [[ ${ign[$name]} ]]; then
+            warning "$name: ignoring package upgrade"
         else
-            printf '%s\n' "$q"
+            printf '%s\n' "$name"
         fi
     done
 }
