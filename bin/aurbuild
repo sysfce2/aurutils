@@ -56,13 +56,14 @@ build_chroot() {
 
 pacconf_invert() {
     declare r ign="$1"
+    shift
 
-    printf "[options]\n"
-    pacconf --options
+    printf '[options]\n'
+    pacconf "$@" --options
 
     while IFS= read -r r; do
         printf '[%s]\n' "$r"
-        pacconf --repo="$r"
+        pacconf "$@" --repo="$r"
     done < <(pacconf --repo-list | grep -vx -- "$ign")
 }
 
@@ -146,7 +147,7 @@ if ((chroot)); then
     if pacconf --repo=multilib >/dev/null; then
         if [[ $machine != x86_64 ]]; then
             msg2 "$machine: ignoring [multilib] repository"
-            pacconf_invert multilib > "$tmp"/pacman.conf
+            pacconf_invert multilib --raw > "$tmp"/pacman.conf
         fi
     else
         pacconf --raw > "$tmp"/pacman.conf
