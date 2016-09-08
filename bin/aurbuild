@@ -161,7 +161,7 @@ if ((chroot)); then
         repose_args+=(-m "$machine")
     fi
     
-    if [[ ! -f $container/.arch-chroot ]]; then
+    if [[ ! -f $container/root/.arch-chroot ]]; then
         sudo install -d "$container"
         sudo setarch "$machine" mkarchroot -C "$tmp"/pacman.conf "$container"/root base base-devel
     else
