@@ -43,7 +43,9 @@ pair() {
 }
 
 fld() {
-    awk -v F="$1" '{print $(F)}' "$@" | sort -u
+    declare F="$1"; shift
+
+    awk -v F="$F" '{print $(F)}' "$@" | sort -u
 }
 
 dmsort() {
