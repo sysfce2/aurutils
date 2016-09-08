@@ -55,7 +55,7 @@ build_chroot() {
 }
 
 pacconf_invert() {
-    declare r ign="$1"
+    declare r ignored_repo="$1"
     shift
 
     printf '[options]\n'
@@ -64,7 +64,7 @@ pacconf_invert() {
     while IFS= read -r r; do
         printf '[%s]\n' "$r"
         pacconf "$@" --repo="$r"
-    done < <(pacconf --repo-list | grep -vx -- "$ign")
+    done < <(pacconf --repo-list | grep -vx -- "$ignored_repo")
 }
 
 trap_exit() {
