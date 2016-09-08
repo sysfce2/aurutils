@@ -161,11 +161,11 @@ if ((chroot)); then
         repose_args+=(-m "$machine")
     fi
     
-    if [[ ! -f $container/root/.arch-chroot ]]; then
+    if [[ -f $container/root/.arch-chroot ]]; then
+        sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
+    else
         sudo install -d "$container"
         sudo setarch "$machine" mkarchroot -C "$tmp"/pacman.conf "$container"/root base base-devel
-    else
-        sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
     fi
 
     # Check if target repository is configured in chroot (#161)
