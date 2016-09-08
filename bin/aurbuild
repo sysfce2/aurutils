@@ -22,7 +22,12 @@ build_local() {
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
-    printf '%s\n%s\n' "[$database]" "$(pacconf --repo="$database")" > "$tmp"/config
+    { printf '[options]\n'
+      pacconf --options
+      printf '[%s]\n' "$database"
+      pacconf --repo="$database"
+    } > "$tmp"/config
+
     sudo pacman -Syu --config="$tmp"/config --noprogressbar
 }
 
@@ -47,6 +52,18 @@ build_chroot() {
     fi
 
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
+}
+
+pacconf_invert() {
+    declare r ign="$1"
+
+    printf "[options]\n"
+    pacconf --options
+
+    while IFS= read -r r; do
+        printf '[%s]\n' "$r"
+        pacconf --repo="$r"
+    done < <(pacconf --repo-list | grep -vx -- "$ign")
 }
 
 trap_exit() {
@@ -125,7 +142,15 @@ fi
 
 if ((chroot)); then
     machine=${machine:-$(uname -m)}
-    pacconf --raw > "$tmp"/pacman.conf
+
+    if pacconf --repo=multilib >/dev/null; then
+        if [[ $machine != x86_64 ]]; then
+            msg2 "$machine: ignoring [multilib] repository"
+            pacconf_invert multilib > "$tmp"/pacman.conf
+        fi
+    else
+        pacconf --raw > "$tmp"/pacman.conf
+    fi
 
     if ! grep -qx "$machine" <(setarch --list); then
         error "$argv0: $machine: unknown architecture"
