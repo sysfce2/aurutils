@@ -22,7 +22,7 @@ build_local() {
     PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
-    conf_single "$database" > "$tmp"/config
+    printf '%s\n' "$database" | conf_build > "$tmp"/config
     sudo pacman -Syu --config="$tmp"/config --noprogressbar
 }
 
@@ -49,18 +49,7 @@ build_chroot() {
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
-conf_single() {
-    declare repo="$1"
-
-    printf '[options]\n'
-    pacconf --options
-
-    printf '[%s]\n' "$repo"
-    pacconf --repo="$repo"
-}
-
-conf_invert() {
-    declare ignored_repo="$1"
+conf_build() {
     declare repo
 
     printf '[options]\n'
@@ -69,7 +58,7 @@ conf_invert() {
     while IFS= read -r repo; do
         printf '[%s]\n' "$repo"
         pacconf --repo="$repo"
-    done < <(pacconf --repo-list | grep -vx -- "$ignored_repo")
+    done
 }
 
 trap_exit() {
@@ -151,7 +140,7 @@ if ((chroot)); then
 
     if pacconf --repo=multilib >/dev/null 2>&1; then
         if [[ $machine != x86_64 ]]; then
-            conf_invert multilib > "$tmp"/pacman.conf
+            pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
         fi
     else
         pacconf > "$tmp"/pacman.conf
