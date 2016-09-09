@@ -27,7 +27,7 @@ build_local() {
 }
 
 build_chroot() {
-    #global HOME GNUPGHOME GPGKEY container pool root makechrootpkg_args repose_args database
+    #global GNUPGHOME GPGKEY container pool root makechrootpkg_args repose_args database
     declare p gpgargs
 
     # Preserve PKGDEST for makechrootpkg (#120)
