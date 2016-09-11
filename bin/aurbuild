@@ -49,11 +49,12 @@ build_chroot() {
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 }
 
+# XXX: Switch to pacconf --options on new release
 conf_build() {
     declare repo
 
     printf '[options]\n'
-    pacconf --options
+    pacconf | sed -e '/^\[options\]$/,/^\[.*\]$/!d;//d'
 
     while IFS= read -r repo; do
         printf '[%s]\n' "$repo"
