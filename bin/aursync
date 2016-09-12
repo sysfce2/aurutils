@@ -16,20 +16,23 @@ declare -i view=1 build=1 chkver=1 deps=1 fetch=1
 declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0
 declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 
-# stdin: pkgbase
+# stdin: /path/to/repo.git
 clone() {
-    declare bool=$1 uri=$2 logdir=$3
-    declare base
+    declare bool=$1 logdir=$2
+    declare repo base
 
-    while read -r base _; do
+    while read -r repo _; do
+        repo=${repo#*//} repo=${repo%%.git}
+        base=${repo##*/}
+
         if [[ -d $base/.git ]]; then
             ((bool)) || continue
 
             ( cd "$base"
               git fetch -v # returns 0 even if nothing was fetched
 
-              if [[ ! $(git remote get-url --all origin) =~ ${uri#*//} ]]; then
-                  warning "remote does not match ${uri#*//}"
+              if [[ ! $(git remote get-url --all origin) =~ $repo ]]; then
+                  warning "remote does not match $repo"
               fi
 
               if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
@@ -39,17 +42,17 @@ clone() {
               fi
             )
         else
-            git clone "$uri/$base".git
+            git clone "$repo"
         fi
     done
 }
 
-# stdin: pkgbase
+# stdin: /path/to/a.tar.gz
 aria() {
-    declare uri=$1 out=$2
+    declare out=$1
     declare gz
 
-    awk -v uri="$uri" '{printf "%s/%s\n", uri, $2}' | aria2c -d "$out" -i -
+    aria2c -d "$out" -i -
 
     for gz in "$out"/*.tar.gz; do
         tar xvf "$gz" # $PWD
@@ -67,8 +70,7 @@ gendeps() {
     fi
 }
 
-# stdin: pkgname
-ignorepkg() {
+ignore_pkg() {
     declare bool=$1
 
     if ((bool)); then
@@ -78,7 +80,6 @@ ignorepkg() {
     fi
 }
 
-# stdin: pkgname
 i686() {
     awk -v arch="$(uname -m)" '{
         if(arch == "i686") {
@@ -100,7 +101,6 @@ inspect() {
     xargs -i find {} -maxdepth "$1" | viewer
 }
 
-# stdin: pkgbase
 getsource() {
     declare base
 
@@ -233,24 +233,24 @@ cd_safe "$tmp"
 mkdir {tsv,json,diff}
 
 msg "Resolving dependencies..."
-gendeps "$deps" "$@" | ignorepkg "$ignore" | tee queue_0 | xargs -r aursearch -Fr > json/results
+gendeps "$deps" "$@" | tee queue_0 | xargs -r aursearch -Fr > json/results
 
 jshon -F json/results -a -e results -a -e Name -u > tsv/pkgname
 printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e PackageBase -u)    > tsv/pkgbase
 printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e Version -u)        > tsv/pkgver
 printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e PackageBase -u -p -e URLPath -u) > tsv/urlpath
 
-# Include command-line arguments to check for missing packages (#139)
+# Unresolvable packages may appear in the dependency tree - if they are neither
+# in AUR or in a repository - or on the command line. (#139)
 cat <(printf '%s\n' "$@") <(aursift -S < queue_0) > sift_0
 
-if nomatch=($(grep -Fxvf tsv/pkgname sift_0)); then
-    for pkg in "${nomatch[@]}"; do
-        warning "no results found for $pkg"
-    done
-fi
+# Note: Exit code of process substitution is ignored.
+while read -r pkg; do
+    warning "no results found for $pkg"
+done < <(grep -Fxvf tsv/pkgname sift_0)
 
-# XXX: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf tsv/pkgname queue_0 | i686 | aursplit tsv/pkgbase > queue_1
+# Note: Packages without lib32 prefix are not necessarily in the AUR.
+grep -Fxf tsv/pkgname queue_0 | ignore_pkg "$ignore" | i686 | aursplit tsv/pkgbase > queue_1
 
 if ((chkver)); then
     # pkgver -> pkgver (sync) -> pkgbase (sync)
@@ -269,10 +269,16 @@ msg "Retrieving build files..."
 
 if ((snapshot)); then
     cd_safe "$AURDEST"/snapshot
-    grep -Fwf "$tmp"/queue "$tmp"/tsv/urlpath | aria "$aurweb" "$tmp"
+
+    grep -Fwf "$tmp"/queue "$tmp"/tsv/urlpath | awk -v uri="$aurweb" '{
+        printf "%s/%s\n", uri, $2
+    }' | aria "$tmp"
 else
     cd_safe "$AURDEST"
-    clone "$fetch" "$aurweb" "$tmp"/diff < "$tmp"/queue
+
+    awk -v uri="$aurweb" '{
+        printf "%s/%s.git\n", uri, $0
+    }' "$tmp"/queue | clone "$fetch" "$tmp"/diff
 fi
 
 # View changes and build files in one window (#77)
