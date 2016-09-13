@@ -216,7 +216,8 @@ else
     printf -- '%s\n' "$@"
 fi > queue_0
 
-xargs -a queue_0 -r aursearch -Fr > json/results
+readarray -t q < queue_0
+aursearch -Fr "${q[@]}" > json/results
 
 jshon -F json/results -a -e results -a -e Name -u > tsv/pkgname
 printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e PackageBase -u)    > tsv/pkgbase
