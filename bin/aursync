@@ -58,17 +58,6 @@ aria() {
     done
 }
 
-gendeps() {
-    declare bool=$1
-    shift
-
-    if ((bool)); then
-        aurchain -a "$@"
-    else
-        printf -- '%s\n' "$@"
-    fi
-}
-
 ignore_pkg() {
     declare bool=$1
 
@@ -231,8 +220,14 @@ chmod -c 700 "$AURDEST"
 cd_safe "$tmp"
 mkdir {tsv,json,diff}
 
-msg "Resolving dependencies..."
-gendeps "$deps" "$@" | tee queue_0 | xargs -r aursearch -Fr > json/results
+if ((deps)); then
+    msg "Resolving dependencies..."
+    aurchain -a "$@"
+else
+    printf -- '%s\n' "$@"
+fi > queue_0
+
+xargs -a queue_0 -r aursearch -Fr > json/results
 
 jshon -F json/results -a -e results -a -e Name -u > tsv/pkgname
 printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e PackageBase -u)    > tsv/pkgbase
