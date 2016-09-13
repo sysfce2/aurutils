@@ -22,8 +22,7 @@ clone() {
     declare repo base
 
     while read -r repo _; do
-        repo=${repo#*//} repo=${repo%%.git}
-        base=${repo##*/}
+        base=${repo##*/} base=${base%%.git}
 
         if [[ -d $base/.git ]]; then
             ((bool)) || continue
