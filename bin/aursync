@@ -13,8 +13,8 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
 declare -i view=1 build=1 chkver=1 deps=1 fetch=1
-declare -i update=0 ignore=0 snapshot=0 sign=0 rotate=0
-declare -i chroot=0 bindro=0 force=0 logdest=0 namcap=0 chtemp=0
+declare -i update=0 snapshot=0 sign=0 rotate=0 chroot=0
+declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 
 # stdin: /path/to/repo.git
 clone() {
@@ -56,16 +56,6 @@ aria() {
     for gz in "$out"/*.tar.gz; do
         tar xvf "$gz" # $PWD
     done
-}
-
-ignore_pkg() {
-    declare bool=$1
-
-    if ((bool)); then
-        aursift -I
-    else
-        tee
-    fi
 }
 
 i686() {
@@ -122,7 +112,7 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,allsrc,chroot,help,ignore,nobuild,nodeps,nofetch,nover,noview,sign,tar,update,repo:
+longopts=allan,allsrc,chroot,help,nobuild,nodeps,nofetch,nover,noview,sign,tar,update,repo:
 
 if TEMP=$(getopt -o B:cfhLnstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -144,7 +134,6 @@ while true; do
         -t|--tar)    snapshot=1; shift ;;
         --allan)     rotate=1;   shift ;;
         --allsrc)    allsrc=1;   shift ;;
-        --ignore)    ignore=1;   shift ;;
         --nobuild)   build=0;    shift ;;
         --nodeps)    deps=0;     shift ;;
         --nover)     chkver=0;   shift ;;
@@ -244,7 +233,7 @@ while read -r pkg; do
 done < <(grep -Fxvf tsv/pkgname sift_0)
 
 # Note: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf tsv/pkgname queue_0 | ignore_pkg "$ignore" | i686 | aursplit tsv/pkgbase > queue_1
+grep -Fxf tsv/pkgname queue_0 | aursift -I | i686 | aursplit tsv/pkgbase > queue_1
 
 if ((chkver)); then
     # pkgver -> pkgver (sync) -> pkgbase (sync)
