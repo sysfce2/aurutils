@@ -180,13 +180,13 @@ fi
 
 if ((build)) || ((update)); then
     if [[ $repo ]]; then
-        root=$(repofind -p "$repo")
+        root=$(repofind -p -- "$repo")
     else
         dest=$(repofind -s)
         read -r repo root <<< "$dest"
     fi
 
-    if ! grep -qx "$root" <(pacconf CacheDir); then
+    if ! grep -qx -- "$root" <(pacconf CacheDir); then
         error "$argv0: repository path $root is not a cache directory"
         exit 1
     fi
@@ -209,12 +209,14 @@ chmod -c 700 "$AURDEST"
 cd_safe "$tmp"
 mkdir {tsv,json,diff}
 
+printf -- '%s\n' "$@" > argv
+
 if ((deps)); then
     msg "Resolving dependencies..."
-    aurchain -a -- "$@"
+    aurchain -a -- "$@" > queue_0
 else
-    printf -- '%s\n' "$@"
-fi > queue_0
+    cp -s argv queue_0
+fi
 
 readarray -t q < queue_0
 aursearch -Fr -- "${q[@]}" > json/results
@@ -226,9 +228,7 @@ printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e PackageBase -u -p 
 
 # Unresolvable packages may appear in the dependency tree - if they are neither
 # in AUR or in a repository - or on the command line. (#139)
-{ printf -- '%s\n' "$@"
-  aursift -S < queue_0
-} > sift_0
+aursift -S < queue_0 | cat - argv > sift_0
 
 # Note: Exit code of process substitution is ignored.
 while read -r pkg; do
@@ -248,7 +248,7 @@ if ((chkver)); then
         exit
     fi
 else
-    cp -sv queue_1 queue
+    cp -s queue_1 queue
 fi
 
 msg "Retrieving build files..."
