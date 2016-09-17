@@ -32,7 +32,7 @@ getjson() {
     if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
         declare out=("$tmp"/index*.html*)
 
-        if [[ -s ${out[0]} && $(jshon -F "${out[0]}" -e resultcount -u) -gt 0 ]]; then
+        if [[ -s ${out[0]} && $(jq '.resultcount' "${out[0]}") -gt 0 ]]; then
             awk '{print}' "${out[@]}" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
         else
             error "$argv0: no results found"
@@ -52,8 +52,10 @@ json_short() {
     }; do
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" \
                "$Name" "$Version" "$NumVotes" "$Description"
-    done < <(jshon -Q -a -e results -a -e Name -u -p -e Version \
-                   -u -p -e NumVotes -u -p -e Description -u)
+    done < <(jq -r '.[].results[] | .Name,
+      .Version,
+      .NumVotes,
+      .Description')
 }
 
 json_long() {
@@ -82,10 +84,17 @@ json_long() {
         printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
         printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
         printf '%s\n'
-    done < <(jshon -Q -a -e results -a -e Name -u -p -e PackageBase -u -p -e Version \
-                   -u -p -e Description -u -p -e URL -u -p -e NumVotes -u -p -e Popularity \
-                   -u -p -e OutOfDate -u -p -e Maintainer -u -p -e FirstSubmitted \
-                   -u -p -e LastModified -u)
+    done < <(jq -r '.[].results[] | .Name,
+        .PackageBase,
+        .Version,
+        .Description,
+        .URL,
+        .NumVotes,
+        .Popularity,
+        .OutOfDate,
+        .Maintainer,
+        .FirstSubmitted,
+        .LastModified')
 }
 
 match() {
@@ -93,7 +102,7 @@ match() {
 
     for e in "${@:2}"; do
         ptr+=(-e "$e")
-    done            
+    done
 
     case "$1" in
         pkgbase)

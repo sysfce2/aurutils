@@ -26,20 +26,11 @@ url() {
 }
 
 count() {
-    jshon -QF "$1" -e resultcount
+    jq -r '.resultcount' "$1"
 }
 
 pair() {
-    for ((i = 0; i < "$1"; ++i)); do
-        awk -v FS='[<=>]' 'NR == 1 {p = $1} NR > 1 {
-        if ($0 != "null")
-            printf("%s\t%s\n", p, $1);
-        else
-            printf("%s\t%s\n", p, p);
-        }' <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e Depends -a -u) \
-           <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e MakeDepends -a -u) \
-           <(jshon -CQF "$2" -e results -e "$i" -e Name -u -p -e CheckDepends -a -u)
-    done
+    jq -r '.results[] | .Name as $name | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]? |  [$name, .] | @tsv' "$1" | sed -r 's/[<>=].*$//g'
 }
 
 fld() {
@@ -67,7 +58,7 @@ chain() {
     for ((a = 1; a <= 30; ++a)); do
         declare -i sub=$((a-1))
 
-        pair "$(count json/$sub)" json/$sub > tsv/$sub
+        pair json/$sub > tsv/$sub
 
         fld 1 tsv/$sub >> pkgname
         fld 1 tsv/$sub >> seen
@@ -77,7 +68,7 @@ chain() {
         # Avoid querying duplicates (#4)
         target=$(grep -Fxvf seen <(fld 2 tsv/$sub) | url)
 
-        if [[ $target ]]; then            
+        if [[ $target ]]; then
             curl_safe "$target" > json/$a
         else
             break
