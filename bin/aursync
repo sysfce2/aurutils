@@ -208,7 +208,6 @@ chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
 mkdir {tsv,json,diff}
-
 printf -- '%s\n' "$@" > argv
 
 if ((deps)); then
