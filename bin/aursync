@@ -220,10 +220,10 @@ fi
 readarray -t q < queue_0
 aursearch -Fr -- "${q[@]}" > json/results
 
-jshon -F json/results -a -e results -a -e Name -u > tsv/pkgname
-printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e PackageBase -u)    > tsv/pkgbase
-printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e Name -u -p -e Version -u)        > tsv/pkgver
-printf '%s\t%s\n' $(jshon -F json/results -a -e results -a -e PackageBase -u -p -e URLPath -u) > tsv/urlpath
+jq -r '.[].results[].Name' json/results > tsv/pkgname
+jq -r '.[].results[] | [.Name,.PackageBase] | @tsv' json/results > tsv/pkgbase
+jq -r '.[].results[] | [.Name,.Version] | @tsv' json/results > tsv/pkgver
+jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' json/results > tsv/urlpath
 
 # Unresolvable packages may appear in the dependency tree - if they are neither
 # in AUR or in a repository - or on the command line. (#139)

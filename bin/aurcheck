@@ -13,8 +13,7 @@ syncver() {
 }
 
 aurver() {
-    # shellcheck disable=SC2046
-    printf '%s\t%s\n' $(jshon -QC -a -e results -a -e Name -u -p -e Version -u)
+    jq -r '.[].results[] | [.Name,.Version] | @tsv'
 }
 
 f1() {
