@@ -19,7 +19,7 @@ declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 # stdin: /path/to/repo.git
 clone() {
     declare bool=$1 logdir=$2
-    declare repo base
+    declare repo base remote
 
     while read -r repo _; do
         base=${repo##*/} base=${base%%.git}
@@ -28,11 +28,13 @@ clone() {
             ((bool)) || continue
 
             ( cd "$base"
-              git fetch -v # returns 0 even if nothing was fetched
+              remote=$(git remote get-url --all origin)
 
-              if [[ ! $(git remote get-url --all origin) =~ $repo ]]; then
-                  warning "remote does not match $repo"
+              if [[ ! $remote == "$repo"* ]]; then
+                  warning "remote $remote does not match $repo"
               fi
+
+              git fetch -v # returns 0 even if nothing was fetched
 
               if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
                   git --no-pager log --patch --stat '..@{upstream}' >> "$logdir/$base"
