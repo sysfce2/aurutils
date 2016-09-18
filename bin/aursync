@@ -89,6 +89,10 @@ getsource() {
     done
 }
 
+print() {
+    printf '%s\n' "$@"
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -208,16 +212,14 @@ chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
 mkdir {tsv,json,diff}
-printf -- '%s\n' "$@" > argv
 
 if ((deps)); then
     msg "Resolving dependencies..."
-    aurchain -a -- "$@" > queue_0
+    q=($(aurchain -a -- "$@"))
 else
-    cp -s argv queue_0
+    q=("$@")
 fi
 
-readarray -t q < queue_0
 aursearch -Fr -- "${q[@]}" > json/results
 
 jq -r '.[].results[].Name' json/results > tsv/pkgname
@@ -227,7 +229,7 @@ jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' json/results > tsv/urlpat
 
 # Unresolvable packages may appear in the dependency tree - if they are neither
 # in AUR or in a repository - or on the command line. (#139)
-aursift -S < queue_0 | cat - argv > sift_0
+print "${q[@]}" | tee queue_0 | aursift -S | cat - <(print "$@") > sift_0
 
 # Note: Exit code of process substitution is ignored.
 while read -r pkg; do
@@ -263,13 +265,13 @@ else
 
     awk -v uri="$aurweb" '{
         printf "%s/%s.git\n", uri, $0
-    }' "$tmp"/queue | clone "$fetch" "$tmp"/diff
+    }' "$tmp"/queue | clone "${fetch:-1}" "$tmp"/diff
 fi
 
 # View changes and build files in one window (#77)
 if ((view)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/diff/* | cat - "$tmp"/queue | inspect 1
+      print "$tmp"/diff/* | cat - "$tmp"/queue | inspect 1
     )
 fi
 
