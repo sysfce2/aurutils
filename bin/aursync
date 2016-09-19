@@ -53,7 +53,7 @@ download() {
     declare out=$1
     declare gz
 
-    parallel "curl -s {} -o '$out'/{/}"
+    parallel --will-cite "curl -s {} -o '$out'/{/}"
 
     for gz in "$out"/*.tar.gz; do
         tar xvf "$gz" # $PWD
