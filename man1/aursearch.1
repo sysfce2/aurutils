@@ -35,6 +35,24 @@ Output JSON from AUR RPC.
 Display more package information.
 .RE
 
+.B \-n
+.RS
+Search by package name.
+.RE
+
+
+.B \-d
+.RS
+Search by package name and description.
+.RE
+
+
+.B \-m
+.RS
+Search by mainainer.
+.RE
+
+
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150
 arguments to avoid HTTP 414 errors (FS#49089). The results are merged

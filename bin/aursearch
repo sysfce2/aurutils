@@ -9,6 +9,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly PS4 argv0 aurweb tmp
 format=short
 list=pkgname
+searchby=''
 
 # Split by 150 arguments to prevent HTTP 414.
 # https://bugs.archlinux.org/task/49089
@@ -29,7 +30,7 @@ split() {
 }
 
 getjson() {
-    if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
+    if parallel --will-cite "curl -s -g {} -o $tmp/index-{#}.html"; then
         declare out=("$tmp"/index*.html*)
 
         if [[ -s ${out[0]} && $(jq '.resultcount' "${out[0]}") -gt 0 ]]; then
@@ -138,12 +139,16 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :Fbrv OPT; do
+while getopts :Fbrvmnd OPT; do
     case $OPT in
         F) list=fixed   ;;
         b) list=pkgbase ;;
         r) format=none  ;;
         v) format=long  ;;
+        m|n|d) list=fixed ;;&
+        m) searchby=maintainer ;;
+        n) searchby=name ;;
+        d) searchby=name-desc ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -154,6 +159,13 @@ if ((!$#)); then
     exit 1
 fi
 
-match "$list" "$@" | split | getjson | parse "$format"
+pkgs=("$@")
+
+if [ -n "$searchby" ]; then
+  arg="$@"
+  IFS=$'\n' pkgs=($(curl -s -G --data-urlencode "arg=$arg" -d "v=5" -d "type=search" -d "by=$searchby" "$aurweb/rpc/" | jq -r ".results[].Name"))
+fi
+
+match "$list" "${pkgs[@]}" | split | getjson | parse "$format"
 
 # vim: set et sw=4 sts=4 ft=sh:

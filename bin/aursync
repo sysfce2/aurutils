@@ -49,11 +49,11 @@ clone() {
 }
 
 # stdin: /path/to/a.tar.gz
-aria() {
+download() {
     declare out=$1
     declare gz
 
-    aria2c -d "$out" -i -
+    parallel "curl -s {} -o '$out'/{/}"
 
     for gz in "$out"/*.tar.gz; do
         tar xvf "$gz" # $PWD
@@ -261,7 +261,7 @@ if ((snapshot)); then
 
     grep -Fwf "$tmp"/queue "$tmp"/tsv/urlpath | awk -v uri="$aurweb" '{
         printf "%s/%s\n", uri, $2
-    }' | aria "$tmp"
+    }' | download "$tmp"
 else
     cd_safe "$AURDEST"
 
