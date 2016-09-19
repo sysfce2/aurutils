@@ -32,8 +32,13 @@ split() {
 getjson() {
     if parallel -j$(( $(nproc) * 3 )) --will-cite "curl -s -g {} -o $tmp/{#}.json"; then
         declare out=("$tmp"/*.json)
+        declare -i totalresults=0
 
-        if [[ -s ${out[0]} && $(jq '.resultcount' "${out[0]}") -gt 0 ]]; then
+        for j in "${out[@]}"; do
+          totalresults+=$(jq '.resultcount' "$j")
+        done
+
+        if [[ $totalresults -gt 0 ]]; then
             awk '{print}' "${out[@]}" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
         else
             error "$argv0: no results found"
@@ -159,19 +164,15 @@ if ((!$#)); then
     exit 1
 fi
 
-query=("$@")
-
-if [ -n "$searchby" ]; then
-    result=$(curl -s -G --data-urlencode "arg=${query[*]}" -d "v=5" -d "type=search" -d "by=$searchby" "$aurweb/rpc/")
-
-    if [ "$(echo $result | jq '.resultcount' )" -gt 0 ]; then
-        echo "[$result]" | parse "$format" # result in brackets because json parse functions expect an array
-    else
-        error "$argv0: no results found"
-        exit 1
-    fi
-else
-    match "$list" "${query[@]}" | split | getjson | parse "$format"
-fi
+case $searchby in
+  "name-desc") urls=("$*") ;;&
+  "name"|"maintainer") urls=("$@") ;;&
+  "name"|"maintainer"|"name-desc")
+    { for u in "${urls[@]}"; do
+      echo "$aurweb/rpc/?v=5&type=search&by=$searchby&arg=${u/ /%20}"
+    done } | getjson | parse "$format"
+  ;;
+  *) match "$list" "$@" | split | getjson | parse "$format"
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:
