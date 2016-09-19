@@ -53,7 +53,7 @@ json_short() {
     }; do
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" \
                "$Name" "$Version" "$NumVotes" "$Description"
-    done < <(jq -r '.[].results[] | .Name,
+    done < <(jq -r '[.[].results[]] | sort_by(.Name)[] | .Name,
       .Version,
       .NumVotes,
       .Description')
@@ -85,7 +85,7 @@ json_long() {
         printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
         printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
         printf '%s\n'
-    done < <(jq -r '.[].results[] | .Name,
+    done < <(jq -r '[.[].results[]] | sort_by(.Name)[] | .Name,
         .PackageBase,
         .Version,
         .Description,
