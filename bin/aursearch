@@ -30,7 +30,7 @@ split() {
 }
 
 getjson() {
-    if parallel --will-cite "curl -s -g {} -o $tmp/{#}.json"; then
+    if parallel -j$(( $(nproc) * 3 )) --will-cite "curl -s -g {} -o $tmp/{#}.json"; then
         declare out=("$tmp"/*.json)
 
         if [[ -s ${out[0]} && $(jq '.resultcount' "${out[0]}") -gt 0 ]]; then
