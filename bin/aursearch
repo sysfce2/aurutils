@@ -11,6 +11,10 @@ format=short
 list=pkgname
 searchby=name
 
+command_exists () {
+    type "$1" &> /dev/null
+}
+
 # Split by 150 arguments to prevent HTTP 414.
 # https://bugs.archlinux.org/task/49089
 split() {
@@ -30,7 +34,15 @@ split() {
 }
 
 getjson() {
-    if parallel --will-cite -X "curl -s -g {}" > $tmp/out.json; then
+    if command_exists aria2c; then
+        aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i - && cat $tmp/index*.html* > $tmp/out.json
+    elif command_exists parallel; then
+        parallel --will-cite -X "curl -s -g {}" > $tmp/out.json
+    else
+        xargs curl -s -g > $tmp/out.json
+    fi
+
+    if [ $? -eq 0 ]; then
         sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i $tmp/out.json
 
         declare -i totalresults=$(cat $tmp/out.json | jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)')
