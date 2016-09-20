@@ -9,7 +9,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly PS4 argv0 aurweb tmp
 format=short
 list=pkgname
-searchby=''
+searchby=name
 
 # Split by 150 arguments to prevent HTTP 414.
 # https://bugs.archlinux.org/task/49089
@@ -30,16 +30,13 @@ split() {
 }
 
 getjson() {
-    if parallel -j$(( $(nproc) * 3 )) --will-cite "curl -s -g {} -o $tmp/{#}.json"; then
-        declare out=("$tmp"/*.json)
-        declare -i totalresults=0
+    if parallel --will-cite -X "curl -s -g {}" > $tmp/out.json; then
+        sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i $tmp/out.json
 
-        for j in "${out[@]}"; do
-          totalresults+=$(jq '.resultcount' "$j")
-        done
+        declare -i totalresults=$(cat $tmp/out.json | jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)')
 
         if [[ $totalresults -gt 0 ]]; then
-            awk '{print}' "${out[@]}" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+            cat $tmp/out.json
         else
             error "$argv0: no results found"
             exit 1
@@ -144,15 +141,14 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :Fbrvmnd OPT; do
+while getopts :PFbrvmd OPT; do
     case $OPT in
+        P|F) searchby='' ;;&
         F) list=fixed   ;;
         b) list=pkgbase ;;
         r) format=none  ;;
         v) format=long  ;;
-        m|n|d) list=fixed ;;&
         m) searchby=maintainer ;;
-        n) searchby=name ;;
         d) searchby=name-desc ;;
     esac
 done
@@ -164,15 +160,12 @@ if ((!$#)); then
     exit 1
 fi
 
-case $searchby in
-  "name-desc") urls=("$*") ;;&
-  "name"|"maintainer") urls=("$@") ;;&
-  "name"|"maintainer"|"name-desc")
-    { for u in "${urls[@]}"; do
-      echo "$aurweb/rpc/?v=5&type=search&by=$searchby&arg=${u/ /%20}"
-    done } | getjson | parse "$format"
-  ;;
-  *) match "$list" "$@" | split | getjson | parse "$format"
-esac
+if [ -n "$searchby" ]; then
+  { for q in "$@"; do
+    echo "$aurweb/rpc/?v=5&type=search&by=$searchby&arg=${q/ /%20}"
+  done } | getjson | parse "$format"
+else
+  match "$list" "$@" | split | getjson | parse "$format"
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:

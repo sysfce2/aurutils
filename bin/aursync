@@ -50,14 +50,18 @@ clone() {
 
 # stdin: /path/to/a.tar.gz
 download() {
-    declare out=$1
+    # changing directory is necessary since curl's --remote-name-all saves files to working dir and there is no option to change that as far as i know
+    cd $1
+
     declare gz
 
-    parallel -j$(( $(nproc) * 3 )) --will-cite "curl -s {} -o '$out'/{/}"
+    parallel --will-cite -X "curl -s --remote-name-all {}"
 
-    for gz in "$out"/*.tar.gz; do
+    for gz in *.tar.gz; do
         tar xvf "$gz" # $PWD
     done
+
+    cd $OLDPWD
 }
 
 i686() {

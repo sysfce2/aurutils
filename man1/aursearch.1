@@ -4,25 +4,30 @@ aursearch \- search AUR package names by pcre pattern
 
 .SH SYNOPSIS
 .SY aursearch
-.OP \-brv
+.OP \-brvmd
+.OP -P pattern
 .OP -F string
-.I pattern
+.I string
 .YS
 
 .SH DESCRIPTION
-\fBaursearch\fR searches the AUR by a PCRE pattern. If the query
-contains multiple patterns, the union of all pattern results is
-returned.
+\fBaursearch\fR searches the AUR by multiple patterns or strings,
+the union of all search results is returned.
 
 .SH OPTIONS
 .B \-F
 .RS
-Search for a fixed string instead of a PCRE pattern.
+Search for a fixed string.
+.RE
+
+.B \-P
+.RS
+Search for a PCRE pattern.
 .RE
 
 .B \-b
 .RS
-Match pkgbase instead of pkgname.
+Match pkgbase instead of pkgname (PCRE/fixed search only).
 .RE
 
 .B \-r
@@ -35,17 +40,10 @@ Output JSON from AUR RPC.
 Display more package information.
 .RE
 
-.B \-n
-.RS
-Search by package name.
-.RE
-
-
 .B \-d
 .RS
 Search by package name and description.
 .RE
-
 
 .B \-m
 .RS
