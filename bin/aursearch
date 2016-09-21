@@ -48,7 +48,7 @@ getjson() {
         sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i $tmp/out.json
 
         declare -i totalresults
-        totalresults=$(cat $tmp/out.json | jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)')
+        totalresults=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' $tmp/out.json)
 
         if [[ $totalresults -gt 0 ]]; then
             cat $tmp/out.json
