@@ -55,19 +55,21 @@ clone() {
 # stdin: /path/to/a.tar.gz
 download() {
     # changing directory is necessary since curl's --remote-name-all saves files to working dir and there is no option to change that as far as i know
-    cd $1
 
     declare gz
 
-    if command_exists aria2c; then
-        aria2c -d "$1" -i -
-    elif command_exists parallel; then
-        parallel --will-cite -X "curl -s --remote-name-all {}"
-    else
-        xargs curl -s --remote-name-all
-    fi
+    (
+      cd $1
 
-    cd $OLDPWD
+      if command_exists aria2c; then
+          aria2c -d "." -i -
+      elif command_exists parallel; then
+          parallel --will-cite -X "curl -s --remote-name-all {}"
+      else
+          readarray -t uri
+          curl -s --remote-name-all "${uri[@]}"
+      fi
+    )
 
     for gz in $1/*.tar.gz; do
         tar xvf "$gz" # $PWD

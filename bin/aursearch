@@ -15,13 +15,14 @@ command_exists () {
     type "$1" &> /dev/null
 }
 
+urlencode() {
+    jq -R -r '@uri'
+}
+
 # Split by 150 arguments to prevent HTTP 414.
 # https://bugs.archlinux.org/task/49089
 split() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
-        gsub("+","%2b")
-        gsub("@","%40")
-
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
         if (NR > 1)
@@ -39,13 +40,15 @@ getjson() {
     elif command_exists parallel; then
         parallel --will-cite -X "curl -s -g {}" > $tmp/out.json
     else
-        xargs curl -s -g > $tmp/out.json
+        readarray -t uri
+        curl -s  -g "${uri[@]}" > $tmp/out.json
     fi
 
     if [ $? -eq 0 ]; then
         sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i $tmp/out.json
 
-        declare -i totalresults=$(cat $tmp/out.json | jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)')
+        declare -i totalresults
+        totalresults=$(cat $tmp/out.json | jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)')
 
         if [[ $totalresults -gt 0 ]]; then
             cat $tmp/out.json
@@ -174,10 +177,11 @@ fi
 
 if [ -n "$searchby" ]; then
   { for q in "$@"; do
-    echo "$aurweb/rpc/?v=5&type=search&by=$searchby&arg=${q/ /%20}"
+    echo -n "$aurweb/rpc/?v=5&type=search&by=$searchby&arg="
+    echo "$q" | urlencode
   done } | getjson | parse "$format"
 else
-  match "$list" "$@" | split | getjson | parse "$format"
+  match "$list" "$@" | urlencode | split | getjson | parse "$format"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
