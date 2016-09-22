@@ -5,14 +5,14 @@ aursearch \- search AUR package names by pcre pattern
 .SH SYNOPSIS
 .SY aursearch
 .OP \-brvmd
-.OP -P pattern
 .OP -F string
+.OP -P pattern
 .I string
 .YS
 
 .SH DESCRIPTION
-\fBaursearch\fR searches the AUR by multiple patterns or strings.
-The union of all search results is returned.
+\fBaursearch\fR searches the AUR by multiple patterns or strings. The
+union of all results is returned.
 
 .SH OPTIONS
 .B \-F
@@ -47,9 +47,8 @@ Search by package name and description.
 
 .B \-m
 .RS
-Search by mainainer.
+Search by maintainer.
 .RE
-
 
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150
