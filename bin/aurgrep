@@ -6,58 +6,51 @@ argv0=aurgrep
 aurweb="https://aur.archlinux.org"
 cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
 
-readonly PS4 argv0 aurweb cache tmp
+readonly PS4 argv0 aurweb cache
+
+list=packages.gz
 
 # The update interval is set to 5 minutes by default.
 # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
 declare -i delay=300
 
-# $1: .gz archive (URI)
-# $2: .gz archive (name)
-fetch() {
-    if curl -sS "$1" -o "$2"; then
-        gunzip -f "$2"
-    else
-        exit
-    fi
+curl_date() {
+    curl -fsSI "$1" | awk -F', ' '/^Date:/ {print $2}'
 }
 
-# $1: .gz archive (URI)
+curl_unzip() {
+    curl -fsS "$1" -o - | gzip -d - > "$2" || return
+}
+
 sync_list() {
-    #global delay
-    declare gz=${1##*/}
-    declare un=${gz%.*}
+    declare uri=$1
+    declare list_un=${uri##*/}
+    declare list_un=${list_un%.*}
 
-    declare epoch_l epoch_r
+    if [[ -s $list_un ]]; then
+        declare epoch_l epoch_r
 
-    if [[ -f $un ]]; then
         # Use HTTP date to compare the generation date (first line).
         # https://bugs.archlinux.org/task/49092
-        read -r epoch_l < <(date -d "$(awk -F', ' '{print $3; exit}' "$un")" '+%s')
-        read -r epoch_r < <(date -d "$(curl -fsSI "$1" | awk -F', ' '/^Date:/ {print $2}')" '+%s')
+        read -r epoch_l < <(date -d "$(awk -F', ' '{print $3; exit}' "$list_un")" '+%s')
+        read -r epoch_r < <(date -d "$(curl_date "$uri")" '+%s')
 
         if ((epoch_r - epoch_l > delay)); then
-            fetch "$1" "$gz"
+            curl_unzip "$uri" "$list_un"
         fi
     else
-        fetch "$1" "$gz"
+        curl_unzip "$uri" "$list_un"
     fi
 }
 
 while getopts :bt OPT; do
     case "$OPT" in
-        b) pkgbase=1     ;;
+        b) list=pkgbase.gz ;;
         t) delay=$OPTARG ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
-
-if ((pkgbase)); then
-    list=pkgbase.gz
-else
-    list=packages.gz
-fi
 
 source /usr/share/makepkg/util.sh || exit
 
