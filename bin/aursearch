@@ -12,15 +12,13 @@ list=pkgname
 searchby=name
 
 command_exists () {
-    type "$1" &> /dev/null
+    type -P -- "$1" >/dev/null 2>&1
 }
 
 urlencode() {
     jq -R -r '@uri'
 }
 
-# Split by 150 arguments to prevent HTTP 414.
-# https://bugs.archlinux.org/task/49089
 split() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
         if (NR == 1)
@@ -34,30 +32,37 @@ split() {
     }'
 }
 
-getjson() {
+dl_stdin() {
+    declare -a uri
+
     if command_exists aria2c; then
-        aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i - && cat $tmp/index*.html* > $tmp/out.json
+        aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp"/aria2 -i - && cat "$tmp"/aria2/*
     elif command_exists parallel; then
-        parallel --will-cite -X "curl -s -g {}" > $tmp/out.json
+        parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 --bar 'curl -fgLsS {}'
     else
         readarray -t uri
-        curl -s  -g "${uri[@]}" > $tmp/out.json
+        curl -fgLsS --compressed "${uri[@]}"
     fi
 
-    if [ $? -eq 0 ]; then
-        sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i $tmp/out.json
+}
 
-        declare -i totalresults
-        totalresults=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' $tmp/out.json)
+getjson() {
+    declare outfile="$tmp"/out.json
 
-        if [[ $totalresults -gt 0 ]]; then
-            cat $tmp/out.json
-        else
-            error "$argv0: no results found"
-            exit 1
-        fi
+    if dl_stdin > "$outfile"; then
+        sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i "$outfile"
     else
         exit $?
+    fi
+
+    declare -i total
+    total=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$outfile")
+
+    if ((total)); then
+        cat "$outfile"
+    else
+        error "$argv0: no results found"
+        exit 1
     fi
 }
 
@@ -157,14 +162,14 @@ if [[ -t 2 ]]; then
 fi
 
 while getopts :PFbrvmd OPT; do
-    case $OPT in
-        P|F) searchby='' ;;&
+    case "$OPT" in
+        P|F) searchby=none ;;&
         F) list=fixed   ;;
         b) list=pkgbase ;;
         r) format=none  ;;
         v) format=long  ;;
         m) searchby=maintainer ;;
-        d) searchby=name-desc ;;
+        d) searchby=name-desc  ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -175,10 +180,10 @@ if ((!$#)); then
     exit 1
 fi
 
-if [ -n "$searchby" ]; then
+if [[ $searchby != none ]]; then
   { for q in "$@"; do
-    echo -n "$aurweb/rpc/?v=5&type=search&by=$searchby&arg="
-    echo "$q" | urlencode
+    printf '%s/rpc/?v=5&type=search&by=%s&arg=' "$aurweb" "$searchby"
+    printf '%s\n' "$q" | urlencode
   done } | getjson | parse "$format"
 else
   match "$list" "$@" | urlencode | split | getjson | parse "$format"
