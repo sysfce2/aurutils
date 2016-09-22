@@ -9,14 +9,20 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly PS4 argv0 aurweb tmp
 format=short
 list=pkgname
+searchby=name
+
+command_exists () {
+    type "$1" &> /dev/null
+}
+
+urlencode() {
+    jq -R -r '@uri'
+}
 
 # Split by 150 arguments to prevent HTTP 414.
 # https://bugs.archlinux.org/task/49089
 split() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
-        gsub("+","%2b")
-        gsub("@","%40")
-
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
         if (NR > 1)
@@ -29,11 +35,23 @@ split() {
 }
 
 getjson() {
-    if aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i -; then
-        declare out=("$tmp"/index*.html*)
+    if command_exists aria2c; then
+        aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp" -i - && cat $tmp/index*.html* > $tmp/out.json
+    elif command_exists parallel; then
+        parallel --will-cite -X "curl -s -g {}" > $tmp/out.json
+    else
+        readarray -t uri
+        curl -s  -g "${uri[@]}" > $tmp/out.json
+    fi
 
-        if [[ -s ${out[0]} && $(jq '.resultcount' "${out[0]}") -gt 0 ]]; then
-            awk '{print}' "${out[@]}" | sed -e '1i[' -e '$!s/$/,/' -e '$a]'
+    if [ $? -eq 0 ]; then
+        sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i $tmp/out.json
+
+        declare -i totalresults
+        totalresults=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' $tmp/out.json)
+
+        if [[ $totalresults -gt 0 ]]; then
+            cat $tmp/out.json
         else
             error "$argv0: no results found"
             exit 1
@@ -52,7 +70,7 @@ json_short() {
     }; do
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" \
                "$Name" "$Version" "$NumVotes" "$Description"
-    done < <(jq -r '.[].results[] | .Name,
+    done < <(jq -r '[.[].results[]] | sort_by(.Name)[] | .Name,
       .Version,
       .NumVotes,
       .Description')
@@ -84,7 +102,7 @@ json_long() {
         printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
         printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
         printf '%s\n'
-    done < <(jq -r '.[].results[] | .Name,
+    done < <(jq -r '[.[].results[]] | sort_by(.Name)[] | .Name,
         .PackageBase,
         .Version,
         .Description,
@@ -138,12 +156,15 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :Fbrv OPT; do
+while getopts :PFbrvmd OPT; do
     case $OPT in
+        P|F) searchby='' ;;&
         F) list=fixed   ;;
         b) list=pkgbase ;;
         r) format=none  ;;
         v) format=long  ;;
+        m) searchby=maintainer ;;
+        d) searchby=name-desc ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -154,6 +175,13 @@ if ((!$#)); then
     exit 1
 fi
 
-match "$list" "$@" | split | getjson | parse "$format"
+if [ -n "$searchby" ]; then
+  { for q in "$@"; do
+    echo -n "$aurweb/rpc/?v=5&type=search&by=$searchby&arg="
+    echo "$q" | urlencode
+  done } | getjson | parse "$format"
+else
+  match "$list" "$@" | urlencode | split | getjson | parse "$format"
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
