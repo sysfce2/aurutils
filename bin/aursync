@@ -50,18 +50,16 @@ clone() {
 
 # stdin: /path/to/a.tar.gz
 download() {
-    declare out=$1
-    declare uri gz
+    declare out=$1 gz
 
     ( cd_safe "$out"
 
       if command_exists aria2c; then
           aria2c --stderr=true -d "$PWD" -i -
       elif command_exists parallel; then
-          parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 --bar "curl -fLsS --remote-name-all {}"
+          parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 "curl -fLsS --remote-name-all {}"
       else
-          mapfile -t uri
-          curl -fLsS --remote-name-all "${uri[@]}"
+          xargs -I{} curl -fLsS --remote-name-all {}
       fi
     )
 
