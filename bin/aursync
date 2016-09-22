@@ -102,7 +102,7 @@ getsource() {
 }
 
 command_exists () {
-    type -P "$1" &> /dev/null
+    type -P -- "$1" >/dev/null 2>&1
 }
 
 print() {
