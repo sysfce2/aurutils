@@ -139,10 +139,8 @@ fi
 if ((chroot)); then
     machine=${machine:-$(uname -m)}
 
-    if pacconf --repo=multilib >/dev/null 2>&1; then
-        if [[ $machine != x86_64 ]]; then
-            pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
-        fi
+    if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
+        pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
     else
         pacconf > "$tmp"/pacman.conf
     fi
@@ -154,7 +152,7 @@ if ((chroot)); then
         container=/var/lib/aurbuild/$machine
         repose_args+=(-m "$machine")
     fi
-    
+
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
     else
