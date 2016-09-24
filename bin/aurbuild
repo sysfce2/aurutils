@@ -140,9 +140,9 @@ if ((chroot)); then
     machine=${machine:-$(uname -m)}
 
     if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
-        pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
+        pacconf --repo-list | grep -vx multilib | conf_build | grep -v DBPath > "$tmp"/pacman.conf
     else
-        pacconf > "$tmp"/pacman.conf
+        pacconf | grep -v DBPath > "$tmp"/pacman.conf
     fi
 
     if ! grep -qx "$machine" <(setarch --list); then
