@@ -9,7 +9,7 @@ readonly PS4 argv0 tmp
 declare -i all=0
 
 syncver() {
-    pacsift --repo="$1" | expac -S '%n\t%v' -
+    pacsift --exact --repo="$1" | expac -S '%n\t%v' -
 }
 
 aurver() {
