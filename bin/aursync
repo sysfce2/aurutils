@@ -93,7 +93,7 @@ viewer() {
 }
 
 inspect() {
-    xargs -i find {} -maxdepth "$1" | viewer
+    xargs -I{} find {} -maxdepth "$1" | viewer
 }
 
 getsource() {
