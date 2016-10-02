@@ -57,7 +57,7 @@ quickcheck() {
 }
 
 usage() {
-    plain "usage: $argv0 [-a] [-q] repository"
+    plain "usage: $argv0 [-aq] repository"
     exit 1
 }
 
