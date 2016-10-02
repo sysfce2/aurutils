@@ -18,14 +18,14 @@ declare -i bindro=0 force=0 logdest=0 namcap=0 chtemp=0
 
 # stdin: /path/to/repo.git
 clone() {
-    declare bool=$1 logdir=$2 startdir=$PWD
+    declare pull=$1 logdir=$2 startdir=$PWD
     declare repo base remote
 
     while read -r repo _; do
         base=${repo##*/} base=${base%%.git}
 
         if [[ -d $base/.git ]]; then
-            ((bool)) || continue
+            ((pull)) || continue
 
             cd_safe "$base"
             remote=$(git remote get-url --all origin)
@@ -55,7 +55,7 @@ command_exists () {
 
 # stdin: /path/to/a.tar.gz
 download() {
-    declare gzdir=$1 startdir=$PWD gz
+    declare gzdir=$1 startdir=$PWD
     cd_safe "$gzdir"
 
     if command_exists aria2c; then
@@ -66,10 +66,11 @@ download() {
         xargs -I{} curl -fLsS --remote-name-all {}
     fi
 
+    declare a
     cd_safe "$startdir"
 
-    for gz in "$gzdir"/*.tar.gz; do
-        tar xvf "$gz"
+    for a in "$gzdir"/*.tar.gz; do
+        tar xvf "$a"
     done
 }
 
@@ -95,7 +96,7 @@ inspect() {
 }
 
 getsource() {
-    declare base startdir=$PWD
+    declare startdir=$PWD base
 
     while read -r base _; do
         cd_safe "$startdir/$base"
@@ -156,6 +157,7 @@ while true; do
         --allsrc)    allsrc=1;   shift ;;
         --nobuild)   build=0;    shift ;;
         --nodeps)    deps=0;     shift ;;
+        --nofetch)   fetch=0;    shift ;;
         --nover)     chkver=0;   shift ;;
         --noview)    view=0;     shift ;;
         --repo)      repo=$2;    shift 2 ;;
