@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/dash
 set -eux
 
 testrepo1=aurutils-test
@@ -16,8 +16,8 @@ server1=$(repofind -s "$testrepo1")
 server2=$(repofind -s "$testrepo2")
 find "$server1" "$server2" -type f \( -name '*.pkg*' -or -name '*.db*' -or -name '*.files*' \) -delete
 
-repo-add "$server/$testrepo1".db.tar
-repo-add "$server/$testrepo2".db.tar
+repo-add "$server1/$testrepo1".db.tar
+repo-add "$server2/$testrepo2".db.tar
 sudo pacsync "$testrepo1" "$testrepo2"
 
 # chroot test
@@ -63,9 +63,13 @@ package() {
 }
 EOF
 
-for ((i = 0; i < 10; i++)); do
-    aurbuild -d "$testrepo1" -a <(echo test-random)
+echo test-random > argfile
+
+: $((i = 0))
+while [ $((i < 10)) -ne 0 ]; do
+    aurbuild -d "$testrepo1" -a ./argfile
     sudo pacman -S test-random
+    : $((i + 1))
 done
 
 sudo pacman -R test-random
