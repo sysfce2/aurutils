@@ -158,7 +158,7 @@ if ((chroot)); then
         sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
     else
         sudo install -d "$container"
-        sudo setarch "$machine" mkarchroot -C "$tmp"/pacman.conf "$container"/root base base-devel
+        sudo setarch "$machine" mkarchroot -C "$tmp"/pacman.conf "$container"/root base-devel
     fi
 
     # Check if target repository is configured in chroot (#161)
