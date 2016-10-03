@@ -20,6 +20,14 @@ repo-add "$server/$testrepo1".db.tar
 repo-add "$server/$testrepo2".db.tar
 sudo pacsync "$testrepo1" "$testrepo2"
 
+# chroot test
+test -d "$testroot1" && sudo rm -rfv "$testroot1"
+aursync --nobuild aurutils
+aurbuild -cd "$testrepo1" -C "$testroot1"
+aurbuild -cd "$testrepo1"
+sudo pacsync "$testrepo1"
+pacsift --exact --repo="$testrepo1" --name=aurutils # Repository move
+
 # package test
 aursync -Ln --noview --repo="$testrepo1" python-nikola # Split package
 aursync -Ln --noview --repo="$testrepo1" libdbusmenu-gtk2 # Split package - pkgbase != pkgname
@@ -37,14 +45,6 @@ aursync -Ln --noview --repo="$testrepo2" aurutils-git # Self
 aursync --nobuild aura > out.log 2>&1
 total=$(grep -ci 'missing' out.log)
 test "$total" -eq 9
-
-# chroot test
-test -d "$testroot1" && sudo rm -rfv "$testroot1"
-aursync --nobuild aurutils
-aurbuild -cd "$testrepo1" -C "$testroot1"
-aurbuild -cd "$testrepo1"
-sudo pacsync "$testrepo1"
-pacsift --exact --repo="$testrepo1" --name=aurutils # Repository move
 
 # cache/checksum test
 mkdir test-random
