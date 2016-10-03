@@ -14,7 +14,7 @@ makechrootpkg_args=(-cu)
 repose_args=(-vf)
 
 build_local() {
-    #global database pool root makepkg_args repose_args sign_pkg
+    #global sign_pkg makepkg_args pool root database repose_args tmp
     if ((sign_pkg)); then
         makepkg_args+=(--sign)
     fi
@@ -27,7 +27,7 @@ build_local() {
 }
 
 build_chroot() {
-    #global GNUPGHOME GPGKEY container pool root makechrootpkg_args repose_args database
+    #global GPGKEY container pool root makechrootpkg_args repose_args database
     declare p gpgargs
 
     # Preserve PKGDEST for makechrootpkg (#120)
@@ -68,7 +68,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-cs] -a <queue> -d <repo> -r <root> [-p <pool>] [--] ARGS"
+    plain "usage: $argv0 [-cs] -a <queue> [-Cdmpr] [--] ARGS"
 }
 
 trap 'exit' INT
@@ -79,10 +79,11 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts a:cd:m:p:r:s OPT; do
+while getopts a:cC:d:m:p:r:s OPT; do
     case $OPT in
         a) queue=$OPTARG ;;
         c) chroot=1 ;;
+        C) container=$OPTARG ;;
         d) database=$OPTARG ;;
         m) machine=$OPTARG ;;
         p) pool=$OPTARG ;;
@@ -137,6 +138,8 @@ fi
 
 if ((chroot)); then
     machine=${machine:-$(uname -m)}
+    container=${container:-/var/lib/aurbuild}/$machine
+    repose_args+=(-m "$machine")
 
     if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
         pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
@@ -148,11 +151,9 @@ if ((chroot)); then
     if ! grep -qx "$machine" <(setarch --list); then
         error "$argv0: $machine: unknown architecture"
         exit 38
-    else
-        container=/var/lib/aurbuild/$machine
-        repose_args+=(-m "$machine")
     fi
 
+    # XXX: More robust path check
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
     else
