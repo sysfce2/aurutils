@@ -166,7 +166,7 @@ if ((chroot)); then
 fi
 
 while read -r -u 3 pkg _; do
-    cd_safe "$base/$pkg"; then
+    cd_safe "$base/$pkg"
 
     if ((chroot)); then
         build_chroot
