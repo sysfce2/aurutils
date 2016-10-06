@@ -6,48 +6,13 @@ argv0=aurbuild
 base=$PWD
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
-readonly PS4 argv0 base tmp
+declare -r PS4 argv0 base tmp
 declare -i chroot=0 sign_pkg=0
 
-makepkg_args=(-Lcrs)
+gpg_args=(--verbose --detach-sign --no-armor)
 makechrootpkg_args=(-cu)
+makepkg_args=(-Lcrs)
 repose_args=(-vf)
-
-build_local() {
-    #global sign_pkg makepkg_args pool root database repose_args tmp
-    if ((sign_pkg)); then
-        makepkg_args+=(--sign)
-    fi
-
-    PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
-    LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
-
-    printf '%s\n' "$database" | conf_build > "$tmp"/config
-    sudo pacman -Syu --config="$tmp"/config --noprogressbar
-}
-
-build_chroot() {
-    #global GPGKEY container pool root makechrootpkg_args repose_args database
-    declare p gpgargs
-
-    # Preserve PKGDEST for makechrootpkg (#120)
-    sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$container" "${makechrootpkg_args[@]}"
-
-    # As pinentry relies on GPG_TTY and DISPLAY, sign packages outside the chroot. (#130)
-    if ((sign_pkg)); then
-        gpgargs=(--verbose --detach-sign --no-armor)
-
-        if [[ $GPGKEY ]]; then
-            gpgargs+=(-u "$GPGKEY")
-        fi
-
-        for p in $(makepkg --packagelist); do
-            find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir gpg "${gpgargs[@]}" {} \;
-        done
-    fi
-
-    LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
-}
 
 conf_build() {
     declare repo
@@ -169,9 +134,31 @@ while read -r -u 3 pkg _; do
     cd_safe "$base/$pkg"
 
     if ((chroot)); then
-        build_chroot
+        # Preserve PKGDEST for makechrootpkg (#120)
+        sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$container" "${makechrootpkg_args[@]}"
+
+        if ((sign_pkg)); then
+            if [[ $GPGKEY ]]; then
+                gpg_args+=(-u "$GPGKEY")
+            fi
+
+            # As pinentry relies on GPG_TTY and DISPLAY, sign packages outside the chroot. (#130)
+            for p in $(makepkg --packagelist); do
+                find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir gpg "${gpg_args[@]}" {} \;
+            done
+        fi
+
+        LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
     else
-        build_local
+        if ((sign_pkg)); then
+            makepkg_args+=(--sign)
+        fi
+
+        PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
+        LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
+
+        printf '%s\n' "$database" | conf_build > "$tmp"/config
+        sudo pacman -Syu --config="$tmp"/config --noprogressbar
     fi
 done
 
