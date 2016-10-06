@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2046
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 
@@ -216,9 +217,7 @@ if ((build)) || ((update)); then
 fi
 
 if ((update)); then
-    aurcheck -q "$repo" | while read -r u; do
-        set -- "$@" "$u"
-    done
+    set -- "$@" $(aurcheck -q "$repo")
 
     if ((!$#)); then
         plain "there is nothing to do"
