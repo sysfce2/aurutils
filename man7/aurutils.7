@@ -142,7 +142,7 @@ Recreate the packages, and save them to \fIPKGDEST\fR, or \fIPWD \fRif
 not set:
 .EX
 
- $ for b in $(pacman -Qqm); do bacman "$b"; done
+ $ pacman -Qqm | while read -r b; do bacman "$b"; done
 
 .EE
 To keep the repository updated when building with makepkg, set
