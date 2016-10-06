@@ -142,7 +142,7 @@ Recreate the packages, and save them to \fIPKGDEST\fR, or \fIPWD \fRif
 not set:
 .EX
 
- $ pacman -Qqm | while read -r b; do bacman "$b"; done
+  $ pacman -Qqm | while read -r b; do bacman "$b"; done
 
 .EE
 To keep the repository updated when building with makepkg, set
@@ -181,7 +181,7 @@ Search for Perl modules that are both in the AUR or official repositories:
 Search for packages with both 'wm' and 'git' in the name:
 .EX
 
-  $ aursearch '(?.*=wm)(?.*=git)'
+  $ aursearch -P '(?.*=wm)(?.*=git)'
 
 .EE
 Build \fIplasma-desktop-git \fRand its dependencies in an nspawn container:
