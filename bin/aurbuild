@@ -90,16 +90,20 @@ else
 fi
 
 if [[ $root ]]; then
-    root=$(repofind -c "$root")
+    root=$(realpath -e -- "$root")
 else
-    root=$(repofind -p "$database")
+    root=$(pacconf --single --repo="$database" Server)
+    root=${root#*://}
 fi
 
 if [[ $pool ]]; then
-    pool=$(repofind -c "$pool")
+    pool=$(realpath -e -- "$pool")
 else
     pool=$root
 fi
+
+printf '\n' > "$root"/_build
+printf '\n' > "$pool"/_build
 
 if ((chroot)); then
     machine=${machine:-$(uname -m)}
@@ -118,7 +122,6 @@ if ((chroot)); then
         exit 38
     fi
 
-    # XXX: More robust path check
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
     else

@@ -106,6 +106,38 @@ getsource() {
     cd_safe "$startdir"
 }
 
+repo_list() {
+    pacconf --repo-list | while read -r repo; do
+        printf '%s\t%s\n' "$repo" "$(pacconf --single --repo="$repo" Server)"
+    done
+}
+
+repo_select() {
+    declare repo server
+    declare -A avail
+
+    while read -r repo server; do
+        avail[$repo]=$server
+    done < <(repo_list | awk -F'\t' '$2 ~ /^file:\/\//')
+
+    if [[ ${avail[@]} ]]; then
+	if [[ ${#avail[@]} -gt 1 ]]; then
+            PS3='Select a repository: '
+
+            select repo in "${!avail[@]}"; do
+		break
+            done
+	else
+	    repo=${!avail[*]}
+	fi
+    else
+        error "$argv0: no file:// repository found"
+        exit 2
+    fi
+
+    printf '%s\t%s\n' "$repo" "${avail[$repo]#*://}"
+}
+
 print() {
     printf '%s\n' "$@"
 }
@@ -186,11 +218,13 @@ fi
 if ((chroot)); then
     aurbuild_args+=(-c)
     makepkg_args=(-cu)
+
     ((bindro))  && makepkg_args+=(-D "$newdir")
     ((chtemp))  && makepkg_args+=(-T)
     ((namcap))  && makepkg_args+=(-n)
 else
     makepkg_args=(-crs)
+
     ((force))   && makepkg_args+=(-f)
     ((logdest)) && makepkg_args+=(-L)
     ((namcap))  && makepkg_args+=(--noconfirm)
@@ -202,11 +236,14 @@ fi
 
 if ((build)) || ((update)); then
     if [[ $repo ]]; then
-        root=$(repofind -p "$repo")
+        root=$(pacconf --single --repo="$repo" Server)
+        root=${root#*://}
     else
-        dest=$(repofind -s)
+        dest=$(repo_select)
         read -r repo root <<< "$dest"
     fi
+
+    printf '\n' > "$root"/_build
 
     if ! grep -qx -- "$root" <(pacconf CacheDir); then
         error "$argv0: repository path $root is not a cache directory"
@@ -245,8 +282,7 @@ jq -r '.[].results[] | [.Name,.PackageBase] | @tsv' json/results > tsv/pkgbase
 jq -r '.[].results[] | [.Name,.Version] | @tsv' json/results > tsv/pkgver
 jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' json/results > tsv/urlpath
 
-# Unresolvable packages may appear in the dependency tree - if they are neither
-# in AUR or in a repository - or on the command line. (#139)
+# Print unavailable packages (#139)
 print "${q[@]}" | tee queue_0 | aursift -S | cat - <(print "$@") > sift_0
 
 # Note: Exit code of process substitution is ignored.
@@ -299,6 +335,7 @@ fi
 
 if ((build)); then
     aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
+
     aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
 else
     msg "Sources saved to $PWD"
