@@ -243,7 +243,7 @@ if ((build)) || ((update)); then
         read -r repo root <<< "$dest"
     fi
 
-    printf '\n' > "$root"/_build
+    printf '\n' >| "$root"/_build
 
     if ! grep -qx -- "$root" <(pacconf CacheDir); then
         error "$argv0: repository path $root is not a cache directory"
