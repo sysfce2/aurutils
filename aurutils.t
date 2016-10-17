@@ -44,7 +44,7 @@ aursync -Ln --noview --repo="$testrepo2" aurutils-git # Self
 # warning messages
 aursync --nobuild --noview aura > out.log 2>&1
 total=$(grep -ci 'no results' out.log)
-test "$total" -eq 6
+test "$total" -eq 5
 
 # cache/checksum test
 mkdir test-random
