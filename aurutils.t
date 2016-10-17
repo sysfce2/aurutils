@@ -8,12 +8,11 @@ tmp=$(mktemp -d)
 
 cd "$tmp"
 
-repofind -l "$testrepo1"
-repofind -l "$testrepo2"
-
 # clear repo
-server1=$(repofind -p "$testrepo1")
-server2=$(repofind -p "$testrepo2")
+server1=$(pacconf --single Server --repo="$testrepo1")
+server1=${server1#*://}
+server2=$(pacconf --single Server --repo="$testrepo2")
+server2=${server2#*://}
 find "$server1" "$server2" -type f \( -name '*.pkg*' -or -name '*.db*' -or -name '*.files*' \) -delete
 
 repo-add "$server1/$testrepo1".db.tar
