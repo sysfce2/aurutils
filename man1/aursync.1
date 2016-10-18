@@ -136,8 +136,8 @@ mismatches between \fI.SRCINFO\fR and \fIPKGBUILD\fR files.
 
 Architecture-specific depends (as introduced with pacman 4.2) are
 merged with regular depends in RPC queries. \fBaursync \fRworkarounds
-this by stripping the \fIlib32- \fRsuffix from packages, and removing
-\fIgcc-multilib \fRwhen the i686 architecture is detected.
+this by stripping the \fIlib32- \fRsuffix from packages and removing
+\fIgcc-multilib \fRif the i686 architecture is detected.
 
 \fItar\fR snapshots are extracted to the \fI$AURDEST/snapshot\fR
 directory, in order to avoid conflicts with git.
