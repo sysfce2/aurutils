@@ -138,6 +138,21 @@ repo_select() {
     printf '%s\t%s\n' "$repo" "${avail[$repo]#*://}"
 }
 
+basesub() {
+    declare -A pkg
+    declare name base
+
+    while read -r -u 3 name base; do
+        pkg[$name]=$base
+    done 3< "$1"
+
+    while read -r name _; do
+        if [[ ${pkg[$name]} ]]; then
+            printf '%s\n' "${pkg[$name]}"
+        fi
+    done | tac | awk '!x[$0]++' | tac
+}
+
 print() {
     printf '%s\n' "$@"
 }
@@ -291,11 +306,11 @@ while read -r pkg; do
 done < <(grep -Fxvf tsv/pkgname sift_0)
 
 # Note: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf tsv/pkgname queue_0 | aursift -I | i686 | aursplit tsv/pkgbase > queue_1
+grep -Fxf tsv/pkgname queue_0 | aursift -I | i686 | basesub tsv/pkgbase > queue_1
 
 if ((chkver)); then
     # pkgver -> pkgver (sync) -> pkgbase (sync)
-    aursift -U < tsv/pkgver | aursplit tsv/pkgbase > sift_1
+    aursift -U < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
     # pkgbase (tsort) \ pkgbase (sync)
     if ! grep -Fxvf sift_1 queue_1 > queue; then

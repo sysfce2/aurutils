@@ -8,20 +8,16 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly PS4 argv0 tmp
 
-# Determine the path to each .SRCINFO, output to stdout using null
-# delimitation to prevent ARG_MAX issues.
+# Use find to avoid ARG_MAX issues
 findsrc() {
     find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
 
-# Use xargs to pass a list of paths to .SRCINFOs for processing, skip
-# to the next file when a split package is found, and output
-# dependencies on stdout.
 gendeps() {
     xargs -0i awk -v FS='[<=>]' '
           /pkgbase/                 {B = $2; printf("%s\t%s\n", B, B)}
           /^\t(make|check)?depends/ {printf("%s\t%s\n", B, $2)}
-          /^$/                      {nextfile}
+          /^$/                      {nextfile} # Split package
     ' {}
 }
 
@@ -30,6 +26,21 @@ allnames() {
           /pkgbase/ {B = $2}
           /pkgname/ {printf("%s\t%s\n", $2, B)}
     ' {}
+}
+
+basesub() {
+    declare -A pkg
+    declare name base
+
+    while read -r -u 3 name base; do
+        pkg[$name]=$base
+    done 3< "$1"
+
+    while read -r name _; do
+        if [[ ${pkg[$name]} ]]; then
+            printf '%s\n' "${pkg[$name]}"
+        fi
+    done | tac | awk '!x[$0]++' | tac
 }
 
 dmsort() {
@@ -66,7 +77,7 @@ if findsrc "$@" > "$tmp"/info; then
     # values in the pkgname array. As source directories are however
     # named after pkgbase, differences must be replaced in the initial
     # graph before matching the original arguments.    
-    dmsort "$tmp"/deps | aursplit "$tmp"/base | tac > "$tmp"/queue
+    dmsort "$tmp"/deps | basesub "$tmp"/base | tac > "$tmp"/queue
 
     # The base assumption is to have packages and their dependencies
     # already available, so instead of filtering packages in the official
