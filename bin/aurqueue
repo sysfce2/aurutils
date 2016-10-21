@@ -58,8 +58,9 @@ fi
 [[ -t 2 ]] && colorize
 
 if findsrc "$@" > "$tmp"/info; then
-    gendeps  < "$tmp"/info > "$tmp"/deps
-    allnames < "$tmp"/info > "$tmp"/base
+    gendeps  < "$tmp"/info > "$tmp"/deps &
+    allnames < "$tmp"/info > "$tmp"/base &
+    wait
 
     # pkgbase can be specified explicitely, and does not have to match
     # values in the pkgname array. As source directories are however
