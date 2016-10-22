@@ -30,6 +30,7 @@ pacsift --exact --repo="$testrepo1" --name=aurutils-git # Repository move
 
 # package test
 aursync -Ln --noview --repo="$testrepo1" python-nikola # Split package
+aursync -Ln --noview --repo="$testrepo2" python-nikola # Per-repo versions
 aursync -Ln --noview --repo="$testrepo1" libdbusmenu-gtk2-ubuntu # Split package - pkgbase != pkgname
 aursync -Ln --noview --repo="$testrepo1" gimp-plugin-separate+ # Special characters
 aursync -Ln --noview --repo="$testrepo1" ros-build-tools # Empty make/depends
