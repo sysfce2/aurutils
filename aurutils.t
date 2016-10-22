@@ -26,25 +26,25 @@ printf '%s\n' pacutils aurutils-git > argfile
 aurbuild -cd "$testrepo1" -C "$testroot1" -a argfile
 aurbuild -cd "$testrepo1" -a argfile
 sudo pacsync "$testrepo1"
-pacinfo "$testrepo1"/aurutils-git # Repository move
+pacman -Si "$testrepo1"/aurutils-git # Repository move
 
 # package test
 aursync -Ln --noview --repo="$testrepo1" python-nikola # Split package
-pacinfo "$testrepo1"/python-nikola
+pacman -Si "$testrepo1"/python-nikola
 aursync -Ln --noview --repo="$testrepo2" python-nikola # Per-repo versions
-pacinfo "$testrepo2"/python-nikola
+pacman -Si "$testrepo2"/python-nikola
 aursync -Ln --noview --repo="$testrepo1" libdbusmenu-gtk2-ubuntu # Split package, pkgbase != pkgname
-pacinfo "$testrepo1"/libdbusmenu-gtk2-ubuntu
+pacman -Si "$testrepo1"/libdbusmenu-gtk2-ubuntu
 aursync -Ln --noview --repo="$testrepo1" gimp-plugin-separate+ # Special characters
-pacinfo "$testrepo1"/gimp-plugin-separate+
+pacman -Si "$testrepo1"/gimp-plugin-separate+
 aursync -Ln --noview --repo="$testrepo1" ros-build-tools # Empty make/depends
-pacinfo "$testrepo1"/ros-build-tools
+pacman -Si "$testrepo1"/ros-build-tools
 aursync -Ln --noview --repo="$testrepo2" shaman-git # Special characters - UTF8
-pacinfo "$testrepo2"/shaman-git
+pacman -Si "$testrepo2"/shaman-git
 aursync -Ln --noview --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
-pacinfo "$testrepo2"/aws-cli-git
+pacman -Si "$testrepo2"/aws-cli-git
 aursync -Ln --noview --repo="$testrepo2" openrct2-git # make/depends_arch
-pacinfo "$testrepo2"/openrct2-git
+pacman -Si "$testrepo2"/openrct2-git
 #aursync -Ln --noview --repo="$testrepo2" plasma-git-meta # 100+ depends
 #aursync -Ln --noview --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
 
