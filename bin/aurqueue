@@ -8,11 +8,12 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly PS4 argv0 tmp
 
-# Use find to avoid ARG_MAX issues
+# Use find to avoid ARG_MAX issues.
 findsrc() {
     find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
 
+# XXX: The three functions below could be done in a single awk pass (#177)
 gendeps() {
     xargs -0i awk -v FS='[<=>]' '
           /pkgbase/                 {B = $2; printf("%s\t%s\n", B, B)}
@@ -68,23 +69,14 @@ fi
 
 [[ -t 2 ]] && colorize
 
-if findsrc "$@" > "$tmp"/info; then
-    gendeps  < "$tmp"/info > "$tmp"/deps &
-    allnames < "$tmp"/info > "$tmp"/base &
-    wait
+findsrc "$@" > "$tmp"/info || exit
 
-    # pkgbase can be specified explicitely, and does not have to match
-    # values in the pkgname array. As source directories are however
-    # named after pkgbase, differences must be replaced in the initial
-    # graph before matching the original arguments.    
-    dmsort "$tmp"/deps | basesub "$tmp"/base | tac > "$tmp"/queue
+gendeps  < "$tmp"/info > "$tmp"/deps &
+allnames < "$tmp"/info > "$tmp"/base &
+wait     # XXX: exit code 0
 
-    # The base assumption is to have packages and their dependencies
-    # already available, so instead of filtering packages in the official
-    # repositories, we simply remove those that weren't there in the first
-    # place. As an added benefit, any directory with SRCINFO files can now
-    # be included in the queue.
-    grep -Fxf <(printf '%s\n' "$@") "$tmp"/queue
-fi
+# make/depends arrays contain pkgname instead of pkgbase.
+# Replace entries accordingly in the output.
+dmsort "$tmp"/deps | basesub "$tmp"/base | tac | grep -Fxf <(printf '%s\n' "$@")
 
 # vim: set et sw=4 sts=4 ft=sh:
