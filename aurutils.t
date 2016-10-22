@@ -21,12 +21,12 @@ sudo pacsync "$testrepo1" "$testrepo2"
 
 # chroot test
 test -d "$testroot1" && sudo rm -rf "$testroot1"
-AURDEST=$PWD aursync --nobuild --noview aurutils
-printf '%s\n' pacutils repose aurutils > argfile
+AURDEST=$tmp aursync --nobuild --noview aurutils-git
+printf '%s\n' pacutils aurutils-git > argfile
 aurbuild -cd "$testrepo1" -C "$testroot1" -a argfile
 aurbuild -cd "$testrepo1" -a argfile
 sudo pacsync "$testrepo1"
-pacsift --exact --repo="$testrepo1" --name=aurutils # Repository move
+pacsift --exact --repo="$testrepo1" --name=aurutils-git # Repository move
 
 # package test
 aursync -Ln --noview --repo="$testrepo1" python-nikola # Split package
@@ -36,7 +36,6 @@ aursync -Ln --noview --repo="$testrepo1" ros-build-tools # Empty make/depends
 aursync -Ln --noview --repo="$testrepo2" shaman-git # Special characters - UTF8
 aursync -Ln --noview --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
 aursync -Ln --noview --repo="$testrepo2" openrct2-git # make/depends_arch
-aursync -Ln --noview --repo="$testrepo2" aurutils-git # Self
 #aursync -Ln --noview --repo="$testrepo2" plasma-git-meta # 100+ depends
 #aursync -Ln --noview --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
 
