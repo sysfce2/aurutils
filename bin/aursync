@@ -308,7 +308,7 @@ done < <(grep -Fxvf tsv/pkgname sift_0)
 # Note: Packages without lib32 prefix are not necessarily in the AUR.
 grep -Fxf tsv/pkgname queue_0 | aursift -I | i686 | basesub tsv/pkgbase > queue_1
 
-if ((chkver)); then
+if ((chkver)) && ((build)); then
     # pkgver -> pkgver (sync) -> pkgbase (sync)
     aursift -U < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
