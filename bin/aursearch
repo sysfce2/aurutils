@@ -103,7 +103,7 @@ json_long() {
         printf "Maintainer:      %s\n" "$Maintainer"
         printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
         printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
-        printf '%s\n'
+        printf '\n'
     done < <(jq -r '[.[].results[]] | sort_by(.Name)[] | .Name,
         .PackageBase,
         .Version,
