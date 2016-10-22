@@ -6,6 +6,8 @@ testrepo2=aurutils-test-vcs
 testroot1=/var/tmp/test-chroot
 tmp=$(mktemp -d)
 
+trap 'rm -rf $tmp' INT QUIT TERM PIPE HUP EXIT
+
 cd "$tmp"
 
 # clear repo
