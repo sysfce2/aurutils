@@ -23,7 +23,7 @@ sudo pacsync "$testrepo1" "$testrepo2"
 
 # chroot test
 test -d "$testroot1" && sudo rm -rf "$testroot1"
-AURDEST=$tmp aursync --nobuild --noview aurutils-git
+AURDEST=$tmp aursync --nover --nobuild --noview aurutils-git
 printf '%s\n' pacutils aurutils-git > argfile
 aurbuild -cd "$testrepo1" -C "$testroot1" -a argfile
 aurbuild -cd "$testrepo1" -a argfile
@@ -84,21 +84,21 @@ done
 sudo pacman -R --noconfirm test-random
 
 # exact repository match
-total1=$(aurcheck -a "$testrepo1" | wc -l)
+total1=$(aurcheck -a "$testrepo1" 2>&1 | wc -l)
 total2=$(pacman -Slq "$testrepo1" | wc -l)
 test "$total1" -eq "$total2"
 
-total1=$(aurcheck -a "$testrepo2" | wc -l)
+total1=$(aurcheck -a "$testrepo2" 2>&1 | wc -l)
 total2=$(pacman -Slq "$testrepo2" | wc -l)
 test "$total1" -eq "$total2"
 
 aurcheck -a "$testrepo1" > out1.log
 aurcheck -a "$testrepo2" > out2.log
-datamash -W check out1.log
-datamash -W check out2.log
+datamash -W check < out1.log
+datamash -W check < out2.log
 
 # regex search/json merge
-aurgrep '.+' > list
-total1=$(xargs -a list aursearch -Fr | jq -r '.[]results[].Name' | wc -l)
-total2=$(wc -l list)
+aurgrep '.+' | tee list.txt | xargs aursearch -Fr > list.json
+total1=$(jq -r '.[]results[].Name' list.json | wc -l)
+total2=$(wc -l list.txt)
 test "$total1" -eq "$total2"
