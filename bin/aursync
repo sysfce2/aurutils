@@ -272,8 +272,8 @@ if ((build)) || ((update)); then
 fi
 
 if ((update)); then
-    new=($(aurcheck -q "$repo"))
-    set -- "$@" "${new[@]}"
+    list=($(pacman -Slq "$repo"))
+    set -- "$@" "${list[@]}"
 
     if ((!$#)); then
         plain "there is nothing to do"
@@ -307,7 +307,9 @@ print "${q[@]}" | tee queue_0 | aursift -S | cat - <(print "$@") > sift_0
 # Note: Exit code of process substitution is ignored.
 while read -r pkg; do
     warning "no results found for $pkg"
-done < <(grep -Fxvf tsv/pkgname sift_0)
+done < <(
+    grep -Fxvf tsv/pkgname sift_0
+)
 
 # Note: Packages without lib32 prefix are not necessarily in the AUR.
 grep -Fxf tsv/pkgname queue_0 | aursift -I | i686 | basesub tsv/pkgbase > queue_1
