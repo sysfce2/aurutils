@@ -312,7 +312,7 @@ grep -Fxf tsv/pkgname queue_0 | aursift -I | i686 | basesub tsv/pkgbase > queue_
 
 if ((chkver)); then
     # pkgver -> pkgver (sync) -> pkgbase (sync)
-    aursift -U < tsv/pkgver | basesub tsv/pkgbase > sift_1
+    aursift -U "$repo" < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
     # pkgbase (tsort) \ pkgbase (sync)
     if ! grep -Fxvf sift_1 queue_1 > queue; then
