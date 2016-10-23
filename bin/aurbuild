@@ -151,6 +151,7 @@ while read -r -u 3 pkg _; do
             done
         fi
 
+        msg 'Compiling database...'
         LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
     else
         if ((sign_pkg)); then
@@ -158,6 +159,8 @@ while read -r -u 3 pkg _; do
         fi
 
         PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
+
+        msg 'Compiling database...'
         LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
         printf '%s\n' "$database" | conf_build > "$tmp"/config
