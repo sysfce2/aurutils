@@ -9,7 +9,11 @@ readonly PS4 argv0 tmp
 declare -i all=0
 
 syncver() {
-    pacsift --exact --repo="$1" | expac -S '%n\t%v' -
+    declare server
+    server=$(pacconf --single --repo="$1" Server) || exit
+    server=${server#*://}
+
+    repose -lr "$server" "$1"
 }
 
 aurver() {
