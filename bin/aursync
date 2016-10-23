@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC2046
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 
@@ -118,7 +117,9 @@ repo_select() {
 
     while read -r repo server; do
         avail[$repo]=$server
-    done < <(repo_list | awk -F'\t' '$2 ~ /^file:\/\//')
+    done < <(
+        repo_list | awk -F'\t' '$2 ~ /^file:\/\//'
+    )
 
     if [[ ${avail[@]} ]]; then
 	if [[ ${#avail[@]} -gt 1 ]]; then
@@ -271,7 +272,8 @@ if ((build)) || ((update)); then
 fi
 
 if ((update)); then
-    set -- "$@" $(aurcheck -q "$repo")
+    new=($(aurcheck -q "$repo"))
+    set -- "$@" "${new[@]}"
 
     if ((!$#)); then
         plain "there is nothing to do"
