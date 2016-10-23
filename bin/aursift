@@ -73,43 +73,43 @@ sift() {
 # repository versions, and print updated packages on stdout.
 prepare() {
     declare name ver check
-    declare -A aur repo
+    declare -A in repo
 
     while read -r name ver; do
-        aur[$name]=$ver
+        in[$name]=$ver
     done
 
-    if [[ ! ${!aur[@]} ]]; then
+    if [[ ${!in[@]} ]]; then
+        declare server
+        server=$(pacconf --single --repo="$1" Server) || exit
+        server=${server#*://}
+
+        while read -r name ver; do
+            if [[ ${in[$name]} ]]; then
+                repo[$name]=$ver
+            else
+                continue
+            fi
+        done < <(
+            repose -lr "$server" "$1"
+        )
+    else
         error "$argv0: no data available"
         exit 61
     fi
 
-    while read -r name ver; do
-        [[ ! $name ]] && continue
-
-        # If a package is in several repositories, take the newest version. (#105)
+    for name in "${!in[@]}"; do
         if [[ ${repo[$name]} ]]; then
-            case $(vercmp "$ver" "${repo[$name]}") in
-                1) repo[$name]=$ver ;;
-            esac
+            check=$(vercmp "${repo[$name]}" "${in[$name]}")
         else
-            repo[$name]=$ver
-        fi
-    done < <(expac -S '%n\t%v' "${!aur[@]}")
-
-    for name in "${!aur[@]}"; do
-        if [[ ${repo[$name]} ]]; then
-            check=$(vercmp "${repo[$name]}" "${aur[$name]}")
-        else
-            # vercmp '' foo -> 1, see FS#49093.
-            check=-1
+            check=-1 # FS#49093
         fi
 
         case "$check" in
-            -1) msg2 "$name ${repo[$name]:-0} -> ${aur[$name]}" ;;
+            -1) msg2 "$name ${repo[$name]:-0} -> ${in[$name]}" ;;
             0)  msg "$name is up-to-date"
                 printf '%s\n' "$name" ;;
-            1)  warning "$name ${repo[$name]:-0} is newer than ${aur[$name]}"
+            1)  warning "$name ${repo[$name]:-0} is newer than ${in[$name]}"
                 printf '%s\n' "$name" ;;
         esac
     done
@@ -138,11 +138,11 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :ISU OPT; do
+while getopts :ISU: OPT; do
     case $OPT in
         I) ignore  ;;
         S) sift    ;;
-        U) prepare ;;
+        U) prepare "$OPTARG" ;;
         *) plain "usage: $argv0 [-IS pkgname] [-U pkgname pkgver]"
            exit 1 ;;
     esac
