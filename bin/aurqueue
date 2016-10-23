@@ -16,19 +16,26 @@ findsrc() {
 # XXX: The three functions below could be done in a single awk pass (#177)
 gendeps() {
     xargs -0i awk -v FS='[<=>]' '
-          /pkgbase/                 {B = $2; printf("%s\t%s\n", B, B)}
-          /^\t(make|check)?depends/ {printf("%s\t%s\n", B, $2)}
-          /^$/                      {nextfile} # Split package
+          /pkgbase/ {
+	      B = $2
+	      printf("%s\t%s\n", B, B)
+	  }
+          /^\t(make|check)?depends/ {
+	      printf("%s\t%s\n", B, $2)
+	  }
+          /^$/ {nextfile} # Split package
     ' {}
 }
 
-allnames() {
+genbase() {
     xargs -0i awk -v FS='[<=>]' '
           /pkgbase/ {B = $2}
           /pkgname/ {printf("%s\t%s\n", $2, B)}
     ' {}
 }
 
+# make/depends arrays contain pkgname instead of pkgbase.
+# Replace entries accordingly in the output.
 basesub() {
     declare -A pkg
     declare name base
@@ -69,14 +76,12 @@ fi
 
 [[ -t 2 ]] && colorize
 
-findsrc "$@" > "$tmp"/info || exit
+findsrc "$@" > "$tmp"/i || exit
 
-gendeps  < "$tmp"/info > "$tmp"/deps &
-allnames < "$tmp"/info > "$tmp"/base &
+gendeps < "$tmp"/i > "$tmp"/deps &
+genbase < "$tmp"/i > "$tmp"/base &
 wait     # XXX: exit code 0
 
-# make/depends arrays contain pkgname instead of pkgbase.
-# Replace entries accordingly in the output.
-dmsort "$tmp"/deps | basesub "$tmp"/base | tac | grep -Fxf <(printf '%s\n' "$@")
+dmsort "$tmp"/deps | basesub "$tmp"/base | grep -Fxf <(printf '%s\n' "$@") | tac
 
 # vim: set et sw=4 sts=4 ft=sh:
