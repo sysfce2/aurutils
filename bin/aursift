@@ -58,7 +58,7 @@ sift() {
     if [[ ${n[@]} ]]; then
         while read -r p v; do
             if [[ ${pkgset[$v]} ]]; then
-                plain "virtual dependency $v provided $p"
+                plain "virtual dependency $v provided by $p"
                 repo+=("$v")
             fi
         done < <(provides "${n[@]}")
