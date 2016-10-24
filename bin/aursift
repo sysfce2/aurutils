@@ -107,8 +107,7 @@ prepare() {
 
         case "$check" in
             -1) msg2 "$name ${repo[$name]:-0} -> ${in[$name]}" ;;
-            0)  msg "$name is up-to-date"
-                printf '%s\n' "$name" ;;
+            0)  printf '%s\n' "$name" ;;
             1)  warning "$name ${repo[$name]:-0} is newer than ${in[$name]}"
                 printf '%s\n' "$name" ;;
         esac
