@@ -48,18 +48,14 @@ clone() {
     done
 }
 
-command_exists () {
-    type -P -- "$1" >/dev/null 2>&1
-}
-
 # stdin: /path/to/a.tar.gz
 download() {
     declare gzdir=$1 startdir=$PWD
     cd_safe "$gzdir"
 
-    if command_exists aria2c; then
+    if type -P aria2c >/dev/null 2>&1; then
         aria2c --stderr=true -i -
-    elif command_exists parallel; then
+    elif type -P parallel >/dev/null 2>&1; then
         parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 "curl -fLsS --remote-name-all {}"
     else
         xargs -I{} curl -fLsS --remote-name-all {}
@@ -79,10 +75,6 @@ viewer() {
     else
         command -- "${PAGER:-less}"
     fi
-}
-
-inspect() {
-    xargs -I{} find {} -maxdepth "$1" | viewer
 }
 
 getsource() {
@@ -339,7 +331,7 @@ fi
 # View changes and build files in one window (#77)
 if ((view)); then
     ( shopt -s nullglob
-      print "$tmp"/diff/* | cat - "$tmp"/queue | inspect 1
+      print "$tmp"/diff/* | cat - "$tmp"/queue | xargs -I{} find {} -maxdepth 1 | viewer
     )
 fi
 
