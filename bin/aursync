@@ -275,8 +275,9 @@ if ((deps)); then
 else
     queue=("$@")
 fi
-    
+
 aursearch -Fr -- "${queue[@]}" > json/results
+print "${queue[@]}" > queue_0
 
 jq -r '.[].results[].Name' json/results > tsv/pkgname
 jq -r '.[].results[] | [.Name,.PackageBase] | @tsv' json/results > tsv/pkgbase
@@ -284,7 +285,7 @@ jq -r '.[].results[] | [.Name,.Version] | @tsv' json/results > tsv/pkgver
 jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' json/results > tsv/urlpath
 
 if ((sift)); then
-    print "${queue[@]}" | aursift -S | cat - <(print "$@") > sift_0
+    aursift -S < queue_0 | cat - <(print "$@") > sift_0
 
     # Note: Exit code of process substitution is ignored.
     while read -r pkg; do
@@ -293,7 +294,7 @@ if ((sift)); then
 fi
 
 # Note: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf tsv/pkgname <(print "${queue[@]}") | grep -Fxvf <(pacconf IgnorePkg) | awk -v arch="$(uname -m)" '{
+grep -Fxf tsv/pkgname queue_0 | grep -Fxvf <(pacconf IgnorePkg) | awk -v arch="$(uname -m)" '{
     if(arch == "i686") {
 	gsub(/^lib32-/,""); gsub(/^gcc-multilib$/,"")
     }; print
