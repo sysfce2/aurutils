@@ -86,9 +86,7 @@ prepare() {
             else
                 continue
             fi
-        done < <(
-            repose -lr "$server" "$1"
-        )
+        done < <(repose -lr "$server" "$1")
     else
         error "$argv0: no data available"
         exit 61
@@ -110,35 +108,17 @@ prepare() {
     done
 }
 
-ignore() {
-    declare name
-    declare -A ign
-
-    while read -r name; do
-        ign[$name]=1
-    done < <(pacconf IgnorePkg)
-
-    while read -r name; do
-        if [[ ${ign[$name]} ]]; then
-            warning "$name: ignoring package upgrade"
-        else
-            printf '%s\n' "$name"
-        fi
-    done
-}
-
 source /usr/share/makepkg/util.sh || exit
 
 if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :ISU: OPT; do
+while getopts :SU: OPT; do
     case $OPT in
-        I) ignore  ;;
         S) sift    ;;
         U) prepare "$OPTARG" ;;
-        *) plain "usage: $argv0 [-IS pkgname] [-U pkgname pkgver]"
+        *) plain "usage: $argv0 [-S pkgname] [-U pkgname pkgver]"
            exit 1 ;;
     esac
 done

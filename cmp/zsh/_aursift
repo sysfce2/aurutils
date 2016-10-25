@@ -3,7 +3,6 @@
 typeset -A opt_args
 
 _aursift_opts=(
-    '-I[Warn on IgnorePkg match]'
     '-S[Filter official packages]'
     '-U[Filter outdated packages]'
 )
