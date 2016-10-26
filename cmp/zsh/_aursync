@@ -7,7 +7,6 @@ _aursync_opts=(
     {-s,--sign}'[Sign packages and database]'
     {-t,--tar}'[Download tar snapshots]'
     {-u,--update}'[Update AUR packages]'
-    --allsrc'[Retrieve sources first]'
     --ignore'[Skip packages in IgnorePkg]'
     --nobuild'[Only download build files]'
     --nodeps'[Do not resolve dependencies]'
