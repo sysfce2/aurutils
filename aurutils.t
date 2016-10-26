@@ -31,29 +31,24 @@ sudo pacsync "$testrepo1"
 pacman -Si "$testrepo1"/aurutils-git # Repository move
 
 # package test
-aursync -Ln --nover --noview --repo="$testrepo1" python-nikola # Split package
+aursync -Ln --noview --repo="$testrepo1" python-nikola # Split package
 pacman -Si "$testrepo1"/python-nikola
-aursync -Ln --nover --noview --repo="$testrepo2" python-nikola # Per-repo versions
+aursync -Ln --noview --repo="$testrepo2" python-nikola # Per-repo versions
 pacman -Si "$testrepo2"/python-nikola
-aursync -Ln --nover --noview --repo="$testrepo1" libdbusmenu-gtk2-ubuntu # Split package, pkgbase != pkgname
+aursync -Ln --noview --repo="$testrepo1" libdbusmenu-gtk2-ubuntu # Split package, pkgbase != pkgname
 pacman -Si "$testrepo1"/libdbusmenu-gtk2-ubuntu
-aursync -Ln --nover --noview --repo="$testrepo1" gimp-plugin-separate+ # Special characters
+aursync -Ln --noview --repo="$testrepo1" gimp-plugin-separate+ # Special characters
 pacman -Si "$testrepo1"/gimp-plugin-separate+
-aursync -Ln --nover --noview --repo="$testrepo1" ros-build-tools # Empty make/depends
+aursync -Ln --noview --repo="$testrepo1" ros-build-tools # Empty make/depends
 pacman -Si "$testrepo1"/ros-build-tools
-aursync -Ln --nover --noview --repo="$testrepo2" shaman-git # Special characters - UTF8
+aursync -Ln --noview --repo="$testrepo2" shaman-git # Special characters - UTF8
 pacman -Si "$testrepo2"/shaman-git
-aursync -Ln --nover --noview --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
+aursync -Ln --noview --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
 pacman -Si "$testrepo2"/aws-cli-git
-aursync -Ln --nover --noview --repo="$testrepo2" openrct2-git # make/depends_arch
+aursync -Ln --noview --repo="$testrepo2" openrct2-git # make/depends_arch
 pacman -Si "$testrepo2"/openrct2-git
-#aursync -Ln --nover --noview --repo="$testrepo2" plasma-git-meta # 100+ depends
-#aursync -Ln --nover --noview --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
-
-# warning messages
-aursync --nobuild --noview aura > out.log 2>&1
-total=$(grep -ci 'no results' out.log)
-test "$total" -eq 5
+#aursync -Ln --noview --repo="$testrepo2" plasma-git-meta # 100+ depends
+#aursync -Ln --noview --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
 
 # cache/checksum test
 mkdir test-random
