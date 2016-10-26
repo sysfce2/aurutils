@@ -53,7 +53,7 @@ while getopts a:cC:d:m:p:r:s OPT; do
         m) machine=$OPTARG   ;;
         p) pool=$OPTARG      ;;
         r) root=$OPTARG      ;;
-        s) repo_args+=(--sign)
+        s) repo_args+=(--sign --verify)
            sign_pkg=1        ;;
         *) usage; exit 1     ;;
     esac
