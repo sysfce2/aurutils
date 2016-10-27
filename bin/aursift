@@ -86,7 +86,9 @@ prepare() {
             else
                 continue
             fi
-        done < <(repose -lr "$server" "$1")
+        done < <(tar -xf "$server/$1".db -O | awk '
+            /%NAME%/    {getline; printf("%s\t", $1)}
+            /%VERSION%/ {getline; printf("%s\n", $1)}')
     else
         error "$argv0: no data available"
         exit 61
@@ -118,7 +120,7 @@ while getopts :SU: OPT; do
     case $OPT in
         S) sift    ;;
         U) prepare "$OPTARG" ;;
-        *) plain "usage: $argv0 [-S pkgname] [-U pkgname pkgver]"
+        *) plain "usage: $argv0 [-S] [-U repo]"
            exit 1 ;;
     esac
 done
