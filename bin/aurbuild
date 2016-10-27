@@ -166,9 +166,7 @@ while read -r -u 3 pkg _; do
 
         PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
 
-        packagelist=($(makepkg --packagelist))
-
-        for p in "${packagelist[@]}"; do
+        for p in $(makepkg --packagelist); do
             find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir env LANG=C repo-add "${repo_args[@]}" "$root/$database".db.tar {} +
         done
 
