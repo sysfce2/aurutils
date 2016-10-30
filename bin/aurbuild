@@ -9,10 +9,11 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 declare -r PS4 argv0 base tmp
 declare -i chroot=0 sign_pkg=0
 
+add_args=(-nv)
 gpg_args=(--verbose --detach-sign --no-armor)
 makechrootpkg_args=(-cu)
 makepkg_args=(-Lcrs)
-repo_args=(--new)
+repose_args=(-fv)
 
 conf_build() {
     declare repo
@@ -50,10 +51,12 @@ while getopts a:cC:d:m:p:r:s OPT; do
         c) chroot=1          ;;
         C) container=$OPTARG ;;
         d) database=$OPTARG  ;;
-        m) machine=$OPTARG   ;;
+        m) repose_args+=(-m "$OPTARG")
+           machine=$OPTARG   ;;
         p) pool=$OPTARG      ;;
         r) root=$OPTARG      ;;
-        s) repo_args+=(--sign --verify)
+        s) add_args+=(-sv)
+           repose_args+=(-s)
            sign_pkg=1        ;;
         *) usage; exit 1     ;;
     esac
@@ -71,7 +74,7 @@ if (($#)); then
 fi
 
 if type -P xdelta3 >/dev/null 2>&1; then
-    repo_args+=(--delta)
+    add_args+=(-d)
 fi
 
 if [[ $database ]]; then
@@ -138,22 +141,28 @@ fi
 
 while read -r -u 3 pkg _; do
     cd_safe "$base/$pkg"
+    unset -v pkglist
 
     if ((chroot)); then
-        # Preserve PKGDEST for makechrootpkg (#120)
         sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$container" "${makechrootpkg_args[@]}"
+
+        for p in $(makepkg --packagelist); do
+            pkglist+=($(find "$pool" -type f -regex ".+/$p.pkg.+?"))
+        done
+
+        if type -P repose >/dev/null 2>&1; then
+            LANG=C repose -vf "$database" -r "$root" -p "$pool"
+        else
+            LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
+        fi
 
         if [[ $GPGKEY ]]; then
             gpg_args+=(-u "$GPGKEY")
         fi
 
-        for p in $(makepkg --packagelist); do
-            find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir env LANG=C repo-add "${repo_args[@]}" "$root/$database".db.tar {} +
-
-            if ((sign_pkg)); then
-                find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir gpg "${gpg_args[@]}" {} \;
-            fi
-        done
+        if ((sign_pkg)); then
+            for p in "${pkglist[@]}"; do gpg "${gpg_args[@]}"; done
+        fi
     else
         if ((sign_pkg)); then
             makepkg_args+=(--sign)
@@ -162,8 +171,14 @@ while read -r -u 3 pkg _; do
         PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
 
         for p in $(makepkg --packagelist); do
-            find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir env LANG=C repo-add "${repo_args[@]}" "$root/$database".db.tar {} +
+            pkglist+=($(find "$pool" -type f -regex ".+/$p.pkg.+?"))
         done
+
+        if type -P repose >/dev/null 2>&1; then
+            LANG=C repose -vf "$database" -r "$root" -p "$pool"
+        else
+            LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
+        fi
 
         printf '%s\n' "$database" | conf_build > "$tmp"/config
         sudo pacman -Syu --config="$tmp"/config --noprogressbar --noconfirm
