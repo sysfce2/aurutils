@@ -86,7 +86,7 @@ prepare() {
             else
                 continue
             fi
-        done < <(tar -xf "$server/$1".db -O | awk '
+        done < <(bsdcat "$server/$1".db | awk '
             /%NAME%/    {getline; printf("%s\t", $1)}
             /%VERSION%/ {getline; printf("%s\n", $1)}')
     else
