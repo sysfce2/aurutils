@@ -11,7 +11,7 @@ readonly PS4 argv0 multinfo tmp
 declare -i all=0
 
 count() {
-    jq -r '.[].resultcount' "$1"
+    jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$1"
 }
 
 pair() {
