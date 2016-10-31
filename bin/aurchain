@@ -4,10 +4,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o noclobber
 
 argv0=aurchain
-multinfo='https://aur.archlinux.org/rpc.php/rpc/?v=5&type=info'
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
-readonly PS4 argv0 multinfo tmp
+readonly PS4 argv0 tmp
 declare -i all=0
 
 count() {
