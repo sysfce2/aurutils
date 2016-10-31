@@ -36,7 +36,7 @@ dmsort() {
 }
 
 chain() {
-    aursearch -Fr -- "$@" > json/0
+    aursearch -Fr -- "$@" > json/0 || exit
 
     if [[ $(count json/0) -lt 1 ]]; then
         error "$argv0: no packages found"
@@ -57,7 +57,7 @@ chain() {
         target=$(fld 2 tsv/$sub | grep -Fxvf seen)
 
         if [[ $target ]]; then
-            aursearch -Fr -- "$target" > json/$a
+            aursearch -Fr -- "$target" > json/$a || exit
         else
             break
         fi
