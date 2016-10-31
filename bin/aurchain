@@ -10,32 +10,19 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly PS4 argv0 multinfo tmp
 declare -i all=0
 
-curl_safe() {
-    curl --retry 3 -fgLsS --compressed "$1" || exit
-}
-
-url() {
-    awk -v info="$multinfo" '{
-        gsub("+","%2b")
-        gsub("@","%40")
-
-        if (NR == 1)
-            printf "%s&arg[]=%s", info, $1
-        else
-            printf "&arg[]=%s", $1
-    }'
-}
-
 count() {
-    jq -r '.resultcount' "$1"
+    jq -r '.[].resultcount' "$1"
 }
 
 pair() {
-    jq -r '.results[] | .Name as $name | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]? |  [$name, .] | @tsv' "$1" | sed -r 's/[<>=].*$//g'
+    jq -r '.[].results[] | .Name as $name
+    | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]? | [$name, .]
+    | @tsv' "$1" | sed -r 's/[<>=].*$//g'
 }
 
 fld() {
-    declare F="$1"; shift
+    declare F=$1
+    shift
 
     awk -v F="$F" '{print $(F)}' "$@" | sort -u
 }
@@ -49,7 +36,7 @@ dmsort() {
 }
 
 chain() {
-    curl_safe "$(printf '%s\n' "$@" | url)" > json/0
+    aursearch -Fr -- "$@" > json/0
 
     if [[ $(count json/0) -lt 1 ]]; then
         error "$argv0: no packages found"
@@ -67,10 +54,10 @@ chain() {
         sort -u tsv/$sub >> tsv/n
 
         # Avoid querying duplicates (#4)
-        target=$(grep -Fxvf seen <(fld 2 tsv/$sub) | url)
+        target=$(fld 2 tsv/$sub | grep -Fxvf seen)
 
         if [[ $target ]]; then
-            curl_safe "$target" > json/$a
+            aursearch -Fr -- "$target" > json/$a
         else
             break
         fi
