@@ -235,9 +235,8 @@ if ((build)) || ((update)); then
     msg2 "Using [$repo] repository"
 
     if ((update)); then
-        for p in $(pacman -Slq "$repo"); do
-            set -- "$@" "$p"
-        done
+        list=($(pacman -Slq "$repo"))
+        set -- "$@" "${list[@]}"
 
         (($#)) || exit 0
     fi
