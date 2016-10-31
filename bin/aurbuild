@@ -161,7 +161,7 @@ while read -r -u 3 pkg _; do
         fi
 
         if ((sign_pkg)); then
-            for p in "${pkglist[@]}"; do gpg "${gpg_args[@]}"; done
+            for p in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$p"; done
         fi
     else
         if ((sign_pkg)); then
