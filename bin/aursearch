@@ -12,10 +12,6 @@ format=short
 list=pkgname
 searchby=name
 
-command_exists () {
-    type -P -- "$1" >/dev/null 2>&1
-}
-
 urlencode() {
     jq -R -r '@uri'
 }
@@ -34,9 +30,9 @@ split() {
 }
 
 dl_stdin() {
-    if command_exists aria2c; then
+    if type -P aria2c >/dev/null 2>&1; then
         aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp"/aria2 -i - && cat "$tmp"/aria2/*
-    elif command_exists parallel; then
+    elif type -P parallel >/dev/null 2>&1; then
         parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 'curl -fgLsS {}'
     else
         xargs -I{} curl -fgLsS --compressed {}
