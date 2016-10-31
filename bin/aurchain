@@ -22,8 +22,8 @@ count() {
 
 pair() {
     jq -r '.[].results[] | .Name as $name
-    | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]? | [$name, .]
-    | @tsv' "$1" | sed -r 's/[<>=].*$//g'
+    | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
+    | [$name, .] | @tsv' "$1" | sed -r 's/[<>=].*$//g'
 }
 
 fld() {

@@ -43,6 +43,7 @@ getjson() {
     declare outfile="$tmp"/out.json
 
     if dl_stdin > "$outfile"; then
+        # https://lists.archlinux.org/pipermail/aur-dev/2016-October/004143.html
         sed 's/^/[/; s/}{/},{/g; s/$/]/' "$outfile"
     else
         exit $?
