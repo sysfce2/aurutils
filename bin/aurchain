@@ -11,7 +11,14 @@ readonly PS4 argv0 multinfo tmp
 declare -i all=0
 
 count() {
-    jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$1"
+    declare -i num
+
+    if ! num=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$1"); then
+        error "$argv0: invalid argument"
+        exit 22
+    else
+        printf '%s\n' "$num"
+    fi
 }
 
 pair() {
@@ -37,8 +44,9 @@ dmsort() {
 
 chain() {
     aursearch -Fr -- "$@" > json/0 || exit
+    num=$(count json/0)
 
-    if [[ $(count json/0) -lt 1 ]]; then
+    if [[ $num -lt 1 ]]; then
         error "$argv0: no packages found"
         exit 1
     fi
@@ -62,7 +70,9 @@ chain() {
             break
         fi
 
-        if [[ $(count json/$a) -lt 1 ]]; then
+        num=$(count json/$a)
+
+        if [[ $num -lt 1 ]]; then
             break
         else
             fld 2 tsv/$sub >> seen
