@@ -27,7 +27,7 @@ pair() {
 }
 
 fld() {
-    declare F=$1
+    declare -i F=$1
     shift
 
     awk -v F="$F" '{print $(F)}' "$@" | sort -u
