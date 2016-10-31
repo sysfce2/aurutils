@@ -58,7 +58,6 @@ getjson() {
     if ((total)); then
         cat "$outfile"
     else
-        error "$argv0: no results found"
         exit 1
     fi
 }
