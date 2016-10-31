@@ -12,11 +12,11 @@ declare -i all=0
 count() {
     declare -i num
 
-    if ! num=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$1"); then
+    if num=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$1"); then
+        printf '%s\n' "$num"
+    else
         error "$argv0: invalid argument"
         exit 22
-    else
-        printf '%s\n' "$num"
     fi
 }
 
