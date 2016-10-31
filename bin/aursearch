@@ -47,7 +47,7 @@ getjson() {
     declare outfile="$tmp"/out.json
 
     if dl_stdin > "$outfile"; then
-        sed -e '1i[' -e 's/}{/},{/g' -e '$a]' -i "$outfile"
+        sed 's/^/[/; s/}{/},{/g; s/$/]/' -i "$outfile"
     else
         exit $?
     fi
