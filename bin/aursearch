@@ -47,18 +47,9 @@ getjson() {
     declare outfile="$tmp"/out.json
 
     if dl_stdin > "$outfile"; then
-        sed 's/^/[/; s/}{/},{/g; s/$/]/' -i "$outfile"
+        sed 's/^/[/; s/}{/},{/g; s/$/]/' "$outfile"
     else
         exit $?
-    fi
-
-    declare -i total
-    total=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$outfile")
-
-    if ((total)); then
-        cat "$outfile"
-    else
-        exit 1
     fi
 }
 
