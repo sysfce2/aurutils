@@ -235,10 +235,15 @@ if ((build)) || ((update)); then
     msg2 "Using [$repo] repository"
 
     if ((update)); then
-        list=($(pacman -Slq "$repo"))
+        msg "Checking updates..."
+        list=($(aurcheck -- "$repo"))
+
         set -- "$@" "${list[@]}"
 
-        (($#)) || exit 0
+        if ((!$#)); then
+            plain "there is nothing to do"
+            exit 0
+        fi
     fi
 fi
 
