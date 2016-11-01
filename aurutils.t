@@ -35,8 +35,8 @@ aursync -Ln --noview --repo="$testrepo1" python-nikola # Split package
 pacman -Si "$testrepo1"/python-nikola
 aursync -Ln --noview --repo="$testrepo2" python-nikola # Per-repo versions
 pacman -Si "$testrepo2"/python-nikola
-aursync -Ln --noview --repo="$testrepo1" libdbusmenu-gtk2-ubuntu # Split package, pkgbase != pkgname
-pacman -Si "$testrepo1"/libdbusmenu-gtk2-ubuntu
+aursync -Ln --noview --repo="$testrepo1" hnwatch # Split package, pkgbase != pkgname
+pacman -Si "$testrepo1"/hnwatch
 aursync -Ln --noview --repo="$testrepo1" gimp-plugin-separate+ # Special characters
 pacman -Si "$testrepo1"/gimp-plugin-separate+
 aursync -Ln --noview --repo="$testrepo1" ros-build-tools # Empty make/depends
