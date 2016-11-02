@@ -51,7 +51,11 @@ getjson() {
 }
 
 json_short() {
-    while {
+    jq -e -r '[.[].results[]] | sort_by(.Name)[] | .Name,
+        .Version,
+        .NumVotes,
+        .Description' | while
+    {
         read -r Name
         read -r Version
         read -r NumVotes
@@ -59,14 +63,22 @@ json_short() {
     }; do
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s)\n    %s\n" \
                "$Name" "$Version" "$NumVotes" "$Description"
-    done < <(jq -r '[.[].results[]] | sort_by(.Name)[] | .Name,
-      .Version,
-      .NumVotes,
-      .Description')
+    done
 }
 
 json_long() {
-    while {
+    jq -e -r '[.[].results[]] | sort_by(.Name)[] | .Name,
+        .PackageBase,
+        .Version,
+        .Description,
+        .URL,
+        .NumVotes,
+        .Popularity,
+        .OutOfDate,
+        .Maintainer,
+        .FirstSubmitted,
+        .LastModified' | while
+    {
         read -r Name
         read -r PackageBase
         read -r Version
@@ -91,17 +103,7 @@ json_long() {
         printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
         printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
         printf '\n'
-    done < <(jq -r '[.[].results[]] | sort_by(.Name)[] | .Name,
-        .PackageBase,
-        .Version,
-        .Description,
-        .URL,
-        .NumVotes,
-        .Popularity,
-        .OutOfDate,
-        .Maintainer,
-        .FirstSubmitted,
-        .LastModified')
+    done
 }
 
 match() {
