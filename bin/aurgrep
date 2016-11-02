@@ -15,7 +15,7 @@ list=packages.gz
 declare -i delay=300
 
 curl_date() {
-    curl -fI "$1" | awk -F', ' '/^Date:/ {print $2}'
+    curl -fsSI "$1" | awk -F', ' '/^Date:/ {print $2}'
 }
 
 curl_unzip() {
