@@ -167,6 +167,10 @@ while read -r -u 3 pkg _; do
         LANG=C repose -vf "$database" -r "$root" -p "$pool"
     else
         LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
+
+        if [[ $pool != "$root" ]]; then
+            for p in "${pkglist[@]}"; do cp -sv "$p" "$root"/; done
+        fi
     fi
 
     if ! ((chroot)); then
