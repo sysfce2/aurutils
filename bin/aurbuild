@@ -169,8 +169,10 @@ while read -r -u 3 pkg _; do
         LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
     fi
 
-    printf '%s\n' "$database" | conf_build > "$tmp"/config
-    sudo pacman -Syu --config="$tmp"/config --noprogressbar --noconfirm
+    if ! ((chroot)); then
+        printf '%s\n' "$database" | conf_build > "$tmp"/config
+	sudo pacman -Syu --config="$tmp"/config --noprogressbar --noconfirm
+    fi
 done
 
 exec 3<&-
