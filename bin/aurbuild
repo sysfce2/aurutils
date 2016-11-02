@@ -141,48 +141,36 @@ fi
 
 while read -r -u 3 pkg _; do
     cd_safe "$base/$pkg"
+
     unset -v pkglist
 
     if ((chroot)); then
         sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$container" "${makechrootpkg_args[@]}"
-
-        for p in $(makepkg --packagelist); do
-            pkglist+=($(find "$pool" -type f -regex ".+/$p.pkg.+?"))
-        done
-
-        if type -P repose >/dev/null 2>&1; then
-            LANG=C repose -vf "$database" -r "$root" -p "$pool"
-        else
-            LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
-        fi
-
-        if [[ $GPGKEY ]]; then
-            gpg_args+=(-u "$GPGKEY")
-        fi
-
-        if ((sign_pkg)); then
-            for p in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$p"; done
-        fi
     else
-        if ((sign_pkg)); then
-            makepkg_args+=(--sign)
-        fi
-
         PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
-
-        for p in $(makepkg --packagelist); do
-            pkglist+=($(find "$pool" -type f -regex ".+/$p.pkg.+?"))
-        done
-
-        if type -P repose >/dev/null 2>&1; then
-            LANG=C repose -vf "$database" -r "$root" -p "$pool"
-        else
-            LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
-        fi
-
-        printf '%s\n' "$database" | conf_build > "$tmp"/config
-        sudo pacman -Syu --config="$tmp"/config --noprogressbar --noconfirm
     fi
+
+    if [[ $GPGKEY ]]; then
+        gpg_args+=(-u "$GPGKEY")
+    fi
+
+    for p in $(makepkg --packagelist); do
+        pkglist+=($(find "$pool" -type f -regex ".+/$p.pkg.+?"))
+    done
+
+    # https://bugs.archlinux.org/task/49946?project=3
+    if ((sign_pkg)); then
+        for p in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$p"; done
+    fi
+
+    if type -P repose >/dev/null 2>&1; then
+        LANG=C repose -vf "$database" -r "$root" -p "$pool"
+    else
+        LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
+    fi
+
+    printf '%s\n' "$database" | conf_build > "$tmp"/config
+    sudo pacman -Syu --config="$tmp"/config --noprogressbar --noconfirm
 done
 
 exec 3<&-
