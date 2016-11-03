@@ -22,21 +22,18 @@ f1() {
 
 quickcheck() {
     declare repo=$1 geq=$2
-    declare pkg ver_sync ver_aur argv op
+    declare pkg ver_sync ver_aur op
 
     syncver "$repo" | sort -k 1b,1 > sync.tsv
 
-    # xargs returns 123 if any command failed with status 1-125.
-    readarray -t argv < <(f1 sync.tsv)
-
-    if aursearch -Fr "${argv[@]}" | aurver | sort -k 1b,1 > aur.tsv; then
+    if f1 sync.tsv | aursearch -Fr - | aurver | sort -k 1b,1 > aur.tsv; then
         join sync.tsv aur.tsv > join.tsv
 
         grep -Fxvf <(f1 aur.tsv) <(f1 sync.tsv) | while read -r pkg; do
             plain "$pkg is not present in AUR"
         done
     else
-        exit "${PIPESTATUS[0]}"
+        exit "${PIPESTATUS[1]}"
     fi
 
     while read -r pkg ver_sync ver_aur; do
