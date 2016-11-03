@@ -255,13 +255,10 @@ mkdir {tsv,json,diff}
 
 if ((deps)); then
     msg "Resolving dependencies..."
-    queue=($(aurchain -a -- "$@"))
+    aurchain -a -- "$@" | tee queue_0 | aursearch -Fr - > json/results
 else
-    queue=("$@")
+    printf '%s\n' "$@"  | tee queue_0 | aursearch -Fr - > json/results
 fi
-
-aursearch -Fr -- "${queue[@]}" > json/results
-printf '%s\n' "${queue[@]}" > queue_0
 
 jq -r '.[].results[].Name' json/results > tsv/pkgname
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' json/results > tsv/pkgbase
