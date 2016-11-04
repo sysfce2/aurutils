@@ -88,8 +88,10 @@ repo_select() {
     declare -A avail
 
     while read -r repo server; do
-        avail[$repo]=$server
-    done < <(repo_list | awk -F'\t' '$2 ~ /^file:\/\//')
+        if [[ $server =~ ^file:// ]]; then
+            avail[$repo]=${server#*://}
+        fi
+    done < <(repo_list)
 
     if [[ ${avail[@]} ]]; then
 	if [[ ${#avail[@]} -gt 1 ]]; then
@@ -106,7 +108,7 @@ repo_select() {
         exit 2
     fi
 
-    printf '%s\t%s\n' "$repo" "${avail[$repo]#*://}"
+    printf '%s\t%s\n' "$repo" "${avail[$repo]}"
 }
 
 basesub() {
