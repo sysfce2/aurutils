@@ -260,7 +260,7 @@ cd_safe "$tmp"
 mkdir {tsv,json,diff}
 
 msg "Resolving dependencies..."
-aurchain -- "$@" | lib32_sift | tee queue_0 | aursearch -Fr - > json/results
+aurchain -a -- "$@" | lib32_sift | tee queue_0 | aursearch -Fr - > json/results
 
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' json/results > tsv/pkgbase
 jq -r '.[].results[] | [.Name,.Version]        | @tsv' json/results > tsv/pkgver
@@ -280,7 +280,7 @@ if ((chkver)); then
     fi
 else
     # XXX: Make available in AURDEST
-    cp queue_1 queue
+    cp -s queue_1 queue
 fi
 
 msg "Retrieving build files..."
