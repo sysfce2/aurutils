@@ -37,7 +37,7 @@ genbase() {
 # make/depends arrays contain pkgname instead of pkgbase.
 # Replace entries accordingly in the output.
 basesub() {
-    declare -A pkg
+    declare -A pkg seen
     declare name base
 
     while read -r -u 3 name base; do
@@ -45,10 +45,13 @@ basesub() {
     done 3< "$1"
 
     while read -r name _; do
-        if [[ ${pkg[$name]} ]]; then
+        base=${pkg[$name]}
+
+        if [[ -n $base ]] && [[ -z ${seen[$base]} ]]; then
             printf '%s\n' "${pkg[$name]}"
+            seen[$base]=1
         fi
-    done | tac | awk '!x[$0]++' | tac
+    done
 }
 
 dmsort() {
