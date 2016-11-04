@@ -11,7 +11,7 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i view=1 build=1 chkver=1 deps=1 fetch=1
+declare -i view=1 build=1 chkver=1 fetch=1
 declare -i update=0 snapshot=0 sign=0 rotate=0 chroot=0
 declare -i bindro=0 force=0 keep=0 logdest=0 namcap=0 chtemp=0
 
@@ -124,6 +124,14 @@ basesub() {
     done | tac | awk '!x[$0]++' | tac
 }
 
+lib32_sift() {
+    awk -v arch="$(uname -m)" '{
+        if(arch == "i686") {
+            gsub(/^lib32-/,""); gsub(/^gcc-multilib$/,"")
+        };  print
+    }'
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -147,7 +155,7 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,chroot,force,keep,log,help,nobuild,nodeps,nofetch,nover,noview,sign,tar,temp,update,repo:
+longopts=allan,chroot,force,keep,log,help,nobuild,nofetch,nover,noview,sign,tar,temp,update,repo:
 
 if TEMP=$(getopt -o B:cfhkLnstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -170,7 +178,6 @@ while true; do
         -t|--tar)    snapshot=1; shift ;;
         --allan)     rotate=1;   shift ;;
         --nobuild)   build=0;    shift ;;
-        --nodeps)    deps=0;     shift ;;
         --nofetch)   fetch=0;    shift ;;
         --nover)     chkver=0;   shift ;;
         --noview)    view=0;     shift ;;
@@ -233,17 +240,16 @@ if ((build)) || ((update)); then
     fi
 
     msg2 "Using [$repo] repository"
+fi
 
-    if ((update)); then
-        msg "Checking updates..."
-        list=($(aurcheck -- "$repo"))
+if ((update)); then
+    msg "Checking updates..."
+    upd=($(aurcheck -- "$repo"))
+    set -- "$@" "${upd[@]}"
 
-        set -- "$@" "${list[@]}"
-
-        if ((!$#)); then
-            plain "there is nothing to do"
-            exit 0
-        fi
+    if ((!$#)); then
+        plain "there is nothing to do"
+        exit
     fi
 fi
 
@@ -253,36 +259,28 @@ chmod -c 700 "$AURDEST"
 cd_safe "$tmp"
 mkdir {tsv,json,diff}
 
-if ((deps)); then
-    msg "Resolving dependencies..."
-    aurchain -a -- "$@" | tee queue_0 | aursearch -Fr - > json/results
-else
-    printf '%s\n' "$@"  | tee queue_0 | aursearch -Fr - > json/results
-fi
+msg "Resolving dependencies..."
+aurchain -- "$@" | lib32_sift | tee queue_0 | aursearch -Fr - > json/results
 
-jq -r '.[].results[].Name' json/results > tsv/pkgname
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' json/results > tsv/pkgbase
 jq -r '.[].results[] | [.Name,.Version]        | @tsv' json/results > tsv/pkgver
 jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' json/results > tsv/urlpath
 
-# Note: Packages without lib32 prefix are not necessarily in the AUR.
-grep -Fxf tsv/pkgname queue_0 | grep -Fxvf <(pacconf IgnorePkg) | awk -v arch="$(uname -m)" '{
-    if(arch == "i686") {
-	gsub(/^lib32-/,""); gsub(/^gcc-multilib$/,"")
-    };  print
-}' | basesub tsv/pkgbase > queue_1
+# pkgname -> pkgbase
+basesub tsv/pkgbase < queue_0 > queue_1
 
 if ((chkver)); then
-    # pkgver -> pkgver (sync) -> pkgbase (sync)
+    # pkgver -> pkgver (repo) -> pkgbase (repo)
     aursift -U "$repo" < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
-    # pkgbase (tsort) \ pkgbase (sync)
+    # pkgbase \ pkgbase (repo)
     if ! grep -Fxvf sift_1 queue_1 > queue; then
         plain "there is nothing to do"
         exit 0
     fi
 else
-    cp -s queue_1 queue
+    # XXX: Make available in AURDEST
+    cp queue_1 queue
 fi
 
 msg "Retrieving build files..."
