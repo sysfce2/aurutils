@@ -161,14 +161,6 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-for arg; do
-    case "$arg" in
-        -) readarray in
-           set -- "$@" "${in[@]}"
-           break ;;
-    esac
-done
-
 if ((!$#)); then
     plain "$argv0: no targets specified"
     exit 1

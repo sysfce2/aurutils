@@ -26,14 +26,14 @@ quickcheck() {
 
     syncver "$repo" | sort -k 1b,1 > sync.tsv
 
-    if f1 sync.tsv | aursearch -Fr - | aurver | sort -k 1b,1 > aur.tsv; then
+    if f1 sync.tsv | xargs -r aursearch -Fr | aurver | sort -k 1b,1 > aur.tsv; then
         join sync.tsv aur.tsv > join.tsv
 
         grep -Fxvf <(f1 aur.tsv) <(f1 sync.tsv) | while read -r pkg; do
             plain "$pkg is not present in AUR"
         done
     else
-        exit "${PIPESTATUS[1]}"
+        exit
     fi
 
     while read -r pkg ver_sync ver_aur; do
