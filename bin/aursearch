@@ -164,7 +164,7 @@ OPTIND=1
 for arg; do
     case "$arg" in
         -) readarray in
-           set -- "${in[@]}"
+           set -- "$@" "${in[@]}"
            break ;;
     esac
 done
