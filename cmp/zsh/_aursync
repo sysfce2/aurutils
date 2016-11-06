@@ -9,7 +9,6 @@ _aursync_opts=(
     {-u,--update}'[Update AUR packages]'
     --ignore'[Skip packages in IgnorePkg]'
     --nobuild'[Only download build files]'
-    --nodeps'[Do not resolve dependencies]'
     --nofetch'[Do not update git directories]'
     --nover'[Disable version checks]'
     --noview'[Do not view build files]'
