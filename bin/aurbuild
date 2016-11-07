@@ -73,6 +73,10 @@ if (($#)); then
     fi
 fi
 
+if [[ $GPGKEY ]]; then
+    gpg_args+=(-u "$GPGKEY")
+fi
+
 if type -P xdelta3 >/dev/null 2>&1; then
     add_args+=(-d)
 fi
@@ -148,10 +152,6 @@ while read -r -u 3 pkg _; do
         sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$container" "${makechrootpkg_args[@]}"
     else
         PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
-    fi
-
-    if [[ $GPGKEY ]]; then
-        gpg_args+=(-u "$GPGKEY")
     fi
 
     for p in $(makepkg --packagelist); do
