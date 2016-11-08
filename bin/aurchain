@@ -4,9 +4,8 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o noclobber
 
 argv0=aurchain
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
+readonly PS4 argv0
 
-readonly PS4 argv0 tmp
 declare -i all=0
 
 count() {
@@ -100,15 +99,14 @@ usage() {
     exit 1
 }
 
-trap 'trap_exit' EXIT
-
 source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :a OPT; do
+while getopts :at: OPT; do
     case $OPT in
         a) all=1 ;;
+        t) opttmp=$OPTARG ;;
         *) usage ;;
     esac
 done
@@ -118,6 +116,15 @@ OPTIND=1
 if ((!$#)); then
     usage
 fi
+
+if [[ -z $opttmp ]]; then
+    tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
+    trap 'trap_exit' EXIT
+else
+    tmp=$(realpath -- "$opttmp")
+fi
+
+readonly tmp
 
 cd_safe "$tmp"
 mkdir {json,tsv} || exit

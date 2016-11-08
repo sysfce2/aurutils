@@ -263,14 +263,15 @@ mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
-mkdir {tsv,json,diff}
+mkdir {tsv,json,diff,aurchain}
 
 msg "Resolving dependencies..."
-aurchain -a -- "$@" | lib32_sift | tee queue_0 | xargs -r aursearch -Fr > json/results
+aurchain -a -t "$tmp"/aurchain -- "$@" | lib32_sift > queue_0
+json_set=("$tmp"/aurchain/json/*)
 
-jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' json/results > tsv/pkgbase
-jq -r '.[].results[] | [.Name,.Version]        | @tsv' json/results > tsv/pkgver
-jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' json/results > tsv/urlpath
+jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
+jq -r '.[].results[] | [.Name,.Version]        | @tsv' "${json_set[@]}" > tsv/pkgver
+jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' "${json_set[@]}" > tsv/urlpath
 
 # pkgname -> pkgbase
 basesub tsv/pkgbase < queue_0 > queue_1
