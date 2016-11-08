@@ -244,18 +244,19 @@ if ((build)) || ((update)); then
         exit 1
     fi
 
-    msg2 "Using [$repo] repository"
-fi
+    if ((update)); then
+        msg "Checking updates..."
+        upd=($(aurcheck -- "$repo"))
 
-if ((update)); then
-    msg "Checking updates..."
-    upd=($(aurcheck -- "$repo"))
-    set -- "$@" "${upd[@]}"
+        set -- "$@" "${upd[@]}"
 
-    if ((!$#)); then
-        plain "there is nothing to do"
-        exit
+        if ((!$#)); then
+            plain "there is nothing to do"
+            exit
+        fi
     fi
+
+    msg2 "Using [$repo] repository"
 fi
 
 mkdir -p "$AURDEST"/snapshot
@@ -274,7 +275,7 @@ jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' json/results > tsv/urlpat
 # pkgname -> pkgbase
 basesub tsv/pkgbase < queue_0 > queue_1
 
-if ((chkver)); then
+if ((build)) && ((chkver)); then
     # pkgver -> pkgver (repo) -> pkgbase (repo)
     aursift -U "$repo" < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
