@@ -50,6 +50,10 @@ pacman -Si "$testrepo2"/openrct2-git
 #aursync -Ln --noview --repo="$testrepo2" plasma-git-meta # 100+ depends
 #aursync -Ln --noview --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
 
+# nobuild test
+pacman -Slq testrepo1 | xargs aursync --nobuild -t
+pacman -Slq testrepo2 | xargs aursync --nobuild
+
 # cache/checksum test
 mkdir test-random
 cat > test-random/PKGBUILD <<'EOF'
