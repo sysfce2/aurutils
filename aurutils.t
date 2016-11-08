@@ -23,7 +23,7 @@ sudo pacsync "$testrepo1" "$testrepo2"
 
 # chroot test
 test -d "$testroot1" && sudo rm -rf "$testroot1"
-AURDEST=$tmp aursync --nover --nobuild --noview aurutils-git
+AURDEST=$tmp aursync --nobuild --noview aurutils-git
 printf '%s\n' pacutils aurutils-git > argfile
 aurbuild -cd "$testrepo1" -C "$testroot1" -a argfile
 aurbuild -cd "$testrepo1" -a argfile
