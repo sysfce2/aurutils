@@ -244,6 +244,8 @@ if ((build)) || ((update)); then
         exit 1
     fi
 
+    msg2 "Using [$repo] repository"
+
     if ((update)); then
         msg "Checking updates..."
         upd=($(aurcheck -- "$repo"))
@@ -255,8 +257,6 @@ if ((build)) || ((update)); then
             exit
         fi
     fi
-
-    msg2 "Using [$repo] repository"
 fi
 
 mkdir -p "$AURDEST"/snapshot
