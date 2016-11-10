@@ -266,7 +266,7 @@ cd_safe "$tmp"
 mkdir {tsv,json,diff,aurchain}
 
 msg "Resolving dependencies..."
-aurchain -a -t "$tmp"/aurchain -- "$@" | lib32_sift > queue_0
+aurchain -a -t "$tmp"/aurchain -- "$@" > queue_0
 json_set=("$tmp"/aurchain/json/*)
 
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
@@ -274,7 +274,7 @@ jq -r '.[].results[] | [.Name,.Version]        | @tsv' "${json_set[@]}" > tsv/pk
 jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' "${json_set[@]}" > tsv/urlpath
 
 # pkgname -> pkgbase
-basesub tsv/pkgbase < queue_0 > queue_1
+lib32_sift < queue_0 | basesub tsv/pkgbase > queue_1
 
 if ((build)) && ((chkver)); then
     # pkgver -> pkgver (repo) -> pkgbase (repo)
