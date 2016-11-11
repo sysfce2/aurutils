@@ -122,6 +122,7 @@ if [[ -z $opttmp ]]; then
     trap 'trap_exit' EXIT
 else
     tmp=$(realpath -- "$opttmp")
+    mkdir -p "$tmp" || exit
 fi
 
 readonly tmp
