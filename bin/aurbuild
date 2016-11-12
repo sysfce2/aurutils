@@ -165,7 +165,7 @@ while read -r -u 3 pkg _; do
 
     if type -P repose >/dev/null 2>&1; then
         # https://bugs.archlinux.org/task/49342#comment147145
-        LANG=C repose -vf "$database" -r "$root" -p "$pool"
+        LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
     else
         LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
 
