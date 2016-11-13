@@ -183,7 +183,7 @@ while read -r -u 3 pkg _; do
         printf '%s\n' "$database" | conf_build > "$tmp"/config
 
         # https://git.archlinux.org/pacman.git/commit/?id=90e3e026d1236ad89c142b427d7eeb842bbb7ff4
-	sudo pacman -Syu --config="$tmp"/config --noprogressbar --noconfirm --ask 2
+	sudo pacman -Syu --config="$tmp"/config --noconfirm --ask 2
     fi
 done
 
