@@ -96,13 +96,8 @@ if [[ $queue ]]; then
         exit 13
     fi
 else
-    if [[ -r ./PKGBUILD ]]; then
-        # http://pubs.opengroup.org/onlinepubs/000095399/basedefs/xbd_chap04.html#tag_04_11
-        exec 3<<< '//'
-    else
-        error "$argv0: queue: missing argument"
-        usage; exit 1
-    fi
+    error "$argv0: queue: missing argument"
+    usage; exit 1
 fi
 
 if [[ $root ]]; then
