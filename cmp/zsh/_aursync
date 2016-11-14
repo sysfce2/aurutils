@@ -8,10 +8,10 @@ _aursync_opts=(
     {-t,--tar}'[Download tar snapshots]'
     {-u,--update}'[Update AUR packages]'
     --ignore'[Skip packages in IgnorePkg]'
-    --nobuild'[Only download build files]'
-    --nofetch'[Do not update git directories]'
-    --nover'[Disable version checks]'
-    --noview'[Do not view build files]'
+    --no-build'[Only download build files]'
+    --no-fetch'[Do not update git directories]'
+    --no-ver'[Disable version checks]'
+    --no-view'[Do not view build files]'
     --repo'[Use a specified repository]'
 )
 
