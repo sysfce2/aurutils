@@ -175,10 +175,12 @@ while read -r -u 3 pkg _; do
     fi
 
     if ! ((chroot)); then
-        printf '%s\n' "$database" | conf_build > "$tmp"/config
+        # https://github.com/andrewgregory/pacutils/issues/15
+        replaces=$(grep -Fxf <(pacsift --repo="$database" | expac -S '%R' -) <(expac -Q '%n') | paste -s -d, -)
 
-        # https://git.archlinux.org/pacman.git/commit/?id=90e3e026d1236ad89c142b427d7eeb842bbb7ff4
-	sudo pacman -Syu --config="$tmp"/config --noconfirm --ask 2
+        # https://github.com/andrewgregory/pacutils/issues/4
+        printf '%s\n' "$database" | conf_build > "$tmp"/config
+        sudo pacman -Syu --config="$tmp"/config --ignore="$replaces"
     fi
 done
 
