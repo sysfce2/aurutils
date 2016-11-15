@@ -9,7 +9,6 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 declare -r PS4 argv0 base tmp
 declare -i chroot=0 sign_pkg=0
 
-add_args=(-nv)
 gpg_args=(--verbose --detach-sign --no-armor)
 makechrootpkg_args=(-cu)
 makepkg_args=(-Lcrs)
@@ -55,8 +54,7 @@ while getopts a:cC:d:m:p:r:s OPT; do
            machine=$OPTARG   ;;
         p) pool=$OPTARG      ;;
         r) root=$OPTARG      ;;
-        s) add_args+=(-sv)
-           repose_args+=(-s)
+        s) repose_args+=(-s)
            sign_pkg=1        ;;
         *) usage; exit 1     ;;
     esac
@@ -75,10 +73,6 @@ fi
 
 if [[ $GPGKEY ]]; then
     gpg_args+=(-u "$GPGKEY")
-fi
-
-if type -P xdelta3 >/dev/null 2>&1; then
-    add_args+=(-d)
 fi
 
 if [[ $database ]]; then
@@ -120,16 +114,16 @@ if ((chroot)); then
     machine=${machine:-$(uname -m)}
     container=${container:-/var/lib/aurbuild}/$machine
 
+    if ! grep -qx "$machine" <(setarch --list); then
+        error "$argv0: $machine: unknown architecture"
+        exit 38
+    fi
+
     if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
         pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
     else
         # pacstrap (called from mkarchroot) fails when config file contains DBPath (#166)
         pacconf --raw > "$tmp"/pacman.conf
-    fi
-
-    if ! grep -qx "$machine" <(setarch --list); then
-        error "$argv0: $machine: unknown architecture"
-        exit 38
     fi
 
     if [[ -f $container/root/.arch-chroot ]]; then
@@ -146,33 +140,21 @@ fi
 while read -r -u 3 pkg _; do
     cd_safe "$base/$pkg"
 
-    unset -v pkglist
-
     if ((chroot)); then
         sudo PKGDEST="$pool" makechrootpkg -d "$pool" -d "$root" -r "$container" "${makechrootpkg_args[@]}"
     else
         PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     fi
 
-    for p in $(makepkg --packagelist); do
-        pkglist+=($(find "$pool" -type f -regex ".+/$p.pkg.+?"))
-    done
-
     if ((sign_pkg)); then
         # https://bugs.archlinux.org/task/49946
-        for p in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$p"; done
+        for p in $(makepkg --packagelist); do
+            find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir gpg "${gpg_args[@]}" {} \;
+        done
     fi
 
-    if type -P repose >/dev/null 2>&1; then
-        # https://bugs.archlinux.org/task/49342#comment147145
-        LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
-    else
-        LANG=C repo-add "${add_args[@]}" "$(realpath -- "$root/$database".db)" "${pkglist[@]}"
-
-        if [[ $pool != "$root" ]]; then
-            for p in "${pkglist[@]}"; do cp -sv "$p" "$root"/; done
-        fi
-    fi
+    # https://bugs.archlinux.org/task/49342#comment147145
+    LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
     if ! ((chroot)); then
         printf '%s\n' "$database" | conf_build > "$tmp"/config
