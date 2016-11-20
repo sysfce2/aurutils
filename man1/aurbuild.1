@@ -35,6 +35,14 @@ A text file with directories containing a PKGBUILD.
 Build packages with \fImakechrootpkg\fR.
 .RE
 
+.B \-C
+.RS
+Set the parent directory of the nspawn container. Defaults to
+\fI/var/lib/aurbuild\fR. Containers are kept in subdirectories named
+after the system architecture, for example
+\fI/var/lib/aurbuild/x86_64\fR.
+.RE
+
 .B \-d
 .RS
 The name of the database.
