@@ -33,7 +33,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-cs] -a <queue> [-Cdmpr] [--] ARGS"
+    plain "usage: $argv0 [-cs] -d <database> -a <queue> [-Cmpr] [--] ARGS"
 }
 
 trap 'exit' INT
