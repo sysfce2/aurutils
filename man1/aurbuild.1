@@ -63,8 +63,8 @@ defaults to the \fIServer\fI value of the configured database.
 .B \-p
 .RS
 The pool for the built packages. The \fBpool \fRis the location where
-aurbuild will put the packages after building. This defaults to the
-value of the repository root.
+packages are placed after building (using \fIPKGDEST\fR). This
+defaults to the value of the repository root.
 .RE
 
 .B \-s
@@ -74,26 +74,26 @@ Sign built packages and the database with gpg.
 
 .SH NOTES
 When building locally (outside a container), \fIpacman -Syu \fR is run
-while restricted to a local repository. This is comparable to \fImakepkg
--i\fR, but without subsequent package installation (if a package was
-installed before, it is updated to the latest available version). An
-interesting side-effect is that pacman considers packages inside the
-official repositories "local", and warns if they are newer than any
-custom counterpart.
+while restricted to a local repository. This is comparable to
+\fImakepkg -i\fR, but without subsequent package installation (if a
+package was installed before, it is updated to the latest available
+version). An interesting side-effect is that pacman considers packages
+inside the official repositories "local", and warns if they are newer
+than any custom counterpart. Packages which define a \fIreplaces\fR
+field are ignored if the target package is installed on the local
+system.
 
 Databases are built with \fILANG=C\fR to avoid libalpm from skipping
-entries if the locale is not set. See FS#49342 for details.
-.br
-.UR https://bugs.archlinux.org/task/49342#comment147145
-.UE
+entries if the locale is not set (FS#49342).
 
 .SS Building with \fBmakechrootpkg\fR
-The template ("root") container is upgraded with \fIpacman -Syu\fR
-prior to building. This is done as the "user" container is restored to
-the "root" container before each build (\fImakechrootpkg -c\fR).
+The template (or \fIroot\fR) container is upgraded with \fIpacman
+-Syu\fR prior to building. This is done as the \fI$USER\fR container
+is copied from the \fIroot\fR container before each build
+(\fImakechrootpkg -c\fR).
 
 Changes to the pacman database are \fBnot\fR propagated from the
-container to the local system; packages must be installed and updated
+container to the local system. Packages must be installed and updated
 separately, typically through \fIpacman -Syu <package_name>\fR.
 
 Package conflicts inside the container must be solved manually, as
@@ -101,15 +101,8 @@ Package conflicts inside the container must be solved manually, as
 example, to replace \fBgcc\fR with \fBgcc-multilib\fR, run \fIarch-nspawn
 /var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
 
-For signature verification to work, \fBgpg2\fR(1) configuration must be
+Signature verification requires that \fBgpg2\fR(1) configuration is
 stored in \fI~/.gnupg\fR. See Github issue #151 for details.
-
-\fBmakechrootpkg\fR reads -DEST, PACKAGER and MAKEFLAGS from
-/etc/makepkg.conf (and after that, ~/.makepkg.conf), \fBif\fR these
-variables are unavailable in the environment.  Note that variables
-specified on the sudo command line (such as \fIPKGDEST\fR by
-\fBaurbuild\fR) depend on sudo policy; see \fBsudo\fR(8) and
-\fBsudoers\fR(5).
 
 .SS Avoiding password prompts
 makepkg must be run as a regular user as of version 4.2, with
@@ -122,6 +115,10 @@ For example:
 
 %build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
 %build localhost = (root) NOPASSWD: /usr/bin/arch-nspawn
+
+Note that variables specified on the sudo command line (such as
+\fIPKGDEST\fR by \fBaurbuild\fR) depend on sudo policy; see
+\fBsudo\fR(8) and \fBsudoers\fR(5).
 
 .EE
 .SH SEE ALSO
