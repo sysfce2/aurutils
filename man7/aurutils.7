@@ -63,7 +63,7 @@ See also EXIT STATUS in curl(1), aria2c(1).
 
 .SH CREATING A LOCAL REPOSITORY 
 Configure the local repository in a separate pacman configuration,
-for example in /etc/pacman.d/custom:
+for example in \fI/etc/pacman.d/custom\fR:
 .EX
 
   [options]
@@ -112,7 +112,7 @@ Synchronize pacman:
 .SY Note:
 It is recommended to use a pacman cache directory (\fICacheDir\fR) as
 the package pool. This avoids checksum mismatches between built
-packages, and any cached versions. When using \fIaursync(1)\fR, this
+packages and any cached versions. When using \fIaursync(1)\fR, this
 condition is required.
 .YS
 
@@ -122,25 +122,30 @@ version control packages.
 .YS
 
 .SH MIGRATING FOREIGN PACKAGES
-If built packages are available, move them to the new location, and
-follow the instructions in \fBCreating a local repository\fR.
-.P
-Without packages, verify the installed files first. If needed, rebuild
-packages with \fImd5sum \fRmismatches.
+If built packages are available, follow the instructions in
+\fBCreating a local repository\fR and move the packages to the new
+location.
+
+Missing packages may be recreated from system files. Before doing so,
+it is recommended to check for mismatches between the pacman database
+and the local filesystem:
 .EX
 
   $ pacman -Qqm | paccheck --md5sum --quiet
 
 .EE
-Recreate the packages, and save them to \fIPKGDEST\fR, or \fIPWD \fRif
-not set:
+If mismatches occur, consider rebuilding the respective
+packages. Otherwise, recreate the packages with \fIbacman\fR:
 .EX
 
   $ pacman -Qqm | while read -r b; do bacman "$b"; done
 
 .EE
-To keep the repository updated when building with makepkg, set
-\fIPKGDEST \fRto the cache, and create a repose alias:
+Results will be saved to \fIPKGDEST\fR, or to the current directory if
+this variable is not set.
+
+To keep the repository updated when building with \fImakepkg\fR, set
+\fIPKGDEST \fRto the cache and create a repose alias:
 .EX
 
   $ sudoedit /etc/makepkg.conf
@@ -149,19 +154,19 @@ To keep the repository updated when building with makepkg, set
 .EE
 
 .SH EXAMPLES
-Run actions on AUR targets in total order:
+Run actions on the dependency tree of an AUR package:
 .EX
 
-  $ while read -r pkg _; do ... done < <(aurchain foobar)
+  $ aurchain foobar | while read -r pkg _; do ... done
 
 .EE
-Build all packages in the \fIpkgbuilds \fRgithub repository:
+Build all packages in the \fIpkgbuilds\fR github repository:
 .EX
 
   $ git clone https://www.github.com/Earnestly/pkgbuilds
   $ cd pkgbuilds
   $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \\;
-  $ aurqueue * > queue # Remove unwanted targets
+  $ aurqueue ./* > queue # Remove unwanted targets
   $ aurbuild -d custom -a queue
 
 .EE
@@ -208,7 +213,7 @@ Print packages both in AUR and community, and compare their versions:
   $ aurcheck -a community 2>/dev/null
 
 .EE
-Use helpers wich honor the \fIPACMAN \fRvariable or cower with a repository:
+Use helpers wich honor the \fIPACMAN\fR variable or cower with a repository:
 .EX
 
  $ PACMAN=repoman pacaur -Syu --aur
@@ -216,7 +221,7 @@ Use helpers wich honor the \fIPACMAN \fRvariable or cower with a repository:
 
 .EE
 .SY Note:
-Unlike repofind, these only check updates for installed packages.
+Unlike \fIrepofind\fR, these only check updates for installed packages.
 .YS
 
 .SH AUTHORS
