@@ -248,13 +248,11 @@ if ((build)) || ((update)); then
 
     if ((update)); then
         msg "Checking updates..."
-        upd=($(aurcheck -- "$repo"))
-
-        set -- "$@" "${upd[@]}"
+        new=($(aurcheck -q -- "$repo"))
+        set -- "$@" "${new[@]}"
 
         if ((!$#)); then
-            plain "there is nothing to do"
-            exit
+            plain "there is nothing to do"; exit
         fi
     fi
 fi
