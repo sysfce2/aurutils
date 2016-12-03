@@ -107,14 +107,14 @@ not be run directly as root. To avoid password prompts,
 For example:
 .EX
 
-%build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
-%build localhost = (root) NOPASSWD: /usr/bin/arch-nspawn
+  %build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
+  %build localhost = (root) NOPASSWD: /usr/bin/arch-nspawn
 
+.EE
 Note that variables specified on the sudo command line (such as
 \fIPKGDEST\fR by \fBaurbuild\fR) depend on sudo policy; see
 \fBsudo\fR(8) and \fBsudoers\fR(5).
 
-.EE
 .SH SEE ALSO
 .BR pacconf (1),
 .BR pacman (1),
