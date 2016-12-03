@@ -7,7 +7,6 @@ aurbuild \- build packages to a local repository
 .OP \-cs
 .OP \-a queue
 .OP \-d database
-.OP \-m machine
 .OP \-p pool
 .OP \-r root
 .OP \--
@@ -48,12 +47,6 @@ after the system architecture, for example
 The name of the database.
 .RE
 
-.B \-m
-.RS
-Set the reported system architecture for the container. Available
-arguments can be listed with \fIsetarch --list\fR.
-.RE
-
 .B \-r
 .RS
 The root for the repository where the database files will live. This
@@ -84,7 +77,8 @@ field are ignored if the target package is installed on the local
 system.
 
 Databases are built with \fILANG=C\fR to avoid libalpm from skipping
-entries if the locale is not set (FS#49342).
+entries if the locale is not set (FS#49342). Packages are signed
+manually with \fIgpg --verbose --detach-sign --no-armor\fR (FS#49946).
 
 .SS Building with \fBmakechrootpkg\fR
 The template (or \fIroot\fR) container is upgraded with \fIpacman
@@ -108,7 +102,7 @@ stored in \fI~/.gnupg\fR. See Github issue #151 for details.
 makepkg must be run as a regular user as of version 4.2, with
 privileged operations done via \fIsudo\fR. As such, \fIaurbuild\fR can
 not be run directly as root. To avoid password prompts,
-\fBsudoers(5)\fR can be used instead.
+\fBsudoers\fR(5) can be used instead.
 
 For example:
 .EX

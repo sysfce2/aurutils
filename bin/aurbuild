@@ -4,9 +4,10 @@ set -e
 
 argv0=aurbuild
 base=$PWD
+machine=$(uname -m)
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
-declare -r PS4 argv0 base tmp
+declare -r PS4 argv0 base machine tmp
 declare -i chroot=0 sign_pkg=0
 
 gpg_args=(--verbose --detach-sign --no-armor)
@@ -50,8 +51,6 @@ while getopts a:cC:d:m:p:r:s OPT; do
         c) chroot=1          ;;
         C) container=$OPTARG ;;
         d) database=$OPTARG  ;;
-        m) repose_args+=(-m "$OPTARG")
-           machine=$OPTARG   ;;
         p) pool=$OPTARG      ;;
         r) root=$OPTARG      ;;
         s) repose_args+=(-s)
@@ -111,13 +110,7 @@ printf '\n' > "$root"/_build
 printf '\n' > "$pool"/_build
 
 if ((chroot)); then
-    machine=${machine:-$(uname -m)}
     container=${container:-/var/lib/aurbuild}/$machine
-
-    if ! grep -qx "$machine" <(setarch --list); then
-        error "$argv0: $machine: unknown architecture"
-        exit 38
-    fi
 
     if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
         pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
@@ -130,7 +123,7 @@ if ((chroot)); then
         sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
     else
         sudo install -d "$container"
-        sudo setarch "$machine" mkarchroot -C "$tmp"/pacman.conf "$container"/root base-devel
+        sudo mkarchroot -C "$tmp"/pacman.conf "$container"/root base-devel
     fi
 
     # Check if target repository is configured in chroot (#161)
@@ -153,7 +146,7 @@ while read -r -u 3 pkg _; do
         done
     fi
 
-    # https://bugs.archlinux.org/task/49342#comment147145
+    # https://bugs.archlinux.org/task/49342
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
     if ! ((chroot)); then
