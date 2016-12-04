@@ -1,6 +1,8 @@
 #!/bin/bash
+# shellcheck disable=SC2030,2031
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
+shopt -s lastpipe
 
 argv0=aursync
 aurweb=https://aur.archlinux.org
@@ -78,8 +80,8 @@ viewer() {
 }
 
 repo_list() {
-    pacconf --repo-list | while read -r repo; do
-        printf '%s\t%s\n' "$repo" "$(pacconf --single --repo="$repo" Server)"
+    pacconf --repo-list | while IFS= read -r; do
+        printf '%s\t%s\n' "$REPLY" "$(pacconf --single --repo="$REPLY" Server)"
     done
 }
 
@@ -247,8 +249,7 @@ if ((build)) || ((update)); then
     msg2 "Using [$repo] repository"
 
     if ((update)); then
-        msg "Checking updates..."
-        new=($(aurcheck -q -- "$repo"))
+        aurcheck -q -- "$repo" | readarray -t new #lastpipe
         set -- "$@" "${new[@]}"
 
         if ((!$#)); then
@@ -280,8 +281,7 @@ if ((build)) && ((chkver)); then
 
     # pkgbase \ pkgbase (repo)
     if ! grep -Fxvf sift_1 queue_1 > queue; then
-        plain "there is nothing to do"
-        exit 0
+        plain "there is nothing to do"; exit
     fi
 else
     # XXX: Make available in AURDEST
