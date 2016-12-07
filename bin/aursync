@@ -21,7 +21,7 @@ clone() {
     declare pull=$1 logdir=$2 startdir=$PWD
     declare repo base remote
 
-    while read -r repo _; do
+    while IFS= read -r repo; do
         base=${repo##*/} base=${base%%.git}
 
         if [[ -d $base/.git ]]; then
@@ -240,7 +240,7 @@ if ((build)) || ((update)); then
 
     printf '\n' >| "$root"/_build
 
-    if ! grep -qx -- "$root" <(pacconf CacheDir); then
+    if ! pacconf CacheDir | grep -qx -- "$root"; then
         error "$argv0: repository path $root is not a cache directory"
         exit 1
     fi
@@ -251,7 +251,7 @@ if ((build)) || ((update)); then
         shopt -s lastpipe
         aurcheck -q -- "$repo" | readarray -t new
 
-        shopt +s lastpipe
+        shopt -u lastpipe
         set -- "$@" "${new[@]}"
 
         if ((!$#)); then
