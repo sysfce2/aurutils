@@ -157,7 +157,7 @@ while read -r -u 3 pkg _; do
         replaces=$(grep -Fxf <(pacsift --repo="$database" | expac -S '%R' -) <(expac -Q '%n') | paste -s -d, -)
 
         # https://github.com/andrewgregory/pacutils/issues/4
-        sudo pacman -Su --config="$tmp"/config --ignore="$replaces"
+        sudo pacman -Su --config="$tmp"/config --ignore="$replaces" --noconfirm
     fi
 done
 
