@@ -2,7 +2,6 @@
 # shellcheck disable=SC2030,2031
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
-shopt -s lastpipe
 
 argv0=aursync
 aurweb=https://aur.archlinux.org
@@ -248,8 +247,11 @@ if ((build)) || ((update)); then
 
     msg2 "Using [$repo] repository"
 
-    if ((update)); then
-        aurcheck -q -- "$repo" | readarray -t new #lastpipe
+    if ((update)); then        
+        shopt -s lastpipe
+        aurcheck -q -- "$repo" | readarray -t new
+
+        shopt +s lastpipe
         set -- "$@" "${new[@]}"
 
         if ((!$#)); then
