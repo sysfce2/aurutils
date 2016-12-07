@@ -7,7 +7,6 @@ testroot1=/var/tmp/test-chroot
 tmp=$(mktemp -d)
 
 trap 'rm -rf $tmp' INT QUIT TERM PIPE HUP EXIT
-
 cd "$tmp"
 
 # clear repo
@@ -24,7 +23,7 @@ sudo pacsync "$testrepo1" "$testrepo2"
 # chroot test
 test -d "$testroot1" && sudo rm -rf "$testroot1"
 AURDEST=$tmp aursync --no-build --no-view aurutils-git
-printf '%s\n' pacutils aurutils-git > argfile
+printf '%s\n' aurutils-git > argfile
 aurbuild -cd "$testrepo1" -C "$testroot1" -a argfile
 aurbuild -cd "$testrepo1" -a argfile
 sudo pacsync "$testrepo1"
