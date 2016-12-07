@@ -23,7 +23,7 @@ sudo pacsync "$testrepo1" "$testrepo2"
 
 # chroot test
 test -d "$testroot1" && sudo rm -rf "$testroot1"
-AURDEST=$tmp aursync --nobuild --noview aurutils-git
+AURDEST=$tmp aursync --no-build --no-view aurutils-git
 printf '%s\n' pacutils aurutils-git > argfile
 aurbuild -cd "$testrepo1" -C "$testroot1" -a argfile
 aurbuild -cd "$testrepo1" -a argfile
@@ -31,28 +31,28 @@ sudo pacsync "$testrepo1"
 pacman -Si "$testrepo1"/aurutils-git # Repository move
 
 # package test
-aursync -Ln --noview --repo="$testrepo1" python-nikola # Split package
+aursync -Ln --no-view --repo="$testrepo1" python-nikola # Split package
 pacman -Si "$testrepo1"/python-nikola
-aursync -Ln --noview --repo="$testrepo2" python-nikola # Per-repo versions
+aursync -Ln --no-view --repo="$testrepo2" python-nikola # Per-repo versions
 pacman -Si "$testrepo2"/python-nikola
-aursync -Ln --noview --repo="$testrepo1" hnwatch # Split package, pkgbase != pkgname
+aursync -Ln --no-view --repo="$testrepo1" hnwatch # Split package, pkgbase != pkgname
 pacman -Si "$testrepo1"/hnwatch
-aursync -Ln --noview --repo="$testrepo1" gimp-plugin-separate+ # Special characters
+aursync -Ln --no-view --repo="$testrepo1" gimp-plugin-separate+ # Special characters
 pacman -Si "$testrepo1"/gimp-plugin-separate+
-aursync -Ln --noview --repo="$testrepo1" ros-build-tools # Empty make/depends
+aursync -Ln --no-view --repo="$testrepo1" ros-build-tools # Empty make/depends
 pacman -Si "$testrepo1"/ros-build-tools
-aursync -Ln --noview --repo="$testrepo2" shaman-git # Special characters - UTF8
+aursync -Ln --no-view --repo="$testrepo2" shaman-git # Special characters - UTF8
 pacman -Si "$testrepo2"/shaman-git
-aursync -Ln --noview --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
+aursync -Ln --no-view --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
 pacman -Si "$testrepo2"/aws-cli-git
-aursync -Ln --noview --repo="$testrepo2" openrct2-git # make/depends_arch
+aursync -Ln --no-view --repo="$testrepo2" openrct2-git # make/depends_arch
 pacman -Si "$testrepo2"/openrct2-git
-#aursync -Ln --noview --repo="$testrepo2" plasma-git-meta # 100+ depends
-#aursync -Ln --noview --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
+#aursync -Ln --no-view --repo="$testrepo2" plasma-git-meta # 100+ depends
+#aursync -Ln --no-view --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
 
-# nobuild test
-pacman -Slq "$testrepo1" | xargs aursync --nobuild -t
-pacman -Slq "$testrepo2" | xargs aursync --nobuild
+# no-build test
+pacman -Slq "$testrepo1" | xargs aursync --no-build -t
+pacman -Slq "$testrepo2" | xargs aursync --no-build
 
 # cache/checksum test
 mkdir test-random
@@ -66,8 +66,8 @@ url="http://example.com"
 license=('GPL')
 
 package() {
-  mkdir -p "$pkgdir"/var/tmp/
-  dd if=/dev/urandom of="$pkgdir"/var/tmp/random bs=1M count=4
+    mkdir -p "$pkgdir"/var/tmp/
+    dd if=/dev/urandom of="$pkgdir"/var/tmp/random bs=1M count=4
 }
 EOF
 
@@ -101,3 +101,5 @@ aurgrep '.+' | tee list.txt | xargs aursearch -Fr > list.json
 total1=$(jq -r '.[]results[].Name' list.json | wc -l)
 total2=$(wc -l list.txt)
 test "$total1" -eq "$total2"
+
+# vim: set et sw=4 sts=4 ft=sh:
