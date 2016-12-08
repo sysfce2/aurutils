@@ -21,27 +21,26 @@ sift() {
     declare all siftargs query repo p v
 
     # Use an additional indexed array to preserve input order.
-    while read -r p; do
-        pkgset["$p"]=1
-        all+=("$p")
+    while IFS= read -r; do
+        pkgset["$REPLY"]=1; all+=("$REPLY")
     done
 
     if [[ ${pkgset[@]} ]]; then
         for p in "${!pkgset[@]}"; do
             siftargs+=(--satisfies="$p")
         done
+
+        for p in core extra testing community{,-testing} multilib{,-testing}; do
+            siftargs+=(--repo="$p")
+        done
     else
         error "$argv0: no data available"
         exit 61
     fi
 
-    for p in testing core extra community community-testing multilib multilib-testing; do
-        siftargs+=(--repo="$p")
-    done
-
     # Close standard input for pacsift to allow --sync.
-    # https://github.com/andrewgregory/pacutils/issues/3
-    query=($(pacsift --sync --exact "${siftargs[@]}" <&-))
+    # https://github.com/andrewgregory/pacutils/issues/31
+    readarray -t query < <(pacsift --sync --exact "${siftargs[@]}" <&-)
 
     if [[ ${query[@]} ]]; then
         while read -r p v; do
@@ -118,7 +117,7 @@ fi
 
 while getopts :SU: OPT; do
     case $OPT in
-        S) sift    ;;
+        S) sift ;;
         U) prepare "$OPTARG" ;;
         *) plain "usage: $argv0 [-S] [-U repo]"
            exit 1 ;;

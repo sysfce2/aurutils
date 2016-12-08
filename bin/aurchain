@@ -60,7 +60,7 @@ chain() {
         sort -u tsv/$sub >> tsv/n
 
         # Avoid querying duplicates (#4)
-        target=($(fld 2 tsv/$sub | grep -Fxvf seen))
+        readarray -t target < <(fld 2 tsv/$sub | grep -Fxvf seen)
 
         if [[ ${target[@]} ]]; then
             aursearch -Fr -- "${target[@]}" > json/$a || exit
