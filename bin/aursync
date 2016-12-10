@@ -212,15 +212,15 @@ fi
 # Set makepkg args in a new list to ensure option context is already
 # defined, as getopt parses options from left to right.
 if ((chroot)); then
-    aurbuild_args+=(-c) makepkg_args=(-cu)
-
+    aurbuild_args+=(-c)
     [[ $container ]] && aurbuild_args+=(-C "$container")
+
+    makepkg_args=(-cu)
     ((bindro))  && makepkg_args+=(-D "$newdir")
     ((chtemp))  && makepkg_args+=(-T)
     ((namcap))  && makepkg_args+=(-n)
 else
     makepkg_args=(-cs)
-
     ((force))   && makepkg_args+=(-f)
     ((logdest)) && makepkg_args+=(-L)
     ((namcap))  && makepkg_args+=(--noconfirm)
