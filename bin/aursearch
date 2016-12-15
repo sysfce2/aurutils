@@ -167,12 +167,12 @@ if ((!$#)); then
 fi
 
 if [[ $searchby != none ]]; then
-  { for q in "$@"; do
-    printf '%s/rpc/?v=5&type=search&by=%s&arg=' "$aurweb" "$searchby"
-    printf '%s\n' "$q" | urlencode
-  done } | getjson | parse "$format"
+    for q in "$@"; do
+        printf '%s/rpc/?v=5&type=search&by=%s&arg=' "$aurweb" "$searchby"
+        printf '%s\n' "$q" | urlencode
+    done
 else
-  match "$list" "$@" | urlencode | split | getjson | parse "$format"
-fi
+    match "$list" "$@" | urlencode | split
+fi | getjson | parse "$format"
 
 # vim: set et sw=4 sts=4 ft=sh:
