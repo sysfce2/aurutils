@@ -39,7 +39,7 @@ sift() {
     fi
 
     # Close standard input for pacsift to allow --sync.
-    # https://github.com/andrewgregory/pacutils/issues/31
+    # https://github.com/andrewgregory/pacutils/issues/3
     readarray -t query < <(pacsift --sync --exact "${siftargs[@]}" <&-)
 
     if [[ ${query[@]} ]]; then
