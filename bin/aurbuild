@@ -115,8 +115,7 @@ if ((chroot)); then
         base_packages=(base-devel)
     fi
 
-    # pacstrap (called from mkarchroot) fails when config file contains DBPath (#166)
-    pacconf --raw --config="$pacman_conf" | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
+    pacini "$pacman_conf" | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$container"/root pacman -Syu --noconfirm
@@ -128,7 +127,8 @@ if ((chroot)); then
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
 else
-    { printf '%s\n' '[options]'; pacconf --raw --options; } | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
+    { printf '%s\n' '[options]'
+      pacconf --raw --options; } | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 fi
 
 while read -r -u 3 pkg _; do
