@@ -72,7 +72,7 @@ Use the specified repository instead of an interactive selection.
 .RE
 
 .SS makepkg
-The default set of options is \fImakepkg -crs\fR.
+The default set of options is \fImakepkg -Lcrs\fR.
 
 .B \-f, --force
 .RS
@@ -85,27 +85,17 @@ Do not remove dependencies installed by makepkg. (unset \fImakepkg
 -r\fR)
 .RE
 
-.B \-L, --log
-.RS
-Save makepkg output. (\fImakepkg -L\fR)
-.RE
-
 .B \-n
 .RS
 Do not wait for user input. (\fImakepkg --noconfirm\fR)
 .RE
 
 .SS makechrootpkg
-The default set of options is \fImakechrootpkg -cu\fR.
+The default set of options is \fImakechrootpkg -cnu\fR.
 
 .B \-B, --bind
 .RS
 Bind a directory read-only. (\fImakechrootpkg -D\fR)
-.RE
-
-.B \-n
-.RS
-Check a built package with namcap. (\fImakechrootpkg -n\fR)
 .RE
 
 .B \-T, --temp

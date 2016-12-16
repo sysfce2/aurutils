@@ -11,7 +11,7 @@ declare -r PS4 argv0 base machine tmp
 declare -i chroot=0 sign_pkg=0
 
 gpg_args=(--verbose --detach-sign --no-armor)
-makechrootpkg_args=(-cu)
+makechrootpkg_args=(-cnu)
 makepkg_args=(-Lcrs)
 repose_args=(-fv)
 

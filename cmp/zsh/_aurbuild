@@ -6,7 +6,6 @@ _aurbuild_opts=(
     '-a[Queue file]'
     '-c[Build in an nspawn container]'
     '-d[Name of the database]'
-    '-m[Container architecture]'
     '-p[Pool for built packages]'
     '-r[Root for the repository]'
     '-s[Sign packages and database]'

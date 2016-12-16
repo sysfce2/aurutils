@@ -12,9 +12,9 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i view=1 build=1 chkver=1 fetch=1
+declare -i view=1 build=1 chkver=1 fetch=1 confirm=1
 declare -i update=0 snapshot=0 sign=0 rotate=0 chroot=0
-declare -i bindro=0 force=0 keep=0 logdest=0 namcap=0 chtemp=0
+declare -i bindro=0 force=0 keep=0 chtemp=0
 
 # stdin: /path/to/repo.git
 clone() {
@@ -177,8 +177,7 @@ while true; do
         -C|--container) container=$2;  shift 2 ;;
         -f|--force)     force=1;       shift ;;
         -k|--keep)      keep=1;        shift ;;
-        -L|--log)       logdest=1;     shift ;;
-        -n)             namcap=1;      shift ;;
+        -n)             confirm=0;     shift ;;
         -s|--sign)      sign=1;        shift ;;
         -T|--temp)      chtemp=1;      shift ;;
         -u|--update)    update=1;      shift ;;
@@ -198,7 +197,7 @@ done
 
 if ((rotate)); then
     if { hash rot13 && target=$(aurgrep .+ | shuf -n 1); } 2>/dev/null; then
-        exec bash -c "{ \"$argv0\" -cn \"$target\" && repo-elephant; } 2>&1 | rot13"
+        exec bash -c "{ \"$argv0\" -c \"$target\" && repo-elephant; } 2>&1 | rot13"
     else
         echo '?'; exit 16 # EBUSY
     fi
@@ -215,15 +214,13 @@ if ((chroot)); then
     aurbuild_args+=(-c)
     [[ $container ]] && aurbuild_args+=(-C "$container")
 
-    makepkg_args=(-cu)
+    makepkg_args=(-cnu)
     ((bindro))  && makepkg_args+=(-D "$newdir")
     ((chtemp))  && makepkg_args+=(-T)
-    ((namcap))  && makepkg_args+=(-n)
 else
-    makepkg_args=(-cs)
+    makepkg_args=(-Lcs)
     ((force))   && makepkg_args+=(-f)
-    ((logdest)) && makepkg_args+=(-L)
-    ((namcap))  && makepkg_args+=(--noconfirm)
+    ((confirm)) || makepkg_args+=(--noconfirm)
     ((keep))    || makepkg_args+=(-r)
 fi
 
