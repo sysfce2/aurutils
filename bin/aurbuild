@@ -121,7 +121,7 @@ if ((chroot)); then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$container"/root pacman -Syu --noconfirm
     else
         sudo install -d "$container" -m 755
-        sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" "$container"/root "${base_packages[@]}"
+        sudo mkarchroot -C "$tmp"/pacman.conf -M "$makepkg_conf" "$container"/root "${base_packages[@]}"
     fi
 
     # Check if target repository is configured in chroot (#161)

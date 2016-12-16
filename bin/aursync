@@ -145,7 +145,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-c] [-B newdir] [-CfLnstT] [-u] [--] pkgname..."
+    plain "usage: $argv0 [-c] [-B newdir] [-CfnstT] [-u] [--] pkgname..."
     exit 1
 }
 
@@ -161,9 +161,9 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,chroot,container,force,keep,log,help,no-build,no-fetch,no-ver,no-view,sign,tar,temp,update,repo:
+longopts=allan,chroot,container,force,keep,help,no-build,no-fetch,no-ver,no-view,sign,tar,temp,update,repo:
 
-if TEMP=$(getopt -o B:cCfhkLnstTu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o B:cCfhknstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
