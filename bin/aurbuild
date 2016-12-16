@@ -15,18 +15,6 @@ makechrootpkg_args=(-cu)
 makepkg_args=(-Lcrs)
 repose_args=(-fv)
 
-conf_build() {
-    declare repo
-
-    printf '[options]\n'
-    pacconf --raw --options
-
-    while IFS= read -r repo; do
-        printf '[%s]\n' "$repo"
-        pacconf --raw --repo="$repo"
-    done
-}
-
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -35,6 +23,10 @@ trap_exit() {
 
 usage() {
     plain "usage: $argv0 [-cs] -d <database> -a <queue> [-Cmpr] [--] ARGS"
+}
+
+db_replaces() {
+    bsdcat "$root/$1".db | awk '/%REPLACES/ {getline; printf ("%s\n", $1)}'
 }
 
 trap 'exit' INT
@@ -74,13 +66,6 @@ if [[ $GPGKEY ]]; then
     gpg_args+=(-u "$GPGKEY")
 fi
 
-if [[ $database ]]; then
-    pacconf --repo="$database" >/dev/null
-else
-    error "$argv0: database: missing argument"
-    usage; exit 1
-fi
-
 if [[ $queue ]]; then
     if [[ -r $queue && ! -d $queue ]]; then
         exec 3< "$queue"
@@ -90,6 +75,15 @@ if [[ $queue ]]; then
     fi
 else
     error "$argv0: queue: missing argument"
+    usage; exit 1
+fi
+
+if [[ $database ]]; then
+    { printf '%s\n' "[$database]"
+      pacconf --raw --repo="$database"
+    } > "$tmp"/custom.conf
+else
+    error "$argv0: database: missing argument"
     usage; exit 1
 fi
 
@@ -111,23 +105,30 @@ printf '\n' > "$pool"/_build
 
 if ((chroot)); then
     container=${container:-/var/lib/aurbuild}/$machine
+    makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 
-    if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
-        pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
+    if [[ $machine == x86_64 ]]; then
+        pacman_conf=/usr/share/devtools/pacman-multilib.conf
+        base_packages=(base-devel multilib-devel)
     else
-        # pacstrap (called from mkarchroot) fails when config file contains DBPath (#166)
-        pacconf --raw > "$tmp"/pacman.conf
+        pacman_conf=/usr/share/devtools/pacman-extra.conf
+        base_packages=(base-devel)
     fi
 
+    # pacstrap (called from mkarchroot) fails when config file contains DBPath (#166)
+    pacconf --raw --config="$pacman_conf" | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
+
     if [[ -f $container/root/.arch-chroot ]]; then
-        sudo arch-nspawn "$container"/root pacman -Syu --noconfirm
+        sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$container"/root pacman -Syu --noconfirm
     else
-        sudo install -d "$container"
-        sudo mkarchroot -C "$tmp"/pacman.conf "$container"/root base-devel
+        sudo install -d "$container" -m 755
+        sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" "$container"/root "${base_packages[@]}"
     fi
 
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
+else
+    { printf '%s\n' '[options]'; pacconf --raw --options; } | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 fi
 
 while read -r -u 3 pkg _; do
@@ -150,14 +151,11 @@ while read -r -u 3 pkg _; do
     LANG=C repose "${repose_args[@]}" "$database" -r "$root" -p "$pool"
 
     if ! ((chroot)); then
-        printf '%s\n' "$database" | conf_build > "$tmp"/config
-        sudo pacman -Sy --config="$tmp"/config
-
         # https://github.com/andrewgregory/pacutils/issues/15
-        replaces=$(grep -Fxf <(pacsift --repo="$database" | expac -S '%R' -) <(expac -Q '%n') | paste -s -d, -)
+        replaces=$(grep -Fxf <(db_replaces "$database") <(expac -Q '%n') | paste -s -d, -)
 
         # https://github.com/andrewgregory/pacutils/issues/4
-        sudo pacman -Su --config="$tmp"/config --ignore="$replaces" --noconfirm
+        sudo pacman -Syu --config="$tmp"/pacman.conf --ignore="$replaces" --noconfirm
     fi
 done
 
