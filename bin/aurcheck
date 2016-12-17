@@ -9,8 +9,8 @@ readonly PS4 argv0 tmp
 declare -i all=0
 
 syncver() {
-    # Close stdin so pacsift does not attempt to read packages from it
-    pacsift --exact --repo="$1" 0<&- | expac -S '%n\t%v' -
+    # https://github.com/andrewgregory/pacutils/issues/3
+    pacsift --exact --repo="$1" <&- | expac -S '%n\t%v' -
 }
 
 aurver() {
