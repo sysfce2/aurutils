@@ -30,24 +30,24 @@ sudo pacsync "$testrepo1"
 pacman -Si "$testrepo1"/aurutils-git # Repository move
 
 # package test
-aursync -Ln --no-view --repo="$testrepo1" python-nikola # Split package
+aursync -n --no-view --repo="$testrepo1" python-nikola # Split package
 pacman -Si "$testrepo1"/python-nikola
-aursync -Ln --no-view --repo="$testrepo2" python-nikola # Per-repo versions
+aursync -n --no-view --repo="$testrepo2" python-nikola # Per-repo versions
 pacman -Si "$testrepo2"/python-nikola
-aursync -Ln --no-view --repo="$testrepo1" hnwatch # Split package, pkgbase != pkgname
+aursync -n --no-view --repo="$testrepo1" hnwatch # Split package, pkgbase != pkgname
 pacman -Si "$testrepo1"/hnwatch
-aursync -Ln --no-view --repo="$testrepo1" gimp-plugin-separate+ # Special characters
+aursync -n --no-view --repo="$testrepo1" gimp-plugin-separate+ # Special characters
 pacman -Si "$testrepo1"/gimp-plugin-separate+
-aursync -Ln --no-view --repo="$testrepo1" ros-build-tools # Empty make/depends
+aursync -n --no-view --repo="$testrepo1" ros-build-tools # Empty make/depends
 pacman -Si "$testrepo1"/ros-build-tools
-aursync -Ln --no-view --repo="$testrepo2" shaman-git # Special characters - UTF8
+aursync -n --no-view --repo="$testrepo2" shaman-git # Special characters - UTF8
 pacman -Si "$testrepo2"/shaman-git
-aursync -Ln --no-view --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
+aursync -n --no-view --repo="$testrepo2" aws-cli-git # Complex PKGBUILD
 pacman -Si "$testrepo2"/aws-cli-git
-aursync -Ln --no-view --repo="$testrepo2" openrct2-git # make/depends_arch
+aursync -n --no-view --repo="$testrepo2" openrct2-git # make/depends_arch
 pacman -Si "$testrepo2"/openrct2-git
-#aursync -Ln --no-view --repo="$testrepo2" plasma-git-meta # 100+ depends
-#aursync -Ln --no-view --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
+#aursync -n --no-view --repo="$testrepo2" plasma-git-meta # 100+ depends
+#aursync -n --no-view --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
 
 # no-build test
 pacman -Slq "$testrepo1" | xargs aursync --no-build -t
