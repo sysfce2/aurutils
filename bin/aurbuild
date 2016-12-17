@@ -3,11 +3,11 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
 argv0=aurbuild
-base=$PWD
+basedir=$PWD
 machine=$(uname -m)
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
-declare -r PS4 argv0 base machine tmp
+declare -r PS4 argv0 basedir machine tmp
 declare -i chroot=0 sign_pkg=0
 
 gpg_args=(--verbose --detach-sign --no-armor)
@@ -138,7 +138,7 @@ else
 fi
 
 while read -r -u 3 pkg _; do
-    cd_safe "$base/$pkg"
+    cd_safe "$basedir/$pkg"
 
     if ((chroot)); then
         sudo PKGDEST="$pool" makechrootpkg \
