@@ -8,9 +8,11 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 readonly PS4 argv0 tmp
 declare -i all=0
 
-syncver() {
-    # https://github.com/andrewgregory/pacutils/issues/3
-    pacsift --exact --repo="$1" <&- | expac -S '%n\t%v' -
+repover() {
+    declare server repo=$1
+    server=$(pacconf --repo="$repo" --single Server)
+
+    repose --list --root="${server#*//}" "$repo"
 }
 
 aurver() {
@@ -25,7 +27,7 @@ quickcheck() {
     declare repo=$1 geq=$2
     declare pkg ver_sync ver_aur op
 
-    syncver "$repo" | sort -k 1b,1 > sync.tsv
+    repover "$repo" | sort -k 1b,1 > sync.tsv
 
     if f1 sync.tsv | xargs -r aursearch -Fr | aurver | sort -k 1b,1 > aur.tsv; then
         join sync.tsv aur.tsv > join.tsv
