@@ -16,16 +16,19 @@ makepkg_args=(-Lcrs)
 repose_args=(-fv)
 
 trap_exit() {
+    #global tmp
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
 
 usage() {
+    #global argv0
     plain "usage: $argv0 [-cs] -d <database> [-Capr] [--] <makepkg args>"
 }
 
 db_replaces() {
+    #global root
     bsdcat "$root/$1".db | awk '/%REPLACES/ {getline; printf ("%s\n", $1)}'
 }
 
@@ -160,7 +163,7 @@ while read -r -u 3 pkg _; do
 
     if ! ((chroot)); then
         # https://github.com/andrewgregory/pacutils/issues/15
-        replaces=$(grep -Fxf <(db_replaces "$database") <(expac -Q '%n') | paste -s -d, -)
+        replaces=$(grep -Fxf <(db_replaces "$database") <(pacman -Qq) | paste -s -d, -)
 
         # https://github.com/andrewgregory/pacutils/issues/4
         sudo pacman -Syu --config="$tmp"/pacman.conf --ignore="$replaces" --noconfirm
