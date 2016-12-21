@@ -122,14 +122,12 @@ if ((chroot)); then
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn \
-            -C "$tmp"/pacman.conf \
-            -M "$makepkg_conf" \
+            -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root pacman -Syu --noconfirm
     else
         sudo install -d "$container" -m 755
         sudo mkarchroot \
-            -C "$tmp"/pacman.conf \
-            -M "$makepkg_conf" \
+            -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root "${base_packages[@]}"
     fi
 
@@ -137,7 +135,8 @@ if ((chroot)); then
     pacconf --root="$container"/root --repo="$database" >/dev/null
 else
     { printf '%s\n' '[options]'
-      pacconf --raw --options; } | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
+      pacconf --raw --options
+    } | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 fi
 
 while read -r -u 3 pkg _; do

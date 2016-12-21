@@ -2,7 +2,7 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 PATH=/bin:/usr/bin
 
-argv0=repoman
+argv0=officer
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 official=(core testing extra community community-testing multilib multilib-testing)
 
