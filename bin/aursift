@@ -1,8 +1,9 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 argv0=aursift
-
-readonly PS4 argv0
+arch_repo=(core extra testing community{,-testing} multilib{,-testing})
+declare -i operation=0
+declare -r PS4 argv0 arch_repo
 
 # Takes a set of package names to create "package virtual" pairs, querying
 # both provides and replaces fields.
@@ -21,8 +22,8 @@ sift() {
     declare all siftargs query repo p v
 
     # Use an additional indexed array to preserve input order.
-    while IFS= read -r; do
-        pkgset["$REPLY"]=1; all+=("$REPLY")
+    while IFS= read -r p; do
+        pkgset[$p]=1; all+=("$p")
     done
 
     if [[ ${pkgset[@]} ]]; then
@@ -30,7 +31,7 @@ sift() {
             siftargs+=(--satisfies="$p")
         done
 
-        for p in core extra testing community{,-testing} multilib{,-testing}; do
+        for p in "${arch_repo[@]}"; do
             siftargs+=(--repo="$p")
         done
     else
@@ -38,7 +39,6 @@ sift() {
         exit 61
     fi
 
-    # Close standard input for pacsift to allow --sync.
     # https://github.com/andrewgregory/pacutils/issues/3
     readarray -t query < <(pacsift --sync --exact "${siftargs[@]}" <&-)
 
@@ -67,44 +67,49 @@ sift() {
 # Read "pkgname pkgver" strings from stdin, find and compare
 # repository versions, and print updated packages on stdout.
 prepare() {
-    declare name ver check
-    declare -A in repo
+    declare database=$1 root=$2 name ver res
+    declare -A pkgset cmpset
+
+    if [[ -z $root ]]; then
+        root=$(realpath -e -- "$root") || return
+    else
+        root=$(pacconf --single --repo="$database" Server) || return
+        root=${root#*://}
+    fi
 
     while read -r name ver; do
-        in[$name]=$ver
+        pkgset[$name]=$ver
     done
 
-    if [[ ${!in[@]} ]]; then
-        declare server
-        server=$(pacconf --single --repo="$1" Server) || exit
-        server=${server#*://}
-
+    if [[ ${!pkgset[@]} ]]; then
         while read -r name ver; do
-            if [[ ${in[$name]} ]]; then
-                repo[$name]=$ver
-            else
-                continue
+            if [[ ${pkgset[$name]} ]]; then
+                cmpset[$name]=$ver
             fi
-        done < <(repose --list --root="$server" "$1")
+        done < <(repose --list --root="$root" "$database")
     else
         error "$argv0: no data available"
         exit 61
     fi
 
-    for name in "${!in[@]}"; do
-        if [[ ${repo[$name]} ]]; then
-            check=$(vercmp "${repo[$name]}" "${in[$name]}")
+    for name in "${!pkgset[@]}"; do
+        if [[ ${cmpset[$name]} ]]; then
+            res=$(vercmp "${cmpset[$name]}" "${pkgset[$name]}")
         else
-            check=-1 # FS#49093
+            res=-1 # FS#49093
         fi
 
-        case "$check" in
-            -1) msg2 "$name ${repo[$name]:-0} -> ${in[$name]}" ;;
+        case $res in
+            -1) msg2 "$name ${cmpset[$name]:-0} -> ${pkgset[$name]}" ;;
             0)  printf '%s\n' "$name" ;;
-            1)  warning "$name ${repo[$name]:-0} is newer than ${in[$name]}"
+            1)  warning "$name ${cmpset[$name]:-0} is newer than ${pkgset[$name]}"
                 printf '%s\n' "$name" ;;
         esac
     done
+}
+
+usage() {
+    plain "usage: $argv0 [-S] [-U repo] [-r root]"
 }
 
 source /usr/share/makepkg/util.sh || exit
@@ -113,15 +118,21 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :SU: OPT; do
+while getopts :SU:r: OPT; do
     case $OPT in
-        S) sift ;;
-        U) prepare "$OPTARG" ;;
-        *) plain "usage: $argv0 [-S] [-U repo]"
-           exit 1 ;;
+        S) operation=1 ;;
+        U) operation=2
+           database=$OPTARG ;;
+        r) root=$OPTARG ;;
+        *) usage; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+case $operation in
+    1) sift ;;
+    2) prepare "$database" "$root" ;;
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:
