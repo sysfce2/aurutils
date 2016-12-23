@@ -70,13 +70,6 @@ prepare() {
     declare database=$1 root=$2 name ver res
     declare -A pkgset cmpset
 
-    if [[ -n $root ]]; then
-        root=$(realpath -e -- "$root") || return
-    else
-        root=$(pacconf --single --repo="$database" Server) || return
-        root=${root#*://}
-    fi
-
     while read -r name ver; do
         pkgset[$name]=$ver
     done
@@ -131,9 +124,15 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
+if [[ $root ]]; then
+    root=$(realpath -e -- "$root") || exit
+else
+    root=$(pacconf --single --repo="$database" Server) || exit
+fi
+
 case $operation in
     1) sift ;;
-    2) prepare "$database" "$root" ;;
+    2) prepare "$database" "${root#*://}" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
