@@ -248,7 +248,7 @@ if ((build)) || ((update)); then
 
     if ((update)); then        
         shopt -s lastpipe
-        aurcheck -q -- "$repo" | readarray -t new
+        aurcheck -q "$repo" -r "$root" | readarray -t new
 
         shopt -u lastpipe
         set -- "$@" "${new[@]}"
@@ -278,7 +278,7 @@ lib32_sift < queue_0 | basesub tsv/pkgbase > queue_1
 
 if ((build)) && ((chkver)); then
     # pkgver -> pkgver (repo) -> pkgbase (repo)
-    aursift -U "$repo" < tsv/pkgver | basesub tsv/pkgbase > sift_1
+    aursift -U "$repo" -r "$root" < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
     # pkgbase \ pkgbase (repo)
     if ! grep -Fxvf sift_1 queue_1 > queue; then
