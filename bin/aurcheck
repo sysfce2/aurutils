@@ -4,15 +4,12 @@ set -o pipefail
 
 argv0=aurcheck
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
-
-readonly PS4 argv0 tmp
 declare -i all=0
+declare -r PS4 argv0 tmp
 
 repover() {
-    declare server repo=$1
-    server=$(pacconf --repo="$repo" --single Server)
-
-    repose --list --root="${server#*//}" "$repo"
+    declare database=$1 root=$2
+    repose --list --root="$root" "$database"
 }
 
 aurver() {
@@ -24,10 +21,10 @@ f1() {
 }
 
 quickcheck() {
-    declare repo=$1 geq=$2
+    declare database=$1 root=$2 geq=$3
     declare pkg ver_sync ver_aur op
 
-    repover "$repo" | sort -k 1b,1 > sync.tsv
+    repover "$database" "$root" | sort -k 1b,1 > sync.tsv
 
     if f1 sync.tsv | xargs -r aursearch -Fr | aurver | sort -k 1b,1 > aur.tsv; then
         join sync.tsv aur.tsv > join.tsv
@@ -57,7 +54,7 @@ quickcheck() {
 }
 
 usage() {
-    plain "usage: $argv0 [-aq] repository"
+    plain "usage: $argv0 [-aq] [-r root] repository"
     exit 1
 }
 
@@ -73,11 +70,12 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :ahq OPT; do
+while getopts :ahqr: OPT; do
     case $OPT in
         a) all=1    ;;
         q) parse=f1 ;;
         h) usage    ;;
+        r) root=$OPTARG ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -85,7 +83,13 @@ OPTIND=1
 
 ((!$#)) && usage
 
+if [[ $root ]]; then
+    root=$(realpath -e -- "$root") || exit
+else
+    root=$(pacconf --single --repo="$database" Server) || exit
+fi
+
 cd_safe "$tmp"
-quickcheck "$1" "$all" | "${parse:-tee}"
+quickcheck "$1" "${root#*://}" "${all:-0}" | "${parse:-tee}"
 
 # vim: set et sw=4 sts=4 ft=sh:
