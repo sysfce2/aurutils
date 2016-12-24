@@ -74,12 +74,18 @@ prepare() {
         pkgset[$name]=$ver
     done
 
+    if [[ $root ]]; then
+        root=$(realpath -e -- "$root") || exit
+    else
+        root=$(pacconf --single --repo="$database" Server) || exit
+    fi
+
     if [[ ${!pkgset[@]} ]]; then
         while read -r name ver; do
             if [[ ${pkgset[$name]} ]]; then
                 cmpset[$name]=$ver
             fi
-        done < <(repose --list --root="$root" "$database")
+        done < <(repose --list --root="${root#*://}" "$database")
     else
         error "$argv0: no data available"
         exit 61
@@ -125,15 +131,8 @@ shift $((OPTIND - 1))
 OPTIND=1
 
 case $operation in
-    1)  sift ;;
-    2)
-        if [[ $root ]]; then
-            root=$(realpath -e -- "$root") || exit
-        else
-            root=$(pacconf --single --repo="$database" Server) || exit
-        fi
-
-        prepare "$database" "${root#*://}" ;;
+    1) sift ;;
+    2) prepare "$database" "$root" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
