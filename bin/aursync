@@ -278,7 +278,7 @@ lib32_sift < queue_0 | basesub tsv/pkgbase > queue_1
 
 if ((build)) && ((chkver)); then
     # pkgver -> pkgver (repo) -> pkgbase (repo)
-    aursift -U "$repo" -r "$root" < tsv/pkgver | basesub tsv/pkgbase > sift_1
+    aurcmp "$repo" -r "$root" < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
     # pkgbase \ pkgbase (repo)
     if ! grep -Fxvf sift_1 queue_1 > queue; then
