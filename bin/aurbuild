@@ -32,6 +32,16 @@ db_replaces() {
     bsdcat "$root/$1".db | awk '/%REPLACES/ {getline; printf ("%s\n", $1)}'
 }
 
+db_options() {
+    printf '%s\n' '[options]'
+    pacconf --options
+}
+
+db_single() {
+    printf '%s\n' "[$1]"
+    pacconf --raw --repo="$1"
+}
+
 trap 'exit' INT
 trap 'trap_exit' EXIT
 source /usr/share/makepkg/util.sh
@@ -40,17 +50,18 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts a:cC:d:m:p:r:s OPT; do
+while getopts a:cC:d:M:p:r:s OPT; do
     case $OPT in
-        a) queue=$OPTARG     ;;
-        c) chroot=1          ;;
-        C) container=$OPTARG ;;
-        d) database=$OPTARG  ;;
-        p) pool=$OPTARG      ;;
-        r) root=$OPTARG      ;;
+        a) queue=$OPTARG      ;;
+        c) chroot=1           ;;
+        C) container=$OPTARG  ;;
+        d) database=$OPTARG   ;;
+        M) mirrorlist=$OPTARG ;;
+        p) pool=$OPTARG       ;;
+        r) root=$OPTARG       ;;
         s) repose_args+=(-s)
-           sign_pkg=1        ;;
-        *) usage; exit 1     ;;
+           sign_pkg=1         ;;
+        *) usage; exit 1      ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -82,9 +93,7 @@ else
 fi
 
 if [[ $database ]]; then
-    { printf '%s\n' "[$database]"
-      pacconf --raw --repo="$database"
-    } > "$tmp"/custom.conf
+    db_single "$database" > "$tmp"/custom.conf
 else
     error "$argv0: database: missing argument"
     usage; exit 1
@@ -133,10 +142,12 @@ if ((chroot)); then
 
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
+
+    if [[ -f $mirrorlist ]]; then
+        install -Cbv <(pacini "$mirrorlist") "$container"/root/etc/pacman.d/mirrorlist
+    fi
 else
-    { printf '%s\n' '[options]'
-      pacconf --raw --options
-    } | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
+    db_options | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 fi
 
 while read -r -u 3 pkg _; do
