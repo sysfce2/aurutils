@@ -1,12 +1,15 @@
 #!/bin/bash
+#
+# Read package names from stdin separated by the IFS and produces a
+# list of packages not provided in the official repositories.
+#
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 argv0=aursift
 arch_repo=(core extra testing community{,-testing} multilib{,-testing})
-declare -i operation=0
 declare -r PS4 argv0 arch_repo
 
-# Takes a set of package names to create "package virtual" pairs, querying
-# both provides and replaces fields.
+# Takes a set of package names to create "package virtual" pairs,
+# querying both provides and replaces fields.
 provides() {
     expac '%n %R %S' -Sv "$@" | awk '{
         for(i = 2; i <= NF; ++i) {
@@ -15,124 +18,54 @@ provides() {
     }'
 }
 
-# Read package names from stdin separated by the IFS and produces a list of
-# packages not provided in the official repositories.
-sift() {
-    declare -A pkgset
-    declare all siftargs query repo p v
-
-    # Use an additional indexed array to preserve input order.
-    while IFS= read -r p; do
-        pkgset[$p]=1; all+=("$p")
-    done
-
-    if [[ ${pkgset[@]} ]]; then
-        for p in "${!pkgset[@]}"; do
-            siftargs+=(--satisfies="$p")
-        done
-
-        for p in "${arch_repo[@]}"; do
-            siftargs+=(--repo="$p")
-        done
-    else
-        error "$argv0: no data available"
-        exit 61
-    fi
-
-    # https://github.com/andrewgregory/pacutils/issues/3
-    readarray -t query < <(pacsift --sync --exact "${siftargs[@]}" <&-)
-
-    if [[ ${query[@]} ]]; then
-        while read -r p v; do
-            p=${p#*/}
-
-            if [[ ${pkgset[$p]} ]]; then
-                repo+=("$p")
-            fi
- 
-            if [[ ${pkgset[$v]} ]]; then
-                plain "virtual dependency $v provided by $p"
-                repo+=("$v")
-            fi
-        done < <(provides "${query[@]}")
-    else
-        msg2 "No matches in the official repositories"
-    fi
-
-    # Print the relative complement between repo provided dependencies and all
-    # required dependencies. all \ repo
-    grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
-}
-
-# Read "pkgname pkgver" strings from stdin, find and compare
-# repository versions, and print updated packages on stdout.
-prepare() {
-    declare database=$1 root=$2 name ver res
-    declare -A pkgset cmpset
-
-    while read -r name ver; do
-        pkgset[$name]=$ver
-    done
-
-    if [[ $root ]]; then
-        root=$(realpath -e -- "$root") || exit
-    else
-        root=$(pacconf --single --repo="$database" Server) || exit
-    fi
-
-    if [[ ${!pkgset[@]} ]]; then
-        while read -r name ver; do
-            if [[ ${pkgset[$name]} ]]; then
-                cmpset[$name]=$ver
-            fi
-        done < <(repose --list --root="${root#*://}" "$database")
-    else
-        error "$argv0: no data available"
-        exit 61
-    fi
-
-    for name in "${!pkgset[@]}"; do
-        if [[ ${cmpset[$name]} ]]; then
-            res=$(vercmp "${cmpset[$name]}" "${pkgset[$name]}")
-        else
-            res=-1 # FS#49093
-        fi
-
-        case $res in
-            -1) msg2 "$name ${cmpset[$name]:-0} -> ${pkgset[$name]}" ;;
-            0)  printf '%s\n' "$name" ;;
-            1)  warning "$name ${cmpset[$name]:-0} is newer than ${pkgset[$name]}"
-                printf '%s\n' "$name" ;;
-        esac
-    done
-}
-
-usage() {
-    plain "usage: $argv0 [-S] [-U repo] [-r root]"
-    exit 1
-}
-
 source /usr/share/makepkg/util.sh || exit
 
 if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :SU:r: OPT; do
-    case $OPT in
-        S) operation=1 ;;
-        U) operation=2
-           database=$OPTARG ;;
-        r) root=$OPTARG ;;
-        *) usage ;;
-    esac
-done
-shift $((OPTIND - 1))
-OPTIND=1
+declare -A pkgset
 
-case $operation in
-    1) sift ;;
-    2) prepare "$database" "$root" ;;
-esac
+while IFS= read -r p; do
+    # Use an additional indexed array to preserve input order.
+    pkgset[$p]=1; all+=("$p")
+done
+
+if [[ ${pkgset[@]} ]]; then
+    for p in "${!pkgset[@]}"; do
+        siftargs+=(--satisfies="$p")
+    done
+
+    for p in "${arch_repo[@]}"; do
+        siftargs+=(--repo="$p")
+    done
+else
+    error "$argv0: no data available"
+    exit 61
+fi
+
+# https://github.com/andrewgregory/pacutils/issues/3
+readarray -t query < <(pacsift --sync --exact "${siftargs[@]}" <&-)
+
+if [[ ${query[@]} ]]; then
+    while read -r p v; do
+        p=${p#*/}
+
+        if [[ ${pkgset[$p]} ]]; then
+            repo+=("$p")
+        fi
+
+        if [[ ${pkgset[$v]} ]]; then
+            plain "virtual dependency $v provided by $p"
+            repo+=("$v")
+        fi
+    done < <(provides "${query[@]}")
+else
+    msg2 "No matches in the official repositories"
+fi
+
+# Print the relative complement between repo provided dependencies and
+# all required dependencies. all \ repo
+grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
 
 # vim: set et sw=4 sts=4 ft=sh:
