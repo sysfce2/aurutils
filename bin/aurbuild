@@ -125,7 +125,7 @@ if ((chroot)); then
             -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root pacman -Syu --noconfirm
     else
-        sudo install -d "$container" -m 755
+        sudo install -d "$container" -m 755 -v
         sudo mkarchroot \
             -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root "${base_packages[@]}"
