@@ -19,13 +19,7 @@ quickcheck() {
     declare database=$1 root=$2 geq=$3
     declare pkg ver_sync ver_aur op
 
-    if [[ $root ]]; then
-        root=$(realpath -e -- "$root") || exit
-    else
-        root=$(pacconf --single --repo="$database" Server) || exit
-    fi
-
-    repose -lr "${root#*://}" "$database" | sort -k 1b,1 > sync.tsv
+    repose -lr "$root" "$database" | sort -k 1b,1 > sync.tsv
 
     if f1 sync.tsv | xargs -r aursearch -Fr | aurver | sort -k 1b,1 > aur.tsv; then
         join sync.tsv aur.tsv > join.tsv
@@ -88,7 +82,13 @@ else
     database=$1
 fi
 
+if [[ $root ]]; then
+    root=$(realpath -e -- "$root") || exit
+else
+    root=$(pacconf --single --repo="$database" Server) || exit
+fi
+
 cd_safe "$tmp"
-quickcheck "$database" "$root" "${all:-0}" | "${parse:-tee}"
+quickcheck "$database" "${root#*://}" "${all:-0}" | "${parse:-tee}"
 
 # vim: set et sw=4 sts=4 ft=sh:
