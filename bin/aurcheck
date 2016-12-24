@@ -81,7 +81,11 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-((!$#)) && usage
+if ((!$#)); then
+    usage
+else
+    database=$1
+fi
 
 if [[ $root ]]; then
     root=$(realpath -e -- "$root") || exit
@@ -90,6 +94,6 @@ else
 fi
 
 cd_safe "$tmp"
-quickcheck "$1" "${root#*://}" "${all:-0}" | "${parse:-tee}"
+quickcheck "$database" "${root#*://}" "${all:-0}" | "${parse:-tee}"
 
 # vim: set et sw=4 sts=4 ft=sh:
