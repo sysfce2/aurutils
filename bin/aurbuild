@@ -50,13 +50,12 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts a:cC:d:M:p:r:s OPT; do
+while getopts a:cC:d:p:r:s OPT; do
     case $OPT in
         a) queue=$OPTARG      ;;
         c) chroot=1           ;;
         C) container=$OPTARG  ;;
         d) database=$OPTARG   ;;
-        M) mirrorlist=$OPTARG ;;
         p) pool=$OPTARG       ;;
         r) root=$OPTARG       ;;
         s) repose_args+=(-s)
@@ -142,10 +141,6 @@ if ((chroot)); then
 
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
-
-    if [[ -f $mirrorlist ]]; then
-        install -Cbv <(pacini "$mirrorlist") "$container"/root/etc/pacman.d/mirrorlist
-    fi
 else
     db_options | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 fi
