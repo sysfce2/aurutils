@@ -29,5 +29,5 @@ pacman -Si "$testrepo2"/openrct2-git
 #aursync -n --no-view --repo="$testrepo1" ros-indigo-desktop-full # 250+ depends
 
 # no-build test
-pacman -Slq "$testrepo1" | xargs aursync --no-build -t
-pacman -Slq "$testrepo2" | xargs aursync --no-build
+pacman -Slq "$testrepo1" | xargs aursync --no-build --no-view -t
+pacman -Slq "$testrepo2" | xargs aursync --no-build --no-view
