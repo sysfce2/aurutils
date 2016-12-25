@@ -28,7 +28,7 @@ sudo pacsync "${testrepo[@]}"
 "$basedir"/package.t "${testrepo[@]:0:2}"
 "$basedir"/random.t "${testrepo[0]}"
 "$basedir"/regex.t   
-#./root.t "${testrepo[0]}"
+"$basedir"/root.t "${testrepo[0]}"
 #./sign.t
 
 # vim: set et sw=4 sts=4 ft=sh:
