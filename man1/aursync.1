@@ -7,7 +7,7 @@ aursync \- download and build aur packages automatically
 .OP \-c
 .OP \-B newdir
 .OP \-u
-.OP \-fkLnstT
+.OP \-fknstT
 .OP pkgname...
 .YS
 
@@ -69,6 +69,12 @@ Do not view downloaded files before building.
 .B \--repo
 .RS
 Use the specified repository instead of an interactive selection.
+.RE
+
+.B \--root
+.RS
+The location of the repository root. Defaults to the \fIServer\fR
+value of the configured repository.
 .RE
 
 .SS makepkg

@@ -5,6 +5,7 @@ aurcheck \- check repository packages for AUR updates
 .SH SYNOPSIS
 .SY aurcheck
 .OP \-aq repository
+.OP \-r root
 
 .SH OPTIONS
 .B \-a
@@ -16,6 +17,12 @@ target repository.
 .B \-q
 .RS
 Only show package names.
+.RE
+
+.B \-r
+.RS
+The location of the repository root. Defaults to the \fIServer\fR
+value of the configured repository.
 .RE
 
 .SH SEE ALSO
