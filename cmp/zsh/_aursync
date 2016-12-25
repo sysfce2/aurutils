@@ -13,6 +13,7 @@ _aursync_opts=(
     --no-ver'[Disable version checks]'
     --no-view'[Do not view build files]'
     --repo'[Use a specified repository]'
+    --root'[Set repository root]'
 )
 
 _aursync_action_none() {
