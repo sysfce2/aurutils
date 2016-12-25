@@ -29,7 +29,7 @@ echo test-random > argfile
 i=0
 while [ $((i < 10)) -eq 1 ]; do
     aurbuild -d "$testrepo1" -a ./argfile -- -crsf
-    sudo pacman -S --noconfirm test-random
+    sudo pacman -S --noconfirm "$testrepo1"/test-random
     i=$((i +1))
 done
 
