@@ -72,6 +72,7 @@ if [[ $root ]]; then
     root=$(realpath -e -- "$root") || exit
 else
     root=$(pacconf --single --repo="$database" Server) || exit
+    root=${root#*://}
 fi
 
-prepare "$database" "${root#*://}"
+prepare "$database" "$root"

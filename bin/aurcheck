@@ -86,9 +86,10 @@ if [[ $root ]]; then
     root=$(realpath -e -- "$root") || exit
 else
     root=$(pacconf --single --repo="$database" Server) || exit
+    root=${root#*://}
 fi
 
 cd_safe "$tmp"
-quickcheck "$database" "${root#*://}" "${all:-0}" | "${parse:-tee}"
+quickcheck "$database" "$root" "${all:-0}" | "${parse:-tee}"
 
 # vim: set et sw=4 sts=4 ft=sh:
