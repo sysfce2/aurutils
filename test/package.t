@@ -8,14 +8,14 @@ else
     declare -r testrepo2=$2
 fi
 
-for i in "$testrepo1" "$testrepo2"; do
-    server=$(pacconf --single Server --repo="$i")
-    server=${server#*://}
+server1=$(pacconf --single Server --repo="$testrepo1")
+server1=${server1#*://}
+server2=$(pacconf --single Server --repo="$testrepo2")
+server2=${server2#*://}
 
-    find "$server" -type f \( -name '*.pkg*' -or -name '*.db*' -or -name '*.files*' \) -delete
-    repo-add "$server/$i".db.tar
-done
-
+find "$server1" "$server2" -type f \( -name '*.pkg*' -or -name '*.db*' -or -name '*.files*' \) -delete
+repose --root "$server1" "$testroot1"
+repose --root "$server2" "$testroot2"
 sudo pacsync "$testrepo1" "$testrepo2"
 
 # package test
