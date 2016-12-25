@@ -7,6 +7,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 argv0=aursift
 arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 declare -r PS4 argv0 arch_repo
+declare -A pkgset
 
 # Takes a set of package names to create "package virtual" pairs,
 # querying both provides and replaces fields.
@@ -23,8 +24,6 @@ source /usr/share/makepkg/util.sh || exit
 if [[ -t 2 ]]; then
     colorize
 fi
-
-declare -A pkgset
 
 while IFS= read -r p; do
     # Use an additional indexed array to preserve input order.
