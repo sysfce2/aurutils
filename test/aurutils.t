@@ -10,25 +10,33 @@ declare -r basedir tmp
 trap 'rm -rf $tmp' EXIT
 source /usr/share/makepkg/util.sh
 
-[[ -t 2 ]] && colorize
+if [[ -t 2 ]]; then
+    colorize
+fi
+
 cd_safe "$tmp"
 
-for i in "${testrepo[@]}"; do
-    server=$(pacconf --single Server --repo="$i")
-    server=${server#*://}
-
-    find "$server" -type f \( -name '*.pkg*' -or -name '*.db*' -or -name '*.files*' \) -delete
-    repo-add "$server/$i".db.tar
-done
-
-sudo pacsync "${testrepo[@]}"
-
-"$basedir"/chroot.t "${testrepo[0]}" "${testroot[0]}"
-"$basedir"/match.t "${testrepo[@]:0:2}"
-"$basedir"/package.t "${testrepo[@]:0:2}"
-"$basedir"/random.t "${testrepo[0]}"
-"$basedir"/regex.t   
-"$basedir"/root.t "${testrepo[0]}"
-#./sign.t
+case $1 in
+    chroot)
+        "$basedir"/chroot.t "${testrepo[0]}" "${testroot[0]}"
+        ;;
+    match)
+        "$basedir"/match.t "${testrepo[@]:0:2}"
+        ;;
+    package)
+        "$basedir"/package.t "${testrepo[@]:0:2}"
+        ;;
+    random)
+        "$basedir"/random.t "${testrepo[0]}"
+        ;;
+    regex)
+        "$basedir"/regex.t   
+        ;;
+    root)
+        "$basedir"/root.t "${testrepo[0]}"
+        ;;
+    *)
+        
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:

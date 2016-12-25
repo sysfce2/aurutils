@@ -1,4 +1,15 @@
-.PHONY: test
+.PHONY: chroot package random regex
 
-test:
-	@$(CURDIR)/aurutils.t
+chroot:
+	@$(CURDIR)/aurutils.t $@
+
+package:
+	@$(CURDIR)/aurutils.t $@
+	@$(CURDIR)/aurutils.t match
+	@$(CURDIR)/aurutils.t root
+
+random:
+	@$(CURDIR)/aurutils.t $@
+
+regex:
+	@$(CURDIR)/aurutils.t $@

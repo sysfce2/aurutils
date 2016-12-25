@@ -21,4 +21,3 @@ aurcheck -a "$testrepo1" > out1.log
 aurcheck -a "$testrepo2" > out2.log
 datamash -W check < out1.log
 datamash -W check < out2.log
-
