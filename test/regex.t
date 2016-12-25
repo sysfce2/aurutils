@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eux
 
 aurgrep '.+' | tee list.txt | xargs aursearch -Fr > list.json
 total1=$(jq -r '.[]results[].Name' list.json | wc -l)

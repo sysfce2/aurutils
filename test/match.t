@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -eux
 
 if (($# != 2)); then
     exit 1
