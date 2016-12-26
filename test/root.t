@@ -3,13 +3,12 @@ set -eux
 
 if (($# == 1)); then
     testrepo1=$1
-    root1=$(pacconf --single --repo="$testrepo1" Server)
-    root1=${root1#*://}
-    readonly testrepo1 root1
 else
     exit 1
 fi
 
+root1=$(pacconf --single --repo="$testrepo1" Server)
+root1=${root1#*://}
 cp -v "$root1/$1".db .
 
 declare -i count1 count2
