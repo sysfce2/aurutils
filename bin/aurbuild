@@ -126,7 +126,7 @@ if ((chroot)); then
         base_packages=(base-devel)
     fi
 
-    pacini "$pacman_conf" | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
+    cat "$pacman_conf" "$tmp"/custom.conf > "$tmp"/pacman.conf
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn \
