@@ -27,19 +27,19 @@ usage() {
     plain "usage: $argv0 [-cs] -d <database> [-Capr] [--] <makepkg args>"
 }
 
-db_replaces() {
-    #global root
-    bsdcat "$root/$1".db | awk '/%REPLACES/ {getline; printf ("%s\n", $1)}'
-}
-
-db_options() {
+conf_options() {
     printf '%s\n' '[options]'
     pacconf --options
 }
 
-db_single() {
+conf_single() {
     printf '%s\n' "[$1]"
     pacconf --raw --repo="$1"
+}
+
+db_replaces() {
+    #global root
+    bsdcat "$root/$1".db | awk '/%REPLACES/ {getline; printf ("%s\n", $1)}'
 }
 
 trap 'exit' INT
@@ -92,7 +92,7 @@ else
 fi
 
 if [[ $database ]]; then
-    db_single "$database" > "$tmp"/custom.conf
+    conf_single "$database" > "$tmp"/custom.conf
 else
     error "$argv0: database: missing argument"
     usage; exit 1
@@ -142,7 +142,7 @@ if ((chroot)); then
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
 else
-    db_options | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
+    conf_options | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 fi
 
 while read -r -u 3 pkg _; do
