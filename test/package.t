@@ -8,16 +8,6 @@ else
     declare -r testrepo2=$2
 fi
 
-server1=$(pacconf --single Server --repo="$testrepo1")
-server1=${server1#*://}
-server2=$(pacconf --single Server --repo="$testrepo2")
-server2=${server2#*://}
-
-find "$server1" "$server2" -type f \( -name '*.pkg*' -or -name '*.db*' -or -name '*.files*' \) -delete
-repose --root "$server1" "$testroot1"
-repose --root "$server2" "$testroot2"
-sudo pacsync "$testrepo1" "$testrepo2"
-
 # package test
 aursync -n --no-view --repo="$testrepo1" python-nikola # Split package
 pacman -Si "$testrepo1"/python-nikola
