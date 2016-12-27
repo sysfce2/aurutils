@@ -27,14 +27,14 @@ usage() {
     plain "usage: $argv0 [-cs] -d <database> [-Capr] [--] <makepkg args>"
 }
 
-conf_options() {
-    printf '%s\n' '[options]'
-    pacconf --options
-}
+conf_build() {
+    printf '[options]\n'
+    pacconf --raw --options
 
-conf_single() {
-    printf '%s\n' "[$1]"
-    pacconf --raw --repo="$1"
+    while IFS= read -r; do
+        printf '[%s]\n' "$REPLY"
+        pacconf --raw --repo="$REPLY"
+    done
 }
 
 db_replaces() {
@@ -92,7 +92,7 @@ else
 fi
 
 if [[ $database ]]; then
-    conf_single "$database" > "$tmp"/custom.conf
+    printf '%s\n' "$database" | conf_build > "$tmp"/custom.conf
 else
     error "$argv0: database: missing argument"
     usage; exit 1
@@ -118,16 +118,12 @@ if ((chroot)); then
     container=${container:-/var/lib/aurbuild}/$machine
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 
-    if [[ $machine == x86_64 ]]; then
-        pacman_conf=/usr/share/devtools/pacman-multilib.conf
-        base_packages=(base-devel multilib-devel)
+    if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
+        pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
     else
-        pacman_conf=/usr/share/devtools/pacman-extra.conf
-        base_packages=(base-devel)
+        pacconf --raw > "$tmp"/pacman.conf
     fi
-
-    cat "$pacman_conf" "$tmp"/custom.conf > "$tmp"/pacman.conf
-
+    
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn \
             -C "$tmp"/pacman.conf -M "$makepkg_conf" \
@@ -136,13 +132,11 @@ if ((chroot)); then
         sudo install -d "$container" -m 755 -v
         sudo mkarchroot \
             -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-            "$container"/root "${base_packages[@]}"
+            "$container"/root base-devel
     fi
 
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
-else
-    conf_options | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 fi
 
 while read -r -u 3 pkg _; do
@@ -171,7 +165,7 @@ while read -r -u 3 pkg _; do
         replaces=$(grep -Fxf <(db_replaces "$database") <(pacman -Qq) | paste -s -d, -)
 
         # https://github.com/andrewgregory/pacutils/issues/4
-        sudo pacman -Syu --config="$tmp"/pacman.conf --ignore="$replaces" --noconfirm
+        sudo pacman -Syu --config="$tmp"/custom.conf --ignore="$replaces" --noconfirm
     fi
 done
 
