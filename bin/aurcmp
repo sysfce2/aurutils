@@ -55,7 +55,7 @@ fi
 
 while getopts :d:r: OPT; do
     case $OPT in
-        d) database=$OPTARG
+        d) database=$OPTARG ;;
         r) root=$OPTARG ;;
         h) usage ;;
     esac
