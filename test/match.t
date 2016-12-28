@@ -9,11 +9,11 @@ else
 fi
 
 # exact repository match
-total1=$(aurcheck -ad "$testrepo1" 2>&1 | wc -l)
+total1=$(</dev/null aurcheck -ad "$testrepo1" 2>&1 | wc -l)
 total2=$(pacman -Slq "$testrepo1" | wc -l)
 test "$total1" -eq "$total2"
 
-total1=$(aurcheck -ad "$testrepo2" 2>&1 | wc -l)
+total1=$(</dev/null aurcheck -ad "$testrepo2" 2>&1 | wc -l)
 total2=$(pacman -Slq "$testrepo2" | wc -l)
 test "$total1" -eq "$total2"
 
