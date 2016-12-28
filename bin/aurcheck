@@ -7,6 +7,10 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 declare -i all=0
 declare -r PS4 argv0 tmp
 
+syncver() {
+    pacsift --exact --repo="$1" | expac -S '%n\t%v' -
+}
+
 aurver() {
     jq -r '.[].results[] | [.Name,.Version] | @tsv'
 }
@@ -16,10 +20,10 @@ f1() {
 }
 
 quickcheck() {
-    declare database=$1 root=$2 geq=$3
+    declare repo=$1 geq=$2
     declare pkg ver_sync ver_aur op
 
-    repose -lr "$root" "$database" | sort -k 1b,1 > sync.tsv
+    syncver "$repo" | sort -k 1b,1 > sync.tsv
 
     if f1 sync.tsv | xargs -r aursearch -Fr | aurver | sort -k 1b,1 > aur.tsv; then
         join sync.tsv aur.tsv > join.tsv
@@ -65,9 +69,10 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :ahqr: OPT; do
+while getopts :ad:hqr: OPT; do
     case $OPT in
         a) all=1    ;;
+        d) database=$OPTARG ;;
         q) parse=f1 ;;
         h) usage    ;;
         r) root=$OPTARG ;;
@@ -76,20 +81,11 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if ((!$#)); then
+if [[ ! $database ]]; then
     usage
-else
-    database=$1
-fi
-
-if [[ $root ]]; then
-    root=$(realpath -e -- "$root") || exit
-else
-    root=$(pacconf --single --repo="$database" Server) || exit
-    root=${root#*://}
 fi
 
 cd_safe "$tmp"
-quickcheck "$database" "$root" "${all:-0}" | "${parse:-tee}"
+quickcheck "$database" "${all:-0}" | "${parse:-tee}"
 
 # vim: set et sw=4 sts=4 ft=sh:
