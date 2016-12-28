@@ -4,8 +4,8 @@ aurcmp \- compare package strings
 
 .SH SYNOPSIS
 .SY aurcmp
+.OP \-d repository
 .OP \-r root
-.OP repository
 .YS
 
 .SH DESCRIPTION
@@ -14,6 +14,11 @@ stdin) against packages in a specified (local) repository. Names of
 updated packages are printed to stdout.
 
 .SH OPTIONS
+
+.B \-d
+.RS
+The name of the pacman database.
+.RE
 
 .B \-r
 .RS
