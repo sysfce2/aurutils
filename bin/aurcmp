@@ -53,8 +53,9 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :r: OPT; do
+while getopts :d:r: OPT; do
     case $OPT in
+        d) database=$OPTARG
         r) root=$OPTARG ;;
         h) usage ;;
     esac
@@ -62,17 +63,14 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if ((!$#)); then
+if [[ ! $database ]]; then
     usage
-else
-    database=$1
 fi
 
-if [[ $root ]]; then
-    root=$(realpath -e -- "$root") || exit
-else
+if [[ ! $root ]]; then
     root=$(pacconf --single --repo="$database" Server) || exit
     root=${root#*://}
 fi
 
+root=$(realpath -e -- "$root") || exit
 prepare "$database" "$root"
