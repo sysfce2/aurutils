@@ -8,7 +8,8 @@ declare -i all=0
 declare -r PS4 argv0 tmp
 
 syncver() {
-    pacsift --exact --repo="$1" | expac -S '%n\t%v' -
+    # https://github.com/andrewgregory/pacutils/issues/3
+    pacsift --exact --repo="$1" <&- | expac -S '%n\t%v' -
 }
 
 aurver() {
