@@ -21,10 +21,5 @@ count1=$(aurcmp "$testrepo1" < version | wc -l)
 count2=$(aurcmp "$testrepo1" -r . < version | wc -l)
 test $count1 -eq $count2
 
-mkdir aur1
-AURDEST=$PWD/aur1 aursync --no-build --no-view --repo="$testrepo1" python-nikola
-mkdir aur2
-AURDEST=$PWD/aur2 aursync --no-build --no-view --repo="$testrepo1" --root=. python-nikola
-count1=$(ls -1 ./aur1 | wc -l)
-count2=$(ls -1 ./aur2 | wc -l)
-test $count1 -eq $count2
+AURDEST=$PWD aursync --no-build --no-view --update \
+       --repo="$testrepo1" --root="$PWD" python-nikola
