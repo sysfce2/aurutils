@@ -58,7 +58,7 @@ case $1 in
         ;;
     root)
         prepare_repo "${testrepo[0]}"
-        "$basedir"/root.t "${testrepo[0]}"
+        "$basedir"/root.t "${testrepo[@]:0:2}"
         ;;
 esac
 
