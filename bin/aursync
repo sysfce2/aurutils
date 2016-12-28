@@ -232,7 +232,7 @@ fi
 if ((build)) || ((update)); then
     if [[ $repo ]]; then
         if [[ $root ]]; then
-            root=$(realpath -e -- "$repo")
+            root=$(realpath -e -- "$root")
         else
             root=$(pacconf --single --repo="$repo" Server)
             root=${root#*://}
