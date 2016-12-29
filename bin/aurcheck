@@ -54,7 +54,7 @@ quickcheck() {
 }
 
 usage() {
-    plain "usage: $argv0 [-aq] [-r root] repository"
+    plain "usage: $argv0 [-aq] -d repository"
     exit 1
 }
 
