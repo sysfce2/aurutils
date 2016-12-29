@@ -180,7 +180,7 @@ Search for Perl modules that are both in the AUR and official repositories:
 .EX
 
   $ aurgrep '^perl-.+' > pkgs
-  $ grep -Fxvf <(aursift -S < pkgs) pkgs
+  $ grep -Fxvf <(aursift < pkgs) pkgs
 
 .EE
 Search for packages with both 'wm' and 'git' in the name:
