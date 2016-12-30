@@ -7,11 +7,6 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 argv0=aurcmp
 declare -r PS4 argv0
 
-usage() {
-    plain "usage: $argv0 [-r root] repository"
-    exit 1
-}
-
 prepare() {
     declare database=$1 root=$2 name ver res
     declare -A pkgset cmpset
@@ -47,6 +42,11 @@ prepare() {
     done
 }
 
+usage() {
+    plain "usage: $argv0 [-r root] -d repository"
+    exit 1
+}
+
 source /usr/share/makepkg/util.sh || exit
 
 if [[ -t 2 ]]; then
@@ -57,7 +57,7 @@ while getopts :d:r: OPT; do
     case $OPT in
         d) database=$OPTARG ;;
         r) root=$OPTARG ;;
-        h) usage ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
