@@ -8,8 +8,7 @@ declare -i all=0
 declare -r PS4 argv0 tmp
 
 syncver() {
-    # https://github.com/andrewgregory/pacutils/issues/3
-    pacsift --exact --repo="$1" <&- | expac -S '%n\t%v' -
+    pacman -Sl "$1" | awk '{print $2, $3}'
 }
 
 aurver() {

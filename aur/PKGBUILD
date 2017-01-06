@@ -9,14 +9,15 @@ source=("git+$url")
 md5sums=('SKIP')
 conflicts=('aurutils')
 provides=('aurutils')
-depends=('pacman>=5.0' 'git' 'expac' 'jq' 'pacutils' 'repose')
+depends=('pacman>=5.0' 'git' 'jq' 'pacutils' 'repose')
 checkdepends=('shellcheck')
 makedepends=('git')
 optdepends=('devtools: systemd-nspawn support'
 	'vifm: build file interaction'
 	'aria2: alternative downloader'
 	'parallel: alternative downloader'
-	'datamash: check tsort input')
+	'datamash: check tsort input'
+	'expac: aursift')
 
 pkgver() {
   cd aurutils
