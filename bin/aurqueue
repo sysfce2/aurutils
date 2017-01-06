@@ -8,32 +8,6 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly PS4 argv0 tmp
 
-# Use find to avoid ARG_MAX issues.
-findsrc() {
-    find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0
-}
-
-# XXX: The three functions below could be done in a single awk pass (#177)
-gendeps() {
-    xargs -0i awk -v FS='[<=>]' '
-          /pkgbase/ {
-	      B = $2
-	      printf("%s\t%s\n", B, B)
-	  }
-          /^\t(make|check)?depends/ {
-	      printf("%s\t%s\n", B, $2)
-	  }
-          /^$/ {nextfile} # Split package
-    ' {}
-}
-
-genbase() {
-    xargs -0i awk -v FS='[<=>]' '
-          /pkgbase/ {B = $2}
-          /pkgname/ {printf("%s\t%s\n", $2, B)}
-    ' {}
-}
-
 # make/depends arrays contain pkgname instead of pkgbase.
 # Replace entries accordingly in the output.
 basesub() {
@@ -79,11 +53,20 @@ fi
 
 [[ -t 2 ]] && colorize
 
-findsrc "$@" > "$tmp"/i || exit
+find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0 > "$tmp"/i || exit
 
-gendeps < "$tmp"/i > "$tmp"/deps &
-genbase < "$tmp"/i > "$tmp"/base &
-wait     # XXX: exit code 0
+xargs -0i awk -v FS='[<=>]' '
+    /pkgbase/                 {B = $2; printf("%s\t%s\n", B, B);}
+    /^\t(make|check)?depends/ {printf("%s\t%s\n", B, $2);}
+    /^$/                      {nextfile}    # split package
+' {} < "$tmp"/i > "$tmp"/deps &
+
+xargs -0i awk -v FS='[<=>]' '
+    /pkgbase/ {B = $2}
+    /pkgname/ {printf("%s\t%s\n", $2, B)}
+' {} < "$tmp"/i > "$tmp"/base &
+
+wait # XXX: exit code 0
 
 dmsort "$tmp"/deps | basesub "$tmp"/base | grep -Fxf <(printf '%s\n' "$@") | tac
 
