@@ -244,11 +244,13 @@ if ((build)) || ((update)); then
 
     printf '\n' >| "$root"/_build
 
-    if ! pacconf CacheDir | grep -qx -- "$root"; then
+    shopt -s extglob
+    if ! pacconf CacheDir | grep -Eqx -- "${root%%+(/)}/+?"; then
         error "$argv0: repository path $root is not a cache directory"
         exit 1
     fi
 
+    shopt -u extglob
     msg2 "Using [$repo] repository"
 
     if ((update)); then        
