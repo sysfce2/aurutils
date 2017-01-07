@@ -74,3 +74,5 @@ fi
 
 root=$(realpath -e -- "$root") || exit
 prepare "$database" "$root"
+
+# vim: set et sw=4 sts=4 ft=sh:
