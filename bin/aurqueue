@@ -53,20 +53,39 @@ fi
 
 [[ -t 2 ]] && colorize
 
-find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0 > "$tmp"/i || exit
+find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0 | xargs -0 gawk '
+    BEGINFILE {
+        print "STOP"
+    } {
+        print
+    }
+' > "$tmp"/i
 
-xargs -0i awk -v FS='[<=>]' '
-    /pkgbase/                 {pb = $2; printf("%s\t%s\n", pb, pb);}
-    /^\t(make|check)?depends/ {printf("%s\t%s\n", pb, $2);}
-    /^$/                      {nextfile}    # split package
-' {} < "$tmp"/i > "$tmp"/deps &
+gawk -v FS='[<=>]' '
+    /STOP/ {
+        read = 1
+    } {
+        if (read && $0 ~ /pkgbase/) {
+            pb = $2
+            printf("%s\t%s\n", pb, pb)
+        }
+        if (read && $0 ~ /^\t(make|check)?depends/) {
+            printf("%s\t%s\n", pb, $2)
+        }
+        if ($0 ~ /^$/) {
+            read = 0    # split package
+        }
+    }
+' "$tmp"/i > "$tmp"/deps
 
-xargs -0i awk -v FS='[<=>]' '
-    /pkgbase/ {pb = $2}
-    /pkgname/ {printf("%s\t%s\n", $2, pb)}
-' {} < "$tmp"/i > "$tmp"/base &
-
-wait # XXX: exit code 0
+gawk -v FS='[<=>]' '
+    /pkgbase/ {
+        pb = $2
+    }
+    /pkgname/ {
+        printf("%s\t%s\n", $2, pb)
+    }
+' "$tmp"/i > "$tmp"/base
 
 dmsort "$tmp"/deps | basesub "$tmp"/base | grep -Fxf <(printf '%s\n' "$@") | tac
 
