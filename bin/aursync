@@ -12,7 +12,7 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i view=1 build=1 chkver=1 pull=1 confirm=1
+declare -i view=1 build=1 chkver=1 confirm=1
 declare -i update=0 snapshot=0 sign=0 rotate=0 chroot=0
 declare -i bindro=0 force=0 keep=0 chtemp=0
 
@@ -79,7 +79,7 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,container:,force,keep,help,no-build,no-pull,no-ver,no-view,sign,tar,temp,repo:,root:,update
+longopts=allan,bind:,chroot,container:,force,keep,help,no-build,no-ver,no-view,sign,tar,temp,repo:,root:,update
 
 if TEMP=$(getopt -o B:cC:fhknstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -102,7 +102,6 @@ while true; do
         -t|--tar)       snapshot=1;    shift ;;
         --allan)        rotate=1;      shift ;;
         --no-build)     build=0;       shift ;;
-        --no-pull)      pull=0;        shift ;;
         --no-ver)       chkver=0;      shift ;;
         --no-view)      view=0;        shift ;;
         --root)         root=$2;       shift 2 ;;
@@ -244,13 +243,9 @@ if ((snapshot)); then
 else
     cd_safe "$AURDEST"
 
-    if ((pull)); then
-        aurfetch_args+=("-p")
-    fi
-
     awk -v uri="$aurweb" '{
         printf "%s/%s.git\n", uri, $0
-    }' "$tmp"/queue | aurfetch -L "$tmp"/patch "${aurfetch_args[@]}"
+    }' "$tmp"/queue | aurfetch -L "$tmp"/patch
 fi
 
 # View changes and build files in one window (#77)

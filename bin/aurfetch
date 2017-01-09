@@ -4,22 +4,18 @@ set -e
 
 argv0=aurfetch
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
-declare -i aurball=0 pull=0 log=0
+declare -i aurball=0 log=0
 declare -r argv0 tmp
 
 # stdin: /path/to/repo.git
 clone() {
-    declare pull=$1 log=$2 logdir=$3 startdir=$PWD
+    declare log=$1 logdir=$2 startdir=$PWD
     declare repo base remote
 
     while IFS= read -r repo; do
         base=${repo##*/} base=${base%%.git}
 
         if [[ -d $base/.git ]]; then
-            if ((!pull)); then
-                continue
-            fi
-
             cd_safe "$base"
             remote=$(git remote get-url --all origin)
 
@@ -73,10 +69,9 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :L:pt OPT; do
+while getopts :L:t OPT; do
     case $OPT in
         L) log=1; logdir=$OPTARG ;;
-        p) pull=1 ;;
         t) aurball=1 ;;
     esac
 done
