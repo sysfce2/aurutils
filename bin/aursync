@@ -12,9 +12,9 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i view=1 build=1 chkver=1 confirm=1
-declare -i update=0 snapshot=0 sign=0 rotate=0 chroot=0
-declare -i bindro=0 force=0 keep=0 chtemp=0
+declare -i view=1 chkver=1 update=0 snapshot=0 rotate=0
+declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0
+declare -a makepkg_args=() aurbuild_args=()
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -79,7 +79,7 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,container:,force,keep,help,no-build,no-ver,no-view,sign,tar,temp,repo:,root:,update
+longopts=allan,bind:,chroot,container:,force,keep,help,no-ver,no-view,sign,tar,temp,repo:,root:,update
 
 if TEMP=$(getopt -o B:cC:fhknstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -90,24 +90,22 @@ fi
 while true; do
     case "$1" in
         -B|--bind)      bindro=1;
-                        newdir=$2;     shift 2 ;;
-        -c|--chroot)    chroot=1;      shift ;;
-        -C|--container) container=$2;  shift 2 ;;
-        -f|--force)     force=1;       shift ;;
-        -k|--keep)      keep=1;        shift ;;
-        -n)             confirm=0;     shift ;;
-        -s|--sign)      sign=1;        shift ;;
-        -T|--temp)      chtemp=1;      shift ;;
-        -u|--update)    update=1;      shift ;;
-        -t|--tar)       snapshot=1;    shift ;;
-        --allan)        rotate=1;      shift ;;
-        --no-build)     build=0;       shift ;;
-        --no-ver)       chkver=0;      shift ;;
-        --no-view)      view=0;        shift ;;
-        --root)         root=$2;       shift 2 ;;
-        --repo)         repo=$2;       shift 2 ;;
-        --) shift
-            break ;;
+                        newdir=$2;   shift 2 ;;
+        -f|--force)     force=1;     shift ;;
+        -k|--keep)      keep=1;      shift ;;
+        -n)             confirm=0;   shift ;;
+        -T|--temp)      chtemp=1;    shift ;;
+        -u|--update)    update=1;    shift ;;
+        -t|--tar)       snapshot=1;  shift ;;
+        --allan)        rotate=1;    shift ;;
+        --no-ver)       chkver=0;    shift ;;
+        --no-view)      view=0;      shift ;;
+        --root)         root=$2;     shift 2 ;;
+        --repo)         repo=$2;     shift 2 ;;
+        -c|--chroot)    aurbuild_args+=(-c);       shift ;;
+        -C|--container) aurbuild_args+=(-C "$2");  shift 2 ;;
+        -s|--sign)      aurbuild_args+=(-s);       shift ;;
+        --) shift; break ;;
         -h|--help)
             usage ;;
     esac
@@ -129,9 +127,6 @@ fi
 # Set makepkg args in a new list to ensure option context is already
 # defined, as getopt parses options from left to right.
 if ((chroot)); then
-    aurbuild_args+=(-c)
-    [[ $container ]] && aurbuild_args+=(-C "$container")
-
     makepkg_args=(-cnu)
     ((bindro))  && makepkg_args+=(-D "$newdir")
     ((chtemp))  && makepkg_args+=(-T)
@@ -142,63 +137,57 @@ else
     ((keep))    || makepkg_args+=(-r)
 fi
 
-if ((sign)); then
-    aurbuild_args+=(-s)
-fi
+if [[ $repo ]]; then
+    if [[ ! $root ]]; then
+        root=$(pacconf --single --repo="$repo" Server)
+        root=${root#*://}
+    fi
+else
+    declare -A avail
 
-if ((build)) || ((update)); then
-    if [[ $repo ]]; then
-        if [[ ! $root ]]; then
-            root=$(pacconf --single --repo="$repo" Server)
-            root=${root#*://}
+    while read -r repo server; do
+        if [[ $server =~ ^file:// ]]; then
+            avail[$repo]=${server#*://}
+        fi
+    done < <(repo_list)
+
+    if [[ ${avail[@]} ]]; then
+        if [[ ${#avail[@]} -gt 1 ]]; then
+            PS3='Select a repository: '
+
+            select repo in "${!avail[@]}"; do
+                break
+            done
+        else
+            repo=${!avail[*]}
         fi
     else
-        declare -A avail
-
-        while read -r repo server; do
-            if [[ $server =~ ^file:// ]]; then
-                avail[$repo]=${server#*://}
-            fi
-        done < <(repo_list)
-
-        if [[ ${avail[@]} ]]; then
-            if [[ ${#avail[@]} -gt 1 ]]; then
-                PS3='Select a repository: '
-
-                select repo in "${!avail[@]}"; do
-                    break
-                done
-            else
-                repo=${!avail[*]}
-            fi
-        else
-            error "$argv0: no file:// repository found"
-            exit 2
-        fi
-
-        root=${avail[$repo]}
+        error "$argv0: no file:// repository found"
+        exit 2
     fi
 
-    root=$(realpath -e -- "$root")
-    printf '\n' >| "$root"/_build
+    root=${avail[$repo]}
+fi
 
-    if ! pacconf CacheDir | xargs realpath | grep -qx -- "$root"; then
-        error "$argv0: repository path $root is not a cache directory"
-        exit 1
-    fi
+root=$(realpath -e -- "$root")
 
-    msg2 "Using [$repo] repository"
+if ! pacconf CacheDir | xargs realpath | grep -qx -- "$root"; then
+    error "$argv0: repository path $root is not a cache directory"
+    exit 1
+fi
 
-    if ((update)); then        
-        shopt -s lastpipe
-        aurcheck -qd "$repo" | readarray -t new
+msg2 "Using [$repo] repository"
+printf '\n' >| "$root"/_build
 
-        shopt -u lastpipe
-        set -- "$@" "${new[@]}"
+if ((update)); then        
+    shopt -s lastpipe
+    aurcheck -qd "$repo" | readarray -t new
 
-        if ((!$#)); then
-            plain "there is nothing to do"; exit
-        fi
+    shopt -u lastpipe
+    set -- "$@" "${new[@]}"
+
+    if ((!$#)); then
+        plain "there is nothing to do"; exit
     fi
 fi
 
@@ -219,7 +208,7 @@ jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' "${json_set[@]}" > tsv/ur
 # pkgname -> pkgbase
 lib32_sift < queue_0 | basesub tsv/pkgbase > queue_1
 
-if ((build)) && ((chkver)); then
+if ((chkver)); then
     # pkgver -> pkgver (repo) -> pkgbase (repo)
     aurcmp -d "$repo" -r "$root" < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
@@ -255,12 +244,8 @@ if ((view)); then
     )
 fi
 
-if ((build)); then
-    aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
+aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
 
-    aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
-else
-    msg "Sources saved to $PWD"
-fi
+aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
 
 # vim: set et sw=4 sts=4 ft=sh:
