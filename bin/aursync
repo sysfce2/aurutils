@@ -231,12 +231,8 @@ fi
 
 if ((build)) || ((update)); then
     if [[ $repo ]]; then
-        if [[ $root ]]; then
-            root=$(realpath -e -- "$root")
-        else
-            root=$(pacconf --single --repo="$repo" Server)
-            root=${root#*://}
-        fi
+        root=${root:-$(pacconf --single --repo="$repo" Server)}
+        root=$(realpath -e -- "${root#*://}")
     else
         dest=$(repo_select)
         read -r repo root <<< "$dest"
@@ -244,13 +240,11 @@ if ((build)) || ((update)); then
 
     printf '\n' >| "$root"/_build
 
-    shopt -s extglob
-    if ! pacconf CacheDir | grep -Eqx -- "${root%%+(/)}/+?"; then
+    if ! pacconf CacheDir | xargs realpath | grep -qx -- "$root"; then
         error "$argv0: repository path $root is not a cache directory"
         exit 1
     fi
 
-    shopt -u extglob
     msg2 "Using [$repo] repository"
 
     if ((update)); then        
