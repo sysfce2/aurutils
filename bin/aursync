@@ -89,25 +89,24 @@ fi
 
 while true; do
     case "$1" in
-        -B|--bind)      bindro=1;
-                        newdir=$2;   shift 2 ;;
-        -f|--force)     force=1;     shift ;;
-        -k|--keep)      keep=1;      shift ;;
-        -n)             confirm=0;   shift ;;
-        -T|--temp)      chtemp=1;    shift ;;
-        -u|--update)    update=1;    shift ;;
-        -t|--tar)       snapshot=1;  shift ;;
-        --allan)        rotate=1;    shift ;;
-        --no-ver)       chkver=0;    shift ;;
-        --no-view)      view=0;      shift ;;
-        --root)         root=$2;     shift 2 ;;
-        --repo)         repo=$2;     shift 2 ;;
+        -B|--bind)      bindro=1; newdir=$2;        shift 2 ;;
+        -f|--force)     force=1;                    shift   ;;
+        -k|--keep)      keep=1;                     shift   ;;
+        -n)             confirm=0;                  shift   ;;
+        -T|--temp)      chtemp=1;                   shift   ;;
+        -u|--update)    update=1;                   shift   ;;
+        -t|--tar)       snapshot=1;                 shift   ;;
         -c|--chroot)    chroot=1;
-                        aurbuild_args+=(-c);       shift ;;
+                        aurbuild_args+=(-c);        shift   ;;
         -C|--container) chroot=1;
-                        aurbuild_args+=(-C "$2");  shift 2 ;;
-        -s|--sign)      aurbuild_args+=(-s);       shift ;;
-        -h|--help) usage ;;
+                        aurbuild_args+=(-C "$2");   shift 2 ;;
+        -s|--sign)      aurbuild_args+=(-s);        shift   ;;
+        --allan)        rotate=1;                   shift   ;;
+        --no-ver)       chkver=0;                   shift   ;;
+        --no-view)      view=0;                     shift   ;;
+        --root)         root=$2;                    shift 2 ;;
+        --repo)         repo=$2;                    shift 2 ;;
+         -h|--help) usage ;;
         --) shift; break ;;
     esac
 done
