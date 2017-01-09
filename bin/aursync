@@ -106,7 +106,7 @@ while true; do
         --no-view)      view=0;                     shift   ;;
         --root)         root=$2;                    shift 2 ;;
         --repo)         repo=$2;                    shift 2 ;;
-         -h|--help) usage ;;
+         -h|--help)     usage ;;
         --) shift; break ;;
     esac
 done
