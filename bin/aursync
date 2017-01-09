@@ -12,7 +12,7 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i view=1 chkver=1 update=0 snapshot=0 rotate=0
+declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
 declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0
 declare -a makepkg_args=() aurbuild_args=()
 
@@ -102,12 +102,13 @@ while true; do
         --no-view)      view=0;      shift ;;
         --root)         root=$2;     shift 2 ;;
         --repo)         repo=$2;     shift 2 ;;
-        -c|--chroot)    aurbuild_args+=(-c);       shift ;;
-        -C|--container) aurbuild_args+=(-C "$2");  shift 2 ;;
+        -c|--chroot)    chroot=1;
+                        aurbuild_args+=(-c);       shift ;;
+        -C|--container) chroot=1;
+                        aurbuild_args+=(-C "$2");  shift 2 ;;
         -s|--sign)      aurbuild_args+=(-s);       shift ;;
+        -h|--help) usage ;;
         --) shift; break ;;
-        -h|--help)
-            usage ;;
     esac
 done
 
@@ -179,7 +180,7 @@ fi
 msg2 "Using [$repo] repository"
 printf '\n' >| "$root"/_build
 
-if ((update)); then        
+if ((update)); then 
     shopt -s lastpipe
     aurcheck -qd "$repo" | readarray -t new
 
