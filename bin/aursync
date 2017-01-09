@@ -152,8 +152,6 @@ if ((build)) || ((update)); then
         if [[ ! $root ]]; then
             root=$(pacconf --single --repo="$repo" Server)
             root=${root#*://}
-        else
-            root=$(realpath -e -- "$root")
         fi
     else
         declare -A avail
@@ -182,6 +180,7 @@ if ((build)) || ((update)); then
         root=${avail[$repo]}
     fi
 
+    root=$(realpath -e -- "$root")
     printf '\n' >| "$root"/_build
 
     if ! pacconf CacheDir | xargs realpath | grep -qx -- "$root"; then
