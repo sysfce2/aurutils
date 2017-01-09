@@ -12,63 +12,9 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
 readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
 
-declare -i view=1 build=1 chkver=1 fetch=1 confirm=1
+declare -i view=1 build=1 chkver=1 pull=1 confirm=1
 declare -i update=0 snapshot=0 sign=0 rotate=0 chroot=0
 declare -i bindro=0 force=0 keep=0 chtemp=0
-
-# stdin: /path/to/repo.git
-clone() {
-    declare pull=$1 logdir=$2 startdir=$PWD
-    declare repo base remote
-
-    while IFS= read -r repo; do
-        base=${repo##*/} base=${base%%.git}
-
-        if [[ -d $base/.git ]]; then
-            ((pull)) || continue
-
-            cd_safe "$base"
-            remote=$(git remote get-url --all origin)
-
-            if [[ ! $remote == "$repo"* ]]; then
-                warning "remote $remote does not match $repo"
-            fi
-
-            git fetch -v # returns 0 even if nothing was fetched
-
-            if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
-                git --no-pager log --patch --stat '..@{upstream}' >> "$logdir/$base"
-                git reset --hard HEAD
-                git merge
-            fi
-
-            cd_safe "$startdir"
-        else
-            git clone "$repo"
-        fi
-    done
-}
-
-# stdin: /path/to/a.tar.gz
-download() {
-    declare gzdir=$1 startdir=$PWD
-    cd_safe "$gzdir"
-
-    if type -P aria2c >/dev/null 2>&1; then
-        aria2c --stderr=true -i -
-    elif type -P parallel >/dev/null 2>&1; then
-        parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 curl -fLsS --remote-name-all --cert-status {}
-    else
-        xargs -I{} curl -fLsS --remote-name-all --cert-status {}
-    fi
-
-    declare a
-    cd_safe "$startdir"
-
-    for a in "$gzdir"/*.tar.gz; do
-        tar xvf "$a"
-    done
-}
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -82,34 +28,6 @@ repo_list() {
     pacconf --repo-list | while IFS= read -r; do
         printf '%s\t%s\n' "$REPLY" "$(pacconf --single --repo="$REPLY" Server)"
     done
-}
-
-repo_select() {
-    declare repo server
-    declare -A avail
-
-    while read -r repo server; do
-        if [[ $server =~ ^file:// ]]; then
-            avail[$repo]=${server#*://}
-        fi
-    done < <(repo_list)
-
-    if [[ ${avail[@]} ]]; then
-	if [[ ${#avail[@]} -gt 1 ]]; then
-            PS3='Select a repository: '
-
-            select repo in "${!avail[@]}"; do
-		break
-            done
-	else
-	    repo=${!avail[*]}
-	fi
-    else
-        error "$argv0: no file:// repository found"
-        exit 2
-    fi
-
-    printf '%s\t%s\n' "$repo" "${avail[$repo]}"
 }
 
 basesub() {
@@ -161,7 +79,7 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,container:,force,keep,help,no-build,no-fetch,no-ver,no-view,sign,tar,temp,repo:,root:,update
+longopts=allan,bind:,chroot,container:,force,keep,help,no-build,no-pull,no-ver,no-view,sign,tar,temp,repo:,root:,update
 
 if TEMP=$(getopt -o B:cC:fhknstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -184,7 +102,7 @@ while true; do
         -t|--tar)       snapshot=1;    shift ;;
         --allan)        rotate=1;      shift ;;
         --no-build)     build=0;       shift ;;
-        --no-fetch)     fetch=0;       shift ;;
+        --no-pull)      pull=0;        shift ;;
         --no-ver)       chkver=0;      shift ;;
         --no-view)      view=0;        shift ;;
         --root)         root=$2;       shift 2 ;;
@@ -231,11 +149,37 @@ fi
 
 if ((build)) || ((update)); then
     if [[ $repo ]]; then
-        root=${root:-$(pacconf --single --repo="$repo" Server)}
-        root=$(realpath -e -- "${root#*://}")
+        if [[ ! $root ]]; then
+            root=$(pacconf --single --repo="$repo" Server)
+            root=${root#*://}
+        else
+            root=$(realpath -e -- "$root")
+        fi
     else
-        dest=$(repo_select)
-        read -r repo root <<< "$dest"
+        declare -A avail
+
+        while read -r repo server; do
+            if [[ $server =~ ^file:// ]]; then
+                avail[$repo]=${server#*://}
+            fi
+        done < <(repo_list)
+
+        if [[ ${avail[@]} ]]; then
+            if [[ ${#avail[@]} -gt 1 ]]; then
+                PS3='Select a repository: '
+
+                select repo in "${!avail[@]}"; do
+                    break
+                done
+            else
+                repo=${!avail[*]}
+            fi
+        else
+            error "$argv0: no file:// repository found"
+            exit 2
+        fi
+
+        root=${avail[$repo]}
     fi
 
     printf '\n' >| "$root"/_build
@@ -264,7 +208,7 @@ mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
-mkdir {tsv,json,diff,aurchain}
+mkdir {tsv,json,patch,aurchain}
 
 msg "Resolving dependencies..."
 aurchain -a -t "$tmp"/aurchain -- "$@" > queue_0
@@ -297,19 +241,23 @@ if ((snapshot)); then
 
     grep -Fwf "$tmp"/queue "$tmp"/tsv/urlpath | awk -v uri="$aurweb" '{
         printf "%s/%s\n", uri, $2
-    }' | download "$tmp"
+    }' | aurfetch -t
 else
     cd_safe "$AURDEST"
 
+    if ((pull)); then
+        aurfetch_args+=("-p")
+    fi
+
     awk -v uri="$aurweb" '{
         printf "%s/%s.git\n", uri, $0
-    }' "$tmp"/queue | clone "${fetch:-1}" "$tmp"/diff
+    }' "$tmp"/queue | aurfetch -L "$tmp"/patch "${aurfetch_args[@]}"
 fi
 
 # View changes and build files in one window (#77)
 if ((view)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/diff/* | cat - "$tmp"/queue | xargs -I{} find {} -maxdepth 1 | viewer
+      printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue | xargs -I{} find {} -maxdepth 1 | viewer
     )
 fi
 
