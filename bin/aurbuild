@@ -111,8 +111,13 @@ else
     pool=$root
 fi
 
-printf '\n' > "$root"/_build
-printf '\n' > "$pool"/_build
+if [[ ! -w $root/ || ! -r $root/ ]]; then
+    error "$argv0: $root: Permission denied"; exit 13
+fi
+
+if [[ ! -w $pool/ || ! -r $pool/ ]]; then
+    error "$argv0: $pool: Permission denied"; exit 13
+fi
 
 if ((chroot)); then
     container=${container:-/var/lib/aurbuild}/$machine
