@@ -5,7 +5,7 @@ set -o noclobber
 
 argv0=aurchain
 declare -r PS4 argv0
-declare -i all=0 tmpdel=1
+declare -i all=0 opttmp=0
 
 count() {
     declare -i num
@@ -90,14 +90,13 @@ chain() {
 }
 
 trap_exit() {
-    if [[ ! -o xtrace ]] && ((tmpdel)); then
+    if [[ ! -o xtrace ]] && ((!opttmp)); then
         rm -rf "$tmp"
     fi
 }
 
 usage() {
     plain "usage: $argv0 [-a] pkgname..."
-    exit 1
 }
 
 source /usr/share/makepkg/util.sh || exit
@@ -107,20 +106,23 @@ source /usr/share/makepkg/util.sh || exit
 while getopts :at: OPT; do
     case $OPT in
         a) all=1 ;;
-        t) tmp=$OPTARG; tmpdel=0 ;;
-        *) usage ;;
+        t) opttmp=1; tmp=$OPTARG ;;
+        *) usage; exit 1 ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
 if ((!$#)); then
-    usage
+    usage; exit 1
 fi
 
-tmp=${tmp:-$(mktemp -dt "$argv0".XXXXXXXXXX)} || exit
+if ((!opttmp)); then
+    tmp=$(mktemp dt "$argv0".XXXXXXXX) || exit
+fi
+
+declare -r all opttmp tmp
 trap 'trap_exit' EXIT
-declare -r tmp
 
 cd_safe "$tmp"
 mkdir {json,tsv} || exit
