@@ -12,7 +12,7 @@ syncver() {
 }
 
 aurver() {
-    jq -r '.[].results[] | [.Name,.Version] | @tsv'
+    jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
 }
 
 f1() {
@@ -31,11 +31,15 @@ quickcheck() {
         grep -Fxvf <(f1 aur.tsv) <(f1 sync.tsv) | while read -r pkg; do
             plain "$pkg is not present in AUR"
         done
+
+        awk '{if(!$4) {print $1};}' join.tsv | while read -r pkg; do
+            plain "$pkg is orphaned in AUR"
+        done
     else
         exit
     fi
 
-    while read -r pkg ver_sync ver_aur; do
+    while read -r pkg ver_sync ver_aur _; do
         op=$(vercmp "$ver_sync" "$ver_aur")
 
         if ((!geq && op > -1)); then
