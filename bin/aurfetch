@@ -10,18 +10,13 @@ declare -r argv0 tmp
 # stdin: /path/to/repo.git
 clone() {
     declare log=$1 logdir=$2 startdir=$PWD
-    declare repo base remote
+    declare repo base
 
     while IFS= read -r repo; do
         base=${repo##*/} base=${base%%.git}
 
         if [[ -d $base/.git ]]; then
             cd_safe "$base"
-            remote=$(git remote get-url --all origin)
-
-            if [[ ! $remote == "$repo"* ]]; then
-                warning "remote $remote does not match $repo"
-            fi
 
             git fetch -v # returns 0 even if nothing was fetched
 
