@@ -1,34 +1,22 @@
 #!/bin/bash -
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 PATH=/bin:/usr/bin
-
 argv0=officer
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
-official=(core testing extra community community-testing multilib multilib-testing)
 
-readonly PS4 PATH argv0 tmp official
+readonly PS4 PATH argv0
 
-trap_exit() {
-    if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp"
-    fi
+build_config() {
+    printf '%s\n' '[options]'
+    pacconf --raw --options
+
+    for i in core testing extra community community-testing multilib multilib-testing; do
+        if pacconf --repo="$i" >/dev/null 2>&1; then
+            printf '%s\n' "[$i]"
+            pacconf --raw --repo="$i"
+        fi
+    done
 }
 
-trap 'trap_exit' EXIT
-
-# Regard ignored packages (#103)
-{ printf '%s\n' '[options]'
-  pacconf --raw --options
-} >> "$tmp"/config
-
-for i in "${official[@]}"; do
-    if pacconf --repo="$i" >/dev/null 2>&1; then
-        { printf '%s\n' "[$i]"
-          pacconf --raw --repo="$i"
-        } >> "$tmp"/config
-    fi
-done
-
-pacman --config="$tmp"/config "$@"
+pacman --config=<(build_config) "$@"
 
 # vim: set et sw=4 sts=4 ft=sh:
