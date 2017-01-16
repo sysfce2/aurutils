@@ -7,32 +7,24 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 declare -i all=0
 declare -r PS4 argv0 tmp
 
-syncver() {
-    pacman -Sl "$1" | awk '{print $2, $3}'
-}
-
 aurver() {
     jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
-}
-
-f1() {
-    awk '{print $1}' "$@"
 }
 
 quickcheck() {
     declare repo=$1 geq=$2
     declare pkg ver_sync ver_aur op
 
-    syncver "$repo" | sort -k 1b,1 > sync.tsv
+    pacman -Sl "$repo" | awk '{print $2, $3}' | sort -k 1b,1 > sync.tsv
 
-    if f1 sync.tsv | xargs -r aursearch -Fr | aurver | sort -k 1b,1 > aur.tsv; then
-        join sync.tsv aur.tsv > join.tsv
-
-        grep -Fxvf <(f1 aur.tsv) <(f1 sync.tsv) | while read -r pkg; do
+    if awk '{print $1}' sync.tsv | xargs -r aursearch -Fr | \
+        aurver | sort -k 1b,1 > aur.tsv
+    then
+        join -v 2 -o 2.1 aur.tsv sync.tsv | while read -r pkg; do
             plain "$pkg is not present in AUR"
         done
 
-        awk '{if(!$4) {print $1};}' join.tsv | while read -r pkg; do
+        awk '{if(!$3) {print $1};}' aur.tsv | while read -r pkg; do
             plain "$pkg is orphaned in AUR"
         done
     else
@@ -53,7 +45,7 @@ quickcheck() {
             0)  printf '%s %s = %s\n'  "$1" "$2" "$3" ;;
             1)  printf '%s %s <- %s\n' "$1" "$2" "$3" ;;
         esac
-    done < join.tsv
+    done < <(join sync.tsv aur.tsv)
 }
 
 usage() {
