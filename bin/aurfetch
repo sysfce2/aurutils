@@ -38,7 +38,7 @@ clone() {
 
 # stdin: /path/to/a.tar.gz
 snapshot() {
-    declare gzdir=$1 startdir=$PWD
+    declare gzdir=$1 basedir=$PWD
     cd_safe "$gzdir"
 
     if type -P aria2c >/dev/null 2>&1; then
@@ -51,13 +51,20 @@ snapshot() {
     fi
 
     declare a
-    cd_safe "$startdir"
+    cd_safe "$basedir"
 
     for a in "$gzdir"/*.tar.gz; do
         tar xvf "$a"
     done
 }
 
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+trap 'trap_exit' EXIT
 source /usr/share/makepkg/util.sh
 
 if [[ -t 2 ]]; then
