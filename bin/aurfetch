@@ -3,9 +3,10 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
 argv0=aurfetch
+aurweb='https://aur.archlinux.org'
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 declare -i aurball=0 log=0
-declare -r argv0 tmp
+declare -r argv0 aurweb tmp
 
 # stdin: /path/to/repo.git
 clone() {
@@ -13,8 +14,6 @@ clone() {
     declare repo base
 
     while IFS= read -r repo; do
-        base=${repo##*/} base=${base%%.git}
-
         if [[ -d $base/.git ]]; then
             cd_safe "$base"
 
@@ -31,7 +30,7 @@ clone() {
 
             cd_safe "$startdir"
         else
-            git clone "$repo"
+            git clone "$aurweb/$repo".git
         fi
     done
 }
@@ -81,7 +80,7 @@ done
 if ((!aurball)); then
     clone "${log:-0}" "${logdir:-/dev/null}"
 else
-    snapshot "$tmp"
+    xargs printf "$aurweb/%s\n" | snapshot "$tmp"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

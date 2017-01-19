@@ -4,13 +4,12 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 
 argv0=aursync
-aurweb=https://aur.archlinux.org
 tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 
-readonly PS4 argv0 aurweb tmp XDG_CACHE_HOME AURDEST
+readonly PS4 argv0 tmp XDG_CACHE_HOME AURDEST
 
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
 declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0
@@ -229,16 +228,10 @@ msg "Retrieving build files..."
 
 if ((snapshot)); then
     cd_safe "$AURDEST"/snapshot
-
-    grep -Fwf "$tmp"/queue "$tmp"/tsv/urlpath | awk -v uri="$aurweb" '{
-        printf "%s/%s\n", uri, $2
-    }' | aurfetch -t
+    awk 'NR == FNR {x[$0]; next} $1 in x {print $2}' "$tmp"/queue "$tmp"/tsv/urlpath | aurfetch -t
 else
     cd_safe "$AURDEST"
-
-    awk -v uri="$aurweb" '{
-        printf "%s/%s.git\n", uri, $0
-    }' "$tmp"/queue | aurfetch -L "$tmp"/patch
+    aurfetch -L "$tmp"/patch < "$tmp"/queue
 fi
 
 # View changes and build files in one window (#77)
