@@ -8,12 +8,10 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 declare -i aurball=0 log=0
 declare -r argv0 aurweb tmp
 
-# stdin: /path/to/repo.git
 clone() {
-    declare log=$1 logdir=$2 startdir=$PWD
-    declare repo base
+    declare log=$1 logdir=$2 startdir=$PWD base
 
-    while IFS= read -r repo; do
+    while IFS= read -r base; do
         if [[ -d $base/.git ]]; then
             cd_safe "$base"
 
@@ -30,7 +28,7 @@ clone() {
 
             cd_safe "$startdir"
         else
-            git clone "$aurweb/$repo".git
+            git clone "$aurweb/$base".git
         fi
     done
 }
