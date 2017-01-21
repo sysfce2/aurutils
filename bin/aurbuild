@@ -39,7 +39,9 @@ conf_build() {
 
 db_replaces() {
     #global root
-    bsdcat "$root/$1".db | awk '/%REPLACES/ {getline; printf ("%s\n", $1)}'
+    bsdcat "$root/$1".db | awk '/%REPLACES%/ {
+        while(NF != 0) {getline; print}
+    }'
 }
 
 trap 'exit' INT
