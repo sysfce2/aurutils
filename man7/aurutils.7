@@ -219,6 +219,12 @@ Print packages both in AUR and community and compare their versions:
   $ aurcheck -a -d community 2>/dev/null
 
 .EE
+Check foreign packages for AUR updates:
+.EX
+
+  $ pacman -Qm | aurcheck
+
+.EE
 Use helpers wich honor the \fIPACMAN\fR variable or cower with a repository:
 .EX
 

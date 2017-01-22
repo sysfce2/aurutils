@@ -1,6 +1,6 @@
 .TH AURCHECK 1 2016-12-28 AURUTILS
 .SH NAME
-aurcheck \- check repository packages for AUR updates
+aurcheck \- check packages for AUR updates
 
 .SH SYNOPSIS
 .SY aurcheck
@@ -10,13 +10,14 @@ aurcheck \- check repository packages for AUR updates
 .SH OPTIONS
 .B \-a
 .RS
-Also show packages which are newer, or of the same version, in the
-target repository.
+Also show packages which are older or of the same version.
 .RE
 
 .B \-d
 .RS
-The name of the pacman database.
+The name of the pacman database. If no database is specified, packages
+and their versions are taken from stdin (\fIpkgname\fR as the first
+field, \fIpkgver\fR as the second, both separated by blanks).
 .RE
 
 .B \-q
