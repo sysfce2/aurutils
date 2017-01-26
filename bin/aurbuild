@@ -83,14 +83,14 @@ fi
 
 if [[ $queue ]]; then
     if [[ -r $queue && ! -d $queue ]]; then
-        exec 3< "$queue"
+        exec {fd}< "$queue"
     else
         error "$argv0: queue: must be a readable file"
         exit 13
     fi
 else
     # http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11
-    exec 3<<< '//'
+    exec {fd}<<< '//'
 fi
 
 if [[ $database ]]; then
@@ -146,7 +146,7 @@ if ((chroot)); then
     pacconf --root="$container"/root --repo="$database" >/dev/null
 fi
 
-while read -r -u 3 pkg _; do
+while read -r -u "$fd" pkg _; do
     cd_safe "$basedir/$pkg"
 
     if ((chroot)); then
@@ -176,6 +176,6 @@ while read -r -u 3 pkg _; do
     fi
 done
 
-exec 3<&-
+exec {fd}<&-
 
 # vim: set et sw=4 sts=4 ft=sh:
