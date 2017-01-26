@@ -176,8 +176,7 @@ if [[ ! -w $root/ || ! -r $root/ ]]; then
 fi
 
 if ! pacconf CacheDir | xargs realpath | grep -qx -- "$root"; then
-    error "$argv0: repository path $root is not a cache directory"
-    exit 1
+    warning "$argv0: repository path $root is not a cache directory"
 fi
 
 msg2 "Using [$repo] repository"
