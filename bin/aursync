@@ -148,9 +148,10 @@ else
     if [[ ${avail[@]} ]]; then
         if [[ ${#avail[@]} -gt 1 ]]; then
             PS3='Select a repository: '
-
             select repo in "${!avail[@]}"; do
-                break
+                if [[ -n $repo ]]; then
+                    break
+                fi
             done
         else
             repo=${!avail[*]}
@@ -159,7 +160,6 @@ else
         error "$argv0: no file:// repository found"
         exit 2
     fi
-
     root=${avail[$repo]}
 fi
 
