@@ -23,12 +23,6 @@ viewer() {
     fi
 }
 
-repo_list() {
-    pacconf --repo-list | while IFS= read -r; do
-        printf '%s\t%s\n' "$REPLY" "$(pacconf --single --repo="$REPLY" Server)"
-    done
-}
-
 basesub() {
     declare -A pkg seen
     declare name base
@@ -144,11 +138,12 @@ if [[ $repo ]]; then
 else
     declare -A avail
 
-    while IFS=$'\t' read -r repo server; do
+    while IFS= read -r repo; do
+        server=$(pacconf --single --repo="$repo" Server)
         if [[ $server =~ ^file:// ]]; then
             avail[$repo]=${server#*://}
         fi
-    done < <(repo_list)
+    done < <(pacconf --repo-list)
 
     if [[ ${avail[@]} ]]; then
         if [[ ${#avail[@]} -gt 1 ]]; then
