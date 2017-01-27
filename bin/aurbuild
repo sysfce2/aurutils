@@ -124,7 +124,7 @@ fi
 if ((chroot)); then
     container=${container:-/var/lib/aurbuild}/$machine
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
-    pacman_conf=/usr/share/devtools/pacman-extra.conf
+    #pacman_conf=/usr/share/devtools/pacman-extra.conf
 
     pacconf --repo-list | conf_build > "$tmp"/pacman.conf
 
