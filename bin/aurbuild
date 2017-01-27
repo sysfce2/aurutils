@@ -107,14 +107,14 @@ else
     root=${root#*://}
 fi
 
+if [[ ! -w $root/ || ! -r $root/ ]]; then
+    error "$argv0: $root: Permission denied"; exit 13
+fi
+
 if [[ $pool ]]; then
     pool=$(realpath -e -- "$pool")
 else
     pool=$root
-fi
-
-if [[ ! -w $root/ || ! -r $root/ ]]; then
-    error "$argv0: $root: Permission denied"; exit 13
 fi
 
 if [[ ! -w $pool/ || ! -r $pool/ ]]; then
@@ -124,13 +124,10 @@ fi
 if ((chroot)); then
     container=${container:-/var/lib/aurbuild}/$machine
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
+    pacman_conf=/usr/share/devtools/pacman-extra.conf
 
-    if pacconf --repo=multilib >/dev/null 2>&1 && [[ $machine != x86_64 ]]; then
-        pacconf --repo-list | grep -vx multilib | conf_build > "$tmp"/pacman.conf
-    else
-        pacconf --raw > "$tmp"/pacman.conf
-    fi
-    
+    pacconf --repo-list | conf_build > "$tmp"/pacman.conf
+
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn \
             -C "$tmp"/pacman.conf -M "$makepkg_conf" \
