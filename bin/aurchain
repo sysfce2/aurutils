@@ -90,7 +90,7 @@ chain() {
 }
 
 trap_exit() {
-    if [[ ! -o xtrace ]] && ((!opttmp)); then
+    if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
@@ -119,10 +119,10 @@ fi
 
 if ((!opttmp)); then
     tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
+    trap 'trap_exit' EXIT
 fi
 
 declare -r all opttmp tmp
-trap 'trap_exit' EXIT
 
 cd_safe "$tmp"
 mkdir {json,tsv} || exit
