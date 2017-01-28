@@ -118,7 +118,7 @@ if ((!$#)); then
 fi
 
 if ((!opttmp)); then
-    tmp=$(mktemp dt "$argv0".XXXXXXXX) || exit
+    tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 fi
 
 declare -r all opttmp tmp
