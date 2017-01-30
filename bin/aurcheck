@@ -8,7 +8,7 @@ declare all=0 quiet=0 database=
 declare -r PS4 argv0 tmp
 
 aurver() {
-    jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
+    xargs -r aursearch -Fr | jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
 }
 
 quickcheck() {
@@ -16,9 +16,7 @@ quickcheck() {
 
     sort -k 1b,1 > pkg.tsv
 
-    if awk '{print $1}' pkg.tsv | xargs -r aursearch -Fr | \
-        aurver | sort -k 1b,1 > aur.tsv
-    then
+    if awk '{print $1}' pkg.tsv | aurver | sort -k 1b,1 > aur.tsv; then
         join -v 2 -o 2.1 aur.tsv pkg.tsv | while IFS= read -r; do
             plain "$REPLY is not present in AUR"
         done
@@ -49,7 +47,7 @@ quickcheck() {
 
 syncver() {
     if [[ $1 ]]; then
-        pacman -Sl "$1" | awk '{print $2, $3}' || exit
+	pacsift --repo="$1" <&- | pacman -Sddp --print-format '%n %v' -
     else
         tee
     fi
