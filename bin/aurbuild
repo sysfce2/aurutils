@@ -10,10 +10,9 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 declare -r PS4 argv0 basedir machine tmp
 declare -i chroot=0 sign_pkg=0
 
-gpg_args=(--verbose --detach-sign --no-armor)
+gpg_args=(--verbose --detach-sign --no-armor --with-colons)
 makechrootpkg_args=(-cnu)
 makepkg_args=(-Lcrs)
-repose_args=(-fv)
 
 trap_exit() {
     #global tmp
@@ -36,10 +35,15 @@ conf_single() {
 }
 
 db_replaces() {
-    #global root
-    bsdcat "$root/$1".db | awk '/%REPLACES%/ {
+    bsdcat "$1" | awk '/%REPLACES%/ {
         while(NF != 0) {getline; print}
     }'
+}
+
+find_package_path() {
+    makepkg --packagelist | while IFS= read -r; do
+        find "$1" -type f -regex ".+/$REPLY.pkg.+?" -print0
+    done
 }
 
 trap 'exit' INT
@@ -58,8 +62,7 @@ while getopts a:cC:d:p:r:s OPT; do
         d) database=$OPTARG   ;;
         p) pool=$OPTARG       ;;
         r) root=$OPTARG       ;;
-        s) repose_args+=(-s)
-           sign_pkg=1         ;;
+        s) sign_pkg=1         ;;
         *) usage; exit 1      ;;
     esac
 done
@@ -152,19 +155,20 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$pool" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     fi
 
+    # https://bugs.archlinux.org/task/49342
+    LANG=C repose -r "$root" -p "$pool" -fv "$database"
+
     if ((sign_pkg)); then
         # https://bugs.archlinux.org/task/49946
-        for p in $(makepkg --packagelist); do
-            find "$pool" -type f -regex ".+/$p.pkg.+?" -execdir gpg "${gpg_args[@]}" {} \;
-        done
-    fi
+        find_package_path "$pool" | xargs -0 -n1 gpg "${gpg_args[@]}"
 
-    # https://bugs.archlinux.org/task/49342
-    LANG=C repose -r "$root" -p "$pool" "$database" "${repose_args[@]}"
+        # https://github.com/vodik/repose/issues/46
+        gpg "${gpg_args[@]}" "$root/$database".db
+    fi
 
     if ! ((chroot)); then
         # https://github.com/andrewgregory/pacutils/issues/15
-        replaces=$(grep -Fxf <(db_replaces "$database") <(pacman -Qq) | paste -s -d, -)
+        replaces=$(grep -Fxf <(db_replaces "$root/$database".db) <(pacman -Qq) | paste -s -d, -)
 
         # https://github.com/andrewgregory/pacutils/issues/4
         sudo pacman -Syu --config="$tmp"/custom.conf --ignore="$replaces" --noconfirm
