@@ -166,7 +166,9 @@ while read -r -u "$fd" pkg _; do
         gpg "${gpg_args[@]}" "$root/$database".db
     fi
 
-    if ! ((chroot)); then
+    if ((chroot)); then
+        continue
+    else        
         # https://github.com/andrewgregory/pacutils/issues/15
         replaces=$(grep -Fxf <(db_replaces "$root/$database".db) <(pacman -Qq) | paste -s -d, -)
 
