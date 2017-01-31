@@ -8,7 +8,8 @@ declare all=0 quiet=0 database=
 declare -r PS4 argv0 tmp
 
 aurver() {
-    xargs -r aursearch -Fr | jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
+    xargs -r aursearch -Fr | jq -r '.[].results[] |
+        [.Name,.Version,.Maintainer] | @tsv'
 }
 
 quickcheck() {
