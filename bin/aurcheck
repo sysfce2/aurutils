@@ -13,7 +13,7 @@ aurver() {
 }
 
 quickcheck() {
-    declare geq=$1 pkg ver_pkg ver_aur op
+    declare geq=$1 pkg v_pkg v_aur op
 
     sort -k 1b,1 > pkg.tsv
 
@@ -29,19 +29,21 @@ quickcheck() {
         exit
     fi
 
-    while read -r pkg ver_pkg ver_aur _; do
-        op=$(vercmp "$ver_pkg" "$ver_aur")
+    while read -r pkg v_pkg v_aur _; do
+        if [[ $v_pkg != "$v_aur" ]]; then
+            op=$(vercmp "$v_pkg" "$v_aur")
+        else
+            op=0
+        fi
 
         if ((!geq && op > -1)); then
             continue
         fi
 
-        set -- "$pkg" "$ver_pkg" "$ver_aur"
-
         case "$op" in
-            -1) printf '%s %s -> %s\n' "$1" "$2" "$3" ;;
-            0)  printf '%s %s = %s\n'  "$1" "$2" "$3" ;;
-            1)  printf '%s %s <- %s\n' "$1" "$2" "$3" ;;
+            -1) printf '%s %s -> %s\n' "$pkg" "$v_pkg" "$v_aur" ;;
+             0) printf '%s %s = %s\n'  "$pkg" "$v_pkg" "$v_aur" ;;
+             1) printf '%s %s <- %s\n' "$pkg" "$v_pkg" "$v_aur" ;;
         esac
     done < <(join pkg.tsv aur.tsv)
 }
