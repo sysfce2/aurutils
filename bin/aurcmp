@@ -7,8 +7,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 argv0=aurcmp
 declare -r PS4 argv0
 
-prepare() {
-    declare database=$1 root=$2 name ver res
+print_updated() {
+    declare database=$1 root=$2
+    declare name ver res
     declare -A pkgset cmpset
 
     while read -r name ver; do
@@ -28,15 +29,19 @@ prepare() {
 
     for name in "${!pkgset[@]}"; do
         if [[ ${cmpset[$name]} ]]; then
-            res=$(vercmp "${cmpset[$name]}" "${pkgset[$name]}")
+            if [[ ${cmpset[$name]} != "${pkgset[$name]}" ]]; then
+                res=$(vercmp "${cmpset[$name]}" "${pkgset[$name]}")
+            else
+                res=0
+            fi
         else
             res=-1 # FS#49093
         fi
 
         case $res in
             -1) msg2 "$name ${cmpset[$name]:-0} -> ${pkgset[$name]}" ;;
-            0)  printf '%s\n' "$name" ;;
-            1)  warning "$name ${cmpset[$name]:-0} is newer than ${pkgset[$name]}"
+             0) printf '%s\n' "$name" ;;
+             1) warning "$name ${cmpset[$name]:-0} is newer than ${pkgset[$name]}"
                 printf '%s\n' "$name" ;;
         esac
     done
@@ -73,6 +78,6 @@ if [[ ! $root ]]; then
 fi
 
 root=$(realpath -e -- "$root") || exit
-prepare "$database" "$root"
+print_updated "$database" "$root"
 
 # vim: set et sw=4 sts=4 ft=sh:
