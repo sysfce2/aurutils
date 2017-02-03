@@ -22,15 +22,11 @@ pair() {
     jq -r '.[].results[]
         | .Name as $name
         | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
-        | [$name, .]
-        | @tsv' "$1" | sed -r 's/[<>=].*$//g'
+        | [$name, .] | @tsv' "$1" | sed -r 's/[<>=].*$//g'
 }
 
 fld() {
-    declare -i F=$1
-    shift
-
-    awk -v F="$F" '{print $(F)}' "$@" | sort -u
+    awk -v F="$1" '{print $(F)}' "${@:2}" | sort -u
 }
 
 dmsort() {
