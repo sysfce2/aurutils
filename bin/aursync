@@ -178,7 +178,7 @@ msg2 "Using [$repo] repository"
 
 if ((update)); then 
     shopt -s lastpipe
-    aurcheck -qd "$repo" | readarray -t new
+    aurcheck -d "$repo" -r "$root" -q | readarray -t new
 
     shopt -u lastpipe
     set -- "$@" "${new[@]}"
@@ -207,7 +207,7 @@ lib32_sift < queue_0 | basesub tsv/pkgbase > queue_1
 
 if ((chkver)); then
     # pkgver -> pkgver (repo) -> pkgbase (repo)
-    aurcmp -d "$repo" -r "$root" < tsv/pkgver | basesub tsv/pkgbase > sift_1
+    aurcheck -d "$repo" -r "$root" -c < tsv/pkgver | basesub tsv/pkgbase > sift_1
 
     # pkgbase \ pkgbase (repo)
     if ! grep -Fxvf sift_1 queue_1 > queue; then
