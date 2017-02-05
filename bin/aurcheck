@@ -1,38 +1,57 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o pipefail
-
-argv0=aurcheck
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
-declare all=0 quiet=0 database=
-declare -r PS4 argv0 tmp
+declare -i geq=0 cmp=0 ver=1
 
 aurver() {
-    xargs -r aursearch -Fr | jq -r '.[].results[] |
-        [.Name,.Version,.Maintainer] | @tsv'
+    xargs -r aursearch -Fr | jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
+}
+
+syncver() {
+    pacsift --repo="$1" <&- | pacman -Sddp --print-format '%n %v' -
+}
+
+list_repo() {
+    bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
+                       /%VERSION%/ {getline; printf("%s\n", $1)}'
+}
+
+list_repo_equal() {
+    declare -r db=$1 root=$2
+
+    sort -k 1b,1 | join -a 1 - <(list_repo "$root/$db".db | sort -k 1b,1) | while {
+        read -r pkg v_in v_cmp _
+    } do
+        if [[ $v_cmp ]]; then
+            if [[ $v_in != "$v_cmp" ]]; then
+                op=$(vercmp "$v_cmp" "$v_in")
+            else
+                op=0
+            fi
+        else
+            # Package was found on an unpairable line, and is therefore
+            # not included in the database.
+	    v_cmp=0; op=-1
+        fi
+
+        case $op in
+            -1) msg2 "$pkg $v_cmp -> $v_in" ;;
+             0) printf '%s\n' "$pkg" ;;
+             1) warning "$pkg $v_cmp is newer than $v_in" ;;
+        esac
+    done
 }
 
 quickcheck() {
-    declare geq=$1 cmp=$2
-    declare pkg v_pkg v_aur op
+    declare -r tmpdir=$1 ver=$2 geq=$3
+    cd_safe "$tmpdir"
 
-    sort -k 1b,1 > pkg.tsv
+    tee stdin | awk '{print $1}' | aurver > aur.tsv
 
-    if awk '{print $1}' pkg.tsv | aurver | sort -k 1b,1 > aur.tsv; then
-        join -v 2 -o 2.1 aur.tsv pkg.tsv | while IFS= read -r; do
-            plain "$REPLY is not present in AUR"
-        done
-
-        awk '{if(!$3) {print $1};}' aur.tsv | while IFS= read -r; do
-            plain "$REPLY is orphaned in AUR"
-        done
-    else
-        exit
-    fi
-
-    while read -r pkg v_pkg v_aur _; do
-        if [[ $v_pkg != "$v_aur" ]]; then
-            op=$(vercmp "$v_pkg" "$v_aur")
+    sort -k 1b,1 stdin | join - <(sort -k 1b,1 aur.tsv) | while {
+        read -r pkg v_in v_cmp _
+    } do
+        if [[ $v_in != "$v_cmp" ]]; then
+            op=$(vercmp "$v_in" "$v_cmp")
         else
             op=0
         fi
@@ -41,29 +60,16 @@ quickcheck() {
             continue
         fi
 
-        if ((!cmp)); then
-            case "$op" in
-                -1) printf '%s %s -> %s\n' "$pkg" "$v_pkg" "$v_aur" ;;
-                 0) printf '%s %s = %s\n'  "$pkg" "$v_pkg" "$v_aur" ;;
-                 1) printf '%s %s <- %s\n' "$pkg" "$v_pkg" "$v_aur" ;;
-            esac
-        else
+        if ((!ver)); then
             printf '%s\n' "$pkg"
+        else
+            case "$op" in
+                -1) printf '%s %s -> %s\n' "$pkg" "$v_in" "$v_cmp" ;;
+                 0) printf '%s %s = %s\n'  "$pkg" "$v_in" "$v_cmp" ;;
+                 1) printf '%s %s <- %s\n' "$pkg" "$v_in" "$v_cmp" ;;
+            esac
         fi
-    done < <(join pkg.tsv aur.tsv)
-}
-
-syncver() {
-    if [[ $1 ]]; then
-	pacsift --repo="$1" <&- | pacman -Sddp --print-format '%n %v' -
-    else
-        tee
-    fi
-}
-
-usage() {
-    plain "usage: $argv0 [-aq] -d repository"
-    exit 1
+    done
 }
 
 trap_exit() {
@@ -72,25 +78,44 @@ trap_exit() {
     fi
 }
 
-trap 'trap_exit' EXIT
+usage() {
+    plain "usage: aurcheck: [-acq] [-d repository]"
+    exit 1
+}
 
 source /usr/share/makepkg/util.sh || exit
 
-[[ -t 2 ]] && colorize
+if [[ -t 2 ]]; then
+    colorize
+fi
 
-while getopts :ad:q OPT; do
+while getopts :acd:qr: OPT; do
     case $OPT in
-        a) all=1 ;;
-        d) database=$OPTARG ;;
-        q) quiet=1 ;;
+        a) geq=1 ;;
+        c) cmp=1 ;;
+        d) db=$OPTARG ;;
+        q) ver=0 ;;
+        r) root=$OPTARG ;;
         *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-cd_safe "$tmp"
+tmp=$(mktemp -d) || exit
+trap 'trap_exit' EXIT
 
-syncver "$database" | quickcheck "${all:-0}" "${quiet:-0}"
+if [[ $db ]]; then
+    server=$(pacconf --single --repo="$db" Server) || exit
+
+    # XXX Implement root option
+    if ((cmp)); then
+        list_repo_equal "$db" "${server#*://}"
+    else
+        syncver "$db" | quickcheck "$tmp" "$ver" "$geq"
+    fi
+else
+    quickcheck "$tmp" "$ver" "$geq"
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:

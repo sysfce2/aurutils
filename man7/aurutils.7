@@ -175,11 +175,25 @@ Build all packages in the \fIpkgbuilds\fR github repository:
   $ aurbuild -d custom -a queue
 
 .EE
-Search for Perl modules that are both in the AUR and official repositories:
+Print packages from the \fIcustom\fR repository that are not available
+in the AUR:
 .EX
 
-  $ aurgrep '^perl-.+' > pkgs
-  $ grep -Fxvf <(aursift < pkgs) pkgs
+  $ grep -Fxvf <(aurgrep .+) <(pacman -Slq custom)
+
+.EE
+As above, but for orphaned packages:
+.EX
+
+  $ pacman -Slq custom | xargs -r aursearch -Fr | \\
+       jq -r '.[].results[] | select(.Maintainer == null)'
+
+.EE
+Print Perl modules that are both in the AUR and official repositories:
+.EX
+
+  $ aurgrep '^perl-.+' > perl.txt
+  $ grep -Fxvf <(aursift < perl.txt) perl.txt
 
 .EE
 Search for packages with both 'wm' and 'git' in the name:
@@ -215,7 +229,7 @@ Select a package matching \fIpony\fR and build the result:
 Print packages both in AUR and community and compare their versions:
 .EX
 
-  $ aurcheck -a -d community 2>/dev/null
+  $ aurcheck -d community -a
 
 .EE
 Check foreign packages for AUR updates:
