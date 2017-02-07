@@ -7,6 +7,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 argv0=aursift
 arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 declare -r PS4 argv0 arch_repo
+declare -a siftargs=() repo=()
 declare -A pkgset
 
 # Takes a set of package names to create "package virtual" pairs,
@@ -25,16 +26,15 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while IFS= read -r p; do
-    # Use an additional indexed array to preserve input order.
-    pkgset[$p]=1; all+=("$p")
+# Use an additional indexed array to preserve input order.
+readarray -t all
+
+for p in "${all[@]}"; do
+    siftargs+=(--satisfies="$p")
+    pkgset[$p]=1
 done
 
 if [[ ${pkgset[@]} ]]; then
-    for p in "${!pkgset[@]}"; do
-        siftargs+=(--satisfies="$p")
-    done
-
     for p in "${arch_repo[@]}"; do
         siftargs+=(--repo="$p")
     done
