@@ -106,11 +106,13 @@ else
     root=${server#*://}
 fi
 
-if [[ ! -w $root/ || ! -r $root/ ]]; then
+if [[ -w $root && -r $root ]]; then
+    # foo.db may be a symbolic link to a database with a "valid extension",
+    # such as foo.db.tar (repo-add)
+    db_path=$(realpath -e -- "$root/$database".db)
+else
     error "$argv0: $root: Permission denied"; exit 13
 fi
-
-db_path=$(realpath -e -- "$root/$database".db)
 
 if ((chroot)); then
     container=${container:-/var/lib/aurbuild}/$machine
@@ -156,9 +158,7 @@ while read -r -u "$fd" pkg _; do
 
     if ((sign_pkg)); then
         # https://bugs.archlinux.org/task/49946
-        for i in "${pkglist[@]}"; do
-            gpg "${gpg_args[@]}" "$i"
-        done
+        for i in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$i"; done
 
         # https://github.com/vodik/repose/issues/46
         gpg "${gpg_args[@]}" "$db_path"
