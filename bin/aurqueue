@@ -67,7 +67,7 @@ gawk -v FS='[<=>]' '
     }
 ' "$tmp"/i > "$tmp"/base
 
-dmsort "$tmp"/deps | awk '
+dmsort "$tmp"/deps | gawk '
     NR == FNR {
         x[$1] = $2; next
     } {
