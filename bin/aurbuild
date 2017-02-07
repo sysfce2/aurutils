@@ -110,6 +110,8 @@ if [[ ! -w $root/ || ! -r $root/ ]]; then
     error "$argv0: $root: Permission denied"; exit 13
 fi
 
+db_path=$(realpath -e -- "$root/$database".db)
+
 if ((chroot)); then
     container=${container:-/var/lib/aurbuild}/$machine
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
@@ -149,7 +151,7 @@ while read -r -u "$fd" pkg _; do
     if type -P repose >/dev/null; then
         LANG=C repose -r "$root" -fv "$database"
     else
-        repo-add -nv "$root/$database".db "${pkglist[@]}"
+        LANG=C repo-add -n "$db_path" "${pkglist[@]}"
     fi
 
     if ((sign_pkg)); then
@@ -159,14 +161,14 @@ while read -r -u "$fd" pkg _; do
         done
 
         # https://github.com/vodik/repose/issues/46
-        gpg "${gpg_args[@]}" "$root/$database".db
+        gpg "${gpg_args[@]}" "$db_path"
     fi
 
     if ((chroot)); then
         continue
     else        
         # https://github.com/andrewgregory/pacutils/issues/15
-        replaces=$(grep -Fxf <(db_replaces "$root/$database".db) <(pacman -Qq) | paste -s -d, -)
+        replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
 
         # https://github.com/andrewgregory/pacutils/issues/4
         sudo pacman -Syu --config="$tmp"/custom.conf --ignore="$replaces" --noconfirm
