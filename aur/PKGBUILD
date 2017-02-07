@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=1.4.2.r58.gd96e722
+pkgver=1.4.2.r63.gf1e42e6
 pkgrel=1
 pkgdesc='helper tools for the arch user repository'
 arch=('any')
@@ -9,15 +9,16 @@ source=("git+$url")
 md5sums=('SKIP')
 conflicts=('aurutils')
 provides=('aurutils')
-depends=('pacman>=5.0' 'git' 'jq' 'pacutils' 'repose')
+depends=('pacman>=5.0' 'git' 'jq' 'pacutils')
 checkdepends=('shellcheck')
 makedepends=('git')
 optdepends=('devtools: systemd-nspawn support'
 	'vifm: build file interaction'
 	'aria2: alternative downloader'
 	'parallel: alternative downloader'
-	'datamash: check tsort input'
-	'expac: aursift')
+	'datamash: verify tsort input'
+	'expac: aursift'
+	'repose: database maintenance')
 
 pkgver() {
   cd aurutils
