@@ -24,29 +24,19 @@ viewer() {
 }
 
 basesub() {
-    declare -A pkg seen
-    declare name base
-
-    while IFS=$'\t' read -r -u 3 name base; do
-        pkg[$name]=$base
-    done 3< "$1"
-
-    while IFS= read -r name; do
-        base=${pkg[$name]}
-
-        if [[ -n $base ]] && [[ -z ${seen[$base]} ]]; then
-            printf '%s\n' "${pkg[$name]}"
-            seen[$base]=1
-        fi
-    done
+    awk 'NR == FNR {x[$1] = $2; next} {
+        if ($1 in x && !(x[$1] in seen)) {
+            print x[$1]; seen[x[$1]];
+        }
+    }' "$1" -
 }
 
 lib32_sift() {
     awk -v arch="$(uname -m)" '{
         if(arch == "i686") {
             gsub(/^lib32-/,""); gsub(/^gcc-multilib$/,"")
-        };  print
-    }'
+        }; print
+    }' -
 }
 
 trap_exit() {
@@ -222,7 +212,8 @@ msg "Retrieving build files..."
 
 if ((snapshot)); then
     cd_safe "$AURDEST"/snapshot
-    awk 'NR == FNR {x[$0]; next} $1 in x {print $2}' "$tmp"/queue "$tmp"/tsv/urlpath | aurfetch -t
+    awk 'NR == FNR {x[$0]; next} $1 in x {print $2}' \
+        "$tmp"/queue "$tmp"/tsv/urlpath | aurfetch -t
 else
     cd_safe "$AURDEST"
     aurfetch -L "$tmp"/patch < "$tmp"/queue
@@ -231,7 +222,8 @@ fi
 # View changes and build files in one window (#77)
 if ((view)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue | xargs -I{} find {} -maxdepth 1 | viewer
+      printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
+          | xargs -I{} find {} -maxdepth 1 | viewer
     )
 fi
 

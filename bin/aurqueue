@@ -8,26 +8,6 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
 
 readonly PS4 argv0 tmp
 
-# make/depends arrays contain pkgname instead of pkgbase.
-# Replace entries accordingly in the output.
-basesub() {
-    declare -A pkg seen
-    declare name base
-
-    while read -r -u 3 name base; do
-        pkg[$name]=$base
-    done 3< "$1"
-
-    while read -r name _; do
-        base=${pkg[$name]}
-
-        if [[ -n $base ]] && [[ -z ${seen[$base]} ]]; then
-            printf '%s\n' "${pkg[$name]}"
-            seen[$base]=1
-        fi
-    done
-}
-
 dmsort() {
     if hash datamash 2>/dev/null; then
         datamash -W check < "$1" >/dev/null || return
@@ -87,6 +67,14 @@ gawk -v FS='[<=>]' '
     }
 ' "$tmp"/i > "$tmp"/base
 
-dmsort "$tmp"/deps | basesub "$tmp"/base | grep -Fxf <(printf '%s\n' "$@") | tac
+dmsort "$tmp"/deps | awk '
+    NR == FNR {
+        x[$1] = $2; next
+    } {
+        if ($1 in x && !(x[$1] in seen)) {
+            print x[$1]; seen[x[$1]];
+        }
+    }
+' "$tmp"/base - | grep -Fxf <(printf '%s\n' "$@") | tac
 
 # vim: set et sw=4 sts=4 ft=sh:
