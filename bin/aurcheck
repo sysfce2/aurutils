@@ -2,19 +2,6 @@
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 declare -i geq=0 cmp=0 ver=1
 
-aurver() {
-    xargs -r aursearch -Fr | jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
-}
-
-syncver() {
-    pacsift --repo="$1" <&- | pacman -Sddp --print-format '%n %v' -
-}
-
-list_repo() {
-    bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
-                       /%VERSION%/ {getline; printf("%s\n", $1)}'
-}
-
 list_repo_equal() {
     declare -r db=$1 root=$2
 
@@ -70,6 +57,19 @@ quickcheck() {
             esac
         fi
     done
+}
+
+aurver() {
+    xargs -r aursearch -Fr | jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
+}
+
+syncver() {
+    pacsift --repo="$1" <&- | pacman -Sddp --print-format '%n %v' -
+}
+
+list_repo() {
+    bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
+                       /%VERSION%/ {getline; printf("%s\n", $1)}'
 }
 
 trap_exit() {
