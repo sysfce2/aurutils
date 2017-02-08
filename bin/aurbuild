@@ -40,8 +40,8 @@ db_replaces() {
     }'
 }
 
-find_package_path() {
-    makepkg --packagelist | while IFS= read -r; do
+find_pkg_path() {
+    while IFS= read -r; do
         find "$1" -type f -regex ".+/$REPLY.pkg.+?" -print0
     done
 }
@@ -147,7 +147,7 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$root" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     fi
 
-    mapfile -d $'\0' -t pkglist < <(find_package_path "$root")
+    mapfile -d $'\0' -t pkglist < <(makepkg --packagelist | find_pkg_path "$root")
 
     # https://bugs.archlinux.org/task/49342
     if type -P repose >/dev/null; then
