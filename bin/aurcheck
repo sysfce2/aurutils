@@ -3,7 +3,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 declare -i geq=0 cmp=0 ver=1
 
 list_repo_equal() {
-    declare -r db=$1 root=$2
+    declare -ri db=$1 root=$2
 
     sort -k 1b,1 | join -a 1 - <(list_repo "$root/$db".db | sort -k 1b,1) | while {
         read -r pkg v_in v_cmp _
@@ -29,8 +29,7 @@ list_repo_equal() {
 }
 
 quickcheck() {
-    declare -r tmpdir=$1 ver=$2 geq=$3
-    cd_safe "$tmpdir"
+    declare -ri ver=$1 geq=$2
 
     tee stdin | awk '{print $1}' | aurver > aur.tsv
 
@@ -105,17 +104,19 @@ OPTIND=1
 tmp=$(mktemp -d) || exit
 trap 'trap_exit' EXIT
 
-if [[ $db ]]; then
-    server=$(pacconf --single --repo="$db" Server) || exit
+cd_safe "$tmp"
 
-    # XXX Implement root option
+if [[ $db ]]; then
+    serv=$(pacconf --single --repo="$db" Server) || exit
+    root=$(realpath "${root:-${serv#*://}}")
+
     if ((cmp)); then
-        list_repo_equal "$db" "${server#*://}"
+        list_repo_equal "$db" "$root"
     else
-        syncver "$db" | quickcheck "$tmp" "$ver" "$geq"
+        syncver "$db" | quickcheck "$ver" "$geq"
     fi
 else
-    quickcheck "$tmp" "$ver" "$geq"
+    quickcheck "$ver" "$geq"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
