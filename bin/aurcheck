@@ -3,7 +3,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 declare -i geq=0 cmp=0 ver=1
 
 list_repo_equal() {
-    declare -ri db=$1 root=$2
+    declare -r db=$1 root=$2
 
     sort -k 1b,1 | join -a 1 - <(list_repo "$root/$db".db | sort -k 1b,1) | while {
         read -r pkg v_in v_cmp _
