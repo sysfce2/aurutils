@@ -1,48 +1,23 @@
 #!/bin/bash
 # shellcheck disable=SC2016
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly argv0=aurqueue
 set -o pipefail
 
-argv0=aurqueue
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
-
-readonly PS4 argv0 tmp
-
-dmsort() {
-    if hash datamash 2>/dev/null; then
-        datamash -W check < "$1" >/dev/null || return
-    fi
-
-    tsort "$1"
+findsrc() {
+    find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
 
-trap_exit() {
-    if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp"
-    fi
-}
-
-trap 'trap_exit' EXIT
-
-source /usr/share/makepkg/util.sh || exit
-
-if ((!$#)); then
-    error "usage: $argv0 pkgbase [pkgbase...]"
-    exit 1
-fi
-
-[[ -t 2 ]] && colorize
-
-find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0 | xargs -0 gawk '
-    BEGINFILE {
+dcat() {
+    xargs -0 gawk 'BEGINFILE {
         print "STOP"
     } {
         print
-    }
-' > "$tmp"/i
+    }'
+}
 
-gawk -v FS='[<=>]' '
-    /STOP/ {
+deps() {
+    gawk -v FS='[<=>]' '/STOP/ {
         read = 1
     } {
         if (read && $0 ~ /pkgbase/) {
@@ -55,26 +30,54 @@ gawk -v FS='[<=>]' '
         if ($0 ~ /^$/) {
             read = 0    # split package
         }
-    }
-' "$tmp"/i > "$tmp"/deps
+    }'
+}
 
-gawk -v FS='[<=>]' '
+base() {
+    gawk -v FS='[<=>]' '
     /pkgbase/ {
         pb = $2
     }
     /pkgname/ {
         printf("%s\t%s\n", $2, pb)
-    }
-' "$tmp"/i > "$tmp"/base
+    }'
+}
 
-dmsort "$tmp"/deps | gawk '
-    NR == FNR {
+sub() {
+    gawk 'NR == FNR {
         x[$1] = $2; next
     } {
         if ($1 in x && !(x[$1] in seen)) {
             print x[$1]; seen[x[$1]];
         }
-    }
-' "$tmp"/base - | grep -Fxf <(printf '%s\n' "$@") | tac
+    }' "$1" - 
+}
+
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+source /usr/share/makepkg/util.sh || exit
+
+if ((!$#)); then
+    error "usage: $argv0 pkgbase [pkgbase...]"; exit 1
+fi
+
+tmp=$(mktemp -d) || exit
+trap 'trap_exit' EXIT
+
+if [[ -t 2 ]]; then
+    colorize
+fi
+
+findsrc "$@" | dcat | tee "$tmp"/info | deps > "$tmp"/deps
+
+if hash datamash 2>/dev/null; then
+    datamash -W check < "$tmp"/deps >/dev/null || exit
+fi
+
+tsort "$tmp"/deps | sub <(base "$tmp"/info) | grep -Fxf <(printf '%s\n' "$@") | tac
 
 # vim: set et sw=4 sts=4 ft=sh:
