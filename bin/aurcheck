@@ -31,7 +31,7 @@ list_repo_equal() {
 quickcheck() {
     declare -ri ver=$1 geq=$2
 
-    tee stdin | awk '{print $1}' | aurver > aur.tsv
+    tee stdin | awk '{print $1}' | aurver > aur.tsv || exit
 
     sort -k 1b,1 stdin | join - <(sort -k 1b,1 aur.tsv) | while {
         read -r pkg v_in v_cmp _
@@ -60,6 +60,7 @@ quickcheck() {
 
 aurver() {
     xargs -r aursearch -Fr | jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
+    return "${PIPESTATUS[0]}"
 }
 
 syncver() {
