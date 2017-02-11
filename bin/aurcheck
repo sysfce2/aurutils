@@ -107,11 +107,12 @@ trap 'trap_exit' EXIT
 cd_safe "$tmp"
 
 if [[ $db ]]; then
-    serv=$(pacconf --single --repo="$db" Server) || exit
-    root=$(realpath "${root:-${serv#*://}}")
+    if [[ ! $root ]]; then
+        root=$(pacconf --single --repo="$db" Server) || exit
+    fi
 
     if ((cmp)); then
-        list_repo_equal "$db" "$root"
+        list_repo_equal "$db" "${root#*://}"
     else
         syncver "$db" | quickcheck "$ver" "$geq"
     fi

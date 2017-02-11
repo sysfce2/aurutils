@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2030,2031
+#shellcheck disable=SC2154
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 
@@ -167,10 +167,7 @@ fi
 msg2 "Using [$repo] repository"
 
 if ((update)); then 
-    shopt -s lastpipe
-    aurcheck -d "$repo" -r "$root" -q | readarray -t new
-
-    shopt -u lastpipe
+    readarray -t new < <(aurcheck -d "$repo" -q); wait "$!"
     set -- "$@" "${new[@]}"
 
     if ((!$#)); then
@@ -182,11 +179,11 @@ mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
-mkdir {tsv,json,patch,aurchain}
+mkdir {tsv,json,patch}
 
 msg "Resolving dependencies..."
-aurchain -a -t "$tmp"/aurchain -- "$@" > queue_0
-json_set=("$tmp"/aurchain/json/*)
+aurchain -a -t "$tmp" -- "$@" > queue_0
+json_set=("$tmp"/json/*)
 
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
 jq -r '.[].results[] | [.Name,.Version]        | @tsv' "${json_set[@]}" > tsv/pkgver
@@ -228,7 +225,6 @@ if ((view)); then
 fi
 
 aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
-
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
 
 # vim: set et sw=4 sts=4 ft=sh:
