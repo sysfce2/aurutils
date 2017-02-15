@@ -40,7 +40,7 @@ base() {
     }
     /pkgname/ {
         printf("%s\t%s\n", $2, pb)
-    }'
+    }' "$1"
 }
 
 sub() {
