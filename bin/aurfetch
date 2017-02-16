@@ -1,25 +1,23 @@
 #!/bin/bash
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly argv0=aurfetch
+readonly aurweb='https://aur.archlinux.org'
 set -e
 
-argv0=aurfetch
-aurweb='https://aur.archlinux.org'
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
 declare -i aurball=0 log=0
-declare -r argv0 aurweb tmp
 
 clone() {
-    declare log=$1 logdir=$2 startdir=$PWD base
+    declare -r log=$1 logdir=$2 startdir=$PWD
 
-    while IFS= read -r base; do
-        if [[ -d $base/.git ]]; then
-            cd_safe "$base"
+    while IFS= read -r; do
+        if [[ -d $REPLY/.git ]]; then
+            cd_safe "$REPLY"
 
             git fetch -v # returns 0 even if nothing was fetched
 
             if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
                 if ((log)) && [[ -d $logdir ]]; then
-                    git --no-pager log --patch --stat '..@{upstream}' >> "$logdir/$base".patch
+                    git --no-pager log --patch --stat '..@{upstream}' >> "$logdir/$REPLY".patch
                 fi
 
                 git reset --hard HEAD
@@ -28,14 +26,14 @@ clone() {
 
             cd_safe "$startdir"
         else
-            git clone "$aurweb/$base".git
+            git clone "$aurweb/$REPLY".git
         fi
     done
 }
 
 # stdin: /path/to/a.tar.gz
 snapshot() {
-    declare gzdir=$1 basedir=$PWD
+    declare -r gzdir=$1 startdir=$PWD
     cd_safe "$gzdir"
 
     if type -P aria2c >/dev/null 2>&1; then
@@ -48,7 +46,7 @@ snapshot() {
     fi
 
     declare a
-    cd_safe "$basedir"
+    cd_safe "$startdir"
 
     for a in "$gzdir"/*.tar.gz; do
         tar xvf "$a"
@@ -61,7 +59,11 @@ trap_exit() {
     fi
 }
 
-trap 'trap_exit' EXIT
+usage() {
+    plain "usage: $argv0 [-L logdir] [-t]"
+    exit 1
+}
+
 source /usr/share/makepkg/util.sh
 
 if [[ -t 2 ]]; then
@@ -72,13 +74,17 @@ while getopts :L:t OPT; do
     case $OPT in
         L) log=1; logdir=$OPTARG ;;
         t) aurball=1 ;;
+        *) usage ;;
     esac
 done
 
-if ((!aurball)); then
-    clone "${log:-0}" "${logdir:-/dev/null}"
-else
+tmp=$(mktemp -dt "$argv0".XXXXXXXX)
+trap 'trap_exit' EXIT
+
+if ((aurball)); then
     xargs printf "$aurweb/%s\n" | snapshot "$tmp"
+else
+    clone "${log:-0}" "${logdir:-/dev/null}"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

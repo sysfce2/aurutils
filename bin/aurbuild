@@ -1,30 +1,14 @@
 #!/bin/bash
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly argv0=aurbuild
+readonly basedir=$PWD
 set -e
 
-argv0=aurbuild
-basedir=$PWD
-machine=$(uname -m)
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
-
-declare -r PS4 argv0 basedir machine tmp
 declare -i chroot=0 sign_pkg=0
 
 gpg_args=(--verbose --detach-sign --no-armor --with-colons)
 makechrootpkg_args=(-cnu)
 makepkg_args=(-Lcrs)
-
-trap_exit() {
-    #global tmp
-    if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp"
-    fi
-}
-
-usage() {
-    #global argv0
-    plain "usage: $argv0 [-cs] -d <database> [-Capr] [--] <makepkg args>"
-}
 
 conf_single() {
     printf '[options]\n'
@@ -46,8 +30,17 @@ find_pkg_path() {
     done
 }
 
-trap 'exit' INT
-trap 'trap_exit' EXIT
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+usage() {
+    plain "usage: $argv0 [-cs] -d <database> [-Capr] [--] <makepkg args>"
+    exit 1
+}
+
 source /usr/share/makepkg/util.sh
 
 if [[ -t 2 ]]; then
@@ -62,11 +55,15 @@ while getopts a:cC:d:r:s OPT; do
         d) database=$OPTARG   ;;
         r) root=$OPTARG       ;;
         s) sign_pkg=1         ;;
-        *) usage; exit 1      ;;
+        *) usage              ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+tmp=$(mktemp -dt "$argv0".XXXXXXXX)
+trap 'trap_exit' EXIT
+trap 'exit' INT
 
 # Reset option array if arguments are specified after --
 if (($#)); then
@@ -97,7 +94,7 @@ if [[ $database ]]; then
     server=$(pacconf --single --repo="$database" Server)
 else
     error "$argv0: database: missing argument"
-    usage; exit 1
+    usage
 fi
 
 if [[ $root ]]; then
@@ -115,6 +112,7 @@ else
 fi
 
 if ((chroot)); then
+    machine=$(uname -m)
     container=${container:-/var/lib/aurbuild}/$machine
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 

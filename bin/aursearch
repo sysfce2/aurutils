@@ -1,16 +1,11 @@
 #!/bin/bash
 # shellcheck disable=SC2016
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly argv0=aursearch
+readonly aurweb='https://aur.archlinux.org'
 set -o pipefail
 
-argv0=aursearch
-aurweb="https://aur.archlinux.org"
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX) || exit
-
-readonly PS4 argv0 aurweb tmp
-format=short
-list=pkgname
-searchby=name
+format=short list=pkgname searchby=name
 
 urlencode() {
     jq -R -r '@uri'
@@ -40,7 +35,7 @@ dl_stdin() {
 }
 
 getjson() {
-    declare outfile="$tmp"/out.json
+    declare -r outfile=$tmp/out.json
 
     if dl_stdin > "$outfile"; then
         # https://lists.archlinux.org/pipermail/aur-dev/2016-October/004143.html
@@ -140,7 +135,11 @@ trap_exit() {
     fi
 }
 
-trap 'trap_exit' EXIT
+usage() {
+    plain "usage: $argv0 [-PFbrvmd]"
+    exit 1
+}
+
 source /usr/share/makepkg/util.sh || exit
 
 if [[ -t 2 ]]; then
@@ -148,7 +147,7 @@ if [[ -t 2 ]]; then
 fi
 
 while getopts :PFbrvmd OPT; do
-    case "$OPT" in
+    case $OPT in
         P|F) searchby=none ;;&
         F) list=fixed   ;;
         b) list=pkgbase ;;
@@ -156,15 +155,18 @@ while getopts :PFbrvmd OPT; do
         v) format=long  ;;
         m) searchby=maintainer ;;
         d) searchby=name-desc  ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
 if ((!$#)); then
-    plain "$argv0: no targets specified"
-    exit 1
+    usage
 fi
+
+tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
+trap 'trap_exit' EXIT
 
 if [[ $searchby != none ]]; then
     for q in "$@"; do

@@ -1,12 +1,9 @@
 #!/bin/bash
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly argv0=aurgrep
+readonly aurweb='https://aur.archlinux.org'
+readonly cache=${XDG_CACHE_HOME:-$HOME/.cache}/$argv0
 set -o pipefail
-
-argv0=aurgrep
-aurweb="https://aur.archlinux.org"
-cache="${XDG_CACHE_HOME:-$HOME/.cache}/$argv0"
-
-readonly PS4 argv0 aurweb cache
 
 list=packages.gz
 
@@ -24,22 +21,22 @@ curl_unzip() {
 
 sync_list() {
     declare uri=$1
-    declare list_un=${uri##*/}
-    declare list_un=${list_un%.*}
+    declare plain=${uri##*/}
+    declare plain=${plain%.*}
 
-    if [[ -s $list_un ]]; then
+    if [[ -s $plain ]]; then
         declare epoch_l epoch_r
 
         # Use HTTP date to compare the generation date (first line).
         # https://bugs.archlinux.org/task/49092
-        read -r epoch_l < <(date -d "$(awk -F', ' '{print $3; exit}' "$list_un")" '+%s')
+        read -r epoch_l < <(date -d "$(awk -F', ' '{print $3; exit}' "$plain")" '+%s')
         read -r epoch_r < <(date -d "$(curl_date "$uri")" '+%s')
 
         if ((epoch_r - epoch_l > delay)); then
-            curl_unzip "$uri" "$list_un"
+            curl_unzip "$uri" "$plain"
         fi
     else
-        curl_unzip "$uri" "$list_un"
+        curl_unzip "$uri" "$plain"
     fi
 }
 

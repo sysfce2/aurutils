@@ -1,19 +1,15 @@
 #!/bin/bash
 #shellcheck disable=SC2154
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
+readonly argv0=aursync
 set -e -o pipefail -o noclobber
-
-argv0=aursync
-tmp=$(mktemp -dt "$argv0".XXXXXXXXXX)
-
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
-
-readonly PS4 argv0 tmp XDG_CACHE_HOME AURDEST
 
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
 declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0
-declare -a makepkg_args=() aurbuild_args=()
+
+makepkg_args=() aurbuild_args=()
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -50,7 +46,6 @@ usage() {
     exit 1
 }
 
-trap 'trap_exit' EXIT
 source /usr/share/makepkg/util.sh
 
 if [[ -t 2 ]]; then
@@ -93,6 +88,9 @@ while true; do
         --) shift; break ;;
     esac
 done
+
+tmp=$(mktemp -dt "$argv0".XXXXXXXX)
+trap 'trap_exit' EXIT
 
 if ((rotate)); then
     if { hash rot13 && target=$(aurgrep .+ | shuf -n 1); } 2>/dev/null; then

@@ -1,7 +1,9 @@
 #!/bin/bash
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-declare -i geq=0 cmp=0 ver=1
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly argv0=aurcheck
 set -o pipefail
+
+declare -i geq=0 cmp=0 ver=1
 
 list_repo_equal() {
     declare -r db=$1 root=$2
@@ -79,7 +81,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: aurcheck: [-acq] [-d repository]"
+    plain "usage: $argv0 [-acq] [-d repository] [-r root]"
     exit 1
 }
 
@@ -102,7 +104,7 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 cd_safe "$tmp"

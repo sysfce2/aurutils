@@ -65,7 +65,7 @@ if ((!$#)); then
     error "usage: $argv0 pkgbase [pkgbase...]"; exit 1
 fi
 
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 if [[ -t 2 ]]; then
