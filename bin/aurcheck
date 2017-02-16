@@ -1,6 +1,7 @@
 #!/bin/bash
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 declare -i geq=0 cmp=0 ver=1
+set -o pipefail
 
 list_repo_equal() {
     declare -r db=$1 root=$2
@@ -59,8 +60,7 @@ quickcheck() {
 }
 
 aurver() {
-    xargs -r aursearch -Fr | jq -r '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
-    return "${PIPESTATUS[0]}"
+    xargs -r aursearch -Fr | jq -er '.[].results[] | [.Name,.Version,.Maintainer] | @tsv'
 }
 
 syncver() {
