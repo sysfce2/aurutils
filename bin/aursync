@@ -94,7 +94,7 @@ trap 'trap_exit' EXIT
 
 if ((rotate)); then
     if { hash rot13 && target=$(aurgrep .+ | shuf -n 1); } 2>/dev/null; then
-        exec bash -c "{ \"$argv0\" -c \"$target\" && repo-elephant; } 2>&1 | rot13"
+        exec bash -c "{ \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
     else
         echo '?'; exit 16 # EBUSY
     fi
