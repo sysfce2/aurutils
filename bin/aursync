@@ -8,8 +8,7 @@ set -e -o pipefail -o noclobber
 
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
 declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0
-
-makepkg_args=() aurbuild_args=()
+declare -a makepkg_args=() aurbuild_args=()
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -20,7 +19,9 @@ viewer() {
 }
 
 basesub() {
-    awk 'NR == FNR {x[$1] = $2; next} {
+    awk 'NR == FNR {
+        x[$1] = $2; next
+    } {
         if ($1 in x && !(x[$1] in seen)) {
             print x[$1]; seen[x[$1]];
         }

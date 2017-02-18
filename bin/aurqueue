@@ -9,7 +9,7 @@ findsrc() {
 }
 
 deps() {
-    gawk -v FS='[<=>]' '/pkgbase/ {
+    awk -v FS='[<=>]' '/pkgbase/ {
         read = 1; pb = $2
         printf("%s\t%s\n", pb, pb)
     } {
@@ -23,7 +23,7 @@ deps() {
 }
 
 base() {
-    gawk -v FS='[<=>]' '
+    awk -v FS='[<=>]' '
     /pkgbase/ {
         pb = $2
     }
@@ -33,7 +33,7 @@ base() {
 }
 
 sub() {
-    gawk 'NR == FNR {
+    awk 'NR == FNR {
         x[$1] = $2; next
     } {
         if ($1 in x && !(x[$1] in seen)) {
