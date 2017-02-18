@@ -8,22 +8,11 @@ findsrc() {
     find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
 
-dcat() {
-    xargs -0 gawk 'BEGINFILE {
-        print "STOP"
-    } {
-        print
-    }'
-}
-
 deps() {
-    gawk -v FS='[<=>]' '/STOP/ {
-        read = 1
+    gawk -v FS='[<=>]' '/pkgbase/ {
+        read = 1; pb = $2
+        printf("%s\t%s\n", pb, pb)
     } {
-        if (read && $0 ~ /pkgbase/) {
-            pb = $2
-            printf("%s\t%s\n", pb, pb)
-        }
         if (read && $0 ~ /^\t(make|check)?depends/) {
             printf("%s\t%s\n", pb, $2)
         }
@@ -72,7 +61,7 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-findsrc "$@" | dcat | tee "$tmp"/info | deps > "$tmp"/deps
+findsrc "$@" | xargs -0 cat | tee "$tmp"/info | deps > "$tmp"/deps
 
 if hash datamash 2>/dev/null; then
     datamash -W check < "$tmp"/deps >/dev/null || exit
