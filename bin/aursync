@@ -176,7 +176,6 @@ if ((update)); then
 fi
 
 if ((ignore)); then
-    warning "skipping packages in IgnorePkg"
     ign() { grep -Exvf <(pacconf IgnorePkg); }
 else
     ign() { tee; }
