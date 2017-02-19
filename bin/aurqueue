@@ -19,7 +19,7 @@ deps() {
         if ($0 ~ /^$/) {
             read = 0    # split package
         }
-    }'
+    }' "$@"
 }
 
 base() {
@@ -29,7 +29,7 @@ base() {
     }
     /pkgname/ {
         printf("%s\t%s\n", $2, pb)
-    }' "$1"
+    }' "$@"
 }
 
 sub() {
@@ -39,7 +39,7 @@ sub() {
         if ($1 in x && !(x[$1] in seen)) {
             print x[$1]; seen[x[$1]];
         }
-    }' "$1" - 
+    }' "$@"
 }
 
 trap_exit() {
@@ -61,12 +61,12 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-findsrc "$@" | xargs -0 cat | tee "$tmp"/info | deps > "$tmp"/deps
+findsrc "$@" | xargs -0 cat | tee "$tmp"/info | deps - > "$tmp"/deps
 
 if hash datamash 2>/dev/null; then
     datamash -W check < "$tmp"/deps >/dev/null || exit
 fi
 
-tsort "$tmp"/deps | sub <(base "$tmp"/info) | grep -Fxf <(printf '%s\n' "$@") | tac
+tsort "$tmp"/deps | sub <(base "$tmp"/info) - | grep -Fxf <(printf '%s\n' "$@") | tac
 
 # vim: set et sw=4 sts=4 ft=sh:
