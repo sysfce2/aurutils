@@ -1,8 +1,8 @@
 #!/bin/bash
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly argv0=aurgrep
 readonly aurweb='https://aur.archlinux.org'
 readonly cache=${XDG_CACHE_HOME:-$HOME/.cache}/$argv0
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 list=packages.gz

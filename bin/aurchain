@@ -1,7 +1,7 @@
 #!/bin/bash
 # shellcheck disable=SC2016
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly argv0=aurchain
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o noclobber
 
 declare -i all=0

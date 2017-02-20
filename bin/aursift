@@ -3,9 +3,9 @@
 # Read package names from stdin separated by the IFS and produces a
 # list of packages not provided in the official repositories.
 #
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly argv0=aursift
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 declare -a siftargs=() repo=()
 declare -A pkgset
