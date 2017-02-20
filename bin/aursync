@@ -199,37 +199,36 @@ jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' "${json_set[@]}" > tsv/ur
 lib32 queue_0 | ign | sub tsv/pkgbase - > queue_1
 
 if ((chkver)); then
-    # pkgver -> pkgver (repo) -> pkgbase (repo)
-    aurcheck -d "$repo" -r "$root" -c < tsv/pkgver | sub tsv/pkgbase - > sift_1
+    aurcheck -d "$repo" -r "$root" -c < tsv/pkgver | sub tsv/pkgbase -
+fi >sift_1
 
-    # pkgbase \ pkgbase (repo)
-    if ! grep -Fxvf sift_1 queue_1 > queue; then
-        plain "there is nothing to do"; exit
-    fi
+if ((snapshot)); then
+    cd_safe "$AURDEST"/snapshot
 else
-    # XXX: Make available in AURDEST
-    cp -s queue_1 queue
+    cd_safe "$AURDEST"
+fi
+
+if ! grep -Fxvf "$tmp"/sift_1 "$tmp"/queue_1 >| queue; then
+    plain "there is nothing to do"; exit
 fi
 
 msg "Retrieving build files..."
 if ((snapshot)); then
-    cd_safe "$AURDEST"/snapshot
     awk 'NR == FNR {x[$0]; next} $1 in x {print $2}' \
-        "$tmp"/queue "$tmp"/tsv/urlpath | aurfetch -t
+        queue "$tmp"/tsv/urlpath | aurfetch -t
 else
-    cd_safe "$AURDEST"
-    aurfetch -L "$tmp"/patch < "$tmp"/queue
+    aurfetch -L "$tmp"/patch < queue
 fi
 
 # View changes and build files in one window (#77)
 if ((view)); then
     ( shopt -s nullglob
-      printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
+      printf '%s\n' "$tmp"/patch/* | cat - queue \
           | xargs -I{} find {} -maxdepth 1 | viewer
     )
 fi
 
-aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
+aurbuild_args+=(-d "$repo" -r "$root" -a queue)
 aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
 
 # vim: set et sw=4 sts=4 ft=sh:
