@@ -5,7 +5,7 @@ readonly aurweb='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-format=short list=pkgname searchby=name
+declare format=short list=pkgname searchby=name
 
 urlencode() {
     jq -R -r '@uri'

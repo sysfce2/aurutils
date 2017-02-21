@@ -6,9 +6,10 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 set -e -o pipefail -o noclobber
 
+declare -a makepkg_args=() aurbuild_args=()
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
 declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0
-declare makepkg_args=() aurbuild_args=() ignfile=
+declare ignfile= root= repo= newdir=
 
 viewer() {
     if hash 2>/dev/null vifm; then

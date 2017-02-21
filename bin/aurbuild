@@ -4,11 +4,10 @@ readonly basedir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
+declare -a gpg_args=(--verbose --detach-sign --no-armor --with-colons)
+declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
 declare -i chroot=0 sign_pkg=0
-
-gpg_args=(--verbose --detach-sign --no-armor --with-colons)
-makechrootpkg_args=(-cnu)
-makepkg_args=(-Lcrs)
+declare database= root= queue= container=
 
 conf_single() {
     printf '[options]\n'

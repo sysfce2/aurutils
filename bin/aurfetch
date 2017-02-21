@@ -4,10 +4,11 @@ readonly aurweb='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
-declare -i aurball=0 log=0
+declare -i aurball=0
+declare logdir=/dev/null
 
 clone() {
-    declare -r log=$1 logdir=$2 startdir=$PWD
+    declare -r logdir=$1 startdir=$PWD
 
     while IFS= read -r; do
         if [[ -d $REPLY/.git ]]; then
@@ -16,7 +17,7 @@ clone() {
             git fetch -v # returns 0 even if nothing was fetched
 
             if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
-                if ((log)) && [[ -d $logdir ]]; then
+                if [[ -d $logdir ]]; then
                     git --no-pager log --patch --stat '..@{upstream}' >> "$logdir/$REPLY".patch
                 fi
 
@@ -72,7 +73,7 @@ fi
 
 while getopts :L:t OPT; do
     case $OPT in
-        L) log=1; logdir=$OPTARG ;;
+        L) logdir=$OPTARG ;;
         t) aurball=1 ;;
         *) usage ;;
     esac
@@ -84,7 +85,7 @@ trap 'trap_exit' EXIT
 if ((aurball)); then
     xargs printf "$aurweb/%s\n" | snapshot "$tmp"
 else
-    clone "${log:-0}" "${logdir:-/dev/null}"
+    clone "$logdir"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

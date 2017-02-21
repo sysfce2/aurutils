@@ -1,9 +1,10 @@
 #!/bin/bash
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly argv0=aurcheck
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 declare -i geq=0 cmp=0 ver=1
+declare db= root=
 
 list_repo_equal() {
     declare -r db=$1 root=$2
