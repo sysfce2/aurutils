@@ -67,7 +67,7 @@ aurver() {
 }
 
 syncver() {
-    pacsift --repo="$1" <&- | xargs -r pacman -Sddp --print-format '%n %v'
+    pacsift --exact --repo="$1" <&- | xargs -r pacman -Sddp --print-format '%n %v'
 }
 
 list_repo() {
