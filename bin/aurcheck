@@ -67,12 +67,8 @@ aurver() {
 }
 
 syncver() {
-    # 1. Use pacsift to print the repository name, in case the same package
-    #    is available in multiple repos.
-    # 2. Use --exact to avoid issues with repositories with common prefix.
-    # 3. Use xargs -r to avoid errors on empty standard input.
-    # 4. Close stdin for pacsift to avoid issues with non-interactive use.
-    pacsift --exact --repo="$1" <&- | xargs -r pacman -Sddp --print-format '%n %v'
+    # Use --exact as repos may have a common substring (#166)
+    pacsift --exact --repo="$1" --null <&- | xargs -0r pacman -Sddp --print-format '%n %v'
 }
 
 list_repo() {
