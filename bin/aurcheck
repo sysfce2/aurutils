@@ -71,6 +71,7 @@ syncver() {
     #    is available in multiple repos.
     # 2. Use --exact to avoid issues with repositories with common prefix.
     # 3. Use xargs -r to avoid errors on empty standard input.
+    # 4. Close stdin for pacsift to avoid issues with non-interactive use.
     pacsift --exact --repo="$1" <&- | xargs -r pacman -Sddp --print-format '%n %v'
 }
 
