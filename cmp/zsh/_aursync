@@ -7,7 +7,7 @@ _aursync_opts=(
     {-s,--sign}'[Sign packages and database]'
     {-t,--tar}'[Download tar snapshots]'
     {-u,--update}'[Update AUR packages]'
-    --ignore'[Skip packages in IgnorePkg]'
+    --ignore'[Skip packages in a specified file]'
     --no-ver'[Disable version checks]'
     --no-view'[Do not view build files]'
     --repo'[Use a specified repository]'
