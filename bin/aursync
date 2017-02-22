@@ -177,11 +177,7 @@ if ((update)); then
 fi
 
 if [[ $ignfile ]]; then
-    if [[ -r $ignfile ]]; then
-        ign() { grep -Exvf "$ignfile" - ; }
-    else
-        error "$argv0: $ignfile: permission denied"; exit 1
-    fi
+    ign() { grep -Exvf "$ignfile" - ; }
 else
     ign() { tee; }
 fi
