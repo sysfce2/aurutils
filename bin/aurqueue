@@ -48,18 +48,13 @@ trap_exit() {
     fi
 }
 
-source /usr/share/makepkg/util.sh || exit
-
 if ((!$#)); then
-    error "usage: $argv0 pkgbase [pkgbase...]"; exit 1
+    printf 'usage: %s\n' >&2 "$argv0 pkgbase"
+    exit 1
 fi
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
-
-if [[ -t 2 ]]; then
-    colorize
-fi
 
 findsrc "$@" | xargs -0 cat | tee "$tmp"/info | deps - > "$tmp"/deps
 
