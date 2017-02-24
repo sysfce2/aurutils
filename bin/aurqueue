@@ -49,7 +49,6 @@ trap_exit() {
 }
 
 if ((!$#)); then
-    printf 'usage: %s\n' >&2 "$argv0 pkgbase"
     exit 1
 fi
 
