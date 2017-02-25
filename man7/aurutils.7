@@ -228,7 +228,7 @@ As above, but respect packages specified in pacman's IgnorePkg directive:
 Only update packages from the \fIcustom\fR repository that are installed on the host:
 .EX
 
-  $ aursync --repo=custom <(grep -Fxf <(pacman -Qq) <(pacman -Slq custom))
+  $ aursync --repo=custom $(grep -Fxf <(pacman -Qq) <(pacman -Slq custom))
 
 .EE
 Build a package for a different architecture, here i686:
