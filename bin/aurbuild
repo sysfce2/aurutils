@@ -103,11 +103,11 @@ else
 fi
 
 if [[ -w $root && -r $root ]]; then
-    # foo.db may be a symbolic link to a database with a "valid extension",
-    # such as foo.db.tar (repo-add)
+    # File: custom.db -> custom.db.tar
     db_path=$(realpath -e -- "$root/$database".db)
 else
-    error "$argv0: $root: Permission denied"; exit 13
+    error "$argv0: $root: permission denied"
+    exit 13
 fi
 
 if ! pacconf --null CacheDir | xargs -0 realpath | grep -qx -- "$root"; then
