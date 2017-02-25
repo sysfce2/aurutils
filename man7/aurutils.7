@@ -159,7 +159,7 @@ To keep the repository updated when building with \fImakepkg\fR, set
 .EX
 
   $ sudoedit /etc/makepkg.conf
-  $ alias custom='repose -vf custom -r /var/cache/pacman/custom -p /var/cache/pacman/custom'
+  $ alias custom='repose -vf custom -r /var/cache/pacman/custom'
 
 .EE
 
@@ -207,19 +207,31 @@ Search for packages with both 'wm' and 'git' in the name:
   $ aursearch -P '(?.*=wm)(?.*=git)'
 
 .EE
-Build \fIplasma-desktop-git \fRand its dependencies in an nspawn container:
+Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:
 .EX
 
   $ aursync -c plasma-desktop-git
 
 .EE
-Build all AUR updates in a selected repository:
+Build AUR updates for packages in a selected repository:
 .EX
 
   $ aursync -u
 
 .EE
-Build a package for a different architecture:
+As above, but respect packages specified in pacman's IgnorePkg directive:
+.EX
+
+  $ aursync -u --ignore <(pacconf IgnorePkg | glob2regex.sh)
+
+.EE
+Only update packages from the \fIcustom\fR repository that are installed on the host:
+.EX
+
+  $ aursync --repo=custom <(grep -Fxf <(pacman -Qq) <(pacman -Slq custom))
+
+.EE
+Build a package for a different architecture, here i686:
 .EX
 
   $ setarch i686 aursync -c --repo=custom_i686 tclkit
@@ -231,7 +243,7 @@ Select a package matching \fIpony\fR and build the result:
   $ select a in $(aurgrep pony); do aursync "$a"; break; done
 
 .EE
-Print packages both in AUR and community and compare their versions:
+Print packages both in AUR and [community] and compare their versions:
 .EX
 
   $ aurcheck -d community -a
