@@ -110,6 +110,10 @@ else
     error "$argv0: $root: Permission denied"; exit 13
 fi
 
+if ! pacconf --null CacheDir | xargs -0 realpath | grep -qx -- "$root"; then
+    warning "$argv0: repository path $root is not a cache directory"
+fi
+
 if ((chroot)); then
     machine=$(uname -m)
     container=${container:-/var/lib/aurbuild}/$machine
