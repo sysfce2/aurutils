@@ -91,16 +91,14 @@ fi
 
 if [[ $database ]]; then
     server=$(pacconf --single --repo="$database" Server)
+    server=${server#*://}
 else
     error "$argv0: database: missing argument"
     usage
 fi
 
-if [[ $root ]]; then
-    root=$(realpath -e -- "$root")
-else
-    root=${server#*://}
-fi
+root=${root:-$server}
+root=$(realpath -e -- "$root")
 
 if [[ -w $root && -r $root ]]; then
     # File: custom.db -> custom.db.tar
