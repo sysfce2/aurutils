@@ -4,6 +4,8 @@ typeset -A opt_args
 
 _aursync_opts=(
     {-c,--chroot}'[Build packages in a chroot]'
+    {-C,--container}'[Set container path]'
+    {-p,--print}'[Print target package paths]'
     {-s,--sign}'[Sign packages and database]'
     {-t,--tar}'[Download tar snapshots]'
     {-u,--update}'[Update AUR packages]'
