@@ -25,6 +25,16 @@ and can be edited. If not, the files are shown in \fIless\fR, or
 Build packages with makechrootpkg. (\fIaurbuild -c\fR)
 .RE
 
+.B \-C, --container
+.RS
+Set the container path. (\fIaurbuild -C\fR)
+.RE
+
+.B \-p, --print
+.RS
+Print target packages and their paths instead of building them.
+.RE
+
 .B \-s, --sign
 .RS
 Sign built packages and the database with gpg. (\fIaurbuild -s\fR)
@@ -81,7 +91,7 @@ Do not remove dependencies installed by makepkg. (unset \fImakepkg
 -r\fR)
 .RE
 
-.B \-n
+.B \-n, --no-confirm
 .RS
 Do not wait for user input. (\fImakepkg --noconfirm\fR)
 .RE
@@ -130,6 +140,7 @@ directory, in order to avoid conflicts with git.
 .BR aurbuild (1),
 .BR aurchain (1),
 .BR aurcheck (1),
+.BR aurfetch (1),
 .BR aursearch (1),
 .BR aursift (1),
 .BR git (1),
