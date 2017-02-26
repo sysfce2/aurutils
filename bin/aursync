@@ -8,7 +8,7 @@ set -e -o pipefail -o noclobber
 
 declare -a makepkg_args=() aurbuild_args=()
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
-declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0
+declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0 printonly=0
 declare ignfile= root= repo= newdir=
 
 viewer() {
@@ -59,9 +59,9 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,container:,force,keep,help,ignore:,no-ver,no-view,sign,tar,temp,repo:,root:,update
+longopts=allan,bind:,chroot,container:,force,keep,help,ignore:,no-confirm,no-ver,no-view,print,sign,tar,temp,repo:,root:,update
 
-if TEMP=$(getopt -o B:cC:fhknstTu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o B:cC:fhknpstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
@@ -69,26 +69,26 @@ fi
 
 while true; do
     case "$1" in
-        -B|--bind)      bindro=1; newdir=$2;        shift 2 ;;
-        -f|--force)     force=1;                    shift   ;;
-        -k|--keep)      keep=1;                     shift   ;;
-        -n)             confirm=0;                  shift   ;;
-        -T|--temp)      chtemp=1;                   shift   ;;
-        -u|--update)    update=1;                   shift   ;;
-        -t|--tar)       snapshot=1;                 shift   ;;
-        -c|--chroot)    chroot=1;
-                        aurbuild_args+=(-c);        shift   ;;
-        -C|--container) chroot=1;
-                        aurbuild_args+=(-C "$2");   shift 2 ;;
-        -s|--sign)      aurbuild_args+=(-s);        shift   ;;
-        --allan)        rotate=1;                   shift   ;;
-        --ignore)       ignfile=$2;                 shift 2 ;;
-        --no-ver)       chkver=0;                   shift   ;;
-        --no-view)      view=0;                     shift   ;;
-        --root)         root=$2;                    shift 2 ;;
-        --repo)         repo=$2;                    shift 2 ;;
-         -h|--help)     usage ;;
-        --) shift; break ;;
+        -c|--chroot)     chroot=1;
+                         aurbuild_args+=(-c);        shift   ;;
+        -f|--force)      force=1;                    shift   ;;
+        -k|--keep)       keep=1;                     shift   ;;
+        -n|--no-confirm) confirm=0;                  shift   ;;
+        -p|--print)      printonly=1;                shift   ;;
+        -s|--sign)       aurbuild_args+=(-s);        shift   ;;
+        -t|--tar)        snapshot=1;                 shift   ;;
+        -u|--update)     update=1;                   shift   ;;
+        -B|--bind)       bindro=1; newdir=$2;        shift 2 ;;
+        -C|--container)  aurbuild_args+=(-C "$2");   shift 2 ;;
+        -T|--temp)       chtemp=1;                   shift   ;;
+        --allan)         rotate=1;                   shift   ;;
+        --ignore)        ignfile=$2;                 shift 2 ;;
+        --no-ver)        chkver=0;                   shift   ;;
+        --no-view)       view=0;                     shift   ;;
+        --root)          root=$2;                    shift 2 ;;
+        --repo)          repo=$2;                    shift 2 ;;
+        -h|--help)       usage                               ;;
+        --)              shift; break                        ;;
     esac
 done
 
@@ -166,10 +166,10 @@ msg2 "Using [$repo] repository"
 if ((update)); then 
     readarray -t new < <(aurcheck -d "$repo" -q); wait "$!"
     set -- "$@" "${new[@]}"
+fi
 
-    if ((!$#)); then
-        plain "there is nothing to do"; exit
-    fi
+if ((!$#)); then
+    plain "there is nothing to do"; exit
 fi
 
 if [[ $ignfile ]]; then
@@ -221,7 +221,11 @@ if ((view)); then
     )
 fi
 
-aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
-aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+if ((printonly)); then
+    xargs -a "$tmp"/queue -d '\n' realpath
+else
+    aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
+    aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
