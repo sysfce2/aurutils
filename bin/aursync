@@ -140,9 +140,7 @@ else
         if [[ ${#avail[@]} -gt 1 ]]; then
             PS3='Select a repository: '
             select repo in "${!avail[@]}"; do
-                if [[ -n $repo ]]; then
-                    break
-                fi
+                [[ $repo ]] && break
             done
         else
             repo=${!avail[*]}
@@ -186,7 +184,7 @@ mkdir {tsv,json,patch}
 
 msg "Resolving dependencies..."
 aurchain -a -t "$tmp" -- "$@" > queue_0
-json_set=("$tmp"/json/*)
+json_set=(json/*)
 
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
 jq -r '.[].results[] | [.Name,.Version]        | @tsv' "${json_set[@]}" > tsv/pkgver
@@ -197,9 +195,9 @@ lib32 queue_0 | ign | sub tsv/pkgbase - > queue_1
 
 if ((chkver)); then
     aurcheck -d "$repo" -r "$root" -c < tsv/pkgver | sub tsv/pkgbase -
-fi >sift_1
+fi >sift
 
-if ! grep -Fxvf sift_1 queue_1 > queue; then
+if ! grep -Fxvf sift queue_1 > queue; then
     plain "there is nothing to do"; exit
 fi
 
