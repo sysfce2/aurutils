@@ -97,8 +97,7 @@ else
     usage
 fi
 
-root=${root:-$server}
-root=$(realpath -e -- "$root")
+root=$(realpath -e -- "${root:-$server}")
 
 if [[ -w $root && -r $root ]]; then
     # File: custom.db -> custom.db.tar
@@ -109,7 +108,7 @@ else
 fi
 
 if ! pacconf --null CacheDir | xargs -0 realpath | grep -qx -- "$root"; then
-    warning "$argv0: repository path $root is not a cache directory"
+    warning "$argv0: Repository path $root is not a cache directory"
 fi
 
 if ((chroot)); then
