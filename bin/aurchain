@@ -29,14 +29,6 @@ fld() {
     awk -v F="$1" '{print $(F)}' "${@:2}" | sort -u
 }
 
-dmsort() {
-    if hash datamash 2>/dev/null; then
-        datamash -W check < "$1" >/dev/null || return
-    fi
-
-    tsort "$1"
-}
-
 chain() {
     aursearch -Fr -- "$@" > json/0 || exit
     num=$(count json/0)
@@ -79,7 +71,7 @@ chain() {
         exit 34
     fi
 
-    if ! dmsort tsv/n; then
+    if ! tsort tsv/n; then
         error "$argv0: invalid argument"
         exit 22
     fi
