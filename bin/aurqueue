@@ -52,7 +52,7 @@ if ((!$#)); then
     exit 1
 fi
 
-tmp=$(mktemp) || exit
+tmp=$(mktemp -t "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 findsrc "$@" | xargs -0 cat > "$tmp"
