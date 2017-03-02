@@ -152,7 +152,7 @@ else
     root=${avail[$repo]}
 fi
 
-root=$(realpath -e -- "$root")
+root=$(canonicalize_path "$root")
 
 if [[ ! -w $root/ || ! -r $root/ ]]; then
     error "$argv0: $root: permission denied"

@@ -97,11 +97,11 @@ else
     usage
 fi
 
-root=$(realpath -e -- "${root-$server}")
+root=$(canonicalize_path "${root-$server}")
 
 if [[ -w $root && -r $root ]]; then
     # File: custom.db -> custom.db.tar
-    db_path=$(realpath -e -- "$root/$database".db)
+    db_path=$(readlink "$root/$database".db)
 else
     error "$argv0: $root: permission denied"
     exit 13
