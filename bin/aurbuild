@@ -73,11 +73,11 @@ if (($#)); then
     fi
 fi
 
-if [[ -v $GPGKEY ]] && gpg --list-keys "$GPGKEY"; then
+if [[ -v GPGKEY ]] && gpg --list-keys "$GPGKEY"; then
     gpg_args+=(-u "$GPGKEY")
 fi
 
-if [[ -v $queue ]]; then
+if [[ -v queue ]]; then
     if [[ -r $queue && ! -d $queue ]]; then
         exec {fd}< "$queue"
     else
@@ -89,7 +89,7 @@ else
     exec {fd}<<< '//'
 fi
 
-if [[ -v $database ]]; then
+if [[ -v database ]]; then
     server=$(pacconf --single --repo="$database" Server)
     server=${server#*://}
 else

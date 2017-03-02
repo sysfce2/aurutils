@@ -112,7 +112,7 @@ fi
 # defined, as getopt parses options from left to right.
 if ((chroot)); then
     makepkg_args=(-cnu)
-    [[ -v $bind_file ]] && makepkg_args+=(-D "$bind_file")
+    [[ -v bind_file ]] && makepkg_args+=(-D "$bind_file")
     ((chtemp)) && makepkg_args+=(-T)
 else
     makepkg_args=(-Lcs)
@@ -121,8 +121,8 @@ else
     ((keep)) || makepkg_args+=(-r)
 fi
 
-if [[ -v $repo ]]; then
-    if [[ ! -v $root ]]; then
+if [[ -v repo ]]; then
+    if [[ ! -v root ]]; then
         root=$(pacconf --single --repo="$repo" Server)
         root=${root#*://}
     fi
@@ -170,7 +170,7 @@ if ((!$#)); then
     plain "there is nothing to do"; exit
 fi
 
-if [[ -v $ignfile ]]; then
+if [[ -v ignfile ]]; then
     ign() { grep -Exvf "$ignfile" - ; }
 else
     ign() { tee; }
