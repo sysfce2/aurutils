@@ -220,7 +220,7 @@ if ((view)); then
 fi
 
 if ((printonly)); then
-    xargs -a "$tmp"/queue -d '\n' realpath
+    xargs -a "$tmp"/queue printf "$(pwd -P)/%s\n"
 else
     aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
     aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
