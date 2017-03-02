@@ -8,8 +8,8 @@ set -e -o pipefail -o noclobber
 
 declare -a makepkg_args=() aurbuild_args=()
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
-declare -i confirm=1 bindro=0 force=0 keep=0 chtemp=0 printonly=0
-declare ignfile= root= repo= newdir=
+declare -i confirm=1 force=0 keep=0 chtemp=0 printonly=0
+unset ignfile root repo bind_file
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -44,7 +44,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-c] [-B newdir] [-CfnstT] [-u] [--] pkgname..."
+    plain "usage: $argv0 [-c] [-B bind_file] [-CfnstT] [-u] [--] pkgname..."
     exit 1
 }
 
@@ -78,7 +78,7 @@ while true; do
         -s|--sign)       aurbuild_args+=(-s);        shift   ;;
         -t|--tar)        snapshot=1;                 shift   ;;
         -u|--update)     update=1;                   shift   ;;
-        -B|--bind)       bindro=1; newdir=$2;        shift 2 ;;
+        -B|--bind)       bind_file=$2;               shift 2 ;;
         -C|--container)  aurbuild_args+=(-C "$2");   shift 2 ;;
         -T|--temp)       chtemp=1;                   shift   ;;
         --allan)         rotate=1;                   shift   ;;
@@ -112,17 +112,17 @@ fi
 # defined, as getopt parses options from left to right.
 if ((chroot)); then
     makepkg_args=(-cnu)
-    ((bindro))  && makepkg_args+=(-D "$newdir")
-    ((chtemp))  && makepkg_args+=(-T)
+    [[ -v $bind_file ]] && makepkg_args+=(-D "$bind_file")
+    ((chtemp)) && makepkg_args+=(-T)
 else
     makepkg_args=(-Lcs)
-    ((force))   && makepkg_args+=(-f)
+    ((force)) && makepkg_args+=(-f)
     ((confirm)) || makepkg_args+=(--noconfirm)
-    ((keep))    || makepkg_args+=(-r)
+    ((keep)) || makepkg_args+=(-r)
 fi
 
-if [[ $repo ]]; then
-    if [[ ! $root ]]; then
+if [[ -v $repo ]]; then
+    if [[ ! -v $root ]]; then
         root=$(pacconf --single --repo="$repo" Server)
         root=${root#*://}
     fi
@@ -170,7 +170,7 @@ if ((!$#)); then
     plain "there is nothing to do"; exit
 fi
 
-if [[ $ignfile ]]; then
+if [[ -v $ignfile ]]; then
     ign() { grep -Exvf "$ignfile" - ; }
 else
     ign() { tee; }

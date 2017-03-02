@@ -4,7 +4,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 declare -i geq=0 cmp=0 ver=1
-declare db= root=
+unset db root
 
 list_repo_equal() {
     declare -r db=$1 root=$2
@@ -111,8 +111,8 @@ trap 'trap_exit' EXIT
 
 cd_safe "$tmp"
 
-if [[ $db ]]; then
-    if [[ ! $root ]]; then
+if [[ -v $db ]]; then
+    if [[ ! -v $root ]]; then
         root=$(pacconf --single --repo="$db" Server) || exit
     fi
 

@@ -6,7 +6,7 @@ BINDIR ?= $(DESTDIR)$(PREFIX)/bin
 .PHONY: check install
 
 check:
-	@shellcheck -x -e SC1007 bin/*
+	@shellcheck -x bin/*
 
 install:
 	@install -Dm755 bin/*	       -t $(BINDIR)
