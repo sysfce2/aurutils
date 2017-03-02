@@ -99,7 +99,7 @@ fi
 
 root=$(canonicalize_path "${root-$server}")
 
-if [[ -w $root && -r $root ]]; then
+if [[ -w $root/ && -r $root/ ]]; then
     # File: custom.db -> custom.db.tar
     db_path=$(readlink "$root/$database".db)
 else
