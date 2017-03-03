@@ -7,7 +7,6 @@ set -e
 declare -a gpg_args=(--verbose --detach-sign --no-armor --with-colons)
 declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
 declare -i chroot=0 sign_pkg=0
-unset database root queue container
 
 conf_single() {
     printf '[options]\n'
@@ -46,6 +45,7 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
+unset queue container database root
 while getopts a:cC:d:r:s OPT; do
     case $OPT in
         a) queue=$OPTARG      ;;
