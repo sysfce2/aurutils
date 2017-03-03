@@ -14,6 +14,7 @@ build_config() {
         fi
     done
 }
+readonly -f build_config
 
 pacman --config=<(build_config) "$@"
 

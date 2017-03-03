@@ -39,6 +39,8 @@ usage() {
     exit 1
 }
 
+readonly -f conf_single db_replaces find_pkg_path trap_exit usage
+
 source /usr/share/makepkg/util.sh
 
 if [[ -t 2 ]]; then

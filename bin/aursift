@@ -19,6 +19,7 @@ provides() {
 	}
     }'
 }
+readonly -f provides
 
 source /usr/share/makepkg/util.sh || exit
 

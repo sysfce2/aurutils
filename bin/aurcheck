@@ -86,6 +86,8 @@ usage() {
     exit 1
 }
 
+readonly -f list_repo_equal quickcheck aurver syncver list_repo trap_exit usage
+
 source /usr/share/makepkg/util.sh || exit
 
 if [[ -t 2 ]]; then

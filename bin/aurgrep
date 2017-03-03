@@ -39,6 +39,14 @@ sync_list() {
     fi
 }
 
+readonly -f curl_date curl_unzip sync_list
+
+source /usr/share/makepkg/util.sh || exit
+
+if [[ -t 2 ]]; then
+    colorize
+fi
+
 while getopts :bt OPT; do
     case "$OPT" in
         b) list=pkgbase.gz ;;
@@ -47,10 +55,6 @@ while getopts :bt OPT; do
 done
 shift $((OPTIND - 1))
 OPTIND=1
-
-source /usr/share/makepkg/util.sh || exit
-
-[[ -t 2 ]] && colorize
 
 mkdir -p     "$cache"
 chmod -c 700 "$cache"
@@ -61,3 +65,5 @@ sync_list "$aurweb/$list" || exit
 
 # Remove the generation date before matching.
 pcregrep "$@" <(tail -n +2 "${list%.*}")
+
+# vim: set et sw=4 sts=4 ft=sh:

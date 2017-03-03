@@ -65,6 +65,8 @@ usage() {
     exit 1
 }
 
+readonly -f clone snapshot trap_exit usage
+
 source /usr/share/makepkg/util.sh
 
 if [[ -t 2 ]]; then
