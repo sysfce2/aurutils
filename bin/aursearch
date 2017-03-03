@@ -5,13 +5,7 @@ readonly aurweb='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-declare format=short list=pkgname searchby=name
-
-urlencode() {
-    jq -R -r '@uri'
-}
-
-split() {
+split_info() {
     awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
@@ -35,11 +29,9 @@ dl_stdin() {
 }
 
 getjson() {
-    declare -r outfile=$tmp/out.json
-
-    if dl_stdin > "$outfile"; then
+    if dl_stdin >"$1"; then
         # https://lists.archlinux.org/pipermail/aur-dev/2016-October/004143.html
-        sed 's/^/[/; s/}{/},{/g; s/$/]/' "$outfile"
+        sed 's/^/[/; s/}{/},{/g; s/$/]/' "$1"
     else
         exit $?
     fi
@@ -101,32 +93,19 @@ json_long() {
     done
 }
 
-match() {
-    declare e ptr args
+regexp() {
+    declare list=$1 aurgrep_args pattern
+    shift
 
-    for e in "${@:2}"; do
-        ptr+=(-e "$e")
+    if [[ $list == base ]]; then
+        aurgrep_args+=(-b --)
+    fi
+
+    for pattern; do
+        aurgrep_args+=(-e "$pattern")
     done
 
-    case "$1" in
-        pkgbase)
-            args+=(-b)
-            ;;&
-        pkgname|pkgbase)
-            aurgrep "${args[@]}" -- "${ptr[@]}"
-            ;;
-        fixed)
-            printf '%s\n' "${@:2}"
-            ;;
-    esac
-}
-
-parse() {
-    case "$1" in
-        short) json_short ;;
-        long)  json_long  ;;
-        none)  tee ;;
-    esac
+    aurgrep "${aurgrep_args[@]}"
 }
 
 trap_exit() {
@@ -136,9 +115,11 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-PFbrvmd]"
+    plain "usage: $argv0 [-PFbrvmn]"
     exit 1
 }
+
+readonly -f split_info dl_stdin getjson json_short json_long regexp trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -146,15 +127,21 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-while getopts :PFbrvmd OPT; do
+parse() { json_short; }
+by=name-desc
+
+while getopts :PFbrvmn OPT; do
     case $OPT in
-        P|F) searchby=none ;;&
-        F) list=fixed   ;;
-        b) list=pkgbase ;;
-        r) format=none  ;;
-        v) format=long  ;;
-        m) searchby=maintainer ;;
-        d) searchby=name-desc  ;;
+        P) match() { regexp name "$@"; }
+           by=none ;;
+        b) match() { regexp base "$@"; }
+           by=none ;;
+        F) match() { printf '%s\n' "$@"; }
+           by=none ;;
+        m) by=maintainer ;;
+        n) by=name ;;
+        r) parse() { tee; } ;;
+        v) parse() { json_long; } ;;
         *) usage ;;
     esac
 done
@@ -168,13 +155,11 @@ fi
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-if [[ $searchby != none ]]; then
-    for q in "$@"; do
-        printf '%s/rpc/?v=5&type=search&by=%s&arg=' "$aurweb" "$searchby"
-        printf '%s\n' "$q" | urlencode
-    done
+if [[ $by != none ]]; then
+    printf '%s\n' "$@" | jq -R -r '@uri' | xargs printf \
+        "$aurweb/rpc/?v=5&type=search&by=$by&arg=%s\n"
 else
-    match "$list" "$@" | urlencode | split
-fi | getjson | parse "$format"
+    match "$@" | jq -R -r '@uri' | split_info
+fi | getjson "$tmp"/out.json | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
