@@ -139,10 +139,10 @@ else
         error "$argv0: no file:// repository found"
         exit 2
     fi
-    msg2 "Using [$repo] repository"
     root=${avail[$repo]}
 fi
 
+msg2 "Using [$repo] repository"
 root=$(canonicalize_path "$root")
 
 if [[ ! -w $root/ || ! -r $root/ ]]; then
