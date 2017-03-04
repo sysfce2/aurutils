@@ -78,7 +78,6 @@ while true; do
         -f|--force)      local_args+=(-f);           shift   ;;
         -n|--no-confirm) local_args+=(--noconfirm);  shift   ;;
         -r|--rmdeps)     local_args+=(-r);           shift   ;;
-        -k|--keep)       keep=1;                     shift   ;;
         -p|--print)      printonly=1;                shift   ;;
         -t|--tar)        snapshot=1;                 shift   ;;
         -u|--update)     update=1;                   shift   ;;
