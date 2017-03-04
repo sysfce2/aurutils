@@ -6,7 +6,6 @@ readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 
-declare -a makepkg_args=() aurbuild_args=()
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0
 declare -i confirm=1 force=0 keep=0 chtemp=0 printonly=0
 
@@ -68,7 +67,7 @@ else
     usage
 fi
 
-unset bind_file ignfile root repo
+unset bind_file ignfile root repo aurbuild_args
 while true; do
     case "$1" in
         -c|--chroot)     chroot=1;
@@ -94,9 +93,6 @@ while true; do
     esac
 done
 
-tmp=$(mktemp -dt "$argv0".XXXXXXXX)
-trap 'trap_exit' EXIT
-
 if ((rotate)); then
     if { hash rot13 && target=$(aurgrep .+ | shuf -n 1); } 2>/dev/null; then
         exec bash -c "{ \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
@@ -114,13 +110,23 @@ fi
 # defined, as getopt parses options from left to right.
 if ((chroot)); then
     makepkg_args=(-cnu)
-    [[ -v bind_file ]] && makepkg_args+=(-D "$bind_file")
-    ((chtemp)) && makepkg_args+=(-T)
+    if [[ -v bind_file ]]; then
+        makepkg_args+=(-D "$bind_file")
+    fi
+    if ((chtemp)); then
+        makepkg_args+=(-T)
+    fi
 else
     makepkg_args=(-Lcs)
-    ((force)) && makepkg_args+=(-f)
-    ((confirm)) || makepkg_args+=(--noconfirm)
-    ((keep)) || makepkg_args+=(-r)
+    if ((force)); then
+        makepkg_args+=(-f)
+    fi
+    if ((!confirm)); then
+        makepkg_args+=(--noconfirm)
+    fi
+    if ((!keep)); then
+        makepkg_args+=(-r)
+    fi
 fi
 
 if [[ -v repo ]]; then
@@ -151,6 +157,7 @@ else
         error "$argv0: no file:// repository found"
         exit 2
     fi
+    msg2 "Using [$repo] repository"
     root=${avail[$repo]}
 fi
 
@@ -161,11 +168,9 @@ if [[ ! -w $root/ || ! -r $root/ ]]; then
     exit 13
 fi
 
-msg2 "Using [$repo] repository"
-
-if ((update)); then 
-    readarray -t new < <(aurcheck -d "$repo" -q); wait "$!"
-    set -- "$@" "${new[@]}"
+if ((update)); then
+    mapfile -t < <(aurcheck -d "$repo" -q); wait "$!"
+    set -- "$@" "${MAPFILE[@]}"
 fi
 
 if ((!$#)); then
@@ -177,6 +182,9 @@ if [[ -v ignfile ]]; then
 else
     ign() { tee; }
 fi
+
+tmp=$(mktemp -dt "$argv0".XXXXXXXX); readonly tmp
+trap 'trap_exit' EXIT
 
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
