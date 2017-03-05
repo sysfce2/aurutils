@@ -7,7 +7,7 @@ aursync \- download and build aur packages automatically
 .OP \-c
 .OP \-B newdir
 .OP \-u
-.OP \-fknstT
+.OP \-fnrstT
 .OP pkgname...
 .YS
 
@@ -85,10 +85,9 @@ The default set of options is \fImakepkg -Lcrs\fR.
 Overwrite built packages. (\fImakepkg -f\fR)
 .RE
 
-.B \-k, --keep
+.B \-r, --rmdeps
 .RS
-Do not remove dependencies installed by makepkg. (unset \fImakepkg
--r\fR)
+Remove dependencies installed by makepkg. (\fImakepkg -r\fR)
 .RE
 
 .B \-n, --no-confirm
