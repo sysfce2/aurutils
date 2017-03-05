@@ -82,11 +82,11 @@ while true; do
         -t|--tar)        snapshot=1;                 shift   ;;
         -u|--update)     update=1;                   shift   ;;
         --allan)         rotate=1;                   shift   ;;
-        --ignore)        ignfile=$2;                 shift 2 ;;
         --no-ver)        chkver=0;                   shift   ;;
         --no-view)       view=0;                     shift   ;;
-        --root)          root=$2;                    shift 2 ;;
+        --ignore)        ignfile=$2;                 shift 2 ;;
         --repo)          repo=$2;                    shift 2 ;;
+        --root)          root=$2;                    shift 2 ;;
         -h|--help)       usage;                      shift   ;;
         --)              shift; break                        ;;
     esac
@@ -165,11 +165,11 @@ else
     ign() { tee; }
 fi
 
-tmp=$(mktemp -dt "$argv0".XXXXXXXX); readonly tmp
-trap 'trap_exit' EXIT
-
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
+
+tmp=$(mktemp -dt "$argv0".XXXXXXXX); readonly tmp
+trap 'trap_exit' EXIT
 
 cd_safe "$tmp"
 mkdir {tsv,json,patch}
