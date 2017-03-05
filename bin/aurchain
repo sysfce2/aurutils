@@ -4,7 +4,7 @@ readonly argv0=aurchain
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o noclobber
 
-declare -i all=0
+declare all=0 copydir=/dev/null
 
 count() {
     declare -i num
@@ -93,7 +93,6 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-unset copydir
 while getopts :at: OPT; do
     case $OPT in
         a) all=1 ;;
