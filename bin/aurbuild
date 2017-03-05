@@ -23,8 +23,9 @@ db_replaces() {
 }
 
 find_pkg_path() {
-    while IFS= read -r; do
-        find "$1" -type f -regex ".+/$REPLY.pkg.+?" -print0
+    while IFS= read -r p; do
+        find "$1" -type f -regextype egrep \
+             -regex ".+/$p(\.\w+)?\.tar(\.([gx]z|bz2|lrz|lzo|Z))?" -print0
     done
 }
 
