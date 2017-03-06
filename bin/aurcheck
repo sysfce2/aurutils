@@ -36,13 +36,17 @@ quickcheck() {
 
     tee stdin | awk '{print $1}' | aurver > aur.tsv || exit
 
-    sort -k 1b,1 stdin | join - <(sort -k 1b,1 aur.tsv) | while {
+    sort -k 1b,1 stdin | join -a 1 - <(sort -k 1b,1 aur.tsv) | while {
         read -r pkg v_in v_cmp _
     } do
-        if [[ $v_in != "$v_cmp" ]]; then
-            op=$(vercmp "$v_in" "$v_cmp")
+        if [[ $v_cmp ]]; then
+            if [[ $v_in != "$v_cmp" ]]; then
+                op=$(vercmp "$v_in" "$v_cmp")
+            else
+                op=0
+            fi
         else
-            op=0
+            v_cmp=0; op=1
         fi
 
         if ((!geq && op > -1)); then
