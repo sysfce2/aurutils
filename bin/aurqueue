@@ -5,13 +5,16 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 deps() {
-    awk -v FS='[<=>]' '/pkgbase/ {
+    awk -v FS='[<=>]' '
+    /pkgbase/ {
         read = 1; pb = $2
+
         printf("%s\t%s\n", pb, pb)
     } {
         if (read && $0 ~ /^\t(make|check)?depends/) {
             printf("%s\t%s\n", pb, $2)
         }
+
         if ($0 ~ /^$/) {
             read = 0    # split package
         }
@@ -23,6 +26,7 @@ base() {
     /pkgbase/ {
         pb = $2
     }
+
     /pkgname/ {
         printf("%s\t%s\n", $2, pb)
     }' "$@"
