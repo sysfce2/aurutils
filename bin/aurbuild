@@ -24,7 +24,7 @@ db_replaces() {
 
 find_pkg_path() {
     while IFS= read -r p; do
-        find "$1" -regextype egrep -regex ".+/$p.*tar(\.([gx]z|bz2|lrz|lzo|Z))?" -print0
+        find "$1" -name "$p*.tar*" -a ! -name "*namcap.log" -a ! -name "*.part"
     done
 }
 
