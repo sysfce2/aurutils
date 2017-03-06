@@ -149,7 +149,7 @@ while read -r -u "$fd" pkg _; do
     if type -P repose >/dev/null; then
         LANG=C repose -r "$root" -fv "$database"
     else
-        LANG=C repo-add -n "$db_path" "${pkglist[@]}"
+        LANG=C repo-add "$db_path" "${pkglist[@]}"
     fi
 
     if ((sign_pkg)); then
