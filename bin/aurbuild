@@ -17,7 +17,7 @@ conf_build() {
 
 conf_options() {
     printf '[options]\n'
-    pacconf --config="${1:-/etc/pacman.conf}" --options --raw
+    pacconf --config="$1" --options --raw
 }
 
 db_replaces() {
@@ -136,7 +136,7 @@ if ((chroot)); then
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
 else
-    { conf_options
+    { conf_options /etc/pacman.conf
       printf '%s\n' "$database" | conf_build
     } > "$tmp"/custom.conf
 fi
