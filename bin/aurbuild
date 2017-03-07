@@ -39,11 +39,6 @@ find_pkg_path() {
     done
 }
 
-rotate_sign() {
-    gpg "${gpg_args[@]}" --output "$2" "$1"
-    mv --backup "$2" "$1".sig
-}
-
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -171,7 +166,8 @@ while read -r -u "$fd" pkg _; do
         for i in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$i"; done
 
         # https://github.com/vodik/repose/issues/46
-        rotate_sign "$db_path" "$tmp"/db.sig
+        gpg "${gpg_args[@]}" --output "$tmp"/db.sig "$db_path"
+        mv --backup "$tmp"/db.sig "$db_path".sig
     fi
 
     if ((chroot)); then
