@@ -9,8 +9,9 @@ declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
 declare -i chroot=0 sign_pkg=0
 
 conf_chroot() {
+    # CacheDir is replaced in copy_hostconf() from arch-nspawn
     printf '[options]\n#CacheDir =\n'
-    pacconf --config=/usr/share/devtools/pacman-extra.conf --options --raw
+    pacconf --config="$1" --options --raw
 
     pacconf --repo-list | while IFS= read -r p; do
         printf '[%s]\n' "$p"
@@ -34,9 +35,19 @@ db_replaces() {
 
 find_pkg_path() {
     while IFS= read -r p; do
-        find "$1" -name "$p*.tar*" -a ! -name "*namcap.log" -a ! -name "*.part" \
-             -a ! -name "*.sig" -a ! -name "*.asc" -print0
+        # Valid extensions copied from create_package() in makepkg
+        find "$1" \( -name "$p*tar.gz" -o -name "$p*tar.bz2" -o -name "$p*tar.xz" \
+            -o -name "$p*tar.lrz" -o -name "$p*tar.lzo" -o -name "$p*tar.Z" \
+            -o -name "$p*tar" \) -print0
     done
+}
+
+rotate_sign() {
+    # Rotate file to avoid gpg2 questions on existing files
+    declare -r pivot=$tmp/${1##*/}.sig
+
+    gpg "${gpg_args[@]}" --output "$pivot" "$1"
+    mv -bv "$pivot" "$1".sig
 }
 
 trap_exit() {
@@ -73,7 +84,7 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-tmp=$(mktemp -dt "$argv0".XXXXXXXX)
+tmp=$(mktemp -dt "$argv0".XXXXXXXX); readonly tmp
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
@@ -125,7 +136,7 @@ if ((chroot)); then
     container=${container-/var/lib/aurbuild}/$machine
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 
-    conf_chroot > "$tmp"/pacman.conf
+    conf_chroot /usr/share/devtools/pacman-extra.conf > "$tmp"/pacman.conf
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
@@ -163,11 +174,12 @@ while read -r -u "$fd" pkg _; do
 
     if ((sign_pkg)); then
         # https://bugs.archlinux.org/task/49946
-        for i in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$i"; done
+        for i in "${pkglist[@]}"; do
+            rotate_sign "$i"
+        done
 
         # https://github.com/vodik/repose/issues/46
-        gpg "${gpg_args[@]}" --output "$tmp"/db.sig "$db_path"
-        mv --backup "$tmp"/db.sig "$db_path".sig
+        rotate_sign "$db_path"
     fi
 
     if ((chroot)); then
