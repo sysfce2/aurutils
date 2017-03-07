@@ -9,8 +9,7 @@ declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
 declare -i chroot=0 sign_pkg=0
 
 conf_chroot() {
-    # CacheDir is replaced in copy_hostconf() from arch-nspawn
-    printf '[options]\n#CacheDir =\n'
+    printf '[options]\n#CacheDir =\n' # arch-nspawn: copy_hostconf()
     pacconf --config="$1" --options --raw
 
     pacconf --repo-list | while IFS= read -r p; do
@@ -34,20 +33,10 @@ db_replaces() {
 }
 
 find_pkg_path() {
-    while IFS= read -r p; do
-        # Valid extensions copied from create_package() in makepkg
-        find "$1" \( -name "$p*tar.gz" -o -name "$p*tar.bz2" -o -name "$p*tar.xz" \
-            -o -name "$p*tar.lrz" -o -name "$p*tar.lzo" -o -name "$p*tar.Z" \
-            -o -name "$p*tar" \) -print0
-    done
-}
-
-rotate_sign() {
-    # Rotate file to avoid gpg2 questions on existing files
-    declare -r pivot=$tmp/${1##*/}.sig
-
-    gpg "${gpg_args[@]}" --output "$pivot" "$1"
-    mv -bv "$pivot" "$1".sig
+    # Valid extensions copied from makepkg: create_package()
+    find "$1" \( -name "$2*tar.gz"  -o -name "$2*tar.bz2" -o -name "$2*tar.xz" \
+              -o -name "$2*tar.lrz" -o -name "$2*tar.lzo" -o -name "$2*tar.Z" \
+              -o -name "$2*tar" \) -print0
 }
 
 trap_exit() {
@@ -61,7 +50,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_custom conf_chroot db_replaces find_pkg_path rotate_sign trap_exit usage
+readonly -f conf_custom conf_chroot db_replaces find_pkg_path trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -163,7 +152,18 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$root" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     fi
 
-    mapfile -d $'\0' -t pkglist < <(makepkg --packagelist | find_pkg_path "$root")
+    unset pkglist
+
+    for p in $(makepkg --packagelist); do
+        mapfile -d $'\0' -t < <(find_pkg_path "$root" "$p")
+
+        # Check for packages with multiple extensions (#220)
+        case ${#MAPFILE[@]} in
+            0) error "$argv0: package $p not found"; exit 1 ;;
+            1) pkglist+=("${MAPFILE[0]}") ;;
+            *) error "$argv0: package $p is ambiguous"; exit 1 ;;
+        esac
+    done
 
     # https://bugs.archlinux.org/task/49342
     if type -P repose >/dev/null; then
@@ -172,14 +172,17 @@ while read -r -u "$fd" pkg _; do
         LANG=C repo-add -v "$db_path" "${pkglist[@]}"
     fi
 
+    # Use pivot to avoid "existing file" questions from gpg2
     if ((sign_pkg)); then
         # https://bugs.archlinux.org/task/49946
-        for i in "${pkglist[@]}"; do
-            rotate_sign "$i"
+        for p in "${pkglist[@]}"; do
+            gpg "${gpg_args[@]}" --output "$tmp/${p##*/}".sig "$p"
+            mv -bv "$tmp/${p##*/}".sig "$p".sig
         done
 
         # https://github.com/vodik/repose/issues/46
-        rotate_sign "$db_path"
+        gpg "${gpg_args[@]}" --output "$tmp/$database".sig "$db_path"
+        mv -bv "$tmp/$database".sig "$db_path".sig
     fi
 
     if ((chroot)); then
