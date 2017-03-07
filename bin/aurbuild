@@ -28,7 +28,8 @@ db_replaces() {
 
 find_pkg_path() {
     while IFS= read -r p; do
-        find "$1" -name "$p*.tar*" -a ! -name "*namcap.log" -a ! -name "*.part" -print0
+        find "$1" -name "$p*.tar*" -a ! -name "*namcap.log" -a ! -name "*.part" \
+             -a ! -name "*.sig" -a ! -name "*.asc" -print0
     done
 }
 
