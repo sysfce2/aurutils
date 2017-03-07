@@ -125,7 +125,7 @@ if ((chroot)); then
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 
     { conf_options /usr/share/devtools/pacman-extra.conf
-      pacconf CacheDir
+      pacconf --verbose CacheDir
       pacconf --repo-list | conf_build
     } > "$tmp"/pacman.conf
 
