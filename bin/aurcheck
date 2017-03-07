@@ -6,7 +6,7 @@ set -o pipefail
 declare -i geq=0 cmp=0 ver=1
 
 list_repo_equal() {
-    declare -r db=$1 root=$2
+    declare -r root=$1 db=$2
 
     sort -k 1b,1 | join -a 1 - <(list_repo "$root/$db".db | sort -k 1b,1) | while {
         read -r pkg v_in v_cmp _
@@ -117,10 +117,8 @@ trap 'trap_exit' EXIT
 
 if [[ -v db ]]; then
     if ((cmp)); then
-        if [[ ! -v root ]]; then
-            root=$(pacconf --single --repo="$db" Server) || exit
-        fi
-        list_repo_equal "$db" "${root#*://}"
+        root=${root-$(pacconf --single --repo="$db" Server)} || exit
+        list_repo_equal "${root#*://}" "$db"
     else
         syncver "$db" | quickcheck "$ver" "$geq"
     fi
