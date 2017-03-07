@@ -119,17 +119,16 @@ if ((chroot)); then
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 
     { conf_options /usr/share/devtools/pacman-extra.conf
+      pacconf CacheDir
       pacconf --repo-list | conf_build
     } > "$tmp"/pacman.conf
 
     if [[ -f $container/root/.arch-chroot ]]; then
-        sudo arch-nspawn \
-            -C "$tmp"/pacman.conf -M "$makepkg_conf" \
+        sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root pacman -Syu --noconfirm
     else
         sudo install -d "$container" -m 755 -v
-        sudo mkarchroot \
-            -C "$tmp"/pacman.conf -M "$makepkg_conf" \
+        sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root base-devel
     fi
 
