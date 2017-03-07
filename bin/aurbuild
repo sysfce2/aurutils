@@ -32,6 +32,11 @@ find_pkg_path() {
     done
 }
 
+rotate_sign() {
+    gpg "${gpg_args[@]}" --output "$2" "$1"
+    mv --backup "$2" "$1".sig
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -43,7 +48,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_build conf_options db_replaces find_pkg_path trap_exit usage
+readonly -f conf_build conf_options db_replaces find_pkg_path rotate_sign trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -162,10 +167,9 @@ while read -r -u "$fd" pkg _; do
     if ((sign_pkg)); then
         # https://bugs.archlinux.org/task/49946
         for i in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$i"; done
-        
+
         # https://github.com/vodik/repose/issues/46
-        gpg "${gpg_args[@]}" --output "$tmp"/db.sig "$db_path"
-        mv --backup "$tmp"/db.sig "$db_path".sig
+        rotate_sign "$db_path" "$tmp"/db.sig
     fi
 
     if ((chroot)); then
