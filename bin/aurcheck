@@ -34,9 +34,9 @@ list_repo_equal() {
 quickcheck() {
     declare -ri ver=$1 geq=$2
 
-    tee stdin | awk '{print $1}' | aurver > aur.tsv || exit
+    tee "$tmp"/stdin | awk '{print $1}' | aurver > "$tmp"/aur.tsv || exit
 
-    sort -k 1b,1 stdin | join -a 1 - <(sort -k 1b,1 aur.tsv) | while {
+    sort -k 1b,1 "$tmp"/stdin | join -a 1 - <(sort -k 1b,1 "$tmp"/aur.tsv) | while {
         read -r pkg v_in v_cmp _
     } do
         if [[ $v_cmp ]]; then
@@ -114,8 +114,6 @@ OPTIND=1
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
-
-cd_safe "$tmp"
 
 if [[ -v db ]]; then
     if ((cmp)); then
