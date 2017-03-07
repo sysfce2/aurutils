@@ -4,7 +4,7 @@ readonly basedir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
-declare -a gpg_args=(--verbose --detach-sign --no-armor --with-colons)
+declare -a gpg_args=(--verbose --detach-sign --no-armor --with-colons --batch)
 declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
 declare -i chroot=0 sign_pkg=0
 
@@ -157,7 +157,7 @@ while read -r -u "$fd" pkg _; do
     if type -P repose >/dev/null; then
         LANG=C repose -r "$root" -fv "$database"
     else
-        LANG=C repo-add "$db_path" "${pkglist[@]}"
+        LANG=C repo-add --verify "$db_path" "${pkglist[@]}"
     fi
 
     if ((sign_pkg)); then
@@ -165,7 +165,7 @@ while read -r -u "$fd" pkg _; do
         for i in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$i"; done
 
         # https://github.com/vodik/repose/issues/46
-        gpg "${gpg_args[@]}" "$db_path"
+        repo-add --sign "$db_path"
     fi
 
     if ((chroot)); then
