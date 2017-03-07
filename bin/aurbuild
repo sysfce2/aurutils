@@ -8,16 +8,23 @@ declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
 declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
 declare -i chroot=0 sign_pkg=0
 
-conf_build() {
-    while IFS= read -r; do
-        printf '[%s]\n' "$REPLY"
-        pacconf --repo="$REPLY" --raw
+conf_chroot() {
+    printf '[options]\n'
+    pacconf --config=/usr/share/devtools/pacman-extra.conf --options --raw
+    pacconf --verbose CacheDir
+
+    pacconf --repo-list | while IFS= read -r p; do
+        printf '[%s]\n' "$p"
+        pacconf --repo="$p" --raw
     done
 }
 
-conf_options() {
+conf_custom() {
     printf '[options]\n'
-    pacconf --config="$1" --options --raw
+    pacconf --options --raw
+
+    printf '[%s]\n' "$1"
+    pacconf --repo="$1" --raw
 }
 
 db_replaces() {
@@ -49,7 +56,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_build conf_options db_replaces find_pkg_path rotate_sign trap_exit usage
+readonly -f conf_custom conf_chroot db_replaces find_pkg_path rotate_sign trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -124,10 +131,7 @@ if ((chroot)); then
     container=${container-/var/lib/aurbuild}/$machine
     makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 
-    { conf_options /usr/share/devtools/pacman-extra.conf
-      pacconf --verbose CacheDir
-      pacconf --repo-list | conf_build
-    } > "$tmp"/pacman.conf
+    conf_chroot > "$tmp"/pacman.conf
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
@@ -141,9 +145,7 @@ if ((chroot)); then
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
 else
-    { conf_options /etc/pacman.conf
-      printf '%s\n' "$database" | conf_build
-    } > "$tmp"/custom.conf
+    conf_custom "$database" > "$tmp"/custom.conf
 fi
 
 while read -r -u "$fd" pkg _; do
