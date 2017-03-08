@@ -46,7 +46,11 @@ quickcheck() {
                 op=0
             fi
         else
-            v_cmp=0; op=1
+            if ((geq > 1)); then
+                v_cmp=0; op=1
+            else
+                continue
+            fi
         fi
 
         if ((!geq && op > -1)); then
@@ -101,7 +105,7 @@ fi
 unset db root
 while getopts :acd:qr: OPT; do
     case $OPT in
-        a) geq=1 ;;
+        a) ((geq++)) ;;
         c) cmp=1 ;;
         d) db=$OPTARG ;;
         q) ver=0 ;;
