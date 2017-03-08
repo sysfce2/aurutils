@@ -148,11 +148,12 @@ while read -r -u "$fd" pkg _; do
     fi
 
     # https://github.com/vodik/repose/issues/49
-    readarray -t pkglist < <(basename -a "$var_tmp"/*)
+    basename -a "$var_tmp"/* > "$tmp"/pkglist
+    cd_safe "$var_tmp"
 
     # https://bugs.archlinux.org/task/49946
     if ((sign_pkg)); then
-        for p in "$var_tmp"/*; do gpg "${gpg_args[@]}" "$p"; done
+        xargs -a "$tmp"/pkglist gpg "${gpg_args[@]}"
     fi
    
     mv -bv "$var_tmp"/* -t "$root"
@@ -162,7 +163,7 @@ while read -r -u "$fd" pkg _; do
     if type -P repose >/dev/null; then
         LANG=C repose -fv "$database"
     else
-        LANG=C repo-add -v "$db_path" "${pkglist[@]}"
+        LANG=C xargs -a "$tmp"/pkglist repo-add -v "$db_path"
     fi
 
     # https://github.com/vodik/repose/issues/46
