@@ -168,8 +168,8 @@ while read -r -u "$fd" pkg _; do
 
     # https://github.com/vodik/repose/issues/46
     if ((sign_pkg)); then
-        gpg "${gpg_args[@]}" --output "$var_tmp/$database".sig "$db_path"
-        mv -bv "$var_tmp/$database".sig -t "$root"
+        gpg "${gpg_args[@]}" --output "$var_tmp/${db_path##*/}".sig "$db_path"
+        mv -bv "$var_tmp/${db_path##*/}".sig -t "$root"
     fi
 
     if ((chroot)); then
