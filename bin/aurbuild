@@ -159,8 +159,8 @@ while read -r -u "$fd" pkg _; do
 
         # Check for packages with multiple extensions (#220)
         case ${#MAPFILE[@]} in
-            0) error "$argv0: package $p not found"; exit 1 ;;
             1) pkglist+=("${MAPFILE[0]}") ;;
+            0) error "$argv0: package $p not found"; exit 1 ;;
             *) error "$argv0: package $p is ambiguous"; exit 1 ;;
         esac
     done
