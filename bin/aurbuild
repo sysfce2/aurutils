@@ -147,25 +147,29 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$var_tmp" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     fi
 
-    pkglist=("$var_tmp"/*)
+    # https://github.com/vodik/repose/issues/49
+    readarray -t pkglist < <(basename -a "$var_tmp"/*)
+
+    # https://bugs.archlinux.org/task/49946
+    if ((sign_pkg)); then
+        for p in "$var_tmp"/*; do gpg "${gpg_args[@]}" "$p"; done
+    fi
+   
+    mv -bv "$var_tmp"/* -t "$root"
+    cd_safe "$root"
 
     # https://bugs.archlinux.org/task/49342
     if type -P repose >/dev/null; then
-        # XXX Does not add packages to db
-        LANG=C repose -r "$root" -fv "$database" "${pkglist[@]}"
+        LANG=C repose -fv "$database"
     else
-        LANG=C repo-add -v "$db_path"
+        LANG=C repo-add -v "$db_path" "${pkglist[@]}"
     fi
 
+    # https://github.com/vodik/repose/issues/46
     if ((sign_pkg)); then
-        # https://bugs.archlinux.org/task/49946
-        for p in "${pkglist[@]}"; do gpg "${gpg_args[@]}" "$p"; done
-
-        # https://github.com/vodik/repose/issues/46
         gpg "${gpg_args[@]}" --output "$var_tmp/$database".sig "$db_path"
+        mv -bv "$var_tmp/$database".sig -t "$root"
     fi
-
-    mv -bv "$var_tmp"/* -t "$root"
 
     if ((chroot)); then
         continue
