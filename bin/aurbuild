@@ -153,9 +153,9 @@ while read -r -u "$fd" pkg _; do
 
     # https://bugs.archlinux.org/task/49946
     if ((sign_pkg)); then
-        xargs -a "$tmp"/pkglist gpg "${gpg_args[@]}"
+        xargs -a "$tmp"/pkglist -n1 gpg "${gpg_args[@]}"
     fi
-   
+
     mv -bv "$var_tmp"/* -t "$root"
     cd_safe "$root"
 
