@@ -11,29 +11,34 @@ aurcheck \- check packages for AUR updates
 .SH OPTIONS
 .B \-a
 .RS
-Also show packages which are older or of the same version.
+If \fI-c\fR is \fBnot\fR specified, this option also shows packages with older
+or the same version in the AUR.
 .RE
 
 .B \-c
 .RS
-Compares the repository
+Takes packages and their versions from stdin (\fIpkgname\fR as the first
+field, \fIpkgver\fR as the second, both separated by blanks), printing
+packages with equal versions in a repository specified with \fI\-d\fR to
+stdout. If this argument or \fI\-d\fR is \fBnot\fR specified, compare
+packages in the repository with their respective versions in the AUR,
+and print updates to stdout.
 .RE
 
 .B \-d
 .RS
-The name of the pacman database. If no database is specified, packages
-and their versions are taken from stdin (\fIpkgname\fR as the first
-field, \fIpkgver\fR as the second, both separated by blanks).
+The name of a pacman repository. If \fBnot\fR specified, packages and their
+versions are taken from stdin.
 .RE
 
 .B \-q
 .RS
-Only show package names.
+For all comparisons, show only package names.
 .RE
 
 .B \-r
 .RS
-Path for the repository root. Used in conjuction with -c
+Path for the repository root. Used in conjuction with \fI\-c\fR.
 .RE
 
 .SH SEE ALSO
