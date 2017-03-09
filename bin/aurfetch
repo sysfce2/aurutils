@@ -85,7 +85,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 trap 'trap_exit' EXIT
 
 if ((aurball)); then
-    xargs printf "$aurweb/%s\n" | snapshot "$tmp"
+    xargs -d '\n' printf "$aurweb/%s\n" | snapshot "$tmp"
 else
     clone "$logdir"
 fi
