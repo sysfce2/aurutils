@@ -24,7 +24,7 @@ dl_stdin() {
     elif type -P parallel >/dev/null 2>&1; then
         parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 -r curl -fgLsS --compressed --cert-status {}
     else
-        xargs -I{} -r curl -fgLsS --compressed --cert-status {}
+        xargs -r curl -fgLsS --compressed --cert-status
     fi
 }
 
@@ -154,7 +154,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 if [[ $by != none ]]; then
-    printf '%s\n' "$@" | jq -R -r '@uri' | xargs printf \
+    printf '%s\n' "$@" | jq -R -r '@uri' | xargs -d '\n' printf \
         "$aurweb/rpc/?v=5&type=search&by=$by&arg=%s\n"
 else
     match "$@" | jq -R -r '@uri' | split_info

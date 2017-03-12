@@ -14,7 +14,7 @@ conf_section() {
 }
 
 conf_devtools() {
-    conf_section options --config=/usr/share/devtools/"$1"
+    conf_section options --config=/usr/share/devtools/"$1" --options
     printf '#CacheDir=\n'
 
     pacconf --repo-list | while IFS= read -r; do
@@ -156,7 +156,7 @@ while read -r -u "$fd" pkg _; do
     # https://bugs.archlinux.org/task/49946
     # https://lists.archlinux.org/pipermail/arch-projects/2016-May/004341.html
     if ((sign_pkg)); then
-        xargs -n1 -a "$tmp"/pkglist gpg "${gpg_args[@]}"
+        xargs -I{} -a "$tmp"/pkglist gpg "${gpg_args[@]}" {}
     fi
 
     mv -bv "$var_tmp"/* -t "$root"
