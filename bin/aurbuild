@@ -8,21 +8,23 @@ declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
 declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
 declare -i chroot=0 sign_pkg=0
 
-conf_options() {
-    printf '[options]\n'
-    pacconf --options --raw
+conf_section() {
+    printf '[%s]\n' "$1"
+    pacconf --raw "${@:2}"
 }
 
-conf_options_devtools() {
-    printf '[options]\n#CacheDir =\n'
-    pacconf --config="$1" --options --raw
-}
+conf_devtools() {
+    conf_section options --config=/usr/share/devtools/"$1"
+    printf '#CacheDir=\n'
 
-conf_repo() {
-    while IFS= read -r; do
-        printf '[%s]\n' "$REPLY"
-        pacconf --repo="$REPLY" --raw
+    pacconf --repo-list | while IFS= read -r; do
+        conf_section "$REPLY" --repo="$REPLY"
     done
+}
+
+conf_local() {
+    conf_section options --options
+    conf_section "$1" --repo="$1"
 }
 
 db_replaces() {
@@ -42,7 +44,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_options conf_options_devtools conf_repo db_replaces trap_exit usage
+readonly -f conf_section conf_devtools conf_local db_replaces trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -65,9 +67,11 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
+machine=$(uname -m)
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
 var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
+readonly machine tmp var_tmp
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
@@ -115,13 +119,10 @@ else
 fi
 
 if ((chroot)); then
-    machine=$(uname -m)
-    container=${container-/var/lib/aurbuild}/$machine
-    makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
+    readonly container=${container-/var/lib/aurbuild}/$machine
+    readonly makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 
-    { conf_options_devtools /usr/share/devtools/pacman-extra.conf
-      pacman --repo-list | conf_repo
-    } > "$tmp"/pacman.conf
+    conf_devtools pacman-extra.conf > "$tmp"/pacman.conf
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
@@ -135,9 +136,7 @@ if ((chroot)); then
     # Check if target repository is configured in chroot (#161)
     pacconf --root="$container"/root --repo="$database" >/dev/null
 else
-    { conf_options
-      printf '%s\n' "$database" | conf_repo
-    } > "$tmp"/custom.conf
+    conf_local "$database" > "$tmp"/custom.conf
 fi
 
 while read -r -u "$fd" pkg _; do
