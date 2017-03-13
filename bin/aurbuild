@@ -40,7 +40,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-cs] -d <database> [-Capr] [--] <makepkg args>"
+    plain "usage: $argv0 [-cs] -d <database> [-Car] [--] <makepkg args>"
     exit 1
 }
 
