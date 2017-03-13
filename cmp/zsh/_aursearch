@@ -3,10 +3,13 @@
 typeset -A opt_args
 
 _aursearch_opts=(
-    '-F[Search for a fixed string]'
-    '-b[Match pkgbase]'
-    '-r[Output JSON]'
+    '-F[Search by fixed string]'
+    '-P[Search by PCRE pattern]'
+    '-b[Search by pkgbase]'
+    '-n[Search by name]'
+    '-m[Search by maintainer]'
     '-v[Output more]'
+    '-r[Output JSON]'
 )
 
 _aursearch_action_none() {
