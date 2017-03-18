@@ -190,7 +190,8 @@ if ((chkver)); then
 fi >sift
 
 if ! grep -Fxvf sift queue_1 > queue; then
-    plain "there is nothing to do"; exit
+    plain "there is nothing to do"
+    exit 0
 fi
 
 msg "Retrieving build files..."
@@ -212,7 +213,7 @@ if ((view)); then
 fi
 
 if ((printonly)); then
-    xargs -a "$tmp"/queue printf "$(pwd -P)/%s\n"
+    xargs printf "$(pwd -P)/%s\n" < "$tmp"/queue
 else
     aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
     aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
