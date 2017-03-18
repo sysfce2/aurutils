@@ -166,10 +166,13 @@ cd_safe "$tmp"
 mkdir {tsv,json,patch}
 
 if ((update)); then
-    aurcheck -d "$repo" -q > aurcheck
-    mapfile -t < aurcheck
+    mapfile -t < <(aurcheck -d "$repo" -q; printf '%d' "$?" >err)
 
-    set -- "$@" "${MAPFILE[@]}"
+    if ((!$(<err))); then
+        set -- "$@" "${MAPFILE[@]}"
+    else
+        exit "$err"
+    fi
 fi
 
 if ((!$#)); then
