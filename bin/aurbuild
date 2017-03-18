@@ -150,23 +150,27 @@ while read -r -u "$fd" pkg _; do
     fi
 
     # https://github.com/vodik/repose/issues/49
-    basename -a "$var_tmp"/* > "$tmp"/pkglist
     cd_safe "$var_tmp"
+    find -type f -print0 > "$tmp"/pkglist
 
     # https://bugs.archlinux.org/task/49946
     # https://lists.archlinux.org/pipermail/arch-projects/2016-May/004341.html
-    if ((sign_pkg)); then
-        xargs -I{} -a "$tmp"/pkglist gpg "${gpg_args[@]}" {}
-    fi
+    while IFS= read -d $'\0' -r; do
+        if ((sign_pkg)); then
+            gpg "${gpg_args[@]}" "$REPLY" --output "$REPLY".sig
+            mv -bv "$REPLY"{,.sig} -t "$root"
+        else
+            mv -bv "$REPLY" -t "$root"
+        fi
+    done < "$tmp"/pkglist
 
-    mv -bv "$var_tmp"/* -t "$root"
     cd_safe "$root"
 
     # https://bugs.archlinux.org/task/49342
     if type -P repose >/dev/null; then
         LANG=C repose -fv "$database"
     else
-        LANG=C xargs -a "$tmp"/pkglist repo-add -v "$db_path"
+        LANG=C xargs -0 repo-add -v "$db_path" < "$tmp"/pkglist
     fi
 
     # https://github.com/vodik/repose/issues/46
