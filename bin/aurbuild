@@ -151,18 +151,18 @@ while read -r -u "$fd" pkg _; do
 
     # https://github.com/vodik/repose/issues/49
     cd_safe "$var_tmp"
-    find -type f -print0 > "$tmp"/pkglist
+    pkglist=(./*)
 
     # https://bugs.archlinux.org/task/49946
     # https://lists.archlinux.org/pipermail/arch-projects/2016-May/004341.html
-    while IFS= read -d $'\0' -r; do
+    for p in "${pkglist[@]}"; do
         if ((sign_pkg)); then
-            gpg "${gpg_args[@]}" "$REPLY" --output "$REPLY".sig
-            mv -bv "$REPLY"{,.sig} -t "$root"
+            gpg "${gpg_args[@]}" "$p" --output "$p".sig
+            mv -bv "$p"{,.sig} -t "$root"
         else
-            mv -bv "$REPLY" -t "$root"
+            mv -bv "$p" -t "$root"
         fi
-    done < "$tmp"/pkglist
+    done
 
     cd_safe "$root"
 
@@ -170,13 +170,15 @@ while read -r -u "$fd" pkg _; do
     if type -P repose >/dev/null; then
         LANG=C repose -fv "$database"
     else
-        LANG=C xargs -0 repo-add -v "$db_path" < "$tmp"/pkglist
+        LANG=C repo-add -v "$db_path" "${pkglist[@]}"
     fi
 
     # https://github.com/vodik/repose/issues/46
     if ((sign_pkg)); then
-        gpg "${gpg_args[@]}" --output "$var_tmp/${db_path##*/}".sig "$db_path"
-        mv -bv "$var_tmp/${db_path##*/}".sig -t "$root"
+	pivot=$var_tmp/${db_path##*/}.sig
+
+        gpg "${gpg_args[@]}" --output "$pivot" "$db_path"
+        mv -bv "$pivot" -t "$root"
     fi
 
     if ((chroot)); then
