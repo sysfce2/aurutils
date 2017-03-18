@@ -166,21 +166,16 @@ cd_safe "$tmp"
 mkdir {tsv,json,patch}
 
 if ((update)); then
-    mapfile -t < <(aurcheck -d "$repo" -q; printf '%d' "$?" >err)
+    aurcheck -d "$repo" -q
+fi >check
 
-    if ((!$(<err))); then
-        set -- "$@" "${MAPFILE[@]}"
-    else
-        exit "$err"
-    fi
-fi
-
-if ((!$#)); then
-    plain "there is nothing to do"; exit
+if ((!$#)) && [[ ! -s check ]]; then
+    plain "there is nothing to do"
+    exit 0
 fi
 
 msg "Resolving dependencies..."
-aurchain -a -t "$tmp" -- "$@" > queue_0
+aurchain - -a -t "$tmp" -- "$@" < check > queue_0
 json_set=(json/*)
 
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
