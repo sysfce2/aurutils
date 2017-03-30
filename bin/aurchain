@@ -4,7 +4,7 @@ readonly argv0=aurchain
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o noclobber
 
-declare all=0 stdin=0 copydir=/dev/null
+declare all=0 copydir=/dev/null
 
 count() {
     declare -i num
@@ -85,7 +85,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-a] pkgname..."
+    plain "usage: $argv0 [-at] pkgname..."
     exit 1
 }
 
@@ -93,21 +93,15 @@ source /usr/share/makepkg/util.sh || exit
 
 [[ -t 2 ]] && colorize
 
-while getopts :at:- OPT; do
+while getopts :at: OPT; do
     case $OPT in
         a) all=1 ;;
         t) copydir=$OPTARG ;;
-        -) stdin=1 ;;
         *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
-
-if ((stdin)); then
-    mapfile -t add
-    set -- "$@" "${add[@]}"
-fi
 
 if ((!$#)); then
     usage
