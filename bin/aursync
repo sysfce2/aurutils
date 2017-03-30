@@ -167,15 +167,17 @@ mkdir {tsv,json,patch}
 
 if ((update)); then
     aurcheck -d "$repo" -q
-fi >check
+fi > check
 
-if ((!$#)) && [[ ! -s check ]]; then
+mapfile -t < check
+
+if ! (($# + ${#MAPFILE[@]})); then
     plain "there is nothing to do"
     exit 0
 fi
 
 msg "Resolving dependencies..."
-aurchain - -a -t "$tmp" -- "$@" < check > queue_0
+aurchain -a -t "$tmp" -- "$@" "${MAPFILE[@]}" > queue_0
 json_set=(json/*)
 
 jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
@@ -187,7 +189,7 @@ lib32 queue_0 | ign | sub tsv/pkgbase - > queue_1
 
 if ((chkver)); then
     aurcheck -d "$repo" -r "$root" -c < tsv/pkgver | sub tsv/pkgbase -
-fi >sift
+fi > sift
 
 if ! grep -Fxvf sift queue_1 > queue; then
     plain "there is nothing to do"
