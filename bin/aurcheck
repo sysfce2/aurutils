@@ -6,11 +6,9 @@ set -o pipefail
 declare -i geq=0 cmp=0 ver=1
 
 my_vercmp() {
-    declare -r v_in=$1 v_cmp=$2
-    
-    if [[ -n $v_cmp ]]; then
-        if [[ $v_in != "$v_cmp" ]]; then
-            vercmp "$v_in" "$v_cmp"
+    if [[ $2 ]]; then
+        if [[ $1 != "$2" ]]; then
+            vercmp "$1" "$2"
         else
             printf '%d' '0'
         fi
