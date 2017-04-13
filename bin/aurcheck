@@ -26,19 +26,20 @@ syncver() {
     pacsift --exact --repo="$1" --null <&- | xargs -0r pacman -Sddp --print-format '%n %v'
 }
 
-list_repo() {
+repo_list() {
     bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
                        /%VERSION%/ {getline; printf("%s\n", $1)}'
 }
 
-list_repo_equal() {
-    sort -k 1b,1 | join -a 1 - <(list_repo "$1" | sort -k 1b,1) | while {
+repo_equal_or_newer() {
+    sort -k 1b,1 | join -a 1 - <(repo_list "$1" | sort -k 1b,1) | while {
         read -r pkg v_in v_cmp _
     } do
         op=$(my_vercmp "$v_in" "$v_cmp")
  
         case $op in
-            -1) warning "$pkg $v_cmp is newer than $v_in" ;;
+            -1) warning "$pkg $v_cmp is newer than $v_in"
+                printf '%s\n' "$pkg" ;;
              0) printf '%s\n' "$pkg" ;;
              1) msg2 "$pkg $v_cmp -> $v_in" ;;
              2) msg2 "$pkg N/A -> $v_in" ;;
@@ -82,7 +83,7 @@ usage() {
     exit 1
 }
 
-readonly -f my_vercmp namever syncver list_repo list_repo_equal quickcheck trap_exit usage
+readonly -f my_vercmp namever syncver repo_list repo_equal_or_newer quickcheck trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -109,7 +110,7 @@ trap 'trap_exit' EXIT
 
 if ((cmp)); then
     root=${root-$(pacconf --single --repo="$db" Server)} || exit
-    list_repo_equal "${root#*://}/$db".db
+    repo_equal_or_newer "${root#*://}/$db".db
 else
     if [[ -v db ]]; then
         syncver "$db" | quickcheck
