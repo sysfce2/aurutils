@@ -73,9 +73,9 @@ while true; do
                          aurbuild_args+=(-c);        shift   ;;
         -C|--container)  aurbuild_args+=(-C "$2");   shift 2 ;;
         -s|--sign)       aurbuild_args+=(-s);        shift   ;;
+        -f|--force)      aurbuild_args+=(-f);        shift   ;;
         -B|--bind)       chroot_args+=(-D "$2");     shift 2 ;;
         -T|--temp)       chroot_args+=(-T);          shift   ;;
-        -f|--force)      local_args+=(-f);           shift   ;;
         -n|--no-confirm) local_args+=(--noconfirm);  shift   ;;
         -r|--rmdeps)     local_args+=(-r);           shift   ;;
         -p|--print)      printonly=1;                shift   ;;
