@@ -166,7 +166,7 @@ cd_safe "$tmp"
 mkdir {tsv,json,patch}
 
 if ((update)); then
-    aurcheck -d "$repo" -q
+    aurcheck -d "$repo" -r "$root" -q
 fi > check
 
 mapfile -t < check
@@ -180,7 +180,7 @@ msg "Resolving dependencies..."
 aurchain -a -t "$tmp" -- "$@" "${MAPFILE[@]}" > queue_0
 json_set=(json/*)
 
-if ((!${#json_set[@]})); then
+if ! ((${#json_set[@]})); then
     error "$argv0: no data available"
     exit 61
 fi
