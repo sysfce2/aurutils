@@ -163,9 +163,9 @@ while read -r -u "$fd" pkg _; do
     for p in "${pkglist[@]}"; do
         if ((sign_pkg)); then
             gpg "${gpg_args[@]}" "$p" --output "$p".sig
-            mv -bv "$p"{,.sig} -t "$root"
+            mv -b "$p"{,.sig} -t "$root"
         else
-            mv -bv "$p" -t "$root"
+            mv -b "$p" -t "$root"
         fi
     done
 
@@ -181,7 +181,7 @@ while read -r -u "$fd" pkg _; do
 	pivot=$var_tmp/${db_path##*/}.sig
 
         gpg "${gpg_args[@]}" --output "$pivot" "$db_path"
-        mv -bv "$pivot" -t "$root"
+        mv -b "$pivot" -t "$root"
     fi
 
     if ((chroot)); then
