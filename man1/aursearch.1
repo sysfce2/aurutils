@@ -4,7 +4,7 @@ aursearch \- search for AUR package
 
 .SH SYNOPSIS
 .SY aursearch
-.OP \-brvmd
+.OP \-brvmn
 .OP -F string
 .OP -P pattern
 .I string
@@ -12,7 +12,8 @@ aursearch \- search for AUR package
 
 .SH DESCRIPTION
 \fBaursearch\fR searches the AUR by multiple patterns or strings. The
-union of all results is returned.
+union of all results is returned. By default, searches are performed
+by name and description without regular expression support.
 
 .SH OPTIONS
 .B \-F
@@ -22,17 +23,19 @@ Search for a fixed string.
 
 .B \-P
 .RS
-Search for a PCRE pattern.
+Search using a Perl-compatible regular expression. Multiple patterns
+can be specified by using a double hyphen (end-of-options), for
+example \fIaursearch -P -- -e pattern1 -e pattern2\fR.
 .RE
 
 .B \-b
 .RS
-Match pkgbase instead of pkgname (PCRE/fixed search only).
+Match pkgbase instead of pkgname. (PCRE / fixed string)
 .RE
 
 .B \-r
 .RS
-Output JSON from AUR RPC.
+Output JSON from the AUR RPC.
 .RE
 
 .B \-v
@@ -40,14 +43,14 @@ Output JSON from AUR RPC.
 Display more package information.
 .RE
 
-.B \-d
-.RS
-Search by package name and description.
-.RE
-
 .B \-m
 .RS
 Search by maintainer.
+.RE
+
+.B \-n
+.RS
+Search by package name.
 .RE
 
 .SH NOTES
