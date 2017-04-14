@@ -6,7 +6,7 @@ set -e
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
 declare -a makechrootpkg_args=(-cnu) makepkg_args=(-Lcrs)
-declare -i chroot=0 sign_pkg=0 force=0
+declare -i chroot=0 sign_pkg=0 force=0 no_sync=0
 
 conf_section() {
     printf '[%s]\n' "$1"
@@ -40,7 +40,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 -d database [-cfs] [-a queue] [-r root] [-C container] [--] <makepkg args>"
+    plain "usage: $argv0 -d database [-cfNs] [-a queue] [-r root] [-C container] [--] <makepkg args>"
     exit 1
 }
 
@@ -53,13 +53,14 @@ if [[ -t 2 ]]; then
 fi
 
 unset queue container database root
-while getopts a:cC:d:fr:s OPT; do
+while getopts a:cC:d:fNr:s OPT; do
     case $OPT in
         a) queue=$OPTARG      ;;
         c) chroot=1           ;;
         C) container=$OPTARG  ;;
         d) database=$OPTARG   ;;
         f) force=1            ;;
+        N) no_sync=1          ;;
         r) root=$OPTARG       ;;
         s) sign_pkg=1         ;;
         *) usage              ;;
@@ -184,7 +185,7 @@ while read -r -u "$fd" pkg _; do
         mv -b "$pivot" -t "$root"
     fi
 
-    if ((chroot)); then
+    if ((chroot)) || ((no_sync)); then
         continue
     else
         replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
