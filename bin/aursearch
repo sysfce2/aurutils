@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC2016
 readonly argv0=aursearch
 readonly aurweb='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -98,7 +97,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-PFbrvmn]"
+    plain "usage: $argv0 [-brvmn] [-F string] [-P pattern] string"
     exit 1
 }
 
