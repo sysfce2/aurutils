@@ -4,6 +4,7 @@ typeset -A opt_args
 
 _aurchain_opts=(
     '-a[Print complete dependency tree]'
+    '-t[Copy JSON to directory]'
 )
 
 _aurchain_action_none() {
