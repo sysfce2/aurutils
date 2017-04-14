@@ -102,7 +102,7 @@ usage() {
     exit 1
 }
 
-readonly -f split_info dl_stdin getjson json_short json_long regexp trap_exit usage
+readonly -f split_info dl_stdin getjson json_short json_long trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
 
