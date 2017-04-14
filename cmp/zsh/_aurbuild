@@ -7,7 +7,7 @@ _aurbuild_opts=(
     '-c[Build in an nspawn container]'
     '-C[Set the container path]'
     '-d[Name of the database]'
-    '-r[Root for the repository]'
+    '-r[Path of the repository root]'
     '-s[Sign packages and database]'
     '--[makepkg options]'
 )

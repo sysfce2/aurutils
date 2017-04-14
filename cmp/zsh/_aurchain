@@ -1,0 +1,23 @@
+#compdef aurchain
+
+typeset -A opt_args
+
+_aurchain_opts=(
+    '-a[Print complete dependency tree]'
+)
+
+_aurchain_action_none() {
+    _arguments : \
+        "$_aurchain_opts[@]" \
+}
+
+# main dispatcher
+_aurchain() {
+    case $words[2] in
+        *) _aurchain_action_none ;;
+    esac
+}
+
+_aurchain "$@"
+
+# vim: set et sw=2 ts=2 ft=zsh :
