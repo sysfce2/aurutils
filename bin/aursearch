@@ -115,9 +115,9 @@ by=name-desc
 
 while getopts :PFbrvmn OPT; do
     case $OPT in
-        P) match() { aurgrep "$@"; }
+        P) match() { aurgrep    -- "$@"; }
            by=none ;;
-        b) match() { aurgrep -b "$@"; }
+        b) match() { aurgrep -b -- "$@"; }
            by=none ;;
         F) match() { printf '%s\n' "$@"; }
            by=none ;;
