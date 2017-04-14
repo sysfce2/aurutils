@@ -91,21 +91,6 @@ json_long() {
     done
 }
 
-regexp() {
-    declare list=$1 aurgrep_args pattern
-    shift
-
-    if [[ $list == base ]]; then
-        aurgrep_args+=(-b --)
-    fi
-
-    for pattern; do
-        aurgrep_args+=(-e "$pattern")
-    done
-
-    aurgrep "${aurgrep_args[@]}"
-}
-
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -130,9 +115,9 @@ by=name-desc
 
 while getopts :PFbrvmn OPT; do
     case $OPT in
-        P) match() { regexp name "$@"; }
+        P) match() { aurgrep "$@"; }
            by=none ;;
-        b) match() { regexp base "$@"; }
+        b) match() { aurgrep -b "$@"; }
            by=none ;;
         F) match() { printf '%s\n' "$@"; }
            by=none ;;
