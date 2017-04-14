@@ -51,6 +51,7 @@ trap_exit() {
 readonly -f deps base sub trap_exit
 
 if ((!$#)); then
+    plain "usage: $argv0 pkgname..."
     exit 1
 fi
 
