@@ -30,6 +30,12 @@ Build packages with makechrootpkg. (\fIaurbuild -c\fR)
 Set the container path. (\fIaurbuild -C\fR)
 .RE
 
+.B \-f, --force
+.RS
+Continue the build process if a package with the same name already
+exists. (\fIaurbuild -f\fR)
+.RE
+
 .B \-p, --print
 .RS
 Print target packages and their paths instead of building them.
@@ -83,11 +89,6 @@ The default set of options is \fImakepkg -Lcrs\fR.
 .B \-A, --ignore-arch
 .RS
 Ignore a missing or incomplete \fIarch\fR field in the build script.
-.RE
-
-.B \-f, --force
-.RS
-Overwrite built packages. (\fImakepkg -f\fR)
 .RE
 
 .B \-n, --no-confirm
