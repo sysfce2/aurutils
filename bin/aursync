@@ -58,9 +58,9 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,container:,force,help,ignore:,no-confirm,no-ver,no-view,print,rmdeps,sign,tar,temp,repo:,root:,update
+longopts=allan,bind:,chroot,container:,force,help,ignore:,ignore-arch,no-confirm,no-ver,no-view,print,rmdeps,sign,tar,temp,repo:,root:,update
 
-if TEMP=$(getopt -o B:cC:fhnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o AB:cC:fhnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
@@ -69,26 +69,27 @@ fi
 unset bind_file ignfile root repo aurbuild_args chroot_args local_args
 while true; do
     case "$1" in
-        -c|--chroot)     chroot=1;
-                         aurbuild_args+=(-c);        shift   ;;
-        -C|--container)  aurbuild_args+=(-C "$2");   shift 2 ;;
-        -s|--sign)       aurbuild_args+=(-s);        shift   ;;
-        -f|--force)      aurbuild_args+=(-f);        shift   ;;
-        -B|--bind)       chroot_args+=(-D "$2");     shift 2 ;;
-        -T|--temp)       chroot_args+=(-T);          shift   ;;
-        -n|--no-confirm) local_args+=(--noconfirm);  shift   ;;
-        -r|--rmdeps)     local_args+=(-r);           shift   ;;
-        -p|--print)      printonly=1;                shift   ;;
-        -t|--tar)        snapshot=1;                 shift   ;;
-        -u|--update)     update=1;                   shift   ;;
-        --allan)         rotate=1;                   shift   ;;
-        --no-ver)        chkver=0;                   shift   ;;
-        --no-view)       view=0;                     shift   ;;
-        --ignore)        ignfile=$2;                 shift 2 ;;
-        --repo)          repo=$2;                    shift 2 ;;
-        --root)          root=$2;                    shift 2 ;;
-        -h|--help)       usage;                      shift   ;;
-        --)              shift; break                        ;;
+        -c|--chroot)      chroot=1;
+                          aurbuild_args+=(-c);        shift   ;;
+        -C|--container)   aurbuild_args+=(-C "$2");   shift 2 ;;
+        -s|--sign)        aurbuild_args+=(-s);        shift   ;;
+        -f|--force)       aurbuild_args+=(-f);        shift   ;;
+        -B|--bind)        chroot_args+=(-D "$2");     shift 2 ;;
+        -T|--temp)        chroot_args+=(-T);          shift   ;;
+        -A|--ignore-arch) local_args+=(-A);           shift   ;;
+        -n|--no-confirm)  local_args+=(--noconfirm);  shift   ;;
+        -r|--rmdeps)      local_args+=(-r);           shift   ;;
+        -p|--print)       printonly=1;                shift   ;;
+        -t|--tar)         snapshot=1;                 shift   ;;
+        -u|--update)      update=1;                   shift   ;;
+        --allan)          rotate=1;                   shift   ;;
+        --ignore)         ignfile=$2;                 shift 2 ;;
+        --no-ver)         chkver=0;                   shift   ;;
+        --no-view)        view=0;                     shift   ;;
+        --repo)           repo=$2;                    shift 2 ;;
+        --root)           root=$2;                    shift 2 ;;
+        -h|--help)        usage;                      shift   ;;
+        --)               shift; break                        ;;
     esac
 done
 

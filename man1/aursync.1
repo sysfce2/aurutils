@@ -80,6 +80,11 @@ value of the configured repository.
 .SS makepkg
 The default set of options is \fImakepkg -Lcrs\fR.
 
+.B \-A, --ignore-arch
+.RS
+Ignore a missing or incomplete \fIarch\fR field in the build script.
+.RE
+
 .B \-f, --force
 .RS
 Overwrite built packages. (\fImakepkg -f\fR)
@@ -121,7 +126,7 @@ Parent directory for temporary files.
 .RE
 
 .SH NOTES
-When version checks are enabled (\fI--nover\fR is not specified),
+When version checks are enabled (\fI--no-ver\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
 than a version in the pacman database. Checks assume there are no
 mismatches between \fI.SRCINFO\fR and \fIPKGBUILD\fR files.
