@@ -41,7 +41,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-c] [-B bind_file] [-CfnrstT] [-u] [--] pkgname..."
+    plain "usage: $argv0 [-ABcCfnprstTu] [--] pkgname..."
     exit 1
 }
 
@@ -66,7 +66,7 @@ else
     usage
 fi
 
-unset bind_file ignfile root repo aurbuild_args chroot_args local_args
+unset ignfile root repo aurbuild_args chroot_args local_args
 while true; do
     case "$1" in
         -c|--chroot)      chroot=1;
