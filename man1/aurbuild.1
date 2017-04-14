@@ -5,7 +5,7 @@ aurbuild \- build packages to a local repository
 .SH SYNOPSIS
 .SY aurbuild
 .I \-d database
-.OP \-cfs
+.OP \-cfNs
 .OP \-a queue
 .OP \-r root
 .OP \-C container
@@ -53,6 +53,11 @@ The name of the pacman database.
 Continue the build process if a package with the same name is found
 (ignoring the extension). Existing packages will be moved with a
 \fI~\fR suffix.
+.RE
+
+.B \-N
+.RS
+Do not sync the local repository after building.
 .RE
 
 .B \-r
