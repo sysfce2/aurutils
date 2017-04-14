@@ -4,11 +4,14 @@ aursync \- download and build aur packages automatically
 
 .SH SYNOPSIS
 .SY aursync
-.OP \-c
-.OP \-B newdir
-.OP \-u
-.OP \-fnrstT
-.OP pkgname...
+.OP \-ABcCfnprstTu
+.OP \--ignore
+.OP \--no-ver
+.OP \--no-view
+.OP \--repo
+.OP \--root
+.OP \--
+.I pkgname...
 .YS
 
 .SH DESCRIPTION
@@ -106,7 +109,8 @@ The default set of options is \fImakechrootpkg -cnu\fR.
 
 .B \-B, --bind
 .RS
-Bind a directory read-only. (\fImakechrootpkg -D\fR)
+Bind mount a file or directory from the host into the container
+read-only. (\fImakechrootpkg -D\fR)
 .RE
 
 .B \-T, --temp
