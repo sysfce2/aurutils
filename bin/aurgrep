@@ -64,6 +64,6 @@ cd_safe      "$cache"
 sync_list "$aurweb/$list" || exit
 
 # Remove the generation date before matching.
-pcregrep "$@" <(tail -n +2 "${list%.*}")
+tail -n +2 "${list%.*}" | pcregrep "$@" -
 
 # vim: set et sw=4 sts=4 ft=sh:
