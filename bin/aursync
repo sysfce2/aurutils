@@ -41,7 +41,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcCfnprstTu] [--] pkgname..."
+    plain "usage: $argv0 [-ABcCfnprstTu] [long options] [--] pkgname..."
     exit 1
 }
 
