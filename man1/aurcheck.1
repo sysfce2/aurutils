@@ -1,4 +1,4 @@
-.TH AURCHECK 1 2016-12-28 AURUTILS
+.TH AURCHECK 1 2017-04-14 AURUTILS
 .SH NAME
 aurcheck \- check packages for AUR updates
 
@@ -18,12 +18,12 @@ are not available in AUR are also shown.
 
 .B \-c
 .RS
-Takes packages and their versions from stdin (\fIpkgname\fR as the first
-field, \fIpkgver\fR as the second, both separated by blanks), printing
-packages with equal versions in a repository specified with \fI\-d\fR to
-stdout. If this argument or \fI\-d\fR is \fBnot\fR specified, compare
-packages in the repository with their respective versions in the AUR,
-and print updates to stdout.
+Takes packages and their versions from stdin (\fIpkgname\fR as the
+first field, \fIpkgver\fR as the second, both separated by blanks),
+printing packages with equal or newer versions in a repository
+specified with \fI\-d\fR to stdout. If this argument or \fI\-d\fR is
+\fBnot\fR specified, compare packages in the repository with their
+respective versions in the AUR, and print updates to stdout.
 .RE
 
 .B \-d

@@ -1,11 +1,10 @@
-.TH AURCHAIN 1 2016-04-24 AURUTILS
+.TH AURCHAIN 1 2017-04-14 AURUTILS
 .SH NAME
 aurchain \- solve and order dependencies using the aur rpc
 
 .SH SYNOPSIS
 .SY aurchain
-.OP \-a
-.OP pkgname
+.OP \-at
 .OP pkgname...
 .YS
 
@@ -17,6 +16,11 @@ dependencies for those packages using the AUR RPC interface.
 .B \-a
 .RS
 Print the full dependency tree, instead of only AUR packages.
+.RE
+
+.B \-t
+.RS
+Copy retrieved JSON files to a specified directory.
 .RE
 
 .SH SEE ALSO
