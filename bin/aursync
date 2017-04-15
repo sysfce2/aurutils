@@ -214,10 +214,8 @@ fi
 
 # View changes and build files in one window (#77)
 if ((view)); then
-    ( shopt -s nullglob
-      printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
-          | xargs -I{} find {} -maxdepth 1 | viewer
-    )
+    printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
+        | xargs -I{} find {} -maxdepth 1 | viewer
 fi
 
 if ((printonly)); then
