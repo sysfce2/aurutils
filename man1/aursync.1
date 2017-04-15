@@ -4,7 +4,7 @@ aursync \- download and build aur packages automatically
 
 .SH SYNOPSIS
 .SY aursync
-.OP \-ABcCfnprstTu
+.OP \-ABcCfInprstTu
 .OP \--ignore
 .OP \--no-ver
 .OP \--no-view
@@ -39,6 +39,11 @@ Continue the build process if a package with the same name already
 exists. (\fIaurbuild -f\fR)
 .RE
 
+.B \-I, --ignore
+.RS
+Skip packages in a specified file.
+.RE
+
 .B \-p, --print
 .RS
 Print target packages and their paths instead of building them.
@@ -58,11 +63,6 @@ directories.
 .B \-u, --update
 .RS
 Update all AUR packages in a local repository that are out-of-date.
-.RE
-
-.B \--ignore
-.RS
-Skip packages in a specified file.
 .RE
 
 .B \--no-ver

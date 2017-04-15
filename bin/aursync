@@ -41,7 +41,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcCfnprstTu] [long options] [--] pkgname..."
+    plain "usage: $argv0 [-ABcCfInprstTu] [long options] [--] pkgname..."
     exit 1
 }
 
@@ -62,7 +62,7 @@ longopts=allan,bind:,chroot,container:,force,help,ignore:,ignorearch
 longopts+=,noconfirm,nover,noview,print,rmdeps,sign,tar,temp,repo:,root:,update
 longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps
 
-if TEMP=$(getopt -o AB:cC:fhnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o AB:cC:fhI:nprstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
@@ -99,6 +99,9 @@ while true; do
         -r|--rmdeps|--rm-deps)
             local_args+=(-r)
             shift ;;
+        -I|--ignore)
+            ignfile=$2
+            shift 2 ;;
         -p|--print)
             printonly=1
             shift ;;
@@ -111,9 +114,6 @@ while true; do
         --allan|--aurutils)
             rotate=1
             shift ;;
-        --ignore)
-            ignfile=$2
-            shift 2 ;;
         --nover|--no-ver)
             chkver=0
             shift ;;
