@@ -1,10 +1,10 @@
-.TH AURCHECK 1 2017-04-14 AURUTILS
+.TH AURCHECK 1 2017-04-26 AURUTILS
 .SH NAME
 aurcheck \- check packages for AUR updates
 
 .SH SYNOPSIS
 .SY aurcheck
-.OP \-acq
+.OP \-aclq
 .OP \-d repository
 .OP \-r root
 
@@ -30,6 +30,11 @@ respective versions in the AUR, and print updates to stdout.
 .RS
 The name of a pacman repository. If \fBnot\fR specified, packages and their
 versions are taken from stdin.
+.RE
+
+.B \-l
+.RS
+List packages in a pacman repository by name and version, tab-separated.
 .RE
 
 .B \-q
