@@ -166,8 +166,9 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$var_tmp" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     fi
 
-    pkglist=("$var_tmp"/*)
-
+    cd_safe "$var_tmp"
+    pkglist=(./*)
+    
     for pkg in "${pkglist[@]}"; do
         if ((sign_pkg)); then
             gpg "${gpg_args[@]}" --output "$pkg".sig "$pkg"
@@ -177,6 +178,7 @@ while read -r -u "$fd" pkg _; do
         fi
     done
 
+    cd_safe "$root"
     LANG=C repo-add "${repo_add_args[@]}" -- "$db_path" "${pkglist[@]}"
 
     if ((chroot)) || ((no_sync)); then
