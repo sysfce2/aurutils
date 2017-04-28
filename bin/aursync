@@ -100,7 +100,7 @@ while true; do
             local_args+=(-r)
             shift ;;
         -I|--ignore)
-            ignfile=$2
+            ignfile=$(readlink -f "$2")
             shift 2 ;;
         -p|--print)
             printonly=1
