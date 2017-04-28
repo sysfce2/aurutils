@@ -91,7 +91,7 @@ if type -P xdelta3 >/dev/null; then
 fi
 
 if ((sign_pkg)); then
-    repo_add_args+=(-vs)
+    repo_add_args+=(-v -s)
 fi
 
 if [[ -v GPGKEY ]] && gpg --list-keys "$GPGKEY"; then
