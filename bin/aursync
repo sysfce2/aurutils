@@ -149,7 +149,7 @@ fi
 if ((chroot)); then
     makepkg_args=(-cnu "${chroot_args[@]}")
 else
-    makepkg_args=(-Lcs "${local_args[@]}")
+    makepkg_args=(-cs "${local_args[@]}")
 fi
 
 if ! (($# + update)); then
