@@ -1,8 +1,12 @@
 #!/bin/bash
+set -e
+
 readonly argv0=aurbuild
 readonly basedir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e
+
+machine=$(uname -m)
+readonly machine
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
 declare -a makechrootpkg_args=(-cnu) makepkg_args=(-crs) repo_add_args=()
@@ -14,7 +18,7 @@ conf_section() {
 }
 
 conf_devtools() {
-    conf_section options --config=/usr/share/devtools/"$1" --options
+    conf_section options --config="$1" --options
     printf '#CacheDir=\n'
 
     pacconf --repo-list | while IFS= read -r; do
@@ -33,6 +37,10 @@ db_replaces() {
     }'
 }
 
+p_path() {
+    readlink -ev -- "$1"
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
@@ -44,7 +52,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_section conf_devtools conf_local db_replaces trap_exit usage
+readonly -f conf_section conf_devtools conf_local db_replaces trap_exit p_path usage
 
 source /usr/share/makepkg/util.sh
 
@@ -52,30 +60,65 @@ if [[ -t 2 ]]; then
     colorize
 fi
 
-unset queue container database root
-while getopts a:cC:d:fNr:s OPT; do
+unset queue container database makepkg_conf pacman_conf root
+while getopts a:cC:d:fMNPr:s OPT; do
     case $OPT in
-        a) queue=$OPTARG      ;;
-        c) chroot=1           ;;
-        C) container=$OPTARG  ;;
-        d) database=$OPTARG   ;;
-        f) force=1            ;;
-        N) no_sync=1          ;;
-        r) root=$OPTARG       ;;
-        s) sign_pkg=1         ;;
-        *) usage              ;;
+        a) queue=$(p_path "$OPTARG")        ;;
+        C) container=$(p_path "$OPTARG")    ;;
+        d) database=$(p_path "$OPTARG")     ;;
+        M) makepkg_conf=$(p_path "$OPTARG") ;;
+        P) pacman_conf=$(p_path "$OPTARG")  ;;
+        r) root=$(p_path "$OPTARG")         ;;
+        c) chroot=1   ;;
+        f) force=1    ;;
+        N) no_sync=1  ;;
+        s) sign_pkg=1 ;;
+        *) usage      ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-machine=$(uname -m)
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
-var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
+if [[ -v database ]]; then
+    server=$(pacconf --single --repo="$database" Server)
+    server=${server#*://}
+else
+    error "$argv0: database: missing argument"
+    usage
+fi
 
-readonly machine tmp var_tmp
-trap 'trap_exit' EXIT
-trap 'exit' INT
+readonly container=${container-/var/lib/aurbuild}/$machine
+readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
+readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
+readonly root=${root-$server}
+
+if [[ -v queue ]]; then
+    if [[ -r $queue ]]; then
+        if [[ ! -d $queue ]]; then
+            exec {fd}< "$queue"
+        else        
+            error "$argv0: $queue: is a directory"
+            exit 21
+        fi
+    else
+        error "$argv0: $queue: permission denied"
+        exit 13
+    fi
+else
+    exec {fd}<<< '//'
+fi
+
+if [[ -d $root ]]; then
+    if [[ -w $root && -r $root ]]; then
+        db_path=$(p_path "$root/$database".db)
+    else
+        error "$argv0: $root: permission denied"
+        exit 13
+    fi
+else
+    error "$argv0: $root: not a directory"
+    exit 20
+fi
 
 # Reset option array if arguments are specified after --
 if (($#)); then
@@ -86,7 +129,7 @@ if (($#)); then
     fi
 fi
 
-if type -P xdelta3 >/dev/null; then
+if command -v xdelta3 >/dev/null; then
     repo_add_args+=(-d)
 fi
 
@@ -98,49 +141,25 @@ if [[ -v GPGKEY ]] && gpg --list-keys "$GPGKEY"; then
     gpg_args+=(-u "$GPGKEY")
 fi
 
-if [[ -v queue ]]; then
-    if [[ -r $queue && ! -d $queue ]]; then
-        exec {fd}< "$queue"
-    else
-        error "$argv0: queue: must be a readable file"
-        exit 13
-    fi
-else
-    # http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11
-    exec {fd}<<< '//'
-fi
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
+var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
-if [[ -v database ]]; then
-    server=$(pacconf --single --repo="$database" Server)
-    server=${server#*://}
-else
-    error "$argv0: database: missing argument"
-    usage
-fi
-
-root=$(canonicalize_path "${root-$server}")
-
-if [[ -w $root/ && -r $root/ ]]; then
-    # File: custom.db -> custom.db.tar
-    db_path=$(readlink -f -- "$root/$database".db)
-else
-    error "$argv0: $root: permission denied"
-    exit 13
-fi
+readonly tmp var_tmp {makechrootpkg,makepkg,repo_add,gpg}_args db_path
+trap 'trap_exit' EXIT
+trap 'exit' INT
 
 if ((chroot)); then
-    readonly container=${container-/var/lib/aurbuild}/$machine
-    readonly makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
-
-    conf_devtools pacman-extra.conf > "$tmp"/pacman.conf
+    conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root pacman -Syu --noconfirm
-    else
-        sudo install -d "$container" -m 755 -v
+    elif [[ -d $container ]]; then
         sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-            "$container"/root base-devel
+             "$container"/root base-devel
+    else
+        error "$argv0: $container: not a directory"
+        exit 21
     fi
 
     # Check if target repository is configured in chroot (#161)
