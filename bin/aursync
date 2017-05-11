@@ -195,11 +195,16 @@ else
 fi
 
 msg2 "Using [$repo] repository"
-root=$(canonicalize_path "$root")
+root=$(readlink -ev -- "$root")
 
-if [[ ! -w $root/ || ! -r $root/ ]]; then
-    error "$argv0: $root: permission denied"
-    exit 13
+if [[ -d $root ]]; then
+    if [[ ! -w $root || ! -r $root ]]; then
+	error "$argv0: $root: permission denied"
+	exit 13
+    fi
+else
+    error "$argv0: $root: not a directory"
+    exit 20
 fi
 
 mkdir -p "$AURDEST"/snapshot
