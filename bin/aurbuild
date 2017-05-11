@@ -48,7 +48,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 -d database [-cfNs] [-a queue] [-r root] [-C container] [--] <makepkg args>"
+    plain "usage: $argv0 -d database [-acCfMNPrs] [--] <makepkg args>"
     exit 1
 }
 
