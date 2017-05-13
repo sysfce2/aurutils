@@ -155,12 +155,9 @@ if ((chroot)); then
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$container"/root pacman -Syu --noconfirm
-    elif [[ -d $container ]]; then
+    else
         sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
              "$container"/root base-devel
-    else
-        error "$argv0: $container: not a directory"
-        exit 21
     fi
 
     # Check if target repository is configured in chroot (#161)
