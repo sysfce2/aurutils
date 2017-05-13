@@ -37,10 +37,6 @@ db_replaces() {
     }'
 }
 
-p_path() {
-    readlink -ev -- "$1"
-}
-
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
@@ -52,7 +48,12 @@ usage() {
     exit 1
 }
 
-readonly -f conf_section conf_devtools conf_local db_replaces trap_exit p_path usage
+# libmakepkg/util/util.sh
+_canonicalize_path() {
+    readlink -ev -- "$1"
+}
+
+readonly -f conf_section conf_devtools conf_local db_replaces trap_exit usage _canonicalize_path
 
 source /usr/share/makepkg/util.sh
 
@@ -63,12 +64,12 @@ fi
 unset queue container database makepkg_conf pacman_conf root
 while getopts a:cC:d:fMNPr:s OPT; do
     case $OPT in
-        a) queue=$(p_path "$OPTARG")        ;;
-        C) container=$(p_path "$OPTARG")    ;;
-        d) database=$(p_path "$OPTARG")     ;;
-        M) makepkg_conf=$(p_path "$OPTARG") ;;
-        P) pacman_conf=$(p_path "$OPTARG")  ;;
-        r) root=$(p_path "$OPTARG")         ;;
+        a) queue=$(_canonicalize_path "$OPTARG")        ;;
+        C) container=$(_canonicalize_path "$OPTARG")    ;;
+        d) database=$(_canonicalize_path "$OPTARG")     ;;
+        M) makepkg_conf=$(_canonicalize_path "$OPTARG") ;;
+        P) pacman_conf=$(_canonicalize_path "$OPTARG")  ;;
+        r) root=$(_canonicalize_path "$OPTARG")         ;;
         c) chroot=1   ;;
         f) force=1    ;;
         N) no_sync=1  ;;
@@ -110,7 +111,7 @@ fi
 
 if [[ -d $root ]]; then
     if [[ -w $root && -r $root ]]; then
-        db_path=$(p_path "$root/$database".db)
+        db_path=$(_canonicalize_path "$root/$database".db)
     else
         error "$argv0: $root: permission denied"
         exit 13
