@@ -114,11 +114,11 @@ by=name-desc
 
 while getopts :PFbrvmn OPT; do
     case $OPT in
-        P) match() { aurgrep    -- "$@"; }
+        P) match() { aurgrep -- "$@"; }
            by=none ;;
         b) match() { aurgrep -b -- "$@"; }
            by=none ;;
-        F) match() { printf '%s\n' "$@"; }
+        F) match() { printf -- '%s\n' "$@"; }
            by=none ;;
         m) by=maintainer ;;
         n) by=name ;;
@@ -138,7 +138,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 if [[ $by != none ]]; then
-    printf '%s\n' "$@" | jq -R -r '@uri' | xargs -d '\n' printf \
+    printf -- '%s\n' "$@" | jq -R -r '@uri' | xargs -d '\n' printf \
         "$aurweb/rpc/?v=5&type=search&by=$by&arg=%s\n"
 else
     match "$@" | jq -R -r '@uri' | split_info
