@@ -13,7 +13,7 @@ declare -A pkgset
 # Takes a set of package names to create "package virtual" pairs,
 # querying both provides and replaces fields.
 provides() {
-    expac '%n %R %S' -Sv "$@" | awk '{
+    expac '%n %R %S' -Sv -- "$@" | awk '{
         for(i = 2; i <= NF; ++i) {
 	    printf("%s\t%s\n", $1, $i) | "sort -u"
 	}
