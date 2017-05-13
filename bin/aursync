@@ -269,7 +269,7 @@ if ((view)); then
 fi
 
 if ((printonly)); then
-    xargs printf -- 	"$(pwd -P)/%s\n" < "$tmp"/queue
+    xargs printf -- "$(pwd -P)/%s\n" < "$tmp"/queue
 else
     aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
     aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
