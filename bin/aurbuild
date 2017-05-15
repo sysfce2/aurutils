@@ -64,12 +64,12 @@ fi
 unset queue container database makepkg_conf pacman_conf root
 while getopts a:cC:d:fMNPr:s OPT; do
     case $OPT in
-        a) queue=$(_canonicalize_path "$OPTARG")        ;;
         C) container=$(_canonicalize_path "$OPTARG")    ;;
-        d) database=$(_canonicalize_path "$OPTARG")     ;;
         M) makepkg_conf=$(_canonicalize_path "$OPTARG") ;;
         P) pacman_conf=$(_canonicalize_path "$OPTARG")  ;;
+        a) queue=$(_canonicalize_path "$OPTARG")        ;;
         r) root=$(_canonicalize_path "$OPTARG")         ;;
+        d) database=$OPTARG ;;
         c) chroot=1   ;;
         f) force=1    ;;
         N) no_sync=1  ;;
