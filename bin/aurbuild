@@ -9,7 +9,7 @@ machine=$(uname -m)
 readonly machine
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
-declare -a makechrootpkg_args=(-cnu) makepkg_args=(-crs) repo_add_args=()
+declare -a makechrootpkg_args=(-cu) makepkg_args=(-crs) repo_add_args=()
 declare -i chroot=0 sign_pkg=0 force=0 no_sync=0
 
 conf_section() {
