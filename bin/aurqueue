@@ -58,7 +58,8 @@ fi
 tmp=$(mktemp -t "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-find -- "$@" -maxdepth 1 -type f -name .SRCINFO -print0 | xargs -0 cat > "$tmp"
+mapfile -t arg_path < <(readlink -e -- "$@")
+find "${arg_path[@]}" -maxdepth 1 -type f -name .SRCINFO -print0 | xargs -0 cat > "$tmp"
 
 [[ -s $tmp ]] && tsort <(deps "$tmp") | sub <(base "$tmp") - | grep -Fxf <(printf -- '%s\n' "${@##*/}") | tac
 
