@@ -58,7 +58,7 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,container:,force,help,ignore:,ignorearch,log
+longopts=allan,bind:,chroot,container:,force,help,ignore:,ignorearch,log,namcap
 longopts+=,noconfirm,nover,noview,print,rmdeps,sign,tar,temp,repo:,root:,update
 longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps
 
@@ -96,7 +96,8 @@ while true; do
         -L|--log)
             local_args+=(-L)
             shift ;;
-        -n|--noconfirm|--no-confirm)
+        -n|--noconfirm|--no-confirm|--namcap)
+            chroot_args+=(-n)
             local_args+=(--noconfirm)
             shift ;;
         -r|--rmdeps|--rm-deps)
@@ -147,7 +148,7 @@ if ((rotate)); then
 fi
 
 if ((chroot)); then
-    makepkg_args=(-cnu "${chroot_args[@]}")
+    makepkg_args=(-cu "${chroot_args[@]}")
 else
     makepkg_args=(-cs "${local_args[@]}")
 fi
