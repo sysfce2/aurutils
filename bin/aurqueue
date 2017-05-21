@@ -56,6 +56,10 @@ usage() {
 readonly -f deps base sub trap_exit usage
 source /usr/share/makepkg/util.sh || exit
 
+if [[ -t 2 ]]; then
+    colorize
+fi
+
 while getopts h OPT; do
     case $OPT in
         *|h) usage ;;
@@ -67,10 +71,6 @@ OPTIND=1
 
 if ((!$#)); then
     usage
-fi
-
-if [[ -t 2 ]]; then
-    colorize
 fi
 
 tmp=$(mktemp -t "$argv0".XXXXXXXX) || exit
