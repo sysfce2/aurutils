@@ -3,7 +3,7 @@ readonly argv0=aurcheck
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-declare -i geq=0 cmp=0 ver=1
+declare -i geq=0 mode=0 ver=1
 
 my_vercmp() {
     if [[ $2 ]]; then
@@ -26,35 +26,35 @@ syncver() {
     pacsift --exact --repo="$1" --null <&- | xargs -0r pacman -Sddp --print-format '%n %v'
 }
 
-# $1: path to database
 repo_list() {
     bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
                        /%VERSION%/ {getline; printf("%s\n", $1)}'
 }
 
-# $1: path to database
+sort_join() {
+    sort -k 1b,1 "$1" | join -a 1 - <(sort -k 1b,1 "$2")
+}
+
 repo_equal_or_newer() {
-    sort -k 1b,1 | join -a 1 - <(repo_list "$1" | sort -k 1b,1) | while {
-        read -r pkg v_in v_cmp _
-    } do
+    repo_list "$1" > "$tmp"/db
+
+    sort_join /dev/stdin "$tmp"/db | while read -r pkg v_in v_cmp _; do
         op=$(my_vercmp "$v_in" "$v_cmp")
  
         case $op in
             -1) warning "$pkg $v_cmp is newer than $v_in"
-                printf -- '%s\n' "$pkg" ;;
-             0) printf -- '%s\n' "$pkg" ;;
+                printf -- '%s\n' "$pkg"     ;;
+             0) printf -- '%s\n' "$pkg"     ;;
              1) msg2 "$pkg $v_cmp -> $v_in" ;;
-             2) msg2 "$pkg N/A -> $v_in" ;;
+             2) msg2 "$pkg N/A -> $v_in"    ;;
         esac
     done
 }
 
-quickcheck() { 
+repo_to_aur() {
     tee "$tmp"/db | awk '{print $1}' | xargs -r aursearch -Fr | namever > "$tmp"/aur
 
-    sort -k 1b,1 "$tmp"/db | join -a 1 - <(sort -k 1b,1 "$tmp"/aur) | while {
-        read -r pkg v_in v_cmp _
-    } do
+    sort_join "$tmp"/db "$tmp"/aur | while read -r pkg v_in v_cmp _; do
         op=$(my_vercmp "$v_in" "$v_cmp")
         
         if ((op == 2 && geq < 2)) || ((op > -1 && !geq)); then
@@ -85,7 +85,8 @@ usage() {
     exit 1
 }
 
-readonly -f my_vercmp namever syncver repo_list repo_equal_or_newer quickcheck trap_exit usage
+readonly -f my_vercmp namever syncver sort_join repo_list \
+          repo_equal_or_newer repo_to_aur trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -97,10 +98,10 @@ unset db root
 while getopts :acd:lqr: OPT; do
     case $OPT in
         a) ((geq++))    ;;
-        c) cmp=1        ;;
-        d) db=$OPTARG   ;;
-        l) cmp=2        ;;
+        c) mode=1       ;;
+        l) mode=2       ;;
         q) ver=0        ;;
+        d) db=$OPTARG   ;;
         r) root=$OPTARG ;;
         *) usage        ;;
     esac
@@ -111,19 +112,16 @@ OPTIND=1
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-if ((cmp)); then
-    root=${root-$(pacconf --single --repo="$db" Server)} || exit
-    if ((cmp < 2)); then
-        repo_equal_or_newer "${root#*://}/$db".db
-    else
-        repo_list "${root#*://}/$db".db
-    fi  
-else
-    if [[ -v db ]]; then
-        syncver "$db" | quickcheck
-    else
-        quickcheck
-    fi
-fi
+case $mode in
+    0) if [[ -v db ]]; then
+           syncver "$db" | repo_to_aur
+       else
+           repo_to_aur
+       fi ;;
+    1) root=${root-$(pacconf --single --repo="$db" Server)} || exit
+       repo_equal_or_newer "${root#*://}/$db".db ;;
+    2) root=${root-$(pacconf --single --repo="$db" Server)} || exit
+       repo_list "${root#*://}/$db".db ;;
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:
