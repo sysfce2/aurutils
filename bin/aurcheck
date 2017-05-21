@@ -6,14 +6,10 @@ set -o pipefail
 declare -i geq=0 mode=0 ver=1
 
 my_vercmp() {
-    if [[ $2 ]]; then
-        if [[ $1 != "$2" ]]; then
-            vercmp "$1" "$2"
-        else
-            printf '%d' '0'
-        fi
+    if [[ $1 != "$2" ]]; then
+        vercmp "$1" "$2"
     else
-        printf '%d' '2'
+        printf '%d' '0'
     fi
 }
 
@@ -39,7 +35,11 @@ repo_equal_or_newer() {
     repo_list "$1" > "$tmp"/db
 
     sort_join /dev/stdin "$tmp"/db | while read -r pkg v_in v_cmp _; do
-        op=$(my_vercmp "$v_in" "$v_cmp")
+        if [[ $v_cmp ]]; then
+            op=$(my_vercmp "$v_in" "$v_cmp")
+        else
+            op=2
+        fi
  
         case $op in
             -1) warning "$pkg $v_cmp is newer than $v_in"
@@ -55,7 +55,11 @@ repo_to_aur() {
     tee "$tmp"/db | awk '{print $1}' | xargs -r aursearch -Fr | namever > "$tmp"/aur
 
     sort_join "$tmp"/db "$tmp"/aur | while read -r pkg v_in v_cmp _; do
-        op=$(my_vercmp "$v_in" "$v_cmp")
+        if [[ $v_cmp ]]; then
+            op=$(my_vercmp "$v_in" "$v_cmp")
+        else
+            op=2
+        fi
         
         if ((op == 2 && geq < 2)) || ((op > -1 && !geq)); then
             continue
