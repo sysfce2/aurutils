@@ -5,6 +5,8 @@ set -o pipefail
 
 declare -i geq=0 mode=0 ver=1
 
+# As this function is called from inner loops in repo_*, optimize for
+# the common case (version equality)
 my_vercmp() {
     if [[ $1 != "$2" ]]; then
         vercmp "$1" "$2"
