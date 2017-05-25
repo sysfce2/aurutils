@@ -195,7 +195,7 @@ while read -r -u "$fd" pkg _; do
     else
         mv -b "${pkglist[@]}" -t "$root"
         find "$root" -type f -name '*.sig' -delete
-    done
+    fi
 
     cd_safe "$root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
