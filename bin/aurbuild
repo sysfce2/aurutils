@@ -136,6 +136,9 @@ fi
 
 if ((sign_pkg)); then
     repo_add_args+=(-v -s)
+elif [[ -f $db_path.sig ]]; then
+    error "$argv0: $database: signature found, but signing is disabled"
+    exit 1
 fi
 
 if [[ -v GPGKEY ]] && gpg --list-keys "$GPGKEY"; then
@@ -194,7 +197,6 @@ while read -r -u "$fd" pkg _; do
         done
     else
         mv -b "${pkglist[@]}" -t "$root"
-        find "$root" -type f -name '*.sig' -delete
     fi
 
     cd_safe "$root"
