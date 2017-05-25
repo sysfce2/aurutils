@@ -187,6 +187,8 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$var_tmp" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
     fi
 
+    find "$basedir/$pkg" -xtype l -delete
+
     cd_safe "$var_tmp"
     pkglist=(./*)
 
