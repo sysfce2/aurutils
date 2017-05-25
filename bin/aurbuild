@@ -186,14 +186,15 @@ while read -r -u "$fd" pkg _; do
 
     cd_safe "$var_tmp"
     pkglist=(./*)
-    
-    for pkg in "${pkglist[@]}"; do
-        if ((sign_pkg)); then
-            gpg "${gpg_args[@]}" --output "$pkg".sig "$pkg"
-            mv -b "$pkg" "$pkg".sig -t "$root"
-        else
-            mv -b "$pkg" -t "$root"
-        fi
+
+    if ((sign_pkg)); then
+        for p in "${pkglist[@]}"; do
+            gpg "${gpg_args[@]}" --output "$p".sig "$p"
+            mv -b "$p" "$p".sig -t "$root"
+        done
+    else
+        mv -b "${pkglist[@]}" -t "$root"
+        find "$root" -type f -name '*.sig' -delete
     done
 
     cd_safe "$root"
