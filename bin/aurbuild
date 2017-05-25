@@ -137,7 +137,7 @@ fi
 if ((sign_pkg)); then
     repo_add_args+=(-v -s)
 elif [[ -f $db_path.sig ]]; then
-    error "$argv0: $database: signature found, but signing is disabled"
+    error "$argv0: $(printf -- '%q' "$db_path".sig): signature found, but signing is disabled"
     exit 1
 fi
 
@@ -175,7 +175,7 @@ while read -r -u "$fd" pkg _; do
 
     if ((!force)); then
         while IFS= read -d $'\0' -r; do
-            error "A package has already been built: $(printf '%q' "$REPLY") (use -f to ignore)"
+            error "A package has already been built: $(printf -- '%q' "$REPLY") (use -f to ignore)"
             exit 17
         done < <(makepkg --packagelist | xargs -I{} find "$root" -name '{}*' -print0)
     fi
