@@ -137,7 +137,7 @@ fi
 if ((sign_pkg)); then
     repo_add_args+=(-v -s)
 elif [[ -f $db_path.sig ]]; then
-    error "$argv0: $(printf -- '%q' "$db_path".sig): signature found, but signing is disabled"
+    error "$argv0: signature found, but signing is disabled: $(printf -- '%q' "$db_path".sig)"
     exit 1
 fi
 
