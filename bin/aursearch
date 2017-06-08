@@ -18,10 +18,9 @@ split_info() {
 }
 
 dl_stdin() {
-    if type -P aria2c >/dev/null 2>&1; then
-        aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp"/aria2 -i - && cat "$tmp"/aria2/*
-    elif type -P parallel >/dev/null 2>&1; then
-        parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 -r curl -fgLsS --compressed --cert-status {}
+    if type -P parallel >/dev/null 2>&1; then
+        parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 -r --bar \
+            curl -fgLsS --compressed --cert-status {}
     else
         xargs -r curl -fgLsS --compressed --cert-status
     fi
@@ -83,18 +82,12 @@ json_long() {
     done
 }
 
-trap_exit() {
-    if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp"
-    fi
-}
-
 usage() {
     plain "usage: $argv0 [-brRvmn] [-F string] [-P pattern] string"
     exit 1
 }
 
-readonly -f split_info dl_stdin json_short json_long trap_exit usage
+readonly -f split_info dl_stdin json_short json_long usage
 
 source /usr/share/makepkg/util.sh || exit
 
