@@ -78,7 +78,7 @@ trap 'trap_exit' EXIT
 
 mapfile -t arg_path < <(readlink -e -- "$@")
 
-if [[ ${arg_path[@]} ]]; then
+if [[ ${arg_path[*]} ]]; then
     find "${arg_path[@]}" -maxdepth 1 -type f -name .SRCINFO -print0 | xargs -0 cat > "$tmp"
 fi
 
