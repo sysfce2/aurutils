@@ -237,9 +237,9 @@ if ! ((${#json_set[@]})); then
     exit 61
 fi
 
-jq -r '.[].results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
-jq -r '.[].results[] | [.Name,.Version]        | @tsv' "${json_set[@]}" > tsv/pkgver
-jq -r '.[].results[] | [.PackageBase,.URLPath] | @tsv' "${json_set[@]}" > tsv/urlpath
+jq -r '.results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
+jq -r '.results[] | [.Name,.Version]        | @tsv' "${json_set[@]}" > tsv/pkgver
+jq -r '.results[] | [.PackageBase,.URLPath] | @tsv' "${json_set[@]}" > tsv/urlpath
 
 # pkgname -> pkgbase
 lib32 queue_0 | ign | sub tsv/pkgbase - > queue_1
