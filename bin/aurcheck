@@ -16,7 +16,7 @@ my_vercmp() {
 }
 
 namever() {
-    jq -er '.[].results[] | [.Name,.Version] | @tsv'
+    jq -er '.results[] | [.Name,.Version] | @tsv'
 }
 
 syncver() {

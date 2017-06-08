@@ -9,7 +9,7 @@ declare all=0 copydir=/dev/null
 count() {
     declare -i num
 
-    if num=$(jq '[.[].resultcount] | reduce .[] as $c (0; . + $c)' "$1"); then
+    if num=$(jq -r '.resultcount' "$1" | awk '{s += $1} END {print s}'); then
         printf '%s\n' "$num"
     else
         error "$argv0: invalid argument"
@@ -18,10 +18,8 @@ count() {
 }
 
 pair() {
-    jq -r '.[].results[]
-        | .Name as $name
-        | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
-        | [$name, .] | @tsv' "$1" | sed -r 's/[<>=].*$//g'
+    jq -r '.results[] | .Name as $name | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
+         | [$name, .] | @tsv' "$1" | sed -r 's/[<>=].*$//g'
 }
 
 fld() {
@@ -91,7 +89,9 @@ usage() {
 
 source /usr/share/makepkg/util.sh || exit
 
-[[ -t 2 ]] && colorize
+if [[ -t 2 ]]; then
+    colorize
+fi
 
 while getopts :at: OPT; do
     case $OPT in

@@ -4,7 +4,7 @@ aursearch \- search for AUR package
 
 .SH SYNOPSIS
 .SY aursearch
-.OP \-brvmn
+.OP \-brRvmn
 .OP -F string
 .OP -P pattern
 .I string
@@ -36,6 +36,11 @@ Match pkgbase instead of pkgname. (PCRE / fixed string)
 .B \-r
 .RS
 Output JSON from the AUR RPC.
+.RE
+
+.B \-R
+.RS
+Output JSON in a merged format.
 .RE
 
 .B \-v

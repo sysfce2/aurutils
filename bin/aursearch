@@ -27,15 +27,8 @@ dl_stdin() {
     fi
 }
 
-getjson() {
-    dl_stdin >"$1" || exit
-
-    # https://lists.archlinux.org/pipermail/aur-dev/2016-October/004143.html
-    sed 's/^/[/; s/}{/},{/g; s/$/]/' "$1"
-}
-
 json_short() {
-    jq -e -r '[.[].results[]] | sort_by(.Name)[] | .Name,
+    jq -e -r '[.results[]] | sort_by(.Name)[] | .Name,
         .Version,
         .NumVotes,
         .Description' | while
@@ -51,7 +44,7 @@ json_short() {
 }
 
 json_long() {
-    jq -e -r '[.[].results[]] | sort_by(.Name)[] | .Name,
+    jq -e -r '[.results[]] | sort_by(.Name)[] | .Name,
         .PackageBase,
         .Version,
         .Description,
@@ -97,11 +90,11 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-brvmn] [-F string] [-P pattern] string"
+    plain "usage: $argv0 [-brRvmn] [-F string] [-P pattern] string"
     exit 1
 }
 
-readonly -f split_info dl_stdin getjson json_short json_long trap_exit usage
+readonly -f split_info dl_stdin json_short json_long trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -112,7 +105,7 @@ fi
 parse() { json_short; }
 by=name-desc
 
-while getopts :PFbrvmn OPT; do
+while getopts :PFbrRvmn OPT; do
     case $OPT in
         P) match() { aurgrep -- "$@"; }
            by=none ;;
@@ -123,6 +116,7 @@ while getopts :PFbrvmn OPT; do
         m) by=maintainer ;;
         n) by=name ;;
         r) parse() { tee; } ;;
+        R) parse() { sed 's/^/[/; s/}{/},{/g; s/$/]/' ; } ;;
         v) parse() { json_long; } ;;
         *) usage ;;
     esac
@@ -134,14 +128,11 @@ if ((!$#)); then
     usage
 fi
 
-tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
-trap 'trap_exit' EXIT
-
 if [[ $by != none ]]; then
     printf -- '%s\n' "$@" | jq -R -r '@uri' | xargs -d '\n' printf \
         "$aurweb/rpc/?v=5&type=search&by=$by&arg=%s\n"
 else
     match "$@" | jq -R -r '@uri' | split_info
-fi | getjson "$tmp"/out.json | parse
+fi | dl_stdin | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
