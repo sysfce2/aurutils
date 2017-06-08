@@ -49,7 +49,7 @@ readonly -f viewer sub lib32 trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
-if [[ -t 2 ]]; then
+if [[ -t 2 ]] && [[ ! -o xtrace ]]; then
     colorize
 fi
 

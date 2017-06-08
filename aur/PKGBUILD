@@ -1,5 +1,5 @@
 pkgname=aurutils-git
-pkgver=1.5.3.r100.g683f1ea
+pkgver=1.5.3.r101.gef86570
 pkgrel=1
 pkgdesc='helper tools for the arch user repository'
 arch=('any')

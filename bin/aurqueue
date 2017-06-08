@@ -56,7 +56,7 @@ usage() {
 readonly -f deps base sub trap_exit usage
 source /usr/share/makepkg/util.sh || exit
 
-if [[ -t 2 ]]; then
+if [[ -t 2 ]] && [[ ! -o xtrace ]]; then
     colorize
 fi
 
@@ -78,7 +78,7 @@ trap 'trap_exit' EXIT
 
 mapfile -t arg_path < <(readlink -e -- "$@")
 
-if [[ ${arg_path[*]} ]]; then
+if [[ -n ${arg_path[*]} ]]; then
     find "${arg_path[@]}" -maxdepth 1 -type f -name .SRCINFO -print0 | xargs -0 cat > "$tmp"
 fi
 

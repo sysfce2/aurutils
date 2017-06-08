@@ -96,7 +96,7 @@ readonly -f my_vercmp namever syncver sort_join repo_list \
 
 source /usr/share/makepkg/util.sh || exit
 
-if [[ -t 2 ]]; then
+if [[ -t 2 ]] && [[ ! -o xtrace ]]; then
     colorize
 fi
 

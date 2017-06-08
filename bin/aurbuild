@@ -57,7 +57,7 @@ readonly -f conf_section conf_devtools conf_local db_replaces trap_exit usage _c
 
 source /usr/share/makepkg/util.sh
 
-if [[ -t 2 ]]; then
+if [[ -t 2 ]] && [[ ! -o xtrace ]]; then
     colorize
 fi
 
