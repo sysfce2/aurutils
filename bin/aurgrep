@@ -5,7 +5,6 @@ readonly cache=${XDG_CACHE_HOME:-$HOME/.cache}/$argv0
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-# The update interval is set to 5 minutes by default.
 # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
 declare -i delay=300
 declare list=packages.gz
@@ -14,32 +13,34 @@ curl_date() {
     curl -fsSI "$1" | awk -F', ' '/^Date:/ {print $2}'
 }
 
-curl_unzip() {
-    curl -fsS "$1" -o - | gzip -d - > "$2" || return
+curl_unzip_with_date() {
+    declare -r uri=$1 out=$2
+
+    curl -fsS "$uri" -o - | gzip -d - > "$out" || return
+
+    sed -n '1p' "$out" > timestamp
+    sed -i '1d' "$out"
 }
 
 sync_list() {
-    declare -r uri=$1
-    declare plain=${uri##*/}
-    declare plain=${plain%.*}
+    declare -r uri=$1 file_r=${1##*/}
+    declare -r plain=${file_r%.*}
 
-    if [[ -s $plain ]]; then
+    if [[ -s $plain && -s timestamp ]]; then
         declare -i epoch_l epoch_r
 
-        # Use HTTP date to compare the generation date (first line).
-        # https://bugs.archlinux.org/task/49092
-        read -r epoch_l < <(date -d "$(awk -F', ' '{print $3; exit}' "$plain")" '+%s')
+        read -r epoch_l < <(date -d "$(awk -F', ' '{print $3}' timestamp)" '+%s')
         read -r epoch_r < <(date -d "$(curl_date "$uri")" '+%s')
 
         if ((epoch_l)) && ((epoch_r)) && ((epoch_r - epoch_l > delay)); then
-            curl_unzip "$uri" "$plain"
+            curl_unzip_with_date "$uri" "$plain"
         fi
     else
-        curl_unzip "$uri" "$plain"
+        curl_unzip_with_date "$uri" "$plain"
     fi
 }
 
-readonly -f curl_date curl_unzip sync_list
+readonly -f curl_date curl_unzip_with_date sync_list
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -63,7 +64,6 @@ cd_safe      "$cache"
 # Takes an URI to a compressed package list
 sync_list "$aurweb/$list" || exit
 
-# Remove the generation date before matching.
-tail -n +2 "${list%.*}" | pcregrep "$@" -
+pcregrep "$@" "${list%.*}"
 
 # vim: set et sw=4 sts=4 ft=sh:
