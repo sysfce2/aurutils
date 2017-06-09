@@ -19,7 +19,7 @@ split_info() {
 
 dl_stdin() {
     if type -P parallel >/dev/null 2>&1; then
-        parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 -r --bar \
+        parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 -r \
             curl -fgLsS --compressed --cert-status {}
     else
         xargs -r curl -fgLsS --compressed --cert-status
