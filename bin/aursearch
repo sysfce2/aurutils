@@ -122,6 +122,6 @@ if ((!$#)); then
     usage
 fi
 
-printf -- "$@" | jq -R -r '@uri' | searchby "$by" | dl_stdin | parse
+printf -- '%s\n' "$@" | jq -R -r '@uri' | searchby "$by" | dl_stdin | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
