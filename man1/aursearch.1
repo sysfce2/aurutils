@@ -4,34 +4,17 @@ aursearch \- search for AUR package
 
 .SH SYNOPSIS
 .SY aursearch
-.OP \-brRvmn
-.OP -F string
-.OP -P pattern
-.I string
+.OP \-imnrRv
+.I package
+.OP package...
 .YS
 
 .SH DESCRIPTION
-\fBaursearch\fR searches the AUR by multiple patterns or strings. The
+\fBaursearch\fR searches the AUR by multiple strings of packages. The
 union of all results is returned. By default, searches are performed
-by name and description without regular expression support.
+by name and description using the \fIsearchby\fR interface.
 
 .SH OPTIONS
-.B \-F
-.RS
-Search for a fixed string.
-.RE
-
-.B \-P
-.RS
-Search using a Perl-compatible regular expression. Multiple patterns
-can be specified by using a double hyphen (end-of-options), for
-example \fIaursearch -P -- -e pattern1 -e pattern2\fR.
-.RE
-
-.B \-b
-.RS
-Match pkgbase instead of pkgname. (PCRE / fixed string)
-.RE
 
 .B \-r
 .RS
@@ -40,12 +23,17 @@ Output JSON from the AUR RPC.
 
 .B \-R
 .RS
-Output JSON in a merged format.
+Output JSON from the AUR RPC. (merged)
 .RE
 
 .B \-v
 .RS
 Display more package information.
+.RE
+
+.B \-i
+.RS
+Use \fImultiinfo\fR instead of \fIsearchby\fR.
 .RE
 
 .B \-m
@@ -63,15 +51,9 @@ As the AUR RPC is limited to GET requests, queries are split by 150
 arguments to avoid HTTP 414 errors (FS#49089). The results are merged
 to a single JSON structure.
 
-PCRE searches are done by matching regular expressions against
-\fIpackages.gz\fR or \fIpkgbase.gz\fR, and querying the result with
-the RPC. This is done as the AUR itself has no regex support
-(FS#49099).
-
 .SH SEE ALSO
 .BR curl (1),
 .BR jq (1),
-.BR pcrepattern (3),
 .BR aurutils (7)
 
 .SH AUTHORS

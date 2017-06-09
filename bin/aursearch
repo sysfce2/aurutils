@@ -4,17 +4,23 @@ readonly aurweb='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-split_info() {
-    awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
-        if (NR == 1)
-            printf "%s&arg[]=%s", rpc, $0
-        else if (NR % 150 == 0)
-            printf "\n%s&arg[]=%s", rpc, $0
-        else if (NR > 1)
-            printf "&arg[]=%s", $0
-    } END {
-        printf "\n"
-    }'
+searchby() {
+    if [[ $1 != none ]]; then
+        awk -v rpc="$aurweb/rpc/?v=5&type=search&by=$1&arg" '{
+            printf "%s=%s\n", rpc, $0
+        }'
+    else
+        awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
+            if (NR == 1)
+                printf "%s&arg[]=%s", rpc, $0
+            else if (NR % 150 == 0)
+                printf "\n%s&arg[]=%s", rpc, $0
+            else if (NR > 1)
+                printf "&arg[]=%s", $0
+        } END {
+            printf "\n"
+        }'
+    fi
 }
 
 dl_stdin() {
@@ -83,11 +89,11 @@ json_long() {
 }
 
 usage() {
-    plain "usage: $argv0 [-brRvmn] [-F string] [-P pattern] string"
+    plain "usage: $argv0 [-imnrRv] package [package...]"
     exit 1
 }
 
-readonly -f split_info dl_stdin json_short json_long usage
+readonly -f searchby dl_stdin json_short json_long usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -98,14 +104,9 @@ fi
 parse() { json_short; }
 by=name-desc
 
-while getopts :PFbrRvmn OPT; do
+while getopts :imnrRv OPT; do
     case $OPT in
-        P) match() { aurgrep -- "$@"; }
-           by=none ;;
-        b) match() { aurgrep -b -- "$@"; }
-           by=none ;;
-        F) match() { printf -- '%s\n' "$@"; }
-           by=none ;;
+        i) by=none ;;
         m) by=maintainer ;;
         n) by=name ;;
         r) parse() { tee; } ;;
@@ -121,11 +122,6 @@ if ((!$#)); then
     usage
 fi
 
-if [[ $by != none ]]; then
-    printf -- '%s\n' "$@" | jq -R -r '@uri' | xargs -d '\n' printf \
-        "$aurweb/rpc/?v=5&type=search&by=$by&arg=%s\n"
-else
-    match "$@" | jq -R -r '@uri' | split_info
-fi | dl_stdin | parse
+printf -- "$@" | jq -R -r '@uri' | searchby "$by" | dl_stdin | parse
 
 # vim: set et sw=4 sts=4 ft=sh:

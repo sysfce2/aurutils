@@ -183,7 +183,7 @@ in the AUR:
 As above, but for orphaned packages:
 .EX
 
-  $ pacman -Slq custom | xargs -r aursearch -Fr | \\
+  $ pacman -Slq custom | xargs aursearch -Fr | \\
        jq -r '.[].results[] | select(.Maintainer == null)'
 
 .EE
@@ -197,7 +197,7 @@ Print Perl modules that are both in the AUR and official repositories:
 Search for packages with both 'wm' and 'git' in the name:
 .EX
 
-  $ aursearch -P '(?.*=wm)(?.*=git)'
+  $ aurgrep '(?.*=wm)(?.*=git)' | xargs aursearch -i
 
 .EE
 Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:

@@ -54,7 +54,7 @@ repo_equal_or_newer() {
 }
 
 repo_to_aur() {
-    tee "$tmp"/db | awk '{print $1}' | xargs -r aursearch -Fr | namever > "$tmp"/aur
+    tee "$tmp"/db | awk '{print $1}' | xargs -r aursearch -ir | namever > "$tmp"/aur
 
     sort_join "$tmp"/db "$tmp"/aur | while read -r pkg v_in v_cmp _; do
         if [[ $v_cmp ]]; then

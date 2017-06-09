@@ -29,7 +29,7 @@ fld() {
 chain() {
     declare -i num
 
-    aursearch -Fr -- "$@" > json/0 || exit
+    aursearch -ir -- "$@" > json/0 || exit
     num=$(count json/0)
 
     if [[ $num -lt 1 ]]; then
@@ -51,7 +51,7 @@ chain() {
         readarray -t target < <(fld 2 tsv/$sub | grep -Fxvf seen)
 
         if [[ ${target[*]} ]]; then
-            aursearch -Fr -- "${target[@]}" > json/$a || exit
+            aursearch -ir -- "${target[@]}" > json/$a || exit
         else
             break
         fi
