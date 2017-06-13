@@ -9,29 +9,25 @@ set -o pipefail
 declare -i delay=300
 declare    list=packages
 
-curl_aur_date() {
-    curl -fsSI "$aurweb/$1".gz | awk -F', ' '
-        tolower($1) ~ /^date:/ {print $2}'
-}
-
-curl_unzip() {
-    curl -fsS "$1" -o - | gzip -d -
-}
-
 extract_head() {
     sed -n '1p' "$1"
     sed -i '1d' "$1"
 }
 
 update_list() {
-    if curl_unzip "$aurweb/$1".gz > "$1"; then
+    if curl -fsS "$aurweb/$1".gz -o - | gzip -d - > "$1"; then
         extract_head "$1" | awk -F', ' '{print $3}'
     else
-        return
+        printf >&2 '%s\n' 'warning: failed to retrieve package list'
     fi
 }
 
-readonly -f curl_aur_date curl_unzip extract_head update_list
+curl_aur_date() {
+    curl -fsSI "$aurweb/$1".gz | awk -F', ' '
+        tolower($1) ~ /^date:/ {print $2}'
+}
+
+readonly -f extract_head update_list curl_aur_date
 
 while getopts :bt OPT; do
     case "$OPT" in
@@ -51,10 +47,10 @@ if [[ -s $list && -s timestamp ]]; then
     read -r epoch_r < <(curl_aur_date "$list" | date -d - '+%s')
 
     if ((epoch_l)) && ((epoch_r)) && ((epoch_r - epoch_l > delay)); then
-        update_list "$list" > timestamp || exit
+        update_list "$list" > timestamp
     fi
 else
-    update_list "$list" > timestamp || exit
+    update_list "$list" > timestamp
 fi
 
 pcregrep "$@" "$list"
