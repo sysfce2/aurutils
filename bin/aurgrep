@@ -14,7 +14,7 @@ extract_head() {
     sed -i '1d' "$1"
 }
 
-list_update() {
+update_list() {
     if curl -fsS "$aurweb/$1".gz -o - | gzip -d - > "$1"; then
         extract_head "$1" | awk -F', ' '{print $3}'
     else
@@ -22,11 +22,11 @@ list_update() {
     fi
 }
 
-list_date_remote() {
+list_http_date() {
     curl -fsSI "$aurweb/$1".gz | awk -F', ' 'tolower($1) ~ /^date:/ {print $2}'
 }
 
-readonly -f extract_head list_update list_date_remote
+readonly -f extract_head update_list list_http_date
 
 while getopts :bt OPT; do
     case "$OPT" in
@@ -43,13 +43,13 @@ cd "$cache" || exit
 
 if [[ -s $list && -s timestamp ]]; then
     epoch_l=$(date -f timestamp '+%s')
-    epoch_r=$(list_date_remote "$list" | date -f - '+%s')
+    epoch_r=$(list_http_date "$list" | date -f - '+%s')
 
     if ((epoch_l)) && ((epoch_r)) && ((epoch_r - epoch_l > delay)); then
-        list_update "$list" > timestamp
+        update_list "$list" > timestamp
     fi
 else
-    list_update "$list" > timestamp
+    update_list "$list" > timestamp
 fi
 
 pcregrep "$@" "$list"
