@@ -9,8 +9,9 @@ set -o pipefail
 declare -i delay=300
 declare    list=packages
 
-curl_date() {
-    curl -fsSI "$1" | awk -F', ' '/^date:/ {print $2}'
+curl_aur_date() {
+    curl -fsSI "$aurweb/$1".gz | awk -F', ' '
+        tolower($1) ~ /^date:/ {print $2}'
 }
 
 curl_unzip() {
@@ -22,7 +23,15 @@ extract_head() {
     sed -i '1d' "$1"
 }
 
-readonly -f curl_date curl_unzip extract_head
+update_list() {
+    if curl_unzip "$aurweb/$1".gz > "$1"; then
+        extract_head "$1" | awk -F', ' '{print $3}'
+    else
+        return
+    fi
+}
+
+readonly -f curl_aur_date curl_unzip extract_head update_list
 
 while getopts :bt OPT; do
     case "$OPT" in
@@ -37,19 +46,15 @@ mkdir -p "$cache"
 chmod -c 700 "$cache"
 cd "$cache" || exit
 
-readonly uri=$aurweb/$list.gz
-
 if [[ -s $list && -s timestamp ]]; then
-    read -r epoch_l < <(date -d "$(awk -F', ' '{print $3}' timestamp)" '+%s')
-    read -r epoch_r < <(date -d "$(curl_date "$uri")" '+%s')
+    read -r epoch_l < <(date -d - '+%s' < timestamp)
+    read -r epoch_r < <(curl_aur_date "$list" | date -d - '+%s')
 
     if ((epoch_l)) && ((epoch_r)) && ((epoch_r - epoch_l > delay)); then
-        curl_unzip "$uri" > "$list" || exit # keep curl exit code
-        extract_head "$list" > timestamp
+        update_list "$list" > timestamp || exit
     fi
 else
-    curl_unzip "$uri" > "$list" || exit
-    extract_head "$list" > timestamp
+    update_list "$list" > timestamp || exit
 fi
 
 pcregrep "$@" "$list"
