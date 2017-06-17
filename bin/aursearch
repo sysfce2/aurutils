@@ -4,14 +4,14 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 searchby() {
-    set -- "$1" 'https://aur.archlinux.org'
+    declare -r aurweb='https://aur.archlinux.org'
 
     if [[ $1 != none ]]; then
-        awk -v rpc="$2/rpc/?v=5&type=search&by=$1&arg" '{
+        awk -v rpc="$aurweb/rpc/?v=5&type=search&by=$1&arg" '{
             printf "%s=%s\n", rpc, $0
         }'
     else
-        awk -v rpc="$2/rpc/?v=5&type=info" '{
+        awk -v rpc="$aurweb/rpc/?v=5&type=info" '{
             if (NR == 1)
                 printf "%s&arg[]=%s", rpc, $0
             else if (NR % 150 == 0)
@@ -90,17 +90,11 @@ json_long() {
 }
 
 usage() {
-    plain "usage: $argv0 [-imnrRv] package [package...]"
+    printf >&2 '%s\n' "usage: $argv0 [-imnrRv] package [package...]"
     exit 1
 }
 
 readonly -f searchby dl_stdin json_short json_long usage
-
-source /usr/share/makepkg/util.sh || exit
-
-if [[ -t 2 ]] && [[ ! -o xtrace ]]; then
-    colorize
-fi
 
 parse() { json_short; }
 by=name-desc
