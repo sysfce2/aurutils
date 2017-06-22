@@ -34,8 +34,8 @@ clone() {
 
 # stdin: /path/to/a.tar.gz
 snapshot() {
-    declare -r gzdir=$1 startdir=$PWD
-    cd_safe "$gzdir"
+    declare -r zipdir=$1 startdir=$PWD
+    cd_safe "$zipdir"
 
     if type -P parallel >/dev/null 2>&1; then
         parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 -r \
@@ -47,7 +47,7 @@ snapshot() {
     declare a
     cd_safe "$startdir"
 
-    for a in "$gzdir"/*.tar.gz; do
+    for a in "$zipdir"/*.tar.gz; do
         tar xvf "$a"
     done
 }
