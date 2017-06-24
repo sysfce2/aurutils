@@ -33,18 +33,16 @@ sort_join() {
     sort -k 1b,1 -- "$1" | join -a 1 - <(sort -k 1b,1 -- "$2")
 }
 
-repo_equal_or_newer() {
-    repo_list "$1" > "$tmp"/db
-
-    sort_join /dev/stdin "$tmp"/db | while read -r pkg v_in v_cmp _; do
+cmp_equal_or_newer() {
+    sort_join "$1" "$2" | while read -r pkg v_in v_cmp _; do
         if [[ $v_cmp ]]; then
             op=$(my_vercmp "$v_in" "$v_cmp")
         else
             op=2
         fi
- 
+
         case $op in
-            -1) warning "$pkg $v_cmp is newer than $v_in"
+            -1) plain "$pkg $v_cmp is newer than $v_in"
                 printf -- '%s\n' "$pkg"     ;;
              0) printf -- '%s\n' "$pkg"     ;;
              1) msg2 "$pkg $v_cmp -> $v_in" ;;
@@ -53,16 +51,14 @@ repo_equal_or_newer() {
     done
 }
 
-repo_to_aur() {
-    tee "$tmp"/db | awk '{print $1}' | xargs -r aursearch -ir | namever > "$tmp"/aur
-
-    sort_join "$tmp"/db "$tmp"/aur | while read -r pkg v_in v_cmp _; do
+cmp_all() {
+    sort_join "$1" "$2" | while read -r pkg v_in v_cmp _; do
         if [[ $v_cmp ]]; then
             op=$(my_vercmp "$v_in" "$v_cmp")
         else
             op=2
         fi
-        
+
         if ((op == 2 && geq < 2)) || ((op > -1 && !geq)); then
             continue
         fi
@@ -92,7 +88,7 @@ usage() {
 }
 
 readonly -f my_vercmp namever syncver sort_join repo_list \
-          repo_equal_or_newer repo_to_aur trap_exit usage
+          cmp_equal_or_newer cmp_all trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -104,10 +100,11 @@ unset db root
 while getopts :acd:lqr: OPT; do
     case $OPT in
         a) ((geq++))    ;;
-        c) mode=1       ;;
-        l) mode=2       ;;
         q) ver=0        ;;
-        d) db=$OPTARG   ;;
+        d) db=$OPTARG
+           mode=1       ;;
+        c) mode=2       ;;
+        l) mode=3       ;;
         r) root=$OPTARG ;;
         *) usage        ;;
     esac
@@ -119,15 +116,21 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 case $mode in
-    0) if [[ -v db ]]; then
-           syncver "$db" | repo_to_aur
-       else
-           repo_to_aur
-       fi ;;
-    1) root=${root-$(pacconf --single --repo="$db" Server)} || exit
-       repo_equal_or_newer "${root#*://}/$db".db ;;
-    2) root=${root-$(pacconf --single --repo="$db" Server)} || exit
-       repo_list "${root#*://}/$db".db ;;
+    0)
+        tee "$tmp"/db | awk '{print $1}' > "$tmp"/pkg
+        xargs -a "$tmp"/pkg -r aursearch -ir | namever > "$tmp"/aur
+        cmp_all "$tmp"/db "$tmp"/aur ;;
+    1)
+        syncver "$db" | tee "$tmp"/db | awk '{print $1}' > "$tmp"/pkg
+        xargs -a "$tmp"/pkg -r aursearch -ir | namever > "$tmp"/aur
+        cmp_all "$tmp"/db "$tmp"/aur ;;
+    2)
+        root=${root-$(pacconf --single --repo="$db" Server)} || exit
+        repo_list "${root#*://}/$db".db > "$tmp"/db
+        cmp_equal_or_newer /dev/stdin "$tmp"/db ;;
+    3)
+        root=${root-$(pacconf --single --repo="$db" Server)} || exit
+        repo_list "${root#*://}/$db".db ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
