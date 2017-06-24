@@ -3,7 +3,7 @@ readonly argv0=aurcheck
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-declare -i geq=0 mode=0 ver=1
+declare -i geq=0 mode=0 cmp=0 ver=1
 
 # As this function is called from inner loops in repo_*, optimize for
 # the common case (version equality)
@@ -15,11 +15,14 @@ my_vercmp() {
     fi
 }
 
-namever() {
-    jq -er '.results[] | [.Name,.Version] | @tsv'
+namever_aur() {
+    xargs -r aursearch -ir | jq -er '.results[] | [.Name,.Version] | @tsv'
 }
 
-syncver() {
+namever_sync() {
+    # pacsift does not error if the repo is not configured
+    pacconf --repo="$database" >/dev/null || return 1
+
     # Use --exact as repos may have a common substring (#166)
     pacsift --exact --repo="$1" --null <&- | xargs -0r pacman -Sddp --print-format '%n %v'
 }
@@ -52,6 +55,8 @@ cmp_equal_or_newer() {
 }
 
 cmp_all() {
+    # global geq ver
+
     sort_join "$1" "$2" | while read -r pkg v_in v_cmp _; do
         if [[ $v_cmp ]]; then
             op=$(my_vercmp "$v_in" "$v_cmp")
@@ -87,7 +92,7 @@ usage() {
     exit 1
 }
 
-readonly -f my_vercmp namever syncver sort_join repo_list \
+readonly -f my_vercmp namever_aur namever_sync sort_join repo_list \
           cmp_equal_or_newer cmp_all trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
@@ -99,14 +104,13 @@ fi
 unset db root
 while getopts :acd:lqr: OPT; do
     case $OPT in
-        a) ((geq++))    ;;
-        q) ver=0        ;;
-        d) db=$OPTARG
-           mode=1       ;;
-        c) mode=2       ;;
-        l) mode=3       ;;
-        r) root=$OPTARG ;;
-        *) usage        ;;
+        a) ((geq++))        ;;
+        q) ver=0            ;;
+        d) database=$OPTARG ;;
+        c) mode=1; cmp=1    ;;
+        l) mode=1; cmp=0    ;;
+        r) root=$OPTARG     ;;
+        *) usage            ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -117,20 +121,32 @@ trap 'trap_exit' EXIT
 
 case $mode in
     0)
-        tee "$tmp"/db | awk '{print $1}' > "$tmp"/pkg
-        xargs -a "$tmp"/pkg -r aursearch -ir | namever > "$tmp"/aur
-        cmp_all "$tmp"/db "$tmp"/aur ;;
+        if [[ -v database ]]; then
+            namever_sync "$database" >"$tmp"/db || exit
+        else
+            tee "$tmp"/db
+        fi
+
+        if awk '{print $1}' "$tmp"/db | namever_aur >"$tmp"/aur; then
+            cmp_all "$tmp"/db "$tmp"/aur
+        fi
+        ;;
     1)
-        syncver "$db" | tee "$tmp"/db | awk '{print $1}' > "$tmp"/pkg
-        xargs -a "$tmp"/pkg -r aursearch -ir | namever > "$tmp"/aur
-        cmp_all "$tmp"/db "$tmp"/aur ;;
-    2)
-        root=${root-$(pacconf --single --repo="$db" Server)} || exit
-        repo_list "${root#*://}/$db".db > "$tmp"/db
-        cmp_equal_or_newer /dev/stdin "$tmp"/db ;;
-    3)
-        root=${root-$(pacconf --single --repo="$db" Server)} || exit
-        repo_list "${root#*://}/$db".db ;;
+        if [[ -v database ]]; then
+            server=$(pacconf --single --repo="$database" Server) || exit
+            server=${server#*://}
+        else
+            error "$argv0: no repository specified"
+            exit 1
+        fi
+        
+        repo_list "${root-$server}/$database".db >"$tmp"/db
+
+        if ((cmp)); then
+            cmp_equal_or_newer /dev/stdin "$tmp"/db
+        else
+            column -t "$tmp"/db
+        fi
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
