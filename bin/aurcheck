@@ -3,7 +3,8 @@ readonly argv0=aurcheck
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-declare geq=0 ver=1 mode=aur cmp=0
+declare -i geq=0 ver=1 cmp=0
+declare    mode=aur
 
 # Optimize for the common case (version equality)
 my_vercmp() {
