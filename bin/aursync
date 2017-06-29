@@ -68,7 +68,7 @@ else
     usage
 fi
 
-unset ignfile root repo aurbuild_args chroot_args local_args
+unset pkg_ignore root repo aurbuild_args chroot_args local_args
 while true; do
     case "$1" in
         -c|--chroot)
@@ -104,7 +104,7 @@ while true; do
             local_args+=(-r)
             shift ;;
         -I|--ignore)
-            ignfile=$(readlink -f -- "$2")
+            mapfile -t pkg_ignore < "$2"
             shift 2 ;;
         -p|--print)
             printonly=1
@@ -158,8 +158,14 @@ if ! (($# + update)); then
     exit 1
 fi
 
-if [[ -v ignfile ]]; then
-    ign() { grep -Exvf "$ignfile" - ; }
+if [[ ${pkg_ignore[*]} ]]; then
+    ign() {
+        for i in "${pkg_ignore[@]}"; do
+            warning "$i: ignoring package upgrade"
+        done
+
+        grep -Exvf <(printf -- '%s\n' "${pkg_ignore[@]}") -
+    }
 else
     ign() { tee; }
 fi
