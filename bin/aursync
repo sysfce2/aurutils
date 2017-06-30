@@ -60,7 +60,7 @@ fi
 
 longopts=allan,bind:,chroot,container:,force,help,ignore:,ignorearch,log,namcap
 longopts+=,noconfirm,nover,noview,print,rmdeps,sign,tar,temp,repo:,root:,update
-longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps
+longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps,ignfile
 
 if TEMP=$(getopt -o AB:cC:fhI:LnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -68,7 +68,7 @@ else
     usage
 fi
 
-unset pkg_ignore root repo aurbuild_args chroot_args local_args
+unset pkg_ignore pkg root repo aurbuild_args chroot_args local_args
 while true; do
     case "$1" in
         -c|--chroot)
@@ -104,7 +104,8 @@ while true; do
             local_args+=(-r)
             shift ;;
         -I|--ignore)
-            mapfile -t pkg_ignore < "$2"
+            IFS=, read -a pkg -r <<< "$2"
+            pkg_ignore+=("${pkg[@]}")
             shift 2 ;;
         -p|--print)
             printonly=1
@@ -118,6 +119,9 @@ while true; do
         --allan|--aurutils)
             rotate=1
             shift ;;
+        --ignfile)
+            mapfile -t pkg_ignore < "$2"
+            shift 2 ;;
         --nover|--no-ver)
             chkver=0
             shift ;;
