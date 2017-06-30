@@ -115,7 +115,7 @@ if [[ -v queue ]]; then
         exit 13
     fi
 else
-    exec {fd}<<< ''
+    exec {fd}< <(printf '\n')
 fi
 
 if [[ -d $root ]]; then
@@ -139,8 +139,7 @@ if ((sign_pkg)); then
 
 elif [[ -f $db_path.sig ]]; then
     error "$argv0: signature found, but signing is disabled"
-    printf >&2 -- '%q\n' "$db_path".sig
-    exit 1
+    printf >&2 -- '%q\n' "$db_path".sig; exit 1
 fi
 
 if [[ -v GPGKEY ]] && gpg --list-keys "$GPGKEY"; then
@@ -181,8 +180,7 @@ while read -r -u "$fd" pkg _; do
                 continue
             else
                 error "$argv0: a package has already been built (use -f to ignore)"
-                printf >&2 -- '%q\n' "$p"
-                exit 17
+                printf >&2 -- '%q\n' "$p"; exit 17
             fi
         done < <(makepkg --packagelist | xargs -I{} find "$root" -name '{}*' -print0)
     fi
