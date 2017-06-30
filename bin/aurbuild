@@ -9,7 +9,7 @@ machine=$(uname -m)
 readonly machine
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
-declare -a makechrootpkg_args=(-cu) makepkg_args=(-crs) repo_add_args=()
+declare -a makechrootpkg_args=(-cu) makepkg_args=(-rs) repo_add_args=()
 declare -i chroot=0 sign_pkg=0 force=0 no_sync=0
 
 conf_section() {
@@ -80,6 +80,15 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
+# Reset option array if arguments are specified after --
+if (($#)); then
+    if ((chroot)); then
+        makechrootpkg_args=("$@")
+    else
+        makepkg_args=("$@")
+    fi
+fi
+
 if [[ -v database ]]; then
     server=$(pacconf --single --repo="$database" Server)
     server=${server#*://}
@@ -119,15 +128,6 @@ if [[ -d $root ]]; then
 else
     error "$argv0: $root: not a directory"
     exit 20
-fi
-
-# Reset option array if arguments are specified after --
-if (($#)); then
-    if ((chroot)); then
-        makechrootpkg_args=("$@")
-    else
-        makepkg_args=("$@")
-    fi
 fi
 
 if command -v xdelta3 >/dev/null; then
