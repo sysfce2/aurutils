@@ -149,7 +149,7 @@ fi
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
 var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
-readonly tmp var_tmp {makechrootpkg,makepkg,repo_add,gpg}_args db_path
+readonly makechrootpkg_args makepkg_args repo_add_args gpg_args tmp var_tmp db_path
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
@@ -176,7 +176,7 @@ while read -r -u "$fd" pkg _; do
 
     if ((!force)); then
         while IFS= read -d $'\0' -r p; do
-            if [[ $p =~ .*\~ ]] || [[ $p =~ .*(_namcap\.log|\.part)$ ]]; then
+            if [[ $p =~ .*(\~|_namcap\.log|\.part)$ ]]; then
                 continue
             else
                 error "$argv0: a package has already been built (use -f to ignore)"
