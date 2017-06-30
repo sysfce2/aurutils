@@ -106,7 +106,7 @@ if [[ -v queue ]]; then
         exit 13
     fi
 else
-    exec {fd}<<< '//'
+    exec {fd}<<< ''
 fi
 
 if [[ -d $root ]]; then
@@ -137,7 +137,8 @@ fi
 if ((sign_pkg)); then
     repo_add_args+=(-v -s)
 elif [[ -f $db_path.sig ]]; then
-    error "$argv0: signature found, but signing is disabled: $(printf -- '%q' "$db_path".sig)"
+    error "$argv0: signature found, but signing is disabled"
+    printf -- '%q' "$db_path".sig
     exit 1
 fi
 
