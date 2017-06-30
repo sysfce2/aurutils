@@ -175,7 +175,8 @@ while read -r -u "$fd" pkg _; do
 
     if ((!force)); then
         while IFS= read -d $'\0' -r; do
-            error "A package has already been built: $(printf -- '%q' "$REPLY") (use -f to ignore)"
+            error "$argv0: a package has already been built (use -f to ignore)"
+            printf -- '%q\n' "$REPLY"
             exit 17
         done < <(makepkg --packagelist | xargs -I{} find "$root" -name '{}*' -print0)
     fi
