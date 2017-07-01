@@ -37,6 +37,10 @@ db_replaces() {
     }'
 }
 
+find_pkg_dupes() {
+    xargs -I{} find "$1" -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part)$' -
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
@@ -53,7 +57,8 @@ _canonicalize_path() {
     readlink -ev -- "$1"
 }
 
-readonly -f conf_section conf_devtools conf_local db_replaces trap_exit usage _canonicalize_path
+readonly -f conf_section conf_devtools conf_local db_replaces find_pkg_dupes
+readonly -f trap_exit usage _canonicalize_path
 
 source /usr/share/makepkg/util.sh
 
@@ -175,14 +180,12 @@ while read -r -u "$fd" pkg _; do
     cd_safe "$basedir/$pkg"
 
     if ((!force)); then
-        while IFS= read -d $'\0' -r p; do
-            if [[ $p =~ .*(\~|_namcap\.log|\.part)$ ]]; then
-                continue
-            else
-                error "$argv0: a package has already been built (use -f to ignore)"
-                printf >&2 -- '%q\n' "$p"; exit 17
-            fi
-        done < <(makepkg --packagelist | xargs -I{} find "$root" -name '{}*' -print0)
+        readarray -t dupes < <(makepkg --packagelist | find_pkg_dupes "$root")
+
+        if [[ ${dupes[*]} ]]; then
+            error "$argv0: a package has already been built (use -f to ignore)"
+            printf >&2 -- '%q\n' "${dupes[@]}"; exit 17
+        fi
     fi
 
     if ((chroot)); then
