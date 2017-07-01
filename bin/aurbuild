@@ -179,13 +179,14 @@ fi
 while read -r -u "$fd" pkg _; do
     cd_safe "$basedir/$pkg"
 
-    if ((!force)); then
-        readarray -t dupes < <(makepkg --packagelist | find_pkg_dupes "$root")
+    readarray -t dupes < <(makepkg --packagelist | find_pkg_dupes "$root")
 
-        if [[ ${dupes[*]} ]]; then
-            error "$argv0: a package has already been built (use -f to ignore)"
-            printf >&2 -- '%q\n' "${dupes[@]}"; exit 17
-        fi
+    if [[ ${dupes[*]} ]] && ((force)); then
+        warning "$argv0: a package has already been built"
+
+    elif [[ ${dupes[*]} ]]; then
+        error "$argv0: a package has already been built (use -f to ignore)"
+        printf >&2 -- '%q\n' "${dupes[@]}"; exit 17
     fi
 
     if ((chroot)); then
