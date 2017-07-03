@@ -10,7 +10,7 @@ readonly machine
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
 declare -a makechrootpkg_args=(-cu) makepkg_args=(-rs) repo_add_args=()
-declare -i chroot=0 sign_pkg=0 force=0 no_sync=0
+declare -i chroot=0 sign_pkg=0 overwrite=0 no_sync=0
 
 conf_section() {
     printf '[%s]\n' "$1"
@@ -54,7 +54,7 @@ usage() {
 
 # libmakepkg/util/util.sh
 _canonicalize_path() {
-    readlink -ev -- "$1"
+    readlink -env -- "$1"
 }
 
 readonly -f conf_section conf_devtools conf_local db_replaces find_pkg_dupes
@@ -75,11 +75,11 @@ while getopts a:cC:d:fMNPr:s OPT; do
         a) queue=$(_canonicalize_path "$OPTARG")        ;;
         r) root=$(_canonicalize_path "$OPTARG")         ;;
         d) database=$OPTARG ;;
-        c) chroot=1   ;;
-        f) force=1    ;;
-        N) no_sync=1  ;;
-        s) sign_pkg=1 ;;
-        *) usage      ;;
+        c) chroot=1    ;;
+        f) overwrite=1 ;;
+        N) no_sync=1   ;;
+        s) sign_pkg=1  ;;
+        *) usage       ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -181,13 +181,9 @@ while read -r -u "$fd" pkg _; do
 
     readarray -t dupes < <(makepkg --packagelist | find_pkg_dupes "$root")
 
-    if [[ ${dupes[*]} ]] && ((force)); then
-        warning "$argv0: a package has already been built"
-        printf >&2 -- '%q\n' "${dupes[@]}"
-
-    elif [[ ${dupes[*]} ]]; then
-        error "$argv0: a package has already been built (use -f to ignore)"
-        printf >&2 -- '%q\n' "${dupes[@]}"; exit 17
+    if [[ ${dupes[*]} ]] && ((!overwrite)); then
+        warning "$argv0: $pkg: a package has already been built - skipping"
+        printf >&2 -- '%q\n' "${dupes[@]}"; continue
     fi
 
     if ((chroot)); then

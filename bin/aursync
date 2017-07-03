@@ -167,7 +167,6 @@ if [[ -v pkg_ignore ]]; then
         for i in "${pkg_ignore[@]}"; do
             warning "$i: ignoring package upgrade"
         done
-
         grep -Exvf <(printf -- '%s\n' "${pkg_ignore[@]}") -
     }
 else
