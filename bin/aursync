@@ -34,6 +34,16 @@ lib32() {
     }' "$@"
 }
 
+conf_file_repo() {
+    pacconf --single | awk -F'= ' '
+        $1 ~ /^\[.+\]$/ {
+            repo = substr($1, 2, length($1)-2)
+        }
+        $1 ~ /^Server/ && $2 ~ /^file:/ {
+            printf("%s\n%s\n", repo, $2)
+        }'
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -68,7 +78,7 @@ else
     usage
 fi
 
-unset pkg_ignore pkg root repo aurbuild_args chroot_args local_args
+unset pkg_i pkg root repo aurbuild_args chroot_args local_args
 while true; do
     case "$1" in
         -c|--chroot)
@@ -105,7 +115,7 @@ while true; do
             shift ;;
         -I|--ignore)
             IFS=, read -a pkg -r <<< "$2"
-            pkg_ignore+=("${pkg[@]}")
+            pkg_i+=("${pkg[@]}")
             shift 2 ;;
         -p|--print)
             printonly=1
@@ -120,7 +130,7 @@ while true; do
             rotate=1
             shift ;;
         --ignfile)
-            mapfile -t pkg_ignore < "$2"
+            mapfile -t pkg_i < "$2"
             shift 2 ;;
         --nover|--no-ver)
             chkver=0
@@ -162,12 +172,10 @@ if ! (($# + update)); then
     exit 1
 fi
 
-if [[ -v pkg_ignore ]]; then
+if [[ -v pkg_i ]]; then
     ign() {
-        for i in "${pkg_ignore[@]}"; do
-            warning "$i: ignoring package upgrade"
-        done
-        grep -Exvf <(printf -- '%s\n' "${pkg_ignore[@]}") -
+        printf >&2 -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}"
+        grep -Exvf <(printf -- '%s\n' "${pkg_i[@]}") -
     }
 else
     ign() { tee; }
@@ -179,29 +187,18 @@ if [[ -v repo ]]; then
         root=${root#*://}
     fi
 else
-    declare -A avail
+    mapfile -t conf < <(conf_file_repo)
 
-    while IFS= read -r repo; do
-        server=$(pacconf --single --repo="$repo" Server)
-        if [[ $server =~ ^file:// ]]; then
-            avail[$repo]=${server#*://}
-        fi
-    done < <(pacconf --repo-list)
-
-    if [[ ${avail[*]} ]]; then
-        if [[ ${#avail[@]} -gt 1 ]]; then
-            PS3='Select a repository: '
-            select repo in "${!avail[@]}"; do
-                [[ $repo ]] && break
-            done
-        else
-            repo=${!avail[*]}
-        fi
-    else
-        error "$argv0: no file:// repository found"
-        exit 2
-    fi
-    root=${avail[$repo]}
+    case ${#conf[@]} in
+        2) repo=${conf[0]}
+           root=${conf[1]} ;;
+        0) error "$argv0: no file:// repository found"
+           exit 2 ;;
+        *) error "$argv0: repository choice is ambiguous (use --repo to specify)"
+           printf -- '%s\t%s\n' "${conf[@]}" | column -t >&2
+           exit 2 ;;
+    esac
+    root=${root#*://}
 fi
 
 msg2 "Using [$repo] repository"
