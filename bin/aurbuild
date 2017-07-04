@@ -182,7 +182,7 @@ while read -r -u "$fd" pkg _; do
     readarray -t dupes < <(makepkg --packagelist | find_pkg_dupes "$root")
 
     if [[ ${dupes[*]} ]] && ((!overwrite)); then
-        warning "$argv0: a package has already been built - skipping"
+        warning "$argv0: skipping built package"
         printf >&2 -- '%q\n' "${dupes[@]}"; continue
     fi
 
