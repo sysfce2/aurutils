@@ -44,6 +44,15 @@ conf_file_repo() {
         }'
 }
 
+ign() {
+    if [[ -v pkg_i ]]; then
+        printf >&2 -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}"
+        grep -Exvf <(printf -- '%s\n' "${pkg_i[@]}") -
+    else
+        tee
+    fi
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -55,7 +64,7 @@ usage() {
     exit 1
 }
 
-readonly -f viewer sub lib32 trap_exit usage
+readonly -f viewer sub lib32 conf_file_repo ign trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -170,15 +179,6 @@ fi
 if ! (($# + update)); then
     error "$argv0: no targets specified"
     exit 1
-fi
-
-if [[ -v pkg_i ]]; then
-    ign() {
-        printf >&2 -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}"
-        grep -Exvf <(printf -- '%s\n' "${pkg_i[@]}") -
-    }
-else
-    ign() { tee; }
 fi
 
 if [[ -v repo ]]; then
