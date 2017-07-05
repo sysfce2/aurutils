@@ -62,7 +62,7 @@ readonly -f trap_exit usage _canonicalize_path
 
 source /usr/share/makepkg/util.sh
 
-if [[ -t 2 ]] && [[ ! -o xtrace ]]; then
+if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 

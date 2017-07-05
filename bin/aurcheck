@@ -93,7 +93,7 @@ readonly -f my_vercmp sort_join cmp_equal_or_newer cmp_all \
 
 source /usr/share/makepkg/util.sh || exit
 
-if [[ -t 2 ]] && [[ ! -o xtrace ]]; then
+if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 

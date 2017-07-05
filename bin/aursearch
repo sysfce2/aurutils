@@ -96,6 +96,12 @@ usage() {
 
 readonly -f searchby dl_stdin json_short json_long usage
 
+source /usr/share/makepkg/util.sh || exit
+
+if [[ -t 2 && ! -o xtrace ]]; then
+    colorize
+fi
+
 parse() { json_short; }
 by=name-desc
 
