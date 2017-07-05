@@ -6,7 +6,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 shopt -s nullglob
 
-declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0 printonly=0
+declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0 build=1 download=1
 
 viewer() {
     if hash 2>/dev/null vifm; then
@@ -44,6 +44,14 @@ conf_file_repo() {
         }'
 }
 
+match_urlpath() {
+    awk 'NR == FNR {
+        x[$0]; next
+    } $1 in x {
+        print $2
+    }' "$@"
+}
+
 ign() {
     if [[ -v pkg_i ]]; then
         printf >&2 -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}"
@@ -64,7 +72,7 @@ usage() {
     exit 1
 }
 
-readonly -f viewer sub lib32 conf_file_repo ign trap_exit usage
+readonly -f viewer sub lib32 conf_file_repo match_urlpath ign trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -79,7 +87,7 @@ fi
 
 longopts=allan,bind:,chroot,container:,force,help,ignore:,ignorearch,log,namcap
 longopts+=,noconfirm,nover,noview,print,rmdeps,sign,tar,temp,repo:,root:,update
-longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps,ignfile
+longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps,ignfile,continue
 
 if TEMP=$(getopt -o AB:cC:fhI:LnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -127,7 +135,7 @@ while true; do
             pkg_i+=("${pkg[@]}")
             shift 2 ;;
         -p|--print)
-            printonly=1
+            build=0
             shift ;;
         -t|--tar)
             snapshot=1
@@ -137,6 +145,9 @@ while true; do
             shift ;;
         --allan|--aurutils)
             rotate=1
+            shift ;;
+        --continue)
+            download=0
             shift ;;
         --ignfile)
             mapfile -t pkg_i < "$2"
@@ -206,8 +217,8 @@ root=$(readlink -ev -- "$root")
 
 if [[ -d $root ]]; then
     if [[ ! -w $root || ! -r $root ]]; then
-	error "$argv0: $root: permission denied"
-	exit 13
+        error "$argv0: $root: permission denied"
+        exit 13
     fi
 else
     error "$argv0: $root: not a directory"
@@ -259,14 +270,20 @@ if ! grep -Fxvf sift queue_1 > queue; then
     exit 0
 fi
 
-msg "Retrieving build files..."
 if ((snapshot)); then
     cd_safe "$AURDEST"/snapshot
-    awk 'NR == FNR {x[$0]; next} $1 in x {print $2}' \
-        "$tmp"/queue "$tmp"/tsv/urlpath | aurfetch -t
+
+    if ((download)); then
+        msg "Retrieving build files..."
+        match_urlpath "$tmp"/queue "$tmp"/urlpath | aurfetch -t
+    fi
 else
     cd_safe "$AURDEST"
-    aurfetch -L "$tmp"/patch < "$tmp"/queue
+
+    if ((download)); then
+        msg "Retrieving build files..."
+        aurfetch -L "$tmp"/patch < "$tmp"/queue
+    fi
 fi
 
 # View changes and build files in one window (#77)
@@ -275,11 +292,11 @@ if ((view)); then
         | xargs -I{} find {} -maxdepth 1 | viewer
 fi
 
-if ((printonly)); then
-    xargs printf -- "$(pwd -P)/%s\n" < "$tmp"/queue
-else
+if ((build)); then
     aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
     aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+else
+    xargs printf -- "$(pwd -P)/%s\n" < "$tmp"/queue
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
