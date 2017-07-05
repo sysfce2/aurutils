@@ -15,8 +15,8 @@ declare -A pkgset
 provides() {
     expac '%n %R %S' -Sv -- "$@" | awk '{
         for(i = 2; i <= NF; ++i) {
-	    printf("%s\t%s\n", $1, $i) | "sort -u"
-	}
+            printf("%s\t%s\n", $1, $i) | "sort -u"
+        }
     }'
 }
 readonly -f provides

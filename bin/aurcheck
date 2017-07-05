@@ -135,7 +135,7 @@ case $mode in
             error "$argv0: no repository specified"
             exit 1
         fi
-        
+
         repo_list "${root-$server}/$database".db >"$tmp"/db
 
         if ((cmp)); then

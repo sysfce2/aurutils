@@ -111,7 +111,7 @@ if [[ -v queue ]]; then
     if [[ -r $queue ]]; then
         if [[ ! -d $queue ]]; then
             exec {fd}< "$queue"
-        else        
+        else
             error "$argv0: $queue: is a directory"
             exit 21
         fi

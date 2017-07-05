@@ -39,7 +39,7 @@ snapshot() {
 
     if type -P parallel >/dev/null 2>&1; then
         parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 -r \
-	    curl -fLsS --remote-name-all --cert-status {}
+            curl -fLsS --remote-name-all --cert-status {}
     else
         xargs -r curl -fLsS --remote-name-all --cert-status
     fi
