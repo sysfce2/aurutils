@@ -179,11 +179,14 @@ fi
 while read -r -u "$fd" pkg _; do
     cd_safe "$basedir/$pkg"
 
-    readarray -t dupes < <(makepkg --packagelist | find_pkg_dupes "$root")
+    if ((!overwrite)); then
+        mapfile -t mark < <(makepkg --packagelist | find_pkg_dupes "$root")
 
-    if [[ ${dupes[*]} ]] && ((!overwrite)); then
-        warning "$argv0: skipping built package"
-        printf >&2 -- '%q\n' "${dupes[@]}"; continue
+        if [[ ${mark[*]} ]]; then
+            warning "$argv0: skipping built package (use -f to overwrite)"
+            printf >&2 -- '%q\n' "${mark[@]}"
+            continue
+        fi
     fi
 
     if ((chroot)); then
