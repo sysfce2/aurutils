@@ -10,7 +10,7 @@ readonly machine
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
 declare -a makechrootpkg_args=(-cu) makepkg_args=(-rs) repo_add_args=()
-declare -i chroot=0 sign_pkg=0 overwrite=0 no_sync=0
+declare -i chroot=0 sign_pkg=0 overwrite=0 no_sync=0 sign_pkg=0
 
 conf_section() {
     printf '[%s]\n' "$1"
@@ -41,8 +41,26 @@ find_pkg_dupes() {
     xargs -I{} find "$1" -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part)$' -
 }
 
+canonicalize_path_ro() {
+    readlink -env -- "$1" || return
+
+    if ! [[ -r $1 ]]; then
+        error "$argv0: $1: permission denied (read-only)"
+        return 13
+    fi
+}
+
+canonicalize_path_rw() {
+    readlink -env -- "$1" || return
+
+    if ! [[ -r $1 && -w $1 ]]; then
+        error "$argv0: $1: permission denied (read-write)"
+        return 13
+    fi
+}
+
 trap_exit() {
-    if [[ ! -o xtrace ]]; then
+    if ! [[ -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
     fi
 }
@@ -52,13 +70,8 @@ usage() {
     exit 1
 }
 
-# libmakepkg/util/util.sh
-_canonicalize_path() {
-    readlink -env -- "$1"
-}
-
 readonly -f conf_section conf_devtools conf_local db_replaces find_pkg_dupes
-readonly -f trap_exit usage _canonicalize_path
+readonly -f canonicalize_path_ro canonicalize_path_rw trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -66,24 +79,48 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-unset queue container database makepkg_conf pacman_conf root
+unset container makepkg_conf pacman_conf root queue database
 while getopts a:cC:d:fMNPr:s OPT; do
     case $OPT in
-        C) container=$(_canonicalize_path "$OPTARG")    ;;
-        M) makepkg_conf=$(_canonicalize_path "$OPTARG") ;;
-        P) pacman_conf=$(_canonicalize_path "$OPTARG")  ;;
-        a) queue=$(_canonicalize_path "$OPTARG")        ;;
-        r) root=$(_canonicalize_path "$OPTARG")         ;;
+        C) container=$(canonicalize_path_ro "$OPTARG")    ;;
+        M) makepkg_conf=$(canonicalize_path_ro "$OPTARG") ;;
+        P) pacman_conf=$(canonicalize_path_ro "$OPTARG")  ;;
+        r) root=$(canonicalize_path_rw "$OPTARG")         ;;
+        a) queue=$OPTARG    ;;
         d) database=$OPTARG ;;
-        c) chroot=1    ;;
-        f) overwrite=1 ;;
-        N) no_sync=1   ;;
-        s) sign_pkg=1  ;;
-        *) usage       ;;
+        c) chroot=1         ;;
+        f) overwrite=1      ;;
+        N) no_sync=1        ;;
+        s) sign_pkg=1       ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+if [[ -v database ]]; then
+    server=$(pacconf --single --repo="$database" Server)
+else
+    error "$argv0: database: missing argument"
+    usage
+fi
+
+if ! [[ -v root ]]; then
+    root=$(canonicalize_path_rw "${server#*://}")
+fi
+
+db_path=$(canonicalize_path_rw "$root/$database".db)
+
+readonly database server root db_path queue chroot overwrite no_sync sign_pkg
+readonly container=${container-/var/lib/aurbuild}/$machine
+readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
+readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
+
+if [[ -v queue ]]; then
+    exec {fd}< "$queue"
+else
+    exec {fd}< <(printf '\n')
+fi
 
 # Reset option array if arguments are specified after --
 if (($#)); then
@@ -92,47 +129,6 @@ if (($#)); then
     else
         makepkg_args=("$@")
     fi
-fi
-
-if [[ -v database ]]; then
-    server=$(pacconf --single --repo="$database" Server)
-    server=${server#*://}
-else
-    error "$argv0: database: missing argument"
-    usage
-fi
-
-readonly container=${container-/var/lib/aurbuild}/$machine
-readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
-readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
-readonly root=${root-$server}
-
-if [[ -v queue ]]; then
-    if [[ -r $queue ]]; then
-        if [[ ! -d $queue ]]; then
-            exec {fd}< "$queue"
-        else
-            error "$argv0: $queue: is a directory"
-            exit 21
-        fi
-    else
-        error "$argv0: $queue: permission denied"
-        exit 13
-    fi
-else
-    exec {fd}< <(printf '\n')
-fi
-
-if [[ -d $root ]]; then
-    if [[ -w $root && -r $root ]]; then
-        db_path=$(_canonicalize_path "$root/$database".db)
-    else
-        error "$argv0: $root: permission denied"
-        exit 13
-    fi
-else
-    error "$argv0: $root: not a directory"
-    exit 20
 fi
 
 if command -v xdelta3 >/dev/null; then
@@ -154,7 +150,7 @@ fi
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
 var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
-readonly makechrootpkg_args makepkg_args repo_add_args gpg_args tmp var_tmp db_path
+readonly makechrootpkg_args makepkg_args repo_add_args gpg_args tmp var_tmp
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
@@ -184,8 +180,7 @@ while read -r -u "$fd" pkg _; do
 
         if [[ ${mark[*]} ]]; then
             warning "$argv0: skipping built package (use -f to overwrite)"
-            printf >&2 -- '%q\n' "${mark[@]}"
-            continue
+            printf >&2 -- '%q\n' "${mark[@]}"; continue
         fi
     fi
 
