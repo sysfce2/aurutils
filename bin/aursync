@@ -215,12 +215,10 @@ fi
 msg2 "Using [$repo] repository"
 root=$(readlink -env -- "$root")
 
-if [[ -d $root ]]; then
-    if ! [[ -w $root && -r $root ]]; then
-        error "$argv0: $root: permission denied (read-write)"
-        exit 13
-    fi
-else
+if ! [[ -w $root && -r $root ]]; then
+    error "$argv0: $root: permission denied (read-write)"
+    exit 13
+elif ! [[ -d $root ]]; then
     error "$argv0: $root: not a directory"
     exit 20
 fi
