@@ -136,7 +136,7 @@ case $mode in
             exit 1
         fi
 
-        repo_list "${root-$server}/$database".db >"$tmp"/db
+        repo_list "${root-$server}/$database".db >"$tmp"/db || exit
 
         if ((cmp)); then
             cmp_equal_or_newer /dev/stdin "$tmp"/db
