@@ -193,31 +193,31 @@ if ! (($# + update)); then
 fi
 
 if [[ -v repo ]]; then
+    server=$(pacconf --single --repo="$repo" Server)
+
     if [[ ! -v root ]]; then
-        root=$(pacconf --single --repo="$repo" Server)
-        root=${root#*://}
+        root=${server#*://}
     fi
 else
     mapfile -t conf < <(conf_file_repo)
 
     case ${#conf[@]} in
         2) repo=${conf[0]}
-           root=${conf[1]} ;;
+           root=${conf[1]#*://} ;;
         0) error "$argv0: no file:// repository found"
            exit 2 ;;
         *) error "$argv0: repository choice is ambiguous (use --repo to specify)"
            printf -- '%s\t%s\n' "${conf[@]}" | column -t >&2
            exit 2 ;;
     esac
-    root=${root#*://}
 fi
 
 msg2 "Using [$repo] repository"
-root=$(readlink -ev -- "$root")
+root=$(readlink -env -- "$root")
 
 if [[ -d $root ]]; then
-    if [[ ! -w $root || ! -r $root ]]; then
-        error "$argv0: $root: permission denied"
+    if ! [[ -w $root && -r $root ]]; then
+        error "$argv0: $root: permission denied (read-write)"
         exit 13
     fi
 else
