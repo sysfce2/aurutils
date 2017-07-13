@@ -140,15 +140,15 @@ if command -v xdelta3 >/dev/null; then
 fi
 
 if ((sign_pkg)); then
+    if [[ -v GPGKEY ]] && gpg --listkeys "$GPGKEY"; then
+        gpg_args+=(-u "$GPGKEY")
+    fi
     repo_add_args+=(-v -s)
-
-elif [[ -f $db_path.sig ]]; then
-    error "$argv0: signature found, but signing is disabled"
-    printf >&2 -- '%q\n' "$db_path".sig; exit 1
 fi
 
-if [[ -v GPGKEY ]] && gpg --list-keys "$GPGKEY"; then
-    gpg_args+=(-u "$GPGKEY")
+if [[ -f $db_path.sig ]] && ! ((sign_pkg)); then
+    error "$argv0: signature found, but signing is disabled"
+    printf >&2 -- '%q\n' "$db_path".sig; exit 1
 fi
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
