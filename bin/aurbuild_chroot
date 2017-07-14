@@ -10,8 +10,6 @@ pacman_conf=/usr/share/devtools/pacman-extra.conf
 container=/var/lib/aurbuild/$machine
 
 prepare=0
-root=
-database=
 
 conf_devtools() {
     printf '[options]\n'
@@ -44,6 +42,7 @@ trap_exit() {
     fi
 }
 
+unset database
 while getopts B:C:d:D:M:r:PT OPT; do
     # XXX: -d, -B, -p short option naming
     case $OPT in
