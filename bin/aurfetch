@@ -1,8 +1,8 @@
 #!/bin/bash
+set -e
 readonly argv0=aurfetch
 readonly aurweb='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e
 
 declare -i aurball=0
 declare logdir=/dev/null
@@ -18,7 +18,8 @@ clone() {
 
             if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
                 if [[ -d $logdir ]]; then
-                    git --no-pager log --patch --stat '..@{upstream}' >> "$logdir/$REPLY".patch
+                    git --no-pager log --patch --stat '..@{upstream}' \
+                        >> "$logdir/$REPLY".patch
                 fi
 
                 git reset --hard HEAD
@@ -44,11 +45,10 @@ snapshot() {
         xargs -r curl -fLsS --remote-name-all --cert-status
     fi
 
-    declare a
     cd_safe "$startdir"
 
-    for a in "$zipdir"/*.tar.gz; do
-        tar xvf "$a"
+    for _ in "$zipdir"/*.tar.gz; do
+        tar xvf "$_"
     done
 }
 
