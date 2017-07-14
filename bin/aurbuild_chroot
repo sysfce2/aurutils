@@ -1,0 +1,78 @@
+#!/bin/bash
+set -e
+readonly argv0=aurbuild_chroot
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+machine=$(uname -m)
+makechrootpkg_args=(-cu)
+makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
+pacman_conf=/usr/share/devtools/pacman-extra.conf
+container=/var/lib/aurbuild/$machine
+
+prepare=0
+
+conf_devtools() {
+    printf '[options]\n'
+    pacconf --config="$1" --options --raw
+
+    printf '#CacheDir=\n'
+
+    pacconf --repo-list | while IFS= read -r; do
+        printf '[%s]\n' "$REPLY"
+        pacconf --repo="$REPLY" --raw
+    done
+}
+
+prepare_chroot() {
+    declare -r pacman_conf=$1 makepkg_conf=$2 container=$3
+
+    if [[ -f $container/root/.arch-chroot ]]; then
+        sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" \
+            "$container"/root pacman -Syu --noconfirm
+    else
+        sudo install -d "$container" -m 755 -v
+        sudo mkarchroot  -C "$pacman_conf" -M "$makepkg_conf" \
+            "$container"/root base-devel
+    fi
+}
+
+trap_exit() {
+    if ! [[ -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+unset pacman_conf makepkg_conf root database
+while getopts B:C:d:D:M:r:P OPT; do
+    # XXX: -d, -B, -p short option naming
+    case $OPT in
+        d) database=$OPTARG     ;;
+        B) makechrootpkg_args+=(-d "$OPTARG") ;;
+        C) pacman_conf=$OPTARG  ;;
+        D) container=$OPTARG    ;;
+        M) makepkg_conf=$OPTARG ;;
+        P) prepare=1            ;;
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
+# Reset option array if arguments are specified after --
+if (($#)); then
+    makechrootpkg_args=("$@")
+fi
+
+trap 'trap_exit' EXIT
+tmp=$(mktemp -d) || exit
+
+if ((prepare)); then
+    conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
+
+    prepare_chroot "$tmp"/pacman.conf "$makepkg_conf" "$container"
+
+    if [[ -v database ]]; then
+        pacconf --root="$container"/root --repo="$database" >/dev/null
+    fi
+else
+    sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$container" "${makechrootpkg_args[@]}"
+fi

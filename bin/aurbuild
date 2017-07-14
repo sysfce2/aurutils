@@ -1,34 +1,19 @@
 #!/bin/bash
 set -e
-
 readonly argv0=aurbuild
-readonly basedir=$PWD
+readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-machine=$(uname -m)
-readonly machine
-
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
-declare -a makechrootpkg_args=(-cu) makepkg_args=(-rs) repo_add_args=()
-declare -i chroot=0 sign_pkg=0 overwrite=0 no_sync=0 sign_pkg=0
-
-conf_section() {
-    printf '[%s]\n' "$1"
-    pacconf --raw "${@:2}"
-}
-
-conf_devtools() {
-    conf_section options --config="$1" --options
-    printf '#CacheDir=\n'
-
-    pacconf --repo-list | while IFS= read -r; do
-        conf_section "$REPLY" --repo="$REPLY"
-    done
-}
+declare -a makepkg_args=(-rs) chroot_args=() repo_add_args=()
+declare -i chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
 conf_local() {
-    conf_section options --options
-    conf_section "$1" --repo="$1"
+    printf '[options]\n'
+    pacconf --options --raw
+
+    printf '[%s]\n' "$1"
+    pacconf --repo="$1" --raw
 }
 
 db_replaces() {
@@ -41,24 +26,6 @@ find_pkg_dupes() {
     xargs -I{} find "$1" -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part)$' -
 }
 
-canonicalize_path_ro() {
-    readlink -env -- "$1" || return
-
-    if ! [[ -r $1 ]]; then
-        error "$argv0: $1: permission denied (read-only)"
-        return 13
-    fi
-}
-
-canonicalize_path_rw() {
-    readlink -env -- "$1" || return
-
-    if ! [[ -r $1 && -w $1 ]]; then
-        error "$argv0: $1: permission denied (read-write)"
-        return 13
-    fi
-}
-
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
@@ -66,12 +33,11 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 -d database [-acCfMNPrs] [--] <makepkg args>"
+    plain "usage: $argv0 -d database [-afNrs] [--] <makepkg args>"
     exit 1
 }
 
-readonly -f conf_section conf_devtools conf_local db_replaces find_pkg_dupes
-readonly -f canonicalize_path_ro canonicalize_path_rw trap_exit usage
+readonly -f conf_local db_replaces find_pkg_dupes trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -79,20 +45,21 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-unset container makepkg_conf pacman_conf root queue database
-while getopts a:cC:d:fMNPr:s OPT; do
+unset root queue database
+while getopts a:C:d:D:M:r:cfNs OPT; do
     case $OPT in
-        C) container=$OPTARG     ;;
-        M) makepkg_conf=$OPTARG  ;;
-        P) pacman_conf=$OPTARG   ;;
-        r) root=$OPTARG          ;;
-        a) queue=$OPTARG         ;;
-        d) database=$OPTARG      ;;
-        c) chroot=1              ;;
-        f) overwrite=1           ;;
-        N) no_sync=1             ;;
-        s) sign_pkg=1            ;;
-        *) usage                 ;;
+        a) queue=$OPTARG    ;;
+        c) chroot=1         ;;
+        C) chroot_args+=(-C "$OPTARG") ;;
+        D) chroot_args+=(-D "$OPTARG") ;;
+        M) chroot_args+=(-M "$OPTARG") ;;
+        d) database=$OPTARG
+           chroot_args+=(-d "$OPTARG") ;;
+        f) overwrite=1      ;;
+        N) no_sync=1        ;;
+        r) root=$OPTARG     ;;
+        s) sign_pkg=1       ;;
+        *) usage            ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -106,19 +73,15 @@ else
     usage
 fi
 
-root=$(canonicalize_path_rw "${root-$server}")
-db_path=$(canonicalize_path_rw "$root/$database".db)
+root=$(realpath -e -- "${root-$server}")
+db_path=$(realpath -e -- "$root/$database".db)
 
-if ((chroot)); then
-    container=${container-/var/lib/aurbuild}/$machine
-    makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
-    makepkg_conf=$(canonicalize_path_ro "$makepkg_conf")
-    pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
-    pacman_conf=$(canonicalize_path_ro "$makepkg_conf")
+if ! [[ -r $db_path && -w $db_path ]]; then
+    error "$argv0: $db_path: permission denied"
+    exit 13
 fi
 
-readonly database server root db_path queue chroot overwrite no_sync sign_pkg
-readonly container makepkg_conf pacman_conf
+readonly chroot database server root db_path queue overwrite no_sync sign_pkg
 
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
@@ -128,11 +91,7 @@ fi
 
 # Reset option array if arguments are specified after --
 if (($#)); then
-    if ((chroot)); then
-        makechrootpkg_args=("$@")
-    else
-        makepkg_args=("$@")
-    fi
+    makepkg_args=("$@")
 fi
 
 if command -v xdelta3 >/dev/null; then
@@ -144,40 +103,28 @@ if ((sign_pkg)); then
         gpg_args+=(-u "$GPGKEY")
     fi
     repo_add_args+=(-v -s)
-fi
 
-if [[ -f $db_path.sig ]] && ! ((sign_pkg)); then
+elif [[ -f $db_path.sig ]]; then
     error "$argv0: signature found, but signing is disabled"
-    printf >&2 -- '%q\n' "$db_path".sig; exit 1
+    printf >&2 -- '%q\n' "$db_path".sig
+    exit 1
 fi
-
+ 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
 var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
-readonly makechrootpkg_args makepkg_args repo_add_args gpg_args tmp var_tmp
+readonly chroot_args makepkg_args repo_add_args gpg_args tmp var_tmp
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if ((chroot)); then
-    conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
-
-    if [[ -f $container/root/.arch-chroot ]]; then
-        sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-            "$container"/root pacman -Syu --noconfirm
-    else
-        sudo install -d "$container" -m 755 -v
-        sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-             "$container"/root base-devel
-    fi
-
-    # Check if target repository is configured in chroot (#161)
-    pacconf --root="$container"/root --repo="$database" >/dev/null
+    aurbuild_chroot -P "${chroot_args[@]}"
 else
     conf_local "$database" > "$tmp"/custom.conf
 fi
 
 while read -r -u "$fd" pkg _; do
-    cd_safe "$basedir/$pkg"
+    cd_safe "$startdir/$pkg"
 
     if ((!overwrite)); then
         mapfile -t mark < <(makepkg --packagelist | find_pkg_dupes "$root")
@@ -189,14 +136,13 @@ while read -r -u "$fd" pkg _; do
     fi
 
     if ((chroot)); then
-        sudo PKGDEST="$var_tmp" makechrootpkg \
-            -d "$root" -r "$container" "${makechrootpkg_args[@]}"
+        PKGDEST="$var_tmp" aurbuild_chroot -B "$root" "${chroot_args[@]}"
     else
-        PKGDEST="$var_tmp" LC_MESSAGES=C makepkg "${makepkg_args[@]}"
+        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
     fi
 
     # fixed by: https://git.archlinux.org/pacman.git/commit/?id=c0a5884b
-    find "$basedir/$pkg" -type l -xtype f -lname "$var_tmp*" -delete
+    find "$startdir/$pkg" -type l -xtype f -lname "$var_tmp*" -delete
 
     cd_safe "$var_tmp"
     pkglist=(./*)
