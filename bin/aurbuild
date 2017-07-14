@@ -46,13 +46,10 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 unset root queue database
-while getopts a:C:d:D:M:r:cfNs OPT; do
+while getopts a:d:r:cfNs OPT; do
     case $OPT in
         a) queue=$OPTARG    ;;
         c) chroot=1         ;;
-        C) chroot_args+=(-C "$OPTARG") ;;
-        D) chroot_args+=(-D "$OPTARG") ;;
-        M) chroot_args+=(-M "$OPTARG") ;;
         d) database=$OPTARG
            # XXX: only used for #161
            chroot_args+=(-d "$OPTARG") ;;
@@ -90,9 +87,10 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-# XXX: end-of-options for aurbuild_chroot
 if (($#)); then
     makepkg_args=("$@")
+else
+    chroot_args=("$@")
 fi
 
 if command -v xdelta3 >/dev/null; then
