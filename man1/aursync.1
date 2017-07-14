@@ -4,7 +4,7 @@ aursync \- download and build aur packages automatically
 
 .SH SYNOPSIS
 .SY aursync
-.OP \-ABcCfILnprstTu
+.OP \-ABcDfILnprstTu
 .OP \--ignore
 .OP \--no-ver
 .OP \--no-view
@@ -28,9 +28,9 @@ and can be edited. If not, the files are shown in \fIless\fR, or
 Build packages with makechrootpkg. (\fIaurbuild -c\fR)
 .RE
 
-.B \-C, --container
+.B \-D, --directory
 .RS
-Set the container path. (\fIaurbuild -C\fR)
+Set the container path. (\fIaurbuild -D\fR)
 .RE
 
 .B \-f, --force

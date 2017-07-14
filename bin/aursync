@@ -85,11 +85,11 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,container:,force,help,ignore:,ignorearch,log,namcap
+longopts=allan,bind:,chroot,directory:,force,help,ignore:,ignorearch,log,namcap
 longopts+=,noconfirm,nover,noview,print,rmdeps,sign,tar,temp,repo:,root:,update
 longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps,ignfile,continue
 
-if TEMP=$(getopt -o AB:cC:fhI:LnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o B:D:I:AcfhLnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
@@ -102,8 +102,8 @@ while true; do
             aurbuild_args+=(-c)
             chroot=1
             shift ;;
-        -C|--container)
-            aurbuild_args+=(-C "$2")
+        -D|--directory)
+            aurbuild_args+=(-D "$2")
             shift 2 ;;
         -s|--sign)
             aurbuild_args+=(-s)
@@ -111,9 +111,11 @@ while true; do
         -f|--force)
             aurbuild_args+=(-f)
             shift ;;
+        # XXX: pass to aurbuild_chroot
         -B|--bind)
             chroot_args+=(-D "$2")
             shift ;;
+        # XXX: pass to aurbuild_chroot
         -T|--temp)
             chroot_args+=(-T)
             shift ;;
@@ -123,8 +125,8 @@ while true; do
         -L|--log)
             local_args+=(-L)
             shift ;;
-        -n|--noconfirm|--no-confirm|--namcap)
-            chroot_args+=(-n)
+        # XXX: pass to aurbuild_chroot
+        -n|--noconfirm|--no-confirm)
             local_args+=(--noconfirm)
             shift ;;
         -r|--rmdeps|--rm-deps)
@@ -181,6 +183,7 @@ if ((rotate)); then
     fi
 fi
 
+# XXX: pass to aurbuild_chroot
 if ((chroot)); then
     makepkg_args=(-cu "${chroot_args[@]}")
 else
@@ -194,10 +197,7 @@ fi
 
 if [[ -v repo ]]; then
     server=$(pacconf --single --repo="$repo" Server)
-
-    if [[ ! -v root ]]; then
-        root=${server#*://}
-    fi
+    server=${server#*://}
 else
     mapfile -t conf < <(conf_file_repo)
 
@@ -213,7 +213,7 @@ else
 fi
 
 msg2 "Using [$repo] repository"
-root=$(readlink -env -- "$root")
+root=$(readlink -env -- "${root-$server}")
 
 if ! [[ -w $root && -r $root ]]; then
     error "$argv0: $root: permission denied (read-write)"

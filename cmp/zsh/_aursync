@@ -5,7 +5,7 @@ typeset -A opt_args
 _aursync_opts=(
     {-B,--bind}'[Bind mount a file or directory]'
     {-c,--chroot}'[Build packages in a chroot]'
-    {-C,--container}'[Set container path]'
+    {-D,--directory}'[Set container path]'
     {-f,--force}'[Overwrite built packages]'
     {-p,--print}'[Only print package targets]'
     {-s,--sign}'[Sign packages and database]'
