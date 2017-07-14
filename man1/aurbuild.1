@@ -1,4 +1,4 @@
-.TH AURBUILD 1 2017-04-14 AURUTILS
+.TH AURBUILD 1 2017-07-15 AURUTILS
 .SH NAME
 aurbuild \- build packages to a local repository
 
@@ -8,21 +8,20 @@ aurbuild \- build packages to a local repository
 .OP \-cfNs
 .OP \-a queue
 .OP \-r root
-.OP \-C container
 .OP \--
 .OP "makepkg args"
 .YS
 
 .SH DESCRIPTION
 Build packages, adding the results to a local repository (usually
-configured with a \fIfile:// \fRprefix \fRin \fIpacman.conf\fR).
+configured with a \fIfile://\fR prefix\fR in \fIpacman.conf\fR).
 
 It is assumed that build directories are located in the current
 directory, and described in a text file which is taken as argument.
 
 .SH OPTIONS
 All arguments after -- are passed to \fImakepkg\fR, or
-\fImakechrootpkg \fRwhen \fI-c \fRis specified.
+\fIaurbuild_chroot\fR when \fI-c\fR is specified.
 
 .B \-a
 .RS
@@ -32,15 +31,7 @@ specified, the current directory is assumed.
 
 .B \-c
 .RS
-Build packages with \fImakechrootpkg\fR.
-.RE
-
-.B \-C
-.RS
-Set the parent directory of the nspawn container. Defaults to
-\fI/var/lib/aurbuild\fR. Containers are kept in subdirectories named
-after the system architecture, for example
-\fI/var/lib/aurbuild/x86_64\fR.
+Build packages with \fIaurbuild_chroot(1)\fR.
 .RE
 
 .B \-d
@@ -88,50 +79,8 @@ Databases are built with \fILANG=C\fR to avoid libalpm from skipping
 entries if the locale is not set (FS#49342). Packages are signed
 manually with \fIgpg --verbose --detach-sign --no-armor\fR (FS#49946).
 
-.SS Building with \fBmakechrootpkg\fR
-The template (or \fIroot\fR) container is upgraded with \fIpacman
--Syu\fR prior to building. This is done as the \fI$USER\fR container
-is copied from the \fIroot\fR container before each build
-(\fImakechrootpkg -c\fR).
-
-Changes to the pacman database are \fBnot\fR propagated from the
-container to the local system. Packages must be installed and updated
-separately, typically through \fIpacman -Syu <package_name>\fR.
-
-Package conflicts inside the container must be solved manually, as
-\fBmakechrootpkg\fR uses \fImakepkg --confirm -s\fR internally. For
-example, to replace \fBgcc\fR with \fBgcc-multilib\fR, run \fIarch-nspawn
-/var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
-
-Signature verification requires that \fBgpg2\fR(1) configuration is
-stored in \fI~/.gnupg\fR. See Github issue #151 for details.
-
-.SS Avoiding password prompts
-makepkg must be run as a regular user as of version 4.2, with
-privileged operations done via \fIsudo\fR. As such, \fIaurbuild\fR can
-not be run directly as root. To avoid password prompts,
-\fBsudoers\fR(5) can be used instead.
-
-For example:
-.EX
-
-  %build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
-  %build localhost = (root) NOPASSWD: /usr/bin/arch-nspawn
-
-.EE
-Note that variables specified on the sudo command line (such as
-\fIPKGDEST\fR by \fBaurbuild\fR) depend on sudo policy; see
-\fBsudo\fR(8) and \fBsudoers\fR(5).
-
-.SS Building for a different architecture
-To build packages for a different architecture, prepend \fBsetarch
-<arch>\fR to the aurbuild command line. The target architecture must
-both be supported by the current system (run \fIsetarch --list\fR for an
-approximation) and have a respective \fImakepkg.conf\fR file available
-in \fI/usr/share/devtools\fR (such as
-\fI/usr/share/devtools/makepkg-i686.conf\fR for \fIi686\fR).
-
 .SH SEE ALSO
+.BR aurbuild_chroot (1),
 .BR pacconf (1),
 .BR pacman (1),
 .BR makepkg.conf (5),

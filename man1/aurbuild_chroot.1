@@ -1,0 +1,44 @@
+.SS Building with \fBmakechrootpkg\fR
+The template (or \fIroot\fR) container is upgraded with \fIpacman
+-Syu\fR prior to building. This is done as the \fI$USER\fR container
+is copied from the \fIroot\fR container before each build
+(\fImakechrootpkg -c\fR).
+
+Changes to the pacman database are \fBnot\fR propagated from the
+container to the local system. Packages must be installed and updated
+separately, typically through \fIpacman -Syu <package_name>\fR.
+
+Package conflicts inside the container must be solved manually, as
+\fBmakechrootpkg\fR uses \fImakepkg --confirm -s\fR internally. For
+example, to replace \fBgcc\fR with \fBgcc-multilib\fR, run \fIarch-nspawn
+/var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
+
+Signature verification requires that \fBgpg2\fR(1) configuration is
+stored in \fI~/.gnupg\fR. See Github issue #151 for details.
+
+.SS Avoiding password prompts
+makepkg must be run as a regular user as of version 4.2, with
+privileged operations done via \fIsudo\fR. As such, \fIaurbuild\fR can
+not be run directly as root. To avoid password prompts,
+\fBsudoers\fR(5) can be used instead.
+
+For example:
+.EX
+
+  %build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
+  %build localhost = (root) NOPASSWD: /usr/bin/arch-nspawn
+
+.EE
+Note that variables specified on the sudo command line (such as
+\fIPKGDEST\fR by \fBaurbuild\fR) depend on sudo policy; see
+\fBsudo\fR(8) and \fBsudoers\fR(5).
+
+.SS Building for a different architecture
+To build packages for a different architecture, prepend \fBsetarch
+<arch>\fR to the aurbuild command line. The target architecture must
+both be supported by the current system (run \fIsetarch --list\fR for an
+approximation) and have a respective \fImakepkg.conf\fR file available
+in \fI/usr/share/devtools\fR (such as
+\fI/usr/share/devtools/makepkg-i686.conf\fR for \fIi686\fR).
+
+

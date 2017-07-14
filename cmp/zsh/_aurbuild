@@ -5,7 +5,6 @@ typeset -A opt_args
 _aurbuild_opts=(
     '-a[Queue file]'
     '-c[Build in an nspawn container]'
-    '-C[Set the container path]'
     '-d[Name of the database]'
     '-r[Path of the repository root]'
     '-s[Sign packages and database]'
