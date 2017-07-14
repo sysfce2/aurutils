@@ -54,6 +54,7 @@ while getopts a:C:d:D:M:r:cfNs OPT; do
         D) chroot_args+=(-D "$OPTARG") ;;
         M) chroot_args+=(-M "$OPTARG") ;;
         d) database=$OPTARG
+           # XXX: only used for #161
            chroot_args+=(-d "$OPTARG") ;;
         f) overwrite=1      ;;
         N) no_sync=1        ;;
