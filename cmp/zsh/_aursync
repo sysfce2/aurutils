@@ -3,7 +3,6 @@
 typeset -A opt_args
 
 _aursync_opts=(
-    {-B,--bind}'[Bind mount a file or directory]'
     {-c,--chroot}'[Build packages in a chroot]'
     {-D,--directory}'[Set container path]'
     {-f,--force}'[Overwrite built packages]'

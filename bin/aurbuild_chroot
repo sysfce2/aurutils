@@ -44,15 +44,17 @@ trap_exit() {
     fi
 }
 
-while getopts B:C:d:D:M:r:P OPT; do
+while getopts B:C:d:D:M:r:PT OPT; do
     # XXX: -d, -B, -p short option naming
     case $OPT in
         d) database=$OPTARG     ;;
-        B) makechrootpkg_args+=(-d "$OPTARG") ;;
         C) pacman_conf=$OPTARG  ;;
         D) container=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
         P) prepare=1            ;;
+        # XXX: use end-of-option
+        B) makechrootpkg_args+=(-d "$OPTARG") ;;
+        T) makechrootpkg_args+=(-T) ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -68,7 +70,6 @@ tmp=$(mktemp -d) || exit
 
 if ((prepare)); then
     conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
-
     prepare_chroot "$tmp"/pacman.conf "$makepkg_conf" "$container"
 
     if [[ -v database ]]; then

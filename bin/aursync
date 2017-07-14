@@ -6,6 +6,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e -o pipefail -o noclobber
 shopt -s nullglob
 
+declare -a makepkg_args=(-cs) aurbuild_args=()
 declare -i view=1 chkver=1 update=0 snapshot=0 chroot=0 rotate=0 build=1 download=1
 
 viewer() {
@@ -85,17 +86,17 @@ if getopt -T || (($? != 4)); then
     exit 22
 fi
 
-longopts=allan,bind:,chroot,directory:,force,help,ignore:,ignorearch,log,namcap
-longopts+=,noconfirm,nover,noview,print,rmdeps,sign,tar,temp,repo:,root:,update
-longopts+=,aurutils,ignore-arch,no-confirm,no-ver,no-view,rm-deps,ignfile,continue
+longopts=allan,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
+longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
+longopts+=,sign,tar,repo:,root:,update,aurutils,ignore-arch,ignfile,continue
 
-if TEMP=$(getopt -o B:D:I:AcfhLnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o D:I:AcfLnprstu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
 fi
 
-unset pkg_i pkg root repo aurbuild_args chroot_args local_args
+unset pkg_i pkg root repo
 while true; do
     case "$1" in
         -c|--chroot)
@@ -105,32 +106,23 @@ while true; do
         -D|--directory)
             aurbuild_args+=(-D "$2")
             shift 2 ;;
-        -s|--sign)
-            aurbuild_args+=(-s)
-            shift ;;
         -f|--force)
             aurbuild_args+=(-f)
             shift ;;
-        # XXX: pass to aurbuild_chroot
-        -B|--bind)
-            chroot_args+=(-D "$2")
-            shift ;;
-        # XXX: pass to aurbuild_chroot
-        -T|--temp)
-            chroot_args+=(-T)
+        -s|--sign)
+            aurbuild_args+=(-s)
             shift ;;
         -A|--ignorearch|--ignore-arch)
-            local_args+=(-A)
+            makepkg_args+=(-A)
             shift ;;
         -L|--log)
-            local_args+=(-L)
+            makepkg_args+=(-L)
             shift ;;
-        # XXX: pass to aurbuild_chroot
         -n|--noconfirm|--no-confirm)
-            local_args+=(--noconfirm)
+            makepkg_args+=(--noconfirm)
             shift ;;
         -r|--rmdeps|--rm-deps)
-            local_args+=(-r)
+            makepkg_args+=(-r)
             shift ;;
         -I|--ignore)
             IFS=, read -a pkg -r <<< "$2"
@@ -166,10 +158,7 @@ while true; do
         --root)
             root=$2
             shift 2 ;;
-        -h|--help)
-            usage
-            shift ;;
-        --)
+        *)
             shift
             break ;;
     esac
@@ -181,13 +170,6 @@ if ((rotate)); then
     else
         echo '?'; exit 16 # EBUSY
     fi
-fi
-
-# XXX: pass to aurbuild_chroot
-if ((chroot)); then
-    makepkg_args=(-cu "${chroot_args[@]}")
-else
-    makepkg_args=(-cs "${local_args[@]}")
 fi
 
 if ! (($# + update)); then

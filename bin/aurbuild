@@ -89,7 +89,7 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-# Reset option array if arguments are specified after --
+# XXX: end-of-options for aurbuild_chroot
 if (($#)); then
     makepkg_args=("$@")
 fi

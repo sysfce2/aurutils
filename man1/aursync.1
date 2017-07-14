@@ -4,7 +4,7 @@ aursync \- download and build aur packages automatically
 
 .SH SYNOPSIS
 .SY aursync
-.OP \-ABcDfILnprstTu
+.OP \-AcDfILnprstu
 .OP \--ignore
 .OP \--no-ver
 .OP \--no-view
@@ -118,20 +118,6 @@ Do not wait for user input. (\fImakepkg --noconfirm\fR)
 .B \-r, --rmdeps
 .RS
 Remove dependencies installed by makepkg. (\fImakepkg -r\fR)
-.RE
-
-.SS makechrootpkg
-The default set of options is \fImakechrootpkg -cnu\fR.
-
-.B \-B, --bind
-.RS
-Bind mount a file or directory from the host into the container
-read-only. (\fImakechrootpkg -D\fR)
-.RE
-
-.B \-T, --temp
-.RS
-Build in a temporary directory. (\fImakechrootpkg -T\fR)
 .RE
 
 .SH ENVIRONMENT
