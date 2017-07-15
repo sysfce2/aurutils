@@ -194,14 +194,11 @@ else
 fi
 
 msg2 "Using [$repo] repository"
-root=$(readlink -env -- "${root-$server}")
+root=$(realpath -e -- "${root-$server}")
 
-if ! [[ -w $root && -r $root ]]; then
-    error "$argv0: $root: permission denied (read-write)"
+if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
+    error "$argv0: $repo: permission denied (read-write)"
     exit 13
-elif ! [[ -d $root ]]; then
-    error "$argv0: $root: not a directory"
-    exit 20
 fi
 
 mkdir -p "$AURDEST"/snapshot
