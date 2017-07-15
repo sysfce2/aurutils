@@ -46,7 +46,7 @@ readonly -f conf_devtools prepare_chroot trap_exit
 unset binddir
 while getopts B:C:D:M:p OPT; do
     case $OPT in
-        B) binddir=$OPTARG      ;;
+        B) binddir+=("$OPTARG") ;;
         C) pacman_conf=$OPTARG  ;;
         D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
@@ -63,7 +63,7 @@ if (($#)); then
 fi
 
 if [[ -v binddir ]]; then
-    makechrootpkg_args+=("$binddir")
+    makechrootpkg_args+=("${binddir[@]}")
 fi
 
 trap 'trap_exit' EXIT
@@ -76,6 +76,7 @@ if ((prepare)); then
         exit $?
     fi
 else
+    # XXX: makepkg options after end-of-options
     sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
         -r "$directory" "${makechrootpkg_args[@]}"
 fi
