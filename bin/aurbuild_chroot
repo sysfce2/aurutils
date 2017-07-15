@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 readonly argv0=aurbuild_chroot
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -7,9 +6,9 @@ machine=$(uname -m)
 makechrootpkg_args=(-cu)
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
-container=/var/lib/aurbuild/$machine
+directory=/var/lib/aurbuild/$machine
 
-prepare=0
+declare -i prepare=0
 
 conf_devtools() {
     printf '[options]\n'
@@ -24,15 +23,15 @@ conf_devtools() {
 }
 
 prepare_chroot() {
-    declare -r pacman_conf=$1 makepkg_conf=$2 container=$3
+    declare -r pacman_conf=$1 makepkg_conf=$2 directory=$3
 
-    if [[ -f $container/root/.arch-chroot ]]; then
+    if [[ -f $directory/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" \
-            "$container"/root pacman -Syu --noconfirm
+            "$directory"/root pacman -Syu --noconfirm
     else
-        sudo install -d "$container" -m 755 -v
+        sudo install -d "$directory" -m 755 -v
         sudo mkarchroot  -C "$pacman_conf" -M "$makepkg_conf" \
-            "$container"/root base-devel
+            "$directory"/root base-devel
     fi
 }
 
@@ -42,38 +41,41 @@ trap_exit() {
     fi
 }
 
-unset database
-while getopts B:C:d:D:M:r:PT OPT; do
-    # XXX: -d, -B, -p short option naming
+readonly -f conf_devtools prepare_chroot trap_exit
+
+unset binddir
+while getopts B:C:D:M:p OPT; do
     case $OPT in
-        d) database=$OPTARG     ;;
+        B) binddir=$OPTARG      ;;
         C) pacman_conf=$OPTARG  ;;
-        D) container=$OPTARG    ;;
+        D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
-        P) prepare=1            ;;
-        # XXX: use end-of-option
-        B) makechrootpkg_args+=(-d "$OPTARG") ;;
-        T) makechrootpkg_args+=(-T) ;;
+        p) prepare=1            ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# Reset option array if arguments are specified after --
+readonly binddir cache pacman_conf makepkg_conf directory prepare
+
 if (($#)); then
     makechrootpkg_args=("$@")
+fi
+
+if [[ -v binddir ]]; then
+    makechrootpkg_args+=("$binddir")
 fi
 
 trap 'trap_exit' EXIT
 tmp=$(mktemp -d) || exit
 
 if ((prepare)); then
-    conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
-    prepare_chroot "$tmp"/pacman.conf "$makepkg_conf" "$container"
-
-    if [[ -v database ]]; then
-        pacconf --root="$container"/root --repo="$database" >/dev/null
+    if conf_devtools "$pacman_conf" > "$tmp"/pacman.conf; then
+        prepare_chroot "$tmp"/pacman.conf "$makepkg_conf" "$directory"
+    else
+        exit $?
     fi
 else
-    sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$container" "${makechrootpkg_args[@]}"
+    sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
+        -r "$directory" "${makechrootpkg_args[@]}"
 fi
