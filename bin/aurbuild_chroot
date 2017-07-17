@@ -3,23 +3,26 @@ readonly argv0=aurbuild_chroot
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 machine=$(uname -m)
-makechrootpkg_args=(-cu)
+directory=/var/lib/aurbuild/$machine
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
-directory=/var/lib/aurbuild/$machine
 
 declare -i prepare=0
+declare -a makechrootpkg_args=()
 
 conf_devtools() {
     printf '[options]\n'
-    pacconf --config="$1" --options --raw
 
-    printf '#CacheDir=\n'
+    if pacconf --config="$1" --options --raw; then
+        printf '#CacheDir=\n'
 
-    pacconf --repo-list | while IFS= read -r; do
-        printf '[%s]\n' "$REPLY"
-        pacconf --repo="$REPLY" --raw
-    done
+        pacconf --repo-list | while IFS= read -r; do
+            printf '[%s]\n' "$REPLY"
+            pacconf --repo="$REPLY" --raw
+        done
+    else
+        return $?
+    fi
 }
 
 prepare_chroot() {
@@ -43,28 +46,22 @@ trap_exit() {
 
 readonly -f conf_devtools prepare_chroot trap_exit
 
-unset binddir
-while getopts B:C:D:M:p OPT; do
+while getopts :C:M:r:p OPT; do
     case $OPT in
-        B) binddir+=("$OPTARG") ;;
         C) pacman_conf=$OPTARG  ;;
-        D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
+        r) directory=$OPTARG    ;;
         p) prepare=1            ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-readonly binddir cache pacman_conf makepkg_conf directory prepare
-
 if (($#)); then
     makechrootpkg_args=("$@")
 fi
 
-if [[ -v binddir ]]; then
-    makechrootpkg_args+=("${binddir[@]}")
-fi
+readonly pacman_conf makepkg_conf directory prepare
 
 trap 'trap_exit' EXIT
 tmp=$(mktemp -d) || exit
@@ -76,7 +73,6 @@ if ((prepare)); then
         exit $?
     fi
 else
-    # XXX: makepkg options after end-of-options
     sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
         -r "$directory" "${makechrootpkg_args[@]}"
 fi
