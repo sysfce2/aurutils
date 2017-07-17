@@ -5,7 +5,8 @@ readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
-declare -a makepkg_args=(-rs) chroot_args=() repo_add_args=()
+declare -a makepkg_args=(-rs) makechrootpkg_args=(-cu)
+declare -a chroot_args=() repo_add_args=()
 declare -i chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
 conf_local() {
@@ -46,7 +47,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 unset root queue database
-while getopts a:d:r:cfNs OPT; do
+while getopts a:d:r:C:D:M:cfNs OPT; do
     case $OPT in
         a) queue=$OPTARG    ;;
         c) chroot=1         ;;
@@ -55,7 +56,10 @@ while getopts a:d:r:cfNs OPT; do
         N) no_sync=1        ;;
         r) root=$OPTARG     ;;
         s) sign_pkg=1       ;;
-        *) usage            ;;
+        C) chroot_args+=(-C "$OPTARG") ;;
+        D) chroot_args+=(-r "$OPTARG") ;;
+        M) chroot_args+=(-M "$OPTARG") ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -88,7 +92,7 @@ fi
 if (($#)); then
     makepkg_args=("$@")
 else
-    chroot_args=("$@")
+    makechrootpkg_args=("$@")
 fi
 
 if command -v xdelta3 >/dev/null; then
@@ -115,8 +119,8 @@ trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if ((chroot)); then
-    # XXX: implement #161
-    aurbuild_chroot -p "${chroot_args[@]}"
+    # XXX: Implement #161
+    sudo aurbuild_chroot -p "${chroot_args[@]}"
 else
     conf_local "$database" > "$tmp"/custom.conf
 fi
@@ -134,7 +138,8 @@ while read -r -u "$fd" pkg _; do
     fi
 
     if ((chroot)); then
-        PKGDEST="$var_tmp" aurbuild_chroot -B "$root" "${chroot_args[@]}"
+        sudo env PKGDEST="$var_tmp" aurbuild_chroot \
+             "${chroot_args[@]}" -- -d "$root" "${makechrootpkg_args[@]}"
     else
         PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
     fi

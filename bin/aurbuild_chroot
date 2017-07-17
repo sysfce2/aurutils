@@ -1,8 +1,9 @@
 #!/bin/bash
 readonly argv0=aurbuild_chroot
+readonly PATH=/bin:/usr/bin
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-machine=$(uname -m)
+machine=$(uname -m) || exit
 directory=/var/lib/aurbuild/$machine
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
@@ -21,7 +22,7 @@ conf_devtools() {
             pacconf --repo="$REPLY" --raw
         done
     else
-        return $?
+        return
     fi
 }
 
@@ -29,12 +30,13 @@ prepare_chroot() {
     declare -r pacman_conf=$1 makepkg_conf=$2 directory=$3
 
     if [[ -f $directory/root/.arch-chroot ]]; then
-        sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" \
-            "$directory"/root pacman -Syu --noconfirm
+        # locking is done by systemd-nspawn
+        arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" \
+                    "$directory"/root pacman -Syu --noconfirm   
     else
-        sudo install -d "$directory" -m 755 -v
-        sudo mkarchroot  -C "$pacman_conf" -M "$makepkg_conf" \
-            "$directory"/root base-devel
+        install -d "$directory" -m 755 -v || return
+        mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
+                   "$directory"/root base-devel
     fi
 }
 
@@ -64,15 +66,15 @@ fi
 readonly pacman_conf makepkg_conf directory prepare
 
 trap 'trap_exit' EXIT
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp) || exit
 
 if ((prepare)); then
     if conf_devtools "$pacman_conf" > "$tmp"/pacman.conf; then
         prepare_chroot "$tmp"/pacman.conf "$makepkg_conf" "$directory"
     else
-        exit $?
+        exit
     fi
 else
-    sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
+    env PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
         -r "$directory" "${makechrootpkg_args[@]}"
 fi
