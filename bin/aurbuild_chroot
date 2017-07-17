@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 readonly argv0=aurbuild_chroot
 readonly PATH=/bin:/usr/bin
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -14,30 +15,13 @@ declare -a makechrootpkg_args=()
 conf_devtools() {
     printf '[options]\n'
 
-    if pacconf --config="$1" --options --raw; then
-        printf '#CacheDir=\n'
+    pacconf --config="$1" --options --raw
+    printf '#CacheDir=\n'
 
-        pacconf --repo-list | while IFS= read -r; do
-            printf '[%s]\n' "$REPLY"
-            pacconf --repo="$REPLY" --raw
-        done
-    else
-        return
-    fi
-}
-
-prepare_chroot() {
-    declare -r pacman_conf=$1 makepkg_conf=$2 directory=$3
-
-    if [[ -f $directory/root/.arch-chroot ]]; then
-        # locking is done by systemd-nspawn
-        arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" \
-                    "$directory"/root pacman -Syu --noconfirm   
-    else
-        install -d "$directory" -m 755 -v || return
-        mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
-                   "$directory"/root base-devel
-    fi
+    pacconf --repo-list | while IFS= read -r; do
+        printf '[%s]\n' "$REPLY"
+        pacconf --repo="$REPLY" --raw
+    done
 }
 
 trap_exit() {
@@ -46,7 +30,7 @@ trap_exit() {
     fi
 }
 
-readonly -f conf_devtools prepare_chroot trap_exit
+readonly -f conf_devtools trap_exit
 
 while getopts :C:M:r:p OPT; do
     case $OPT in
@@ -66,13 +50,19 @@ fi
 readonly pacman_conf makepkg_conf directory prepare
 
 trap 'trap_exit' EXIT
-tmp=$(mktemp -d) || exit
+tmp=$(mktemp -d)
 
 if ((prepare)); then
-    if conf_devtools "$pacman_conf" > "$tmp"/pacman.conf; then
-        prepare_chroot "$tmp"/pacman.conf "$makepkg_conf" "$directory"
+    conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
+
+    if [[ -f $directory/root/.arch-chroot ]]; then
+        # locking is done by systemd-nspawn
+        arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" \
+            "$directory"/root pacman -Syu --noconfirm   
     else
-        exit
+        install -d "$directory" -m 755 -v || return
+        mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
+            "$directory"/root base-devel
     fi
 else
     env PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
