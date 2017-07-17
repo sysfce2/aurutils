@@ -56,6 +56,7 @@ while getopts a:d:r:C:D:M:cfNs OPT; do
         N) no_sync=1        ;;
         r) root=$OPTARG     ;;
         s) sign_pkg=1       ;;
+        # XXX: -C, -D option name
         C) chroot_args+=(-C "$OPTARG") ;;
         D) chroot_args+=(-r "$OPTARG") ;;
         M) chroot_args+=(-M "$OPTARG") ;;
@@ -119,7 +120,6 @@ trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if ((chroot)); then
-    # XXX: Implement #161
     sudo aurbuild_chroot -p "${chroot_args[@]}"
 else
     conf_local "$database" > "$tmp"/custom.conf
