@@ -31,7 +31,7 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 -- '%s\n' "$argv0: aurbuild_chroot [-CMRp] -- <ARGS>"
+    printf >&2 -- '%s\n' "$argv0: aurbuild_chroot [-CMrp] -- <ARGS>"
     exit 1
 }
 
