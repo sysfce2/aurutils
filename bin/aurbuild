@@ -120,7 +120,7 @@ trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if ((chroot)); then
-    sudo aurbuild_chroot -p "$database" "${chroot_args[@]}"
+    sudo aurbuild_chroot -U "$database" "${chroot_args[@]}"
 else
     conf_local "$database" >"$tmp"/custom.conf
 fi
@@ -138,7 +138,7 @@ while read -r -u "$fd" pkg _; do
     fi
 
     if ((chroot)); then
-        sudo env PKGDEST="$var_tmp" aurbuild_chroot \
+        sudo PKGDEST="$var_tmp" aurbuild_chroot \
              "${chroot_args[@]}" -- -d "$root" "${makechrootpkg_args[@]}"
     else
         PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"

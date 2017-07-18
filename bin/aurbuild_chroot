@@ -10,7 +10,7 @@ makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
 
 declare -a makechrootpkg_args=()
-declare -i prepare=0
+declare -i update_root=0
 
 conf_devtools() {
     printf '[options]\n'
@@ -37,13 +37,13 @@ usage() {
 
 readonly -f conf_devtools trap_exit usage
 
-while getopts :C:M:r:p: OPT; do
+while getopts :C:M:r:U: OPT; do
     case $OPT in
         C) pacman_conf=$OPTARG  ;;
         M) makepkg_conf=$OPTARG ;;
         r) directory=$OPTARG    ;;
-        p) database=$OPTARG
-           prepare=1            ;;
+        U) database=$OPTARG
+           update_root=1        ;;
         *) usage                ;;
     esac
 done
@@ -59,7 +59,7 @@ readonly pacman_conf makepkg_conf directory database prepare
 trap 'trap_exit' EXIT
 tmp=$(mktemp -d)
 
-if ((prepare)); then
+if ((update_root)); then
     conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
@@ -75,6 +75,6 @@ if ((prepare)); then
     # Check if target repository is configured in chroot (#161)
     pacconf --sysroot="$directory"/root --repo="$database" >/dev/null
 else
-    env PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
+    PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
         -r "$directory" "${makechrootpkg_args[@]}"
 fi
