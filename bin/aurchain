@@ -1,29 +1,42 @@
 #!/bin/bash
-# shellcheck disable=SC2016
+set -o noclobber
 readonly argv0=aurchain
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o noclobber
 
-declare all=0
+mode=aur
 
 count() {
     declare -i num
 
     if num=$(jq -r '.resultcount' "$1" | awk '{s += $1} END {print s}'); then
-        printf '%s\n' "$num"
+        printf '%d' "$num"
     else
         error "$argv0: invalid argument"
         exit 22
     fi
 }
 
-pair() {
-    jq -r '.results[] | .Name as $name | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
-         | [$name, .] | @tsv' "$1" | sed -r 's/[<>=].*$//g'
+sort_by() {
+    awk 'FNR == NR {
+        a[$1] = $0; next
+    } {
+        if($0 in a)
+            print a[$0]
+    }' "$@"
 }
 
-fld() {
-    awk -v F="$1" '{print $(F)}' "${@:2}" | sort -u
+strip_version() {
+    sed -r 's/[<>=].*$//g'
+}
+
+tabulate() {
+    jq -r '.results[]
+        | .Name         as $name
+        | .PackageBase  as $base
+        | .Version      as $ver
+        | .URLPath      as $url
+        | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
+        | [$name, ., $base, $ver, $url] | @tsv' "$1"
 }
 
 chain() {
@@ -40,16 +53,15 @@ chain() {
     for ((a = 1; a <= 30; ++a)); do
         declare -i sub=$((a-1))
 
-        pair json/$sub > tsv/$sub
+        tabulate json/$sub | tee -a tsv/n > tsv/$sub
 
-        fld 1 tsv/$sub >> pkgname
-        fld 1 tsv/$sub >> seen
-
-        sort -u tsv/$sub >> tsv/n
+        cut -f 1 tsv/$sub >> pkgname
+        cut -f 1 tsv/$sub >> seen
 
         # Avoid querying duplicates (#4)
-        readarray -t target < <(fld 2 tsv/$sub | grep -Fxvf seen)
+        readarray -t target < <(cut -f 2 tsv/$sub | strip_version | grep -Fxvf seen)
 
+        # XXX AUR does not support querying pkgver (#10)
         if [[ ${target[*]} ]]; then
             aursearch -ir -- "${target[@]}" > json/$a || exit
         else
@@ -61,7 +73,7 @@ chain() {
         if [[ $num -lt 1 ]]; then
             break
         else
-            fld 2 tsv/$sub >> seen
+            cut -f 2 tsv/$sub >> seen
         fi
     done
 
@@ -70,10 +82,12 @@ chain() {
         exit 34
     fi
 
-    if ! tsort tsv/n; then
+    if ! cut -f 1,2 tsv/n | strip_version | tsort; then
         error "$argv0: invalid argument"
         exit 22
     fi
+ 
+    cut -f2 --complement tsv/n | sort -uk1,1 > pkginfo
 }
 
 trap_exit() {
@@ -87,17 +101,18 @@ usage() {
     exit 1
 }
 
+readonly -f count tabulate chain trap_exit usage
+
 source /usr/share/makepkg/util.sh || exit
 
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-unset copydir
-while getopts :at: OPT; do
+while getopts :at OPT; do
     case $OPT in
-        a) all=1 ;;
-        t) copydir=$OPTARG ;;
+        a) mode=all ;;
+        t) mode=tab ;;
         *) usage ;;
     esac
 done
@@ -115,16 +130,12 @@ cd_safe "$tmp"
 mkdir {json,tsv} || exit
 
 # Generate dependency tree and pkgname list (pkgname).
-chain "$@" > tree
+chain "$@" > order
 
-if ((all)); then
-    tac tree
-else
-    grep -Fxf pkgname tree | tac
-fi
-
-if [[ -v copydir ]]; then
-    cp -nr json -t "$copydir"
-fi
+case $mode in
+    aur) grep -Fxf pkgname order | tac ;;
+    all) tac order ;;
+    tab) tac order | sort_by pkginfo - ;;
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:
