@@ -31,7 +31,7 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 -- '%s\n' "$argv0: aurbuild_chroot [-CMrp] -- <ARGS>"
+    printf >&2 -- '%s\n' "$argv0: aurbuild_chroot [-CMrU] -- <ARGS>"
     exit 1
 }
 
@@ -64,11 +64,11 @@ if ((update_root)); then
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
-        arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" \
+        arch-nspawn -C "$tmp"/pacman_conf -M "$makepkg_conf" \
             "$directory"/root pacman -Syu --noconfirm   
     else
         install -d "$directory" -m 755 -v || return
-        mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
+        mkarchroot -C "$tmp"/pacman_conf -M "$makepkg_conf" \
             "$directory"/root base-devel
     fi
 
