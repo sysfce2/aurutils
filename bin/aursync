@@ -37,12 +37,12 @@ conf_file_repo() {
         }'
 }
 
-uniq_first() {
+uniq_by_12() {
     awk -F'\t' 'NR == FNR {
         a[$0]; next
     } {
-        if($1 in a && !($1 in s)) {
-            print $0; s[$1]
+        if($1 in a && !($2 in s)) {
+            print $0; s[$2]
         }
     }' "$@"
 }
@@ -54,11 +54,11 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcCfILnprstTu] [long options] [--] pkgname..."
+    plain "usage: $argv0 [-ABcDfILnprstTu] [long options] [--] pkgname..."
     exit 1
 }
 
-readonly -f viewer lib32 conf_file_repo uniq_first trap_exit usage
+readonly -f viewer lib32 conf_file_repo uniq_by_12 trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -228,21 +228,21 @@ if [[ -v pkg_i ]]; then
 fi
 
 if grep -Fxvf sift queue_0 > queue_1; then
-    uniq_first queue_1 pkginfo_0 > pkginfo_1 # XXX
+    # Select filtered pkgnames (-f1) and sort uniquely by pkgbase (-f2)
+    uniq_by_12 queue_1 pkginfo_0 | cut -f 1 --complement > pkginfo_1 # XXX
 else
     plain "there is nothing to do"
     exit 0
 fi
 
-cut -f 2 pkginfo_1 > queue
-cut -f 4 pkginfo_1 > urlpath
+cut -f 1 pkginfo_1 > queue
 
 if ((download)); then
     msg "Retrieving build files..."
 
     if ((snapshot)); then
         cd_safe "$AURDEST"/snapshot
-        aurfetch -t < "$tmp"/urlpath
+        cut -f 3 "$tmp"/pkginfo_1 | aurfetch -t
     else
         cd_safe "$AURDEST"
         aurfetch -L "$tmp"/patch < "$tmp"/queue
