@@ -18,22 +18,13 @@ viewer() {
     fi
 }
 
-sub() {
-    awk 'NR == FNR {
-        x[$1] = $2; next
-    } {
-        if ($1 in x && !(x[$1] in seen)) {
-            print x[$1]; seen[x[$1]];
-        }
-    }' "$@"
-}
-
 lib32() {
     awk -v arch="$(uname -m)" '{
         if(arch == "i686") {
-            gsub(/^lib32-/,""); gsub(/^gcc-multilib$/,"")
+            gsub(/^lib32-/,"")
+            gsub(/^gcc-multilib$/,"")
         }; print
-    }' "$@"
+    }'
 }
 
 conf_file_repo() {
@@ -46,21 +37,14 @@ conf_file_repo() {
         }'
 }
 
-match_urlpath() {
-    awk 'NR == FNR {
-        x[$0]; next
-    } $1 in x {
-        print $2
+uniq_first() {
+    awk -F'\t' 'NR == FNR {
+        a[$0]; next
+    } {
+        if($1 in a && !($1 in s)) {
+            print $0; s[$1]
+        }
     }' "$@"
-}
-
-ign() {
-    if [[ -v pkg_i ]]; then
-        printf >&2 -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}"
-        grep -Exvf <(printf -- '%s\n' "${pkg_i[@]}") -
-    else
-        tee
-    fi
 }
 
 trap_exit() {
@@ -74,7 +58,7 @@ usage() {
     exit 1
 }
 
-readonly -f viewer sub lib32 conf_file_repo match_urlpath ign trap_exit usage
+readonly -f viewer lib32 conf_file_repo uniq_first trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -135,6 +119,9 @@ while true; do
             IFS=, read -a pkg -r <<< "$2"
             pkg_i+=("${pkg[@]}")
             shift 2 ;;
+        --ignfile)
+            mapfile -t pkg_i < "$2"
+            shift 2 ;;
         -p|--print)
             build=0
             shift ;;
@@ -150,10 +137,7 @@ while true; do
         --continue)
             download=0
             shift ;;
-        --ignfile)
-            mapfile -t pkg_i < "$2"
-            shift 2 ;;
-        --nover|--no-ver)
+       --nover|--no-ver)
             chkver=0
             shift ;;
         --noview|--no-view)
@@ -216,13 +200,13 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX); readonly tmp
 trap 'trap_exit' EXIT
 
 cd_safe "$tmp"
-mkdir {tsv,json,patch}
+mkdir patch
 
 if ((update)); then
     aurcheck -d "$repo" -r "$root" -q
-fi > check
+fi >new
 
-mapfile -t < check
+mapfile -t < new
 
 if ! (($# + ${#MAPFILE[@]})); then
     plain "there is nothing to do"
@@ -230,47 +214,41 @@ if ! (($# + ${#MAPFILE[@]})); then
 fi
 
 msg "Resolving dependencies..."
-aurchain -a -t "$tmp" -- "$@" "${MAPFILE[@]}" > queue_0
-json_set=(json/*)
+aurchain -t -- "$@" "${MAPFILE[@]}" > pkginfo_0 # tsort
 
-if ! ((${#json_set[@]})); then
-    error "$argv0: no data available"
-    exit 61
-fi
-
-jq -r '.results[] | [.Name,.PackageBase]    | @tsv' "${json_set[@]}" > tsv/pkgbase
-jq -r '.results[] | [.Name,.Version]        | @tsv' "${json_set[@]}" > tsv/pkgver
-jq -r '.results[] | [.PackageBase,.URLPath] | @tsv' "${json_set[@]}" > tsv/urlpath
-
-# pkgname -> pkgbase
-lib32 queue_0 | ign | sub tsv/pkgbase - > queue_1
+cut -f 1 pkginfo_0 | lib32 > queue_0
 
 if ((chkver)); then
-    aurcheck -d "$repo" -r "$root" -c < tsv/pkgver | sub tsv/pkgbase -
-fi > sift
+    cut -f 1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
+fi >sift
 
-if ! grep -Fxvf sift queue_1 > queue; then
+if [[ -v pkg_i ]]; then
+    printf -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}" >&2
+    printf -- '%s\n' "${pkg_i[@]}" >>sift
+fi
+
+if ! grep -Fxvf sift queue_0 > queue_1; then
     plain "there is nothing to do"
     exit 0
 fi
 
-if ((snapshot)); then
-    cd_safe "$AURDEST"/snapshot
+uniq_first queue_1 pkginfo_0 > pkginfo_1
 
-    if ((download)); then
-        msg "Retrieving build files..."
-        match_urlpath "$tmp"/queue "$tmp"/urlpath | aurfetch -t
-    fi
-else
-    cd_safe "$AURDEST"
+cut -f 2 pkginfo_1 > queue
+cut -f 4 pkginfo_1 > urlpath
 
-    if ((download)); then
-        msg "Retrieving build files..."
+if ((download)); then
+    msg "Retrieving build files..."
+
+    if ((snapshot)); then
+        cd_safe "$AURDEST"/snapshot
+        aurfetch -t < "$tmp"/urlpath
+    else
+        cd_safe "$AURDEST"
         aurfetch -L "$tmp"/patch < "$tmp"/queue
     fi
 fi
 
-# View changes and build files in one window (#77)
 if ((view)); then
     printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
         | xargs -I{} find {} -maxdepth 1 | viewer
