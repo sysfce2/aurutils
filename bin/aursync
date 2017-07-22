@@ -227,12 +227,12 @@ if [[ -v pkg_i ]]; then
     printf -- '%s\n' "${pkg_i[@]}" >>sift
 fi
 
-if ! grep -Fxvf sift queue_0 > queue_1; then
+if grep -Fxvf sift queue_0 > queue_1; then
+    uniq_first queue_1 pkginfo_0 > pkginfo_1 # XXX
+else
     plain "there is nothing to do"
     exit 0
 fi
-
-uniq_first queue_1 pkginfo_0 > pkginfo_1
 
 cut -f 2 pkginfo_1 > queue
 cut -f 4 pkginfo_1 > urlpath
