@@ -55,11 +55,11 @@ chain() {
 
         tabulate json/$sub | tee -a tsv/n > tsv/$sub
 
-        cut -f 1 tsv/$sub >> pkgname
-        cut -f 1 tsv/$sub >> seen
+        cut -f1 tsv/$sub >> pkgname
+        cut -f1 tsv/$sub >> seen
 
         # Avoid querying duplicates (#4)
-        readarray -t target < <(cut -f 2 tsv/$sub | strip_version | grep -Fxvf seen)
+        readarray -t target < <(cut -f2 tsv/$sub | strip_version | grep -Fxvf seen)
 
         # XXX AUR does not support querying pkgver (#10)
         if [[ ${target[*]} ]]; then
@@ -73,7 +73,7 @@ chain() {
         if [[ $num -lt 1 ]]; then
             break
         else
-            cut -f 2 tsv/$sub >> seen
+            cut -f2 tsv/$sub >> seen
         fi
     done
 
@@ -82,7 +82,7 @@ chain() {
         exit 34
     fi
 
-    if ! cut -f 1,2 tsv/n | strip_version | tsort; then
+    if ! cut -f1,2 tsv/n | strip_version | tsort; then
         error "$argv0: invalid argument"
         exit 22
     fi

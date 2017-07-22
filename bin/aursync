@@ -214,12 +214,10 @@ if ! (($# + ${#MAPFILE[@]})); then
 fi
 
 msg "Resolving dependencies..."
-aurchain -t -- "$@" "${MAPFILE[@]}" > pkginfo_0 # tsort
-
-cut -f 1 pkginfo_0 | lib32 > queue_0
+aurchain -t -- "$@" "${MAPFILE[@]}" | tee pkginfo_0 | cut -f1 | lib32 > queue_0
 
 if ((chkver)); then
-    cut -f 1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
+    cut -f1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
 fi >sift
 
 if [[ -v pkg_i ]]; then
@@ -228,21 +226,18 @@ if [[ -v pkg_i ]]; then
 fi
 
 if grep -Fxvf sift queue_0 > queue_1; then
-    # Select filtered pkgnames (-f1) and sort uniquely by pkgbase (-f2)
-    uniq_by_12 queue_1 pkginfo_0 | cut -f 1 --complement > pkginfo_1 # XXX
+    uniq_by_12 queue_1 pkginfo_0 | tee pkginfo_1 | cut -f2 > queue
 else
     plain "there is nothing to do"
     exit 0
 fi
-
-cut -f 1 pkginfo_1 > queue
 
 if ((download)); then
     msg "Retrieving build files..."
 
     if ((snapshot)); then
         cd_safe "$AURDEST"/snapshot
-        cut -f 3 "$tmp"/pkginfo_1 | aurfetch -t
+        cut -f4 "$tmp"/pkginfo_1 | aurfetch -t
     else
         cd_safe "$AURDEST"
         aurfetch -L "$tmp"/patch < "$tmp"/queue
