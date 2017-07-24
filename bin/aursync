@@ -219,14 +219,14 @@ aurchain -t -- "$@" "${MAPFILE[@]}" | tee pkginfo_0 | cut -f1 | lib32 > queue_0
 
 if ((chkver)); then
     cut -f1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
-fi >sift
+fi >ignore
 
 if [[ -v pkg_i ]]; then
     printf -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}" >&2
-    printf -- '%s\n' "${pkg_i[@]}" >>sift
+    printf -- '%s\n' "${pkg_i[@]}" >>ignore
 fi
 
-if grep -Fxvf sift queue_0 > queue_1; then
+if grep -Fxvf ignore queue_0 > queue_1; then
     uniq_by 1 2 queue_1 pkginfo_0 | tee pkginfo_1 | cut -f2 > queue
 else
     plain "there is nothing to do"
