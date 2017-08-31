@@ -64,11 +64,11 @@ if ((update_root)); then
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
-        arch-nspawn -C "$tmp"/pacman_conf -M "$makepkg_conf" \
+        arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$directory"/root pacman -Syu --noconfirm   
     else
         install -d "$directory" -m 755 -v || exit
-        mkarchroot -C "$tmp"/pacman_conf -M "$makepkg_conf" \
+        mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
             "$directory"/root base-devel
     fi
 
