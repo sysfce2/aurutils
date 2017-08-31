@@ -37,11 +37,11 @@ usage() {
 
 readonly -f conf_devtools trap_exit usage
 
-while getopts :C:M:r:U: OPT; do
+while getopts :C:D:M:U: OPT; do
     case $OPT in
         C) pacman_conf=$OPTARG  ;;
+        D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
-        r) directory=$OPTARG    ;;
         U) database=$OPTARG
            update_root=1        ;;
         *) usage                ;;

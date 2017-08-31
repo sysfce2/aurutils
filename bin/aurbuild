@@ -58,7 +58,7 @@ while getopts a:d:r:C:D:M:cfNs OPT; do
         s) sign_pkg=1       ;;
         # XXX: -C, -D option name
         C) chroot_args+=(-C "$OPTARG") ;;
-        D) chroot_args+=(-r "$OPTARG") ;;
+        D) chroot_args+=(-D "$OPTARG") ;;
         M) chroot_args+=(-M "$OPTARG") ;;
         *) usage ;;
     esac
