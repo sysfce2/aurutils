@@ -67,7 +67,7 @@ if ((update_root)); then
         arch-nspawn -C "$tmp"/pacman_conf -M "$makepkg_conf" \
             "$directory"/root pacman -Syu --noconfirm   
     else
-        install -d "$directory" -m 755 -v || return
+        install -d "$directory" -m 755 -v || exit
         mkarchroot -C "$tmp"/pacman_conf -M "$makepkg_conf" \
             "$directory"/root base-devel
     fi
