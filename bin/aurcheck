@@ -156,7 +156,7 @@ case $mode in
         if ((cmp)); then
             sort_join "$tmp" - | cmp_equal_or_newer
         else
-            column -s '\t' -t "$tmp"
+            column -s $'\t' -t "$tmp"
         fi
 esac
 
