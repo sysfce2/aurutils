@@ -47,7 +47,7 @@ cmp_all() {
     while IFS=$'\t' read -r name base v_cmp v_in; do
         case $base in
             # XXX unavailable packages are printed to stderr, update manual
-            -) printf >&2 -- '%s (not available)' "$name"
+            -) printf >&2 -- '%s (not available)\n' "$name"
                continue ;;
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
