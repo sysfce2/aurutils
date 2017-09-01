@@ -52,7 +52,7 @@ cmp_all() {
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
 
-        # XXX Assumes sorted input on field 1 resp. 2
+        # XXX Assumes sorted input on field 1 resp. 2 (assert with sort -C?)
         case $print_base in
             0) [[ $pkg == "$name" ]] && continue
                pkg=$name ;;
@@ -138,6 +138,7 @@ case $mode in
         if [[ -v database ]]; then
             namever_sync "$database" >"$tmp" || exit
         else
+            # XXX take input from stdin only when specified (-i)
             tee >"$tmp"
         fi
 
