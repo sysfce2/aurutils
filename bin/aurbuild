@@ -56,7 +56,6 @@ while getopts a:d:r:C:D:M:cfNs OPT; do
         N) no_sync=1        ;;
         r) root=$OPTARG     ;;
         s) sign_pkg=1       ;;
-        # XXX: -C, -D option name
         C) chroot_args+=(-C "$OPTARG") ;;
         D) chroot_args+=(-D "$OPTARG") ;;
         M) chroot_args+=(-M "$OPTARG") ;;
@@ -101,14 +100,14 @@ if command -v xdelta3 >/dev/null; then
 fi
 
 if ((sign_pkg)); then
+    repo_add_args+=(-v -s)
+
     if [[ -v GPGKEY ]] && gpg --listkeys "$GPGKEY"; then
         gpg_args+=(-u "$GPGKEY")
     fi
-    repo_add_args+=(-v -s)
 
 elif [[ -f $db_path.sig ]]; then
     error "$argv0: signature found, but signing is disabled"
-    printf >&2 -- '%q\n' "$db_path".sig
     exit 1
 fi
  
