@@ -3,7 +3,7 @@ readonly argv0=aurcheck
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-declare -i geq=0 ver=1 cmp=0 print_base=0
+declare -i geq=0 ver=1 cmp=0 pkg_key=1
 declare    mode=aur
 
 # Optimize for the common case (version equality)
@@ -17,13 +17,13 @@ my_vercmp() {
     fi
 }
 
-sort_first() {
-    sort -k 1b,1 -t $'\t' -- "$1"
+sort_by() {
+    sort -k "${1}b,$1" -t $'\t' -- "$2"
 }
 
 sort_join() {
     # Use (single) hyphen to fill empty fields as disallowed in pkgver/pkgname
-    join -a 2 -e - -o auto -t $'\t' <(sort_first "$1") <(sort_first "$2")
+    join -a 2 -e - -o auto -t $'\t' <(sort_by 1 "$1") <(sort_by 1 "$2")
 }
 
 cmp_equal_or_newer() {
@@ -52,11 +52,10 @@ cmp_all() {
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
 
-        # XXX Assumes sorted input on field 1 resp. 2 (assert with sort -C?)
-        case $print_base in
-            0) [[ $pkg == "$name" ]] && continue
+        case $pkg_key in
+            1) [[ $pkg == "$name" ]] && continue
                pkg=$name ;;
-            1) [[ $pkg == "$base" ]] && continue # pkg set in previous iteration
+            2) [[ $pkg == "$base" ]] && continue # pkg set in previous iteration
                pkg=$base ;;
         esac
 
@@ -105,7 +104,7 @@ usage() {
     exit 1
 }
 
-readonly -f my_vercmp sort_first sort_join cmp_equal_or_newer cmp_all
+readonly -f my_vercmp sort_by sort_join cmp_equal_or_newer cmp_all
 readonly -f namever_aur namever_sync repo_list trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
@@ -118,7 +117,7 @@ unset database root
 while getopts :abcd:lqr: OPT; do
     case $OPT in
         a) geq=1            ;;
-        b) print_base=1     ;;
+        b) pkg_key=2        ;;
         q) ver=0            ;;
         d) database=$OPTARG ;;
         c) mode=repo; cmp=1 ;;
@@ -142,7 +141,8 @@ case $mode in
             tee >"$tmp"
         fi
 
-        cut -f1 "$tmp" | namever_aur | sort_join - "$tmp" | cmp_all
+        cut -f1 "$tmp" | namever_aur | sort_join - "$tmp" | \
+            sort_by "$pkg_key" - | cmp_all
         ;;
     repo)
         if [[ ! -v root ]]; then
