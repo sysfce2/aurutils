@@ -90,9 +90,11 @@ else
 fi
 
 if (($#)); then
-    makepkg_args=("$@")
-else
-    makechrootpkg_args=("$@")
+    if ((chroot)); then
+        makechrootpkg_args=("$@")
+    else
+        makepkg_args=("$@")
+    fi
 fi
 
 if command -v xdelta3 >/dev/null; then
