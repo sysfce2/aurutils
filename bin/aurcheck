@@ -22,7 +22,7 @@ sort_by() {
 }
 
 sort_join() {
-    # Use (single) hyphen to fill empty fields as disallowed in pkgver/pkgname
+    # Use single hyphen to fill empty fields as disallowed in pkgver/pkgname
     join -a 2 -e - -o auto -t $'\t' <(sort_by 1 "$1") <(sort_by 1 "$2")
 }
 
@@ -46,7 +46,6 @@ cmp_equal_or_newer() {
 cmp_all() {
     while IFS=$'\t' read -r name base v_cmp v_in; do
         case $base in
-            # XXX unavailable packages are printed to stderr, update manual
             -) printf >&2 -- '%s (not available)\n' "$name"
                continue ;;
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
@@ -55,11 +54,10 @@ cmp_all() {
         case $pkg_key in
             1) [[ $pkg == "$name" ]] && continue
                pkg=$name ;;
-            2) [[ $pkg == "$base" ]] && continue # pkg set in previous iteration
+            2) [[ $pkg == "$base" ]] && continue
                pkg=$base ;;
         esac
 
-        # XXX continue clause for ((ver))
         ((op > -1 && !geq)) && continue
 
         if ((ver)); then
