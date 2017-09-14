@@ -204,7 +204,7 @@ cd_safe "$tmp"
 mkdir patch
 
 if ((update)); then
-    aurcheck -d "$repo" -r "$root" -q
+    aurcheck -d "$repo" -lr "$root" | aurcheck -q
 fi >new
 
 mapfile -t < new
