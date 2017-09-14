@@ -5,7 +5,7 @@ readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 declare -a gpg_args=(--detach-sign --no-armor --verbose --batch)
-declare -a makepkg_args=(-rs) makechrootpkg_args=(-cu)
+declare -a makepkg_args=(-rs --noconfirm) makechrootpkg_args=(-cu)
 declare -a chroot_args=() repo_add_args=()
 declare -i chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
