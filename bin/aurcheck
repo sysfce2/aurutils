@@ -150,7 +150,6 @@ case $mode in
 
         repo_list "$root/$database".db >"$tmp" || exit
 
-        # XXX requires tabulated input, update manual/aursync
         if ((cmp)); then
             sort_join "$tmp" - | cmp_equal_or_newer
         else
