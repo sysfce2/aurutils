@@ -110,6 +110,7 @@ if ((sign_pkg)); then
 
 elif [[ -f $db_path.sig ]]; then
     error "$argv0: signature found, but signing is disabled"
+    printf -- '%q\n' "$db_path.sig" >&2
     exit 1
 fi
  
