@@ -7,31 +7,31 @@ set -o pipefail
 
 # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
 declare -i delay=300
-declare    list=packages
+declare pkglist=packages
 
-extract_head() {
-    sed -n '1p' "$1"
+extract_date() {
+    sed -n '1p' "$1" | awk -F', ' '{print $3}'
     sed -i '1d' "$1"
 }
 
-update_list() {
-    if curl -fsS "$aurweb/$1".gz -o - | gzip -d - > "$1"; then
-        extract_head "$1" | awk -F', ' '{print $3}'
+list_update() {
+    if curl -fsS "$1" -o - | gzip -d - > "$2"; then
+        extract_date "$2"
     else
         printf >&2 '%s\n' 'warning: failed to retrieve package list'
     fi
 }
 
 list_http_date() {
-    curl -fsSI "$aurweb/$1".gz | awk -F', ' 'tolower($1) ~ /^date:/ {print $2}'
+    curl -fsSI "$1" | awk -F', ' 'tolower($1) ~ /^date:/ {print $2}'
 }
 
-readonly -f extract_head update_list list_http_date
+readonly -f extract_date list_update list_http_date
 
 while getopts :bt OPT; do
     case "$OPT" in
-        b) list=pkgbase  ;;
-        t) delay=$OPTARG ;;
+        b) pkglist=pkgbase ;;
+        t) delay=$OPTARG   ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -41,17 +41,17 @@ mkdir -p "$cache"
 chmod -c 700 "$cache"
 cd "$cache" || exit
 
-if [[ -s $list && -s timestamp ]]; then
-    epoch_l=$(date -f timestamp '+%s')
-    epoch_r=$(list_http_date "$list" | date -f - '+%s')
+if [[ -s $pkglist && -s timestamp ]]; then
+    sec_l=$(date -f timestamp '+%s')
+    sec_r=$(list_http_date "$aurweb/$pkglist.gz" | date -f - '+%s')
 
-    if ((epoch_l)) && ((epoch_r)) && ((epoch_r - epoch_l > delay)); then
-        update_list "$list" > timestamp
+    if ((sec_l)) && ((sec_r)) && ((sec_r - sec_l > delay)); then
+        list_update "$aurweb/$pkglist.gz" "$pkglist" > timestamp
     fi
 else
-    update_list "$list" > timestamp
+    list_update "$aurweb/$pkglist.gz" "$pkglist" > timestamp
 fi
 
-pcregrep "$@" "$list"
+pcregrep "$@" "$pkglist"
 
 # vim: set et sw=4 sts=4 ft=sh:
