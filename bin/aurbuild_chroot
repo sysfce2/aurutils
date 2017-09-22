@@ -8,10 +8,8 @@ machine=$(uname -m)
 directory=/var/lib/aurbuild/$machine
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
+makechrootpkg_args=(-cu)
 mode=build
-
-declare -a makechrootpkg_args=(-cu)
-declare -i update_root=0
 
 conf_devtools() {
     printf '[options]\n'
