@@ -8,6 +8,7 @@ machine=$(uname -m)
 directory=/var/lib/aurbuild/$machine
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
+mode=build
 
 declare -a makechrootpkg_args=(-cu)
 declare -i update_root=0
@@ -18,7 +19,7 @@ conf_devtools() {
     pacconf --config="$1" --options --raw
     printf '#CacheDir=\n'
 
-    pacconf --repo-list | while IFS= read -r; do
+    while IFS= read -r; do
         printf '[%s]\n' "$REPLY"
         pacconf --repo="$REPLY" --raw
     done
@@ -43,7 +44,7 @@ while getopts :C:D:M:U: OPT; do
         D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
         U) database=$OPTARG
-           update_root=1        ;;
+           mode=update          ;;
         *) usage                ;;
     esac
 done
@@ -59,22 +60,25 @@ readonly pacman_conf makepkg_conf directory database prepare
 trap 'trap_exit' EXIT
 tmp=$(mktemp -d)
 
-if ((update_root)); then
-    conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
+case $mode in
+    update)
+        pacconf --repo-list | conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
 
-    if [[ -f $directory/root/.arch-chroot ]]; then
-        # locking is done by systemd-nspawn
-        arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-            "$directory"/root pacman -Syu --noconfirm   
-    else
-        install -d "$directory" -m 755 -v || exit
-        mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-            "$directory"/root base-devel
-    fi
+        if [[ -f $directory/root/.arch-chroot ]]; then
+            # locking is done by systemd-nspawn
+            arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
+                        "$directory"/root pacman -Syu --noconfirm   
+        else
+            install -d "$directory" -m 755 -v || exit
+            mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
+                        "$directory"/root base-devel
+        fi
 
-    # Check if target repository is configured in chroot (#161)
-    pacconf --sysroot="$directory"/root --repo="$database" >/dev/null
-else
-    PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
-        -r "$directory" "${makechrootpkg_args[@]}"
-fi
+        # Check if target repository is configured in chroot (#161)
+        pacconf --sysroot="$directory"/root --repo="$database" >/dev/null
+        ;;
+    build)
+        PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
+               -r "$directory" "${makechrootpkg_args[@]}"
+        ;;
+esac
