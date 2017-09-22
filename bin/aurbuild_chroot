@@ -13,10 +13,13 @@ mode=build
 
 conf_devtools() {
     printf '[options]\n'
-
     pacconf --config="$1" --options --raw
-    printf '#CacheDir=\n'
 
+    # https://git.archlinux.org/devtools.git/tree/mkarchroot.in#n54
+    printf '#CacheDir=\n'
+}
+
+conf_repo() {
     while IFS= read -r; do
         printf '[%s]\n' "$REPLY"
         pacconf --repo="$REPLY" --raw
@@ -34,7 +37,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_devtools trap_exit usage
+readonly -f conf_devtools conf_repo trap_exit usage
 
 while getopts :C:D:M:U: OPT; do
     case $OPT in
@@ -60,7 +63,9 @@ tmp=$(mktemp -d)
 
 case $mode in
     update)
-        pacconf --repo-list | conf_devtools "$pacman_conf" > "$tmp"/pacman.conf
+        { conf_devtools "$pacman_conf"
+          pacconf --repo-list | conf_repo
+        } >"$tmp"/pacman.conf
 
         if [[ -f $directory/root/.arch-chroot ]]; then
             # locking is done by systemd-nspawn
