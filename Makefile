@@ -19,6 +19,9 @@ check:
 	@bash -n bin/aursync
 	@bash -n bin/officer
 
+shellcheck:
+	@shellcheck -x bin/*
+
 install:
 	@install -Dm755 bin/*	       -t $(DESTDIR)$(BINDIR)
 	@install -Dm644 cmp/zsh/*      -t $(DESTDIR)$(SHRDIR)/zsh/site-functions
