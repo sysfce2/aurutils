@@ -108,9 +108,17 @@ if ((sign_pkg)); then
         gpg_args+=(-u "$GPGKEY")
     fi
 
-elif [[ -f $db_path.sig ]]; then
+elif [[ -f $db_path.sig || -f $db_path.files.sig ]]; then
     error "$argv0: signature found, but signing is disabled"
-    printf -- '%q\n' "$db_path.sig" >&2
+
+    if [[ -f $db_path.sig ]]; then
+        printf >&2 -- '%q\n' "$db_path".sig
+    fi
+
+    if [[ -f $db_path.files.sig ]]; then
+        printf >&2 -- '%q\n' "$db_path".files.sig
+    fi
+
     exit 1
 fi
  
