@@ -9,7 +9,7 @@ declare -a makepkg_args=(-rs --noconfirm) makechrootpkg_args=(-cu)
 declare -a chroot_args=() repo_add_args=()
 declare -i chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
-conf_local() {
+conf_single() {
     printf '[options]\n'
     pacconf --options --raw
 
@@ -27,6 +27,10 @@ find_pkg_dupes() {
     xargs -I{} find "$1" -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part|\.sig)$' -
 }
 
+quote_err() {
+    printf >&2 -- '%q\n' "$@"
+}
+
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
@@ -38,7 +42,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_local db_replaces find_pkg_dupes trap_exit usage
+readonly -f conf_single db_replaces find_pkg_dupes quote_err trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -46,7 +50,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-unset root queue database
+unset database db_root queue
 while getopts a:d:r:C:D:M:cfNs OPT; do
     case $OPT in
         a) queue=$OPTARG    ;;
@@ -54,7 +58,7 @@ while getopts a:d:r:C:D:M:cfNs OPT; do
         d) database=$OPTARG ;;
         f) overwrite=1      ;;
         N) no_sync=1        ;;
-        r) root=$OPTARG     ;;
+        r) db_root=$OPTARG  ;;
         s) sign_pkg=1       ;;
         C) chroot_args+=(-C "$OPTARG") ;;
         D) chroot_args+=(-D "$OPTARG") ;;
@@ -73,15 +77,15 @@ else
     usage
 fi
 
-root=$(realpath -e -- "${root-$server}")
-db_path=$(realpath -e -- "$root/$database".db)
+db_root=$(realpath -e -- "${db_root-$server}")
+db_path=$(realpath -e -- "${db_root}/$database.db") # .db symbolic link to archive
 
 if ! [[ -r $db_path && -w $db_path ]]; then
     error "$argv0: $db_path: permission denied"
     exit 13
 fi
 
-readonly chroot database server root db_path queue overwrite no_sync sign_pkg
+readonly chroot database server db_root db_path queue overwrite no_sync sign_pkg
 
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
@@ -101,6 +105,8 @@ if command -v xdelta3 >/dev/null; then
     repo_add_args+=(-d)
 fi
 
+readarray -t db_sigs < <(find "$db_root" -type f -maxdepth 1 -name "$database*.sig")
+
 if ((sign_pkg)); then
     repo_add_args+=(-v -s)
 
@@ -108,20 +114,13 @@ if ((sign_pkg)); then
         gpg_args+=(-u "$GPGKEY")
     fi
 
-elif [[ -f $db_path.sig || -f $db_path.files.sig ]]; then
+elif [[ ${db_sigs[*]} ]]; then
     error "$argv0: signature found, but signing is disabled"
 
-    if [[ -f $db_path.sig ]]; then
-        printf >&2 -- '%q\n' "$db_path".sig
-    fi
-
-    if [[ -f $db_path.files.sig ]]; then
-        printf >&2 -- '%q\n' "$db_path".files.sig
-    fi
-
+    quote_err "${db_sigs[@]}"
     exit 1
 fi
- 
+
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
 var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
@@ -132,24 +131,26 @@ trap 'exit' INT
 if ((chroot)); then
     sudo aurbuild_chroot -U "$database" "${chroot_args[@]}"
 else
-    conf_local "$database" >"$tmp"/custom.conf
+    conf_single "$database" >"$tmp"/custom.conf
 fi
 
 while read -r -u "$fd" pkg _; do
     cd_safe "$startdir/$pkg"
 
     if ((!overwrite)); then
-        mapfile -t mark < <(makepkg --packagelist | find_pkg_dupes "$root")
+        mapfile -t mark < <(makepkg --packagelist | find_pkg_dupes "$db_root")
 
         if [[ ${mark[*]} ]]; then
             warning "$argv0: skipping built package (use -f to overwrite)"
-            printf >&2 -- '%q\n' "${mark[@]}"; continue
+
+            quote_err "${mark[@]}"
+            continue
         fi
     fi
 
     if ((chroot)); then
         sudo PKGDEST="$var_tmp" aurbuild_chroot \
-             "${chroot_args[@]}" -- -d "$root" "${makechrootpkg_args[@]}"
+             "${chroot_args[@]}" -- -d "$db_root" "${makechrootpkg_args[@]}"
     else
         PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
     fi
@@ -163,13 +164,13 @@ while read -r -u "$fd" pkg _; do
     if ((sign_pkg)); then
         for p in "${pkglist[@]}"; do
             gpg "${gpg_args[@]}" --output "$p".sig "$p"
-            mv -b "$p" "$p".sig -t "$root"
+            mv -b "$p" "$p".sig -t "$db_root"
         done
     else
-        mv -b "${pkglist[@]}" -t "$root"
+        mv -b "${pkglist[@]}" -t "$db_root"
     fi
 
-    cd_safe "$root"
+    cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if ((chroot)) || ((no_sync)); then
