@@ -1,3 +1,52 @@
+.TH AURBUILD_CHROOT 1 2017-09-23 AURUTILS
+.SH NAME
+aurbuild_chroot \- build packages to a local repository inside a chroot
+
+.SH SYNOPSIS
+.SY aurbuild_chroot
+.OP \-C pacman_conf
+.OP \-D directory
+.OP \-M makepkg_conf
+.OP \-U database
+.OP \--
+.OP "makechrootpkg args"
+.YS
+
+.SH DESCRIPTION
+Build packages in a chroot, adding the results to a local
+repository (see also \fIaurbuild(1)\fR).
+
+The current directory is assumed to contain the PKGBUILD and
+other sources for the package to be built from.
+
+.SH OPTIONS
+All arguments after -- are passed to \fImakechrootpkg\fR.
+
+.B \-C
+.RS
+The \fIpacman.conf\fR file to be used in the chroot. Defaults to
+\fIpacman-extra.conf\fR from devtools.
+.RE
+
+.B \-D
+.RS
+The chroot directory to build in. If none is specified,
+\fI/var/lib/aurbuild/<machine>\fR is used, where \fImachine\fR
+is determined by uname.
+.RE
+
+.B \-M
+.RS
+The makepkg.conf file to be used in the chroot. Defaults to
+\fImakepkg-<machine>.conf\fR from devtools.
+.RE
+
+.B \-U
+.RS
+The name of the pacman database.
+.RE
+
+.SH NOTES
 .SS Building with \fBmakechrootpkg\fR
 The template (or \fIroot\fR) container is upgraded with \fIpacman
 -Syu\fR prior to building. This is done as the \fI$USER\fR container
@@ -41,4 +90,16 @@ approximation) and have a respective \fImakepkg.conf\fR file available
 in \fI/usr/share/devtools\fR (such as
 \fI/usr/share/devtools/makepkg-i686.conf\fR for \fIi686\fR).
 
+.SH SEE ALSO
+.BR aurbuild (1),
+.BR pacconf (1),
+.BR pacman (1),
+.BR makepkg.conf (5),
+.BR pacman.conf (5),
+.BR aurutils (7),
+.BR setarch (8)
 
+.SH AUTHORS
+.MT https://github.com/AladW
+Alad Wenter
+.ME
