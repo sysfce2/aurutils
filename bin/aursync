@@ -76,7 +76,7 @@ longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
 longopts+=,sign,tar,repo:,root:,update,aurutils,ignore-arch,ignfile:,continue
 
-if TEMP=$(getopt -o B:D:I:AcfLnprstu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o B:D:I:AcfLnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
