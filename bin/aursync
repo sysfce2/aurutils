@@ -74,9 +74,10 @@ fi
 
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
-longopts+=,sign,tar,repo:,root:,update,aurutils,ignore-arch,ignfile:,continue
+longopts+=,sign,temp,tar,repo:,root:,update,aurutils,ignore-arch,ignfile:,continue
+shortopts=B:D:I:AcfLnprstTu
 
-if TEMP=$(getopt -o B:D:I:AcfLnprstTu -l "$longopts" -n "$argv0" -- "$@"); then
+if TEMP=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
 else
     usage
@@ -103,7 +104,7 @@ while true; do
             shift 2 ;;
         -T|--temp)
             makechrootpkg_args+=(-T)
-            shift 2 ;;
+            shift ;;
         -A|--ignorearch|--ignore-arch)
             makepkg_args+=(-A)
             shift ;;
