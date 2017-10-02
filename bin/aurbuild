@@ -101,7 +101,7 @@ if command -v xdelta3 >/dev/null; then
     repo_add_args+=(-d)
 fi
 
-readarray -t db_sigs < <(find "$db_root" -maxdepth 1 -name "$database*.sig" -type f)
+mapfile -t db_sigs < <(find "$db_root" -maxdepth 1 -name "$database*.sig" -type f)
 
 if ((sign_pkg)); then
     repo_add_args+=(-v -s)
