@@ -27,10 +27,6 @@ find_pkg_dupes() {
     xargs -I{} find "$1" -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part|\.sig)$' -
 }
 
-quote_err() {
-    printf >&2 -- '%q\n' "$@"
-}
-
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
@@ -42,7 +38,7 @@ usage() {
     exit 1
 }
 
-readonly -f conf_single db_replaces find_pkg_dupes quote_err trap_exit usage
+readonly -f conf_single db_replaces find_pkg_dupes trap_exit usage
 
 source /usr/share/makepkg/util.sh
 
@@ -117,7 +113,7 @@ if ((sign_pkg)); then
 elif [[ ${db_sigs[*]} ]]; then
     error "$argv0: signature found, but signing is disabled"
 
-    quote_err "${db_sigs[@]}"
+    printf -- '%q\n' "$@" "${db_sigs[@]}" >&2
     exit 1
 fi
 
@@ -143,7 +139,7 @@ while read -r -u "$fd" pkg _; do
         if [[ ${mark[*]} ]]; then
             warning "$argv0: skipping built package (use -f to overwrite)"
 
-            quote_err "${mark[@]}"
+            printf -- '%q\n' "$@" "${mark[@]}" >&2
             continue
         fi
     fi
