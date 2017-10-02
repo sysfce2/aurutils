@@ -33,19 +33,20 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 -- '%s\n' "$argv0: aurbuild_chroot [-CDMU] -- <ARGS>"
+    printf >&2 -- '%s\n' "$argv0: aurbuild_chroot [-CDMu] [-d db] -- <ARGS>"
     exit 1
 }
 
 readonly -f conf_devtools conf_repo trap_exit usage
 
-while getopts :C:D:M:U: OPT; do
+unset database
+while getopts :C:D:M:u: OPT; do
     case $OPT in
         C) pacman_conf=$OPTARG  ;;
         D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
-        U) database=$OPTARG
-           mode=update          ;;
+        d) database=$OPTARG     ;;
+        u) mode=update          ;;
         *) usage                ;;
     esac
 done
@@ -77,11 +78,14 @@ case $mode in
                         "$directory"/root base-devel
         fi
 
-        # Check if target repository is configured in chroot (#161)
-        pacconf --sysroot="$directory"/root --repo="$database" >/dev/null
-        ;;
+	if [[ -v database ]]; then
+            pacconf --sysroot="$directory"/root --repo="$database" >/dev/null
+        fi
+	;;
     build)
         PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
                -r "$directory" "${makechrootpkg_args[@]}"
         ;;
 esac
+
+# vim: set et sw=4 sts=4 ft=sh:

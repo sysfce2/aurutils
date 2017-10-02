@@ -7,52 +7,56 @@ aurbuild_chroot \- build packages to a local repository inside a chroot
 .OP \-C pacman_conf
 .OP \-D directory
 .OP \-M makepkg_conf
-.OP \-U database
+.OP \-d database
+.OP \-u
 .OP \--
 .OP "makechrootpkg args"
 .YS
 
 .SH DESCRIPTION
-Build packages in a chroot, adding the results to a local
-repository (see also \fIaurbuild(1)\fR).
-
-The current directory is assumed to contain the PKGBUILD and
-other sources for the package to be built from.
+Build packages in an nspawn container, adding the results to a local
+repository. See also \fIaurbuild\fR(1).
 
 .SH OPTIONS
 All arguments after -- are passed to \fImakechrootpkg\fR.
 
 .B \-C
 .RS
-The \fIpacman.conf\fR file to be used in the chroot. Defaults to
+The \fIpacman.conf\fR file to be used in the container. Defaults to
 \fIpacman-extra.conf\fR from devtools.
 .RE
 
 .B \-D
 .RS
-The chroot directory to build in. If none is specified,
-\fI/var/lib/aurbuild/<machine>\fR is used, where \fImachine\fR
-is determined by uname.
+The base directory for containers. This directory usually contains a
+\fI/root\fR subdirectory that serves as template for user containers
+(named after \fI$SUDO_USER\fR, or \fI/copy\fR if unset).
 .RE
 
 .B \-M
 .RS
-The makepkg.conf file to be used in the chroot. Defaults to
+The makepkg.conf file to be used in the containe. Defaults to
 \fImakepkg-<machine>.conf\fR from devtools.
 .RE
 
-.B \-U
+.B \-d
 .RS
-The name of the pacman database.
+Check if the specified repository is configured in the /root container.
+Only effective for \fI-u\fR.
 .RE
+
+.B \-u
+.RS
+Update or create the /root copy of the container; do not build a package.
+.RE
+
+.SH ENVIRONMENT
+Packages are placed in the directory specified in \fIPKGDEST\fR. If not
+set, the current directory (\fI$PWD\fR) is used. See also
+\fImakepkg.conf\fR(5).
 
 .SH NOTES
 .SS Building with \fBmakechrootpkg\fR
-The template (or \fIroot\fR) container is upgraded with \fIpacman
--Syu\fR prior to building. This is done as the \fI$USER\fR container
-is copied from the \fIroot\fR container before each build
-(\fImakechrootpkg -c\fR).
-
 Changes to the pacman database are \fBnot\fR propagated from the
 container to the local system. Packages must be installed and updated
 separately, typically through \fIpacman -Syu <package_name>\fR.
@@ -64,23 +68,6 @@ example, to replace \fBgcc\fR with \fBgcc-multilib\fR, run \fIarch-nspawn
 
 Signature verification requires that \fBgpg2\fR(1) configuration is
 stored in \fI~/.gnupg\fR. See Github issue #151 for details.
-
-.SS Avoiding password prompts
-makepkg must be run as a regular user as of version 4.2, with
-privileged operations done via \fIsudo\fR. As such, \fIaurbuild\fR can
-not be run directly as root. To avoid password prompts,
-\fBsudoers\fR(5) can be used instead.
-
-For example:
-.EX
-
-  %build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
-  %build localhost = (root) NOPASSWD: /usr/bin/arch-nspawn
-
-.EE
-Note that variables specified on the sudo command line (such as
-\fIPKGDEST\fR by \fBaurbuild\fR) depend on sudo policy; see
-\fBsudo\fR(8) and \fBsudoers\fR(5).
 
 .SS Building for a different architecture
 To build packages for a different architecture, prepend \fBsetarch
@@ -103,3 +90,5 @@ in \fI/usr/share/devtools\fR (such as
 .MT https://github.com/AladW
 Alad Wenter
 .ME
+
+.\" vim: set textwidth=72:
