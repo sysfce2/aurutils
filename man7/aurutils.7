@@ -248,17 +248,20 @@ Check foreign packages for AUR updates:
   $ expac -Q '%n\t%v' | aurcheck
 
 .EE
-Use helpers wich honor the \fIPACMAN\fR variable or cower with
-\fI--ignorerepo\fR:
+Repository packages can be "made foreign" by temporarily removing the
+repository from the pacman configuration. This can be used with programs
+that only check foreign packages for AUR updates.
+
+For example, create the following script in
+\fI/usr/local/bin/mypacman\fR:
 .EX
 
- $ PACMAN=officer pkgbuilder -Syu
- $ cower --ignorerepo=custom
+ #!/bin/sh
+ pacman --config=/usr/share/devtools/pacman-extra.conf "$@"
 
 .EE
-.SY Note:
-Unlike \fIaurcheck\fR, these only check updates for installed packages.
-.YS
+This script can then be propagated through the \fIPACMAN\fR variable
+for programs supporting it.
 
 .SH AUTHORS
 .MT https://github.com/AladW
