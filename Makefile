@@ -17,7 +17,6 @@ check:
 	@bash -n bin/aursearch
 	@bash -n bin/aursift
 	@bash -n bin/aursync
-	@bash -n bin/officer
 
 shellcheck:
 	@shellcheck -x bin/*
