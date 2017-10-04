@@ -1,17 +1,10 @@
 #!/bin/bash
-#
-# Read package names from stdin separated by the IFS and produces a
-# list of packages not provided in the official repositories.
-#
 readonly argv0=aursift
-readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
-declare -a siftargs=() repo=()
 declare -A pkgset
 
-# Takes a set of package names to create "package virtual" pairs,
-# querying both provides and replaces fields.
 provides() {
     expac '%n %R %S' -Sv -- "$@" | awk '{
         for(i = 2; i <= NF; ++i) {
@@ -19,7 +12,13 @@ provides() {
         }
     }'
 }
-readonly -f provides
+
+usage() {
+    plain "usage: $argv0 [-d repo]"
+    exit 1
+}
+
+readonly -f provides usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -27,8 +26,21 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-# Use an additional indexed array to preserve input order.
-readarray -t all
+unset repo siftargs user_repo
+while getopts d: OPT; do
+    case $OPT in
+        d) user_repo+=("$OPTARG") ;;
+        *) usage ;;
+    esac
+done
+shift $((OPTIND - 1))
+OPTIND=1
+
+if ! [[ -v user_repo ]]; then
+    user_repo=("${arch_repo[@]}")
+fi
+
+readarray -t all < /dev/stdin
 
 for p in "${all[@]}"; do
     siftargs+=("--satisfies=$p")
@@ -36,7 +48,7 @@ for p in "${all[@]}"; do
 done
 
 if [[ ${pkgset[*]} ]]; then
-    for p in "${arch_repo[@]}"; do
+    for p in "${user_repo[@]}"; do
         siftargs+=("--repo=$p")
     done
 else
@@ -60,12 +72,8 @@ if [[ ${query[*]} ]]; then
             repo+=("$v")
         fi
     done < <(provides "${query[@]}")
-else
-    msg2 "No matches in the official repositories"
 fi
 
-# Print the relative complement between repo provided dependencies and
-# all required dependencies. all \ repo
 grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
 
 # vim: set et sw=4 sts=4 ft=sh:
