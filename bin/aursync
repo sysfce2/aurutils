@@ -55,7 +55,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcDfILnprstTu] [long options] [--] pkgname..."
+    plain "usage: $argv0 [-ABcDfLnprstTu] [long options] [--] pkgname..."
     exit 1
 }
 
@@ -74,8 +74,8 @@ fi
 
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
-longopts+=,sign,temp,tar,repo:,root:,update,aurutils,ignore-arch,ignfile:,continue
-shortopts=B:D:I:AcfLnprstTu
+longopts+=,sign,temp,tar,repo:,root:,update,aurutils,continue
+shortopts=B:D:AcfLnprstTu
 
 if TEMP=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -83,7 +83,10 @@ else
     usage
 fi
 
-unset pkg_i pkg root repo
+tmp=$(mktemp -dt "$argv0".XXXXXXXX); readonly tmp
+trap 'trap_exit' EXIT
+
+unset pkg pkg_i root repo
 while true; do
     case "$1" in
         -c|--chroot)
@@ -117,13 +120,6 @@ while true; do
         -r|--rmdeps|--rm-deps)
             makepkg_args+=(-r)
             shift ;;
-        -I|--ignore)
-            IFS=, read -a pkg -r <<< "$2"
-            pkg_i+=("${pkg[@]}")
-            shift 2 ;;
-        --ignfile)
-            mapfile -t pkg_i < "$2"
-            shift 2 ;;
         -p|--print)
             build=0
             shift ;;
@@ -139,7 +135,11 @@ while true; do
         --continue)
             download=0
             shift ;;
-       --nover|--no-ver)
+        --ignore)
+            IFS=, read -a pkg -r <<< "$2"
+            pkg_i+=("${pkg[@]}")
+            shift 2 ;;
+        --nover|--no-ver)
             chkver=0
             shift ;;
         --noview|--no-view)
@@ -188,7 +188,7 @@ else
 fi
 
 msg2 "Using [$repo] repository"
-root=$(realpath -e -- "${root-$server}")
+root=$(realpath -- "${root-$server}")
 
 if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
     error "$argv0: $repo: permission denied (read-write)"
@@ -198,41 +198,39 @@ fi
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
-tmp=$(mktemp -dt "$argv0".XXXXXXXX); readonly tmp
-trap 'trap_exit' EXIT
-
 cd_safe "$tmp"
 mkdir patch
 
 if ((update)); then
-    aurcheck -d "$repo" -lr "$root" | aurcheck -q
-fi >add
-
-mapfile -t < add
+    mapfile -t < <(aurcheck -d "$repo" -lr "$root" | aurcheck -q)
+    wait "$!"
+fi
 
 if ! (($# + ${#MAPFILE[@]})); then
     plain "there is nothing to do"
-    exit 0
+    exit
 fi
 
 msg "Resolving dependencies..."
-aurchain -t -- "$@" "${MAPFILE[@]}" | tee pkginfo_0 | cut -f1 | lib32 > queue_0
+aurchain -t -- "$@" "${MAPFILE[@]}" >pkginfo_0
+
+if [[ -v pkg_i ]]; then
+    printf -- 'warning: %q: ignoring package\n' "${pkg_i[@]}" >&2
+    printf -- '%s\n' "${pkg_i[@]}"
+fi >>filter
 
 if ((chkver)); then
     cut -f1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
-fi >del
+fi >>filter
 
-if [[ -v pkg_i ]]; then
-    printf -- 'warning: %s: ignoring package upgrade\n' "${pkg_i[@]}" >&2
-    printf -- '%s\n' "${pkg_i[@]}" >>del
-fi
-
-if grep -Fxvf del queue_0 > queue_1; then
-    uniq_by 1 2 queue_1 pkginfo_0 | tee pkginfo_1 | cut -f2 > queue
+if cut -f1 pkginfo_0 | lib32 | grep -Fxvf filter >queue_0; then
+    uniq_by 1 2 queue_0 pkginfo_0 >pkginfo_1
 else
     plain "there is nothing to do"
-    exit 0
+    exit
 fi
+
+cut -f2 "$tmp"/pkginfo_1 >"$tmp"/queue
 
 if ((download)); then
     msg "Retrieving build files..."
@@ -242,7 +240,7 @@ if ((download)); then
         cut -f4 "$tmp"/pkginfo_1 | aurfetch -t
     else
         cd_safe "$AURDEST"
-        aurfetch -L "$tmp"/patch < "$tmp"/queue
+        cut -f2 "$tmp"/pkginfo_1 | aurfetch -L "$tmp"/patch
     fi
 fi
 
@@ -260,7 +258,7 @@ if ((build)); then
         aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
     fi
 else
-    xargs printf -- "$(pwd -P)/%s\n" < "$tmp"/queue
+    xargs -a "$tmp"/queue printf -- "$(pwd -P)/%s\n"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
