@@ -110,6 +110,7 @@ root=$(canonicalize_path "${root-$server}")
 if [[ -w $root/ && -r $root/ ]]; then
     # File: custom.db -> custom.db.tar
     db_path=$(readlink -f "$root/$database".db)
+    files_path=$(readlink -f "$root/$database".files)
 else
     error "$argv0: $root: permission denied"
     exit 13
@@ -168,8 +169,13 @@ while read -r -u "$fd" pkg _; do
 
     # https://github.com/vodik/repose/issues/46
     if ((sign_pkg)); then
-        gpg "${gpg_args[@]}" --output "$var_tmp/${db_path##*/}".sig "$db_path"
-        mv -bv "$var_tmp/${db_path##*/}".sig -t "$root"
+        for i in "$db_path" "$files_path"; do
+            # https://github.com/AladW/aurutils/issues/236
+            i_sig=$var_tmp/${i##*/}.sig
+
+            gpg "${gpg_args[@]}" --output "$i_sig" "$i"
+            mv -bv "$i_sig" -t "$root"
+        done
     fi
 
     if ((chroot)); then
