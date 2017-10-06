@@ -40,7 +40,7 @@ usage() {
 readonly -f conf_devtools conf_repo trap_exit usage
 
 unset database
-while getopts :C:D:M:u: OPT; do
+while getopts :C:D:M:u OPT; do
     case $OPT in
         C) pacman_conf=$OPTARG  ;;
         D) directory=$OPTARG    ;;
