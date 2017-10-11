@@ -214,14 +214,15 @@ fi
 msg "Resolving dependencies..."
 aurchain -t -- "$@" "${MAPFILE[@]}" >pkginfo_0
 
-if [[ -v pkg_i ]]; then
-    printf -- 'warning: %q: ignoring package\n' "${pkg_i[@]}" >&2
-    printf -- '%s\n' "${pkg_i[@]}"
-fi >>filter
+{ for i in "${pkg_i[@]}"; do
+      warning "'$i': ignoring package"
+      printf -- '%s\n' "$i"
+  done
 
-if ((chkver)); then
-    cut -f1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
-fi >>filter
+  if ((chkver)); then
+      cut -f1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
+  fi
+} >filter
 
 if cut -f1 pkginfo_0 | lib32 | grep -Fxvf filter >queue_0; then
     uniq_by 1 2 queue_0 pkginfo_0 >pkginfo_1
