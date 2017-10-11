@@ -18,6 +18,7 @@ deps() {
     }' "$@"
 }
 
+# XXX Output of form " pkgname\tpkgbase"
 base() {
     awk -v FS='[<=>]' '
     /pkgbase/ {
@@ -29,7 +30,7 @@ base() {
 }
 
 sub() {
-    awk -F'\t' 'NR == FNR {
+    awk 'NR == FNR {
         x[$1] = $2; next
     } {
         if ($1 in x && !(x[$1] in seen)) {
