@@ -206,13 +206,15 @@ if ((update)); then
     wait "$!"
 fi
 
-if ! (($# + ${#MAPFILE[@]})); then
+set -- "$@" "${MAPFILE[@]}"
+
+if ! (($#)); then
     plain "there is nothing to do"
     exit
 fi
 
 msg "Resolving dependencies..."
-aurchain -t -- "$@" "${MAPFILE[@]}" >pkginfo_0
+aurchain -t -- "$@" >pkginfo_0
 
 { for i in "${pkg_i[@]}"; do
       warning "'$i': ignoring package"
