@@ -3,7 +3,7 @@ readonly argv0=aurqueue
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-deps() {
+deps_paired() {
     awk -v FS='[<=>]' '
     /pkgbase/ {
         read = 1; pb = $2
@@ -80,7 +80,7 @@ if [[ -n ${arg_path[*]} ]]; then
 fi
 
 if [[ -s "$tmp" ]]; then
-    deps "$tmp" | tsort | sub <(base "$tmp") - | grep -Fxf <(printf -- '%s\n' "${@##*/}") | tac
+    deps_paired "$tmp" | tsort | sub <(base "$tmp") - | grep -Fxf <(printf -- '%s\n' "${@##*/}") | tac
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
