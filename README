@@ -40,7 +40,7 @@ TROUBLESHOOTING
   1) Do you use the latest version of aurutils and its dependencies?
   2) Does the package conform to PKGBUILD(5) and the AUR package guidelines?
   3) Does the package provide the correct metadata on the AUR RPC interface?
-  4) Does the package build with makepkg -s ?
+  4) Does the package build with makepkg -s or extra-x86_64-build ?
   5) Is the problem reproducible, and not due to a misconfiguration of
      pacman, makepkg, sudoers, gpg or others?
 
