@@ -197,7 +197,7 @@ Print Perl modules that are both in the AUR and official repositories:
 Search for packages with both 'wm' and 'git' in the name:
 .EX
 
-  $ aurgrep '(?.*=wm)(?.*=git)' | xargs aursearch -i
+  $ aurgrep '(?=.*wm)(?=.*git)' | xargs aursearch -i
 
 .EE
 Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:
