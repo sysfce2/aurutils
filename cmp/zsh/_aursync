@@ -10,7 +10,7 @@ _aursync_opts=(
     {-s,--sign}'[Sign packages and database]'
     {-t,--tar}'[Download AUR tarball]'
     {-u,--update}'[Update AUR packages]'
-    {--ignore}'[Skip packages]'
+    --ignore'[Skip packages]'
     --continue'[Skip download]'
     --no-ver'[Skip version checks]'
     --no-view'[Skip viewing of build files]'
