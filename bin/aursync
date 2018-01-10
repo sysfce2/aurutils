@@ -75,7 +75,7 @@ fi
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
 longopts+=,sign,temp,tar,repo:,root:,update,aurutils,continue
-shortopts=B:D:AcfLnprstTu
+shortopts=B:C:D:M:AcfLnprstTu
 
 if TEMP=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$TEMP"
@@ -99,8 +99,14 @@ while true; do
         -s|--sign)
             aurbuild_args+=(-s)
             shift ;;
+        -C)
+            aurbuild_args+=(-C "$2")
+            shift 2 ;;
         -D|--directory)
             aurbuild_args+=(-D "$2")
+            shift 2 ;;
+        -M)
+            aurbuild_args+=(-M "$2")
             shift 2 ;;
         -B|--bind)
             makechrootpkg_args+=(-d "$2")
@@ -261,7 +267,7 @@ if ((build)); then
         aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
     fi
 else
-    xargs -a "$tmp"/queue printf -- "$(pwd -P)/%s\n"
+    xargs -a "$tmp"/queue printf -- "$(pwd -P)/%s\\n"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
