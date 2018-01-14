@@ -148,7 +148,7 @@ case $mode in
             root=${root#*://}
         fi
         
-        { printf '-\t-\n' # header for empty database (#273)
+        { printf '\055\t-\n' # header for empty database (#273)
           repo_list "$root/$database".db || exit
         } >"$tmp" 
 
