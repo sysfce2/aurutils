@@ -147,8 +147,10 @@ case $mode in
             root=$(pacconf --single --repo="$database" Server) || exit
             root=${root#*://}
         fi
-
-        repo_list "$root/$database".db >"$tmp" || exit
+        
+        { printf '-\t-\n' # header for empty database (#273)
+          repo_list "$root/$database".db || exit
+        } >"$tmp" 
 
         if ((cmp)); then
             sort_join "$tmp" - | cmp_equal_or_newer
