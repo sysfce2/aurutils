@@ -85,10 +85,13 @@ namever_sync() {
         xargs -0r pacman -Sddp --print-format %n$'\t'%v
 }
 
+# header for empty database (#273)
+
 # XXX variables for name/ver/base, set base to name if unset
 repo_list() {
     bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
-                       /%VERSION%/ {getline; printf("%s\n", $1)}'
+                       /%VERSION%/ {getline; printf("%s\n", $1)}
+                       END         {if (!NR) printf("-\t-\n")}'
 }
 
 trap_exit() {
@@ -148,9 +151,7 @@ case $mode in
             root=${root#*://}
         fi
         
-        { printf '\055\t-\n' # header for empty database (#273)
-          repo_list "$root/$database".db || exit
-        } >"$tmp" 
+        repo_list "$root/$database".db >"$tmp" || exit
 
         if ((cmp)); then
             sort_join "$tmp" - | cmp_equal_or_newer
