@@ -85,8 +85,6 @@ namever_sync() {
         xargs -0r pacman -Sddp --print-format %n$'\t'%v
 }
 
-# header for empty database (#273)
-
 # XXX variables for name/ver/base, set base to name if unset
 repo_list() {
     bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
