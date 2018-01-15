@@ -87,9 +87,9 @@ namever_sync() {
 
 # XXX variables for name/ver/base, set base to name if unset
 repo_list() {
-    bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1)}
-                       /%VERSION%/ {getline; printf("%s\n", $1)}
-                       END         {if (!NR) printf("-\t-\n")}'
+    bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1); x=1}
+                       /%VERSION%/ {getline; printf("%s\n", $1); x=1}
+                       END         {if (!x)  printf("-\t-\n")}'
 }
 
 trap_exit() {
