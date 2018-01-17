@@ -85,11 +85,13 @@ namever_sync() {
         xargs -0r pacman -Sddp --print-format %n$'\t'%v
 }
 
-# XXX variables for name/ver/base, set base to name if unset
-repo_list() {
-    bsdcat "$1" | awk '/%NAME%/    {getline; printf("%s\t", $1); x=1}
-                       /%VERSION%/ {getline; printf("%s\n", $1); x=1}
-                       END         {if (!x)  printf("-\t-\n")}'
+repo_parse() {
+    awk '/%NAME%/    { getline; printf("%s\t", $1) }
+         /%VERSION%/ { getline; printf("%s\n", $1) }'
+}
+
+fill_empty() {
+    awk -v '{ print } END { if (!NR) printf("-\t-\n") }'
 }
 
 trap_exit() {
@@ -104,7 +106,7 @@ usage() {
 }
 
 readonly -f my_vercmp sort_by sort_join cmp_equal_or_newer cmp_all
-readonly -f namever_aur namever_sync repo_list trap_exit usage
+readonly -f namever_aur namever_sync repo_parse fill_empty trap_exit usage
 
 source /usr/share/makepkg/util.sh || exit
 
@@ -149,7 +151,7 @@ case $mode in
             root=${root#*://}
         fi
         
-        repo_list "$root/$database".db >"$tmp" || exit
+        bsdcat "$root/$database".db | repo_parse | fill_empty >"$tmp" || exit
 
         if ((cmp)); then
             sort_join "$tmp" - | cmp_equal_or_newer
