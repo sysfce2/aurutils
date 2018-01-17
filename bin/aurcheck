@@ -91,7 +91,7 @@ repo_parse() {
 }
 
 fill_empty() {
-    awk -v '{ print } END { if (!NR) printf("-\t-\n") }'
+    awk '{ print } END { if (!NR) printf("-\t-\n") }'
 }
 
 trap_exit() {
