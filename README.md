@@ -11,20 +11,16 @@ packages.
   
 ## INSTALLATION
 
-The master branch can be installed from the included `Makefile`,
-or from the AUR under `aurutils-git`.
+Install one of the following packages:
 
-https://aur.archlinux.org/packages/aurutils-git
+* [`aurutils`](https://aur.archlinux.org/packages/aurutils) for the
+release version _(recommended)_.
+* [`aurutils-git`](https://aur.archlinux.org/packages/aurutils-git)
+for the master branch.
 
-The release version is available in the AUR under `aurutils`.
-
-https://aur.archlinux.org/packages/aurutils
-
-Upgrade notices are posted to the Arch forums:
-
-https://bbs.archlinux.org/viewtopic.php?id=210621
-
-https://bbs.archlinux.org/extern.php?action=feed&tid=210621&type=atom (RSS)
+Upgrade notices are posted to the 
+[Arch forums](https://bbs.archlinux.org/viewtopic.php?id=210621).
+[(RSS)](https://bbs.archlinux.org/extern.php?action=feed&tid=210621&type=atom)
 
 ## USAGE
 
