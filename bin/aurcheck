@@ -90,6 +90,7 @@ repo_parse() {
          /%VERSION%/ { getline; printf("%s\n", $1) }'
 }
 
+# Ensure comparison on empty database (#273)
 fill_empty() {
     awk '{ print } END { if (!NR) printf("-\t-\n") }'
 }
