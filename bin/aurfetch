@@ -8,7 +8,7 @@ declare -i aurball=0
 declare logdir=/dev/null
 
 clone() {
-    declare -r logdir=$1
+    declare -r remote=$1 logdir=$2
 
     while IFS= read -r; do
         # Avoid issues with exotic file system layouts (#274)
@@ -28,15 +28,16 @@ clone() {
                 git_wrap merge
             fi
         else
-            git clone "$aurweb/$REPLY".git
+            git clone "$remote/$REPLY".git
         fi
     done
 }
 
 # stdin: /path/to/a.tar.gz
 snapshot() {
-    declare -r zipdir=$1 startdir=$PWD
-    cd_safe "$zipdir"
+    declare -r zipdir=$1
+
+    cd "$zipdir"
 
     if type -P parallel >/dev/null 2>&1; then
         parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 -r \
@@ -45,7 +46,7 @@ snapshot() {
         xargs -r curl -fLsS --remote-name-all --cert-status
     fi
 
-    cd_safe "$startdir"
+    cd -
 
     for _ in "$zipdir"/*.tar.gz; do
         tar xvf "$_"
@@ -59,17 +60,11 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-L logdir] [-t]"
+    printf '%s\n' "usage: $argv0 [-L logdir] [-t]" >&2
     exit 1
 }
 
 readonly -f clone snapshot trap_exit usage
-
-source /usr/share/makepkg/util.sh
-
-if [[ -t 2 && ! -o xtrace ]]; then
-    colorize
-fi
 
 while getopts :L:t OPT; do
     case $OPT in
@@ -85,7 +80,7 @@ trap 'trap_exit' EXIT
 if ((aurball)); then
     xargs -d '\n' printf "$aurweb/%s\\n" | snapshot "$tmp"
 else
-    clone "$logdir"
+    clone "$aurweb" "$logdir"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
