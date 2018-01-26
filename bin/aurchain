@@ -3,7 +3,7 @@ set -o noclobber
 readonly argv0=aurchain
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-mode=aur
+declare mode=aur
 
 count() {
     declare -i num
@@ -126,11 +126,11 @@ fi
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-cd_safe "$tmp"
-mkdir {json,tsv} || exit
-
-# Generate dependency tree and pkgname list (pkgname).
-chain "$@" > order
+if cd "$tmp" && mkdir json tsv; then
+    chain "$@" > order
+else
+    exit
+fi
 
 case $mode in
     aur) grep -Fxf pkgname order | tac ;;
