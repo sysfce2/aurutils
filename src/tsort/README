@@ -1,9 +1,0 @@
-This directory contains a port of OpenBSD's tsort implementation. [1]
-Compared to the GNU implementation, it has the ability to break loops and
-has better diagnostic ability - its use is however completely optional.
-
-The only changes were the removal of the OpenBSD-specific pledge and
-appending of bsd/ to certain headers to match libbsd. [2]
-
-[1] https://github.com/openbsd/src/tree/master/usr.bin/tsort
-[2] https://cgit.freedesktop.org/libbsd/tree/include/bsd
