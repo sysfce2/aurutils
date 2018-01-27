@@ -1,0 +1,66 @@
+#!/bin/bash
+readonly argv0=aursrcver
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly startdir=$PWD
+
+mangle() {
+    declare pkgbase pkgver
+
+    while read -r key _ value; do
+        case $key in
+            pkgbase)
+                pkgbase=$value
+                ;;
+            epoch)
+                pkgver+=$value
+                pkgver+=:
+                ;;
+            pkgver)
+                pkgver+=$value
+                ;;
+            pkgrel)
+                pkgver+=-
+                pkgver+=$value
+                ;;
+            '') 
+                break ;;
+        esac
+    done
+    
+    printf '%s\t%s\n' "$pkgbase" "$pkgver"
+}
+
+find_pkgbuild_path() {
+    find "$@" -maxdepth 1 -type f -name PKGBUILD -printf '%h\n'
+}
+
+trap_err() {
+    printf '%s: error: see %s\n' "$argv0" "$1"
+    exit 1
+}
+
+trap_exit() {
+    # preserve makepkg log on error
+    ((!$?)) && rm -v "$1"
+}
+
+readonly -f mangle find_pkgbuild_path
+
+makepkg_log=$(mktemp)
+trap 'trap_err $makepkg_log' ERR
+trap 'trap_exit $makepkg_log' EXIT
+
+# trickery for hyphen and absolute path arguments
+mapfile -t arg_path < <(readlink -e -- "$@")
+mapfile -t arg_path < <(find_pkgbuild_path "${arg_path[@]}")
+
+for a in "${arg_path[@]}"; do
+    cd "$a"
+
+    { makepkg --verifysource
+      makepkg --noprepare --noconfirm -od
+    } >"$makepkg_log" 2>&1
+
+    makepkg --printsrcinfo | mangle
+done
+
