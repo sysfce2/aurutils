@@ -78,11 +78,16 @@ value of the configured repository.
 .RE
 
 .SS makepkg
-The default set of options is \fImakepkg -Lcrs\fR.
+The default set of options is \fImakepkg -cs\fR.
 
 .B \-f, --force
 .RS
 Overwrite built packages. (\fImakepkg -f\fR)
+.RE
+
+.B \-L, --log
+.RS
+Enable logging to a text file in the build directory. (\fImakepkg -L\fR)
 .RE
 
 .B \-n, --no-confirm
