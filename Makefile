@@ -15,6 +15,7 @@ check:
 	@bash -n bin/aurgrep
 	@bash -n bin/aurqueue
 	@bash -n bin/aursearch
+	@bash -n bin/aursrcver
 	@bash -n bin/aursift
 	@bash -n bin/aursync
 
