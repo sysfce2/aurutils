@@ -22,11 +22,11 @@ mangle() {
                 pkgver+=-
                 pkgver+=$value
                 ;;
-            '') 
+            '')
                 break ;;
         esac
     done
-    
+
     printf '%s\t%s\n' "$pkgbase" "$pkgver"
 }
 
@@ -41,7 +41,7 @@ trap_err() {
 
 trap_exit() {
     # preserve makepkg log on error
-    ((!$?)) && rm -v "$1"
+    ((!$?)) && rm "$1"
 }
 
 readonly -f mangle find_pkgbuild_path
