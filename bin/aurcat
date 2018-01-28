@@ -54,7 +54,7 @@ else
 fi
 
 if ((update)); then
-    list_update "$aurweb/$pkglist.gz" "$pkglist"
+    list_update "$aurweb/$pkglist.gz" "$pkglist" >timestamp
 fi
 
 cat "$pkglist"
