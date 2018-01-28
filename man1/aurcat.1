@@ -1,0 +1,52 @@
+.TH AURCAT 1 2018-01-28 AURUTILS
+.SH NAME
+aurcat \- print the AUR packagelist
+
+.SH SYNOPSIS
+.SY aurcat
+.OP \-bt
+.YS
+
+.SH DESCRIPTION
+\fIaurcat\fR prints the AUR package list (the list of `pkgname`s that
+are available in the AUR) to standard output. 
+
+This list is available at:
+.UR https://aur.archlinux.org/packages.gz
+.UE
+
+.SH OPTIONS
+.B \-t
+.RS
+Set the delay in seconds before a new package list is retrieved.
+Defaults to \fB300\fR seconds.
+.RE
+
+.B \-b
+.RS
+Retrieve \fIpkgbase.gz\fR instead of \fIpackages.gz\fR.
+.RE
+
+.SH NOTES
+To avoid retrieving the package list on every query, \fIaurcat\fR uses a
+caching logic which stores the list together with its timestamp in
+\fI$XDG_CACHE_HOME/aurcat\fR. New lists are generated every 5 minutes,
+thus setting a lower interval with \fI-t\fR yields no benefit. 
+
+See also:
+
+.UR https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
+[aur-dev] Making the package list more useful
+.UE
+
+.SH SEE ALSO
+.BR curl (1),
+.BR gzip (1),
+.BR aurutils (7)
+
+.SH AUTHORS
+.MT https://github.com/AladW
+Alad Wenter
+.ME
+
+.\" vim: set textwidth=72:

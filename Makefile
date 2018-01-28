@@ -9,10 +9,10 @@ check:
 	@bash -n bin/aursift
 	@bash -n bin/aurbuild
 	@bash -n bin/aurbuild_chroot
+	@bash -n bin/aurcat
 	@bash -n bin/aurchain
 	@bash -n bin/aurcheck
 	@bash -n bin/aurfetch
-	@bash -n bin/aurgrep
 	@bash -n bin/aurqueue
 	@bash -n bin/aursearch
 	@bash -n bin/aursrcver

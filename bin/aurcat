@@ -1,5 +1,5 @@
 #!/bin/bash
-readonly argv0=aurgrep
+readonly argv0=aurcat
 readonly aurweb='https://aur.archlinux.org'
 readonly cache=${XDG_CACHE_HOME:-$HOME/.cache}/$argv0
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -7,6 +7,7 @@ set -o pipefail
 
 # https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
 declare -i delay=300
+declare -i update=0
 declare pkglist=packages
 
 extract_date() {
@@ -46,12 +47,16 @@ if [[ -s $pkglist && -s timestamp ]]; then
     sec_r=$(list_http_date "$aurweb/$pkglist.gz" | date -f - '+%s')
 
     if ((sec_l)) && ((sec_r)) && ((sec_r - sec_l > delay)); then
-        list_update "$aurweb/$pkglist.gz" "$pkglist" > timestamp
+        update=1
     fi
 else
-    list_update "$aurweb/$pkglist.gz" "$pkglist" > timestamp
+    update=1
 fi
 
-pcregrep "$@" "$pkglist"
+if ((update)); then
+    list_update "$aurweb/$pkglist.gz" "$pkglist"
+fi
+
+cat "$pkglist"
 
 # vim: set et sw=4 sts=4 ft=sh:

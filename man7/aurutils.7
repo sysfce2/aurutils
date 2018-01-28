@@ -13,6 +13,12 @@ Build packages to a local repository
 .RE
 
 .P
+.BR aurcat (1)
+.RS 4
+Print the AUR package list
+.RE
+
+.P
 .BR aurchain (1)
 .RS 4
 Solve and order dependencies using the AUR RPC
@@ -28,12 +34,6 @@ Check packages in a given repository for AUR updates
 .BR aurfetch (1)
 .RS 4
 Download objects from an AUR repository
-.RE
-
-.P
-.BR aurgrep (1)
-.RS 4
-Print lines matching a pattern in the AUR package list
 .RE
 
 .P
@@ -177,7 +177,7 @@ Print packages from the \fIcustom\fR repository that are not available
 in the AUR:
 .EX
 
-  $ grep -Fxvf <(aurgrep .+) <(pacman -Slq custom)
+  $ grep -Fxvf <(aurcat) <(pacman -Slq custom)
 
 .EE
 As above, but for orphaned packages:
@@ -190,14 +190,14 @@ As above, but for orphaned packages:
 Print Perl modules that are both in the AUR and official repositories:
 .EX
 
-  $ aurgrep '^perl-.+' > perl.txt
+  $ aurcat | grep -E '^perl-.+' > perl.txt
   $ grep -Fxvf <(aursift < perl.txt) perl.txt
 
 .EE
 Search for packages with both 'wm' and 'git' in the name:
 .EX
 
-  $ aurgrep '(?=.*wm)(?=.*git)' | xargs aursearch -i
+  $ aurcat | grep -P '(?=.*wm)(?=.*git)' | xargs aursearch -i
 
 .EE
 Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:
@@ -233,7 +233,7 @@ Build a package for a different architecture, here i686:
 Select a package matching \fIpony\fR and build the result:
 .EX
 
-  $ select a in $(aurgrep pony); do aursync "$a"; break; done
+  $ select a in $(aurcat | grep pony); do aursync "$a"; break; done
 
 .EE
 Print packages both in AUR and [community] and compare their versions:
