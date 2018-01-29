@@ -5,10 +5,9 @@ readonly cache=${XDG_CACHE_HOME:-$HOME/.cache}/$argv0
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-# https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
 declare -i delay=300
 declare -i update=0
-declare pkglist=packages
+declare    pkglist=packages
 
 extract_date() {
     sed -n '1p' "$1" | awk -F', ' '{print $3}'
@@ -27,18 +26,27 @@ list_http_date() {
     curl -fsSI "$1" | awk -F', ' 'tolower($1) ~ /^date:/ {print $2}'
 }
 
+usage() {
+    printf >&2 'usage: %s: [-bt] [-FP pattern]\n' "$argv0"
+    exit 1
+}
+
 readonly -f extract_date list_update list_http_date
 
-while getopts :bt OPT; do
+unset pcre_opt
+while getopts :btF:P: OPT; do
     case "$OPT" in
         b) pkglist=pkgbase ;;
         t) delay=$OPTARG   ;;
+        F) pcre_opt=(-e "$OPTARG" '-F') ;;
+        P) pcre_opt=(-e "$OPTARG") ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-mkdir -p "$cache"
+mkdir -p     "$cache"
 chmod -c 700 "$cache"
 cd "$cache" || exit
 
@@ -57,6 +65,7 @@ if ((update)); then
     list_update "$aurweb/$pkglist.gz" "$pkglist" >timestamp
 fi
 
-cat "$pkglist"
+# default to any match
+pcregrep "${pcre_opt[@]-.*}" -- "$pkglist"
 
 # vim: set et sw=4 sts=4 ft=sh:

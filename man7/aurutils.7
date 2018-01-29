@@ -190,14 +190,14 @@ As above, but for orphaned packages:
 Print Perl modules that are both in the AUR and official repositories:
 .EX
 
-  $ aurcat | grep -E '^perl-.+' > perl.txt
+  $ aurcat -P '^perl-.+' > perl.txt
   $ grep -Fxvf <(aursift < perl.txt) perl.txt
 
 .EE
 Search for packages with both 'wm' and 'git' in the name:
 .EX
 
-  $ aurcat | grep -P '(?=.*wm)(?=.*git)' | xargs aursearch -i
+  $ aurcat -P '(?=.*wm)(?=.*git)' | xargs aursearch -i
 
 .EE
 Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:
@@ -233,7 +233,7 @@ Build a package for a different architecture, here i686:
 Select a package matching \fIpony\fR and build the result:
 .EX
 
-  $ select a in $(aurcat | grep pony); do aursync "$a"; break; done
+  $ select a in $(aurcat -F pony); do aursync "$a"; break; done
 
 .EE
 Print packages both in AUR and [community] and compare their versions:
