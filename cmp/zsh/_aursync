@@ -9,7 +9,7 @@ _aursync_opts=(
     {-p,--print}'[Only print package targets]'
     {-s,--sign}'[Sign packages and database]'
     {-t,--tar}'[Download AUR tarball]'
-    {-u,--update}'[Update AUR packages]'
+    {-u,--upgrades}'[Update AUR packages]'
     --ignore'[Skip packages]'
     --continue'[Skip download]'
     --no-ver'[Skip version checks]'
