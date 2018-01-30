@@ -37,7 +37,9 @@ find_pkgbuild_path "${arg_path[@]}" | while read -r; do
     else
         printf >&2 '%s: error on package %s\n' "$argv0" "$REPLY"
         printf >&2 '8<----\n'
-        cat "$makepkg_log"; exit 1
+
+        # XXX exit code
+        cat "$makepkg_log"; break
     fi
 done
 
