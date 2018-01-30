@@ -33,13 +33,15 @@ usage() {
 
 readonly -f extract_date list_update list_http_date
 
-unset pcre_opt
+# default to any match
+pcre_opt=('.*')
+
 while getopts :btF:P: OPT; do
     case "$OPT" in
         b) pkglist=pkgbase ;;
         t) delay=$OPTARG   ;;
-        F) pcre_opt=(-e "$OPTARG" '-F') ;;
-        P) pcre_opt=(-e "$OPTARG") ;;
+        F) pcre_opt=('-e' "$OPTARG" '-F') ;;
+        P) pcre_opt=('-e' "$OPTARG") ;;
         *) usage ;;
     esac
 done
@@ -65,7 +67,6 @@ if ((update)); then
     list_update "$aurweb/$pkglist.gz" "$pkglist" >timestamp
 fi
 
-# default to any match
-pcregrep "${pcre_opt[@]-.*}" -- "$pkglist"
+pcregrep "${pcre_opt[@]}" < "$pkglist"
 
 # vim: set et sw=4 sts=4 ft=sh:
