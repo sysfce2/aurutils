@@ -55,7 +55,7 @@ mapfile -t arg_path < <(readlink -e -- "$@")
 mapfile -t arg_path < <(find_pkgbuild_path "${arg_path[@]}")
 
 for a in "${arg_path[@]}"; do
-    cd "$a"
+    cd "$a" || exit
 
     makepkg --noprepare -od >"$makepkg_log" 2>&1
     makepkg --printsrcinfo | mangle

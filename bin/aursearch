@@ -74,17 +74,17 @@ json_long() {
         read -r FirstSubmitted
         read -r LastModified
     }; do
-        printf "Name:            %s\n" "$Name"
-        printf "Base:            %s\n" "$PackageBase"
-        printf "Version:         %s\n" "$Version"
-        printf "Description:     %s\n" "$Description"
-        printf "URL:             %s\n" "$URL"
-        printf "Votes:           %s\n" "$NumVotes"
-        printf "Popularity:      %s\n" "$Popularity"
-        printf "Out Of Date:     %s\n" "$OutOfDate"
-        printf "Maintainer:      %s\n" "$Maintainer"
-        printf "First Submitted: %s\n" "$(date -d @"$FirstSubmitted" '+%c')"
-        printf "Last Modified:   %s\n" "$(date -d @"$LastModified" '+%c')"
+        printf 'Name:            %s\n' "$Name"
+        printf 'Base:            %s\n' "$PackageBase"
+        printf 'Version:         %s\n' "$Version"
+        printf 'Description:     %s\n' "$Description"
+        printf 'URL:             %s\n' "$URL"
+        printf 'Votes:           %s\n' "$NumVotes"
+        printf 'Popularity:      %s\n' "$Popularity"
+        printf 'Out Of Date:     %s\n' "$OutOfDate"
+        printf 'Maintainer:      %s\n' "$Maintainer"
+        printf 'First Submitted: %s\n' "$(date -d @"$FirstSubmitted" '+%c')"
+        printf 'Last Modified:   %s\n' "$(date -d @"$LastModified" '+%c')"
         printf '\n'
     done
 }

@@ -59,7 +59,7 @@ fi
 
 while getopts h OPT; do
     case $OPT in
-        *|h) usage ;;
+        *) usage ;;
     esac
 done
 
