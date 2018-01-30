@@ -3,6 +3,10 @@ readonly argv0=aursearch
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
+declare by=name-desc
+declare sort_key=Name
+parse() { json_short "$1"; }
+
 searchby() {
     declare -r aurweb='https://aur.archlinux.org'
 
@@ -34,10 +38,10 @@ dl_stdin() {
 }
 
 json_short() {
-    jq -e -r "[.results[]] | sort_by(.$sort_by)[] | .Name,
+    jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
         .Version,
         .NumVotes,
-        .Description" | while
+        .Description' | while
     {
         read -r Name
         read -r Version
@@ -50,7 +54,7 @@ json_short() {
 }
 
 json_long() {
-    jq -e -r "[.results[]] | sort_by(.$sort_by)[] | .Name,
+    jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
         .PackageBase,
         .Version,
         .Description,
@@ -60,7 +64,7 @@ json_long() {
         .OutOfDate,
         .Maintainer,
         .FirstSubmitted,
-        .LastModified" | while
+        .LastModified' | while
     {
         read -r Name
         read -r PackageBase
@@ -90,7 +94,7 @@ json_long() {
 }
 
 usage() {
-    printf >&2 '%s\n' "usage: $argv0 [-imnrRv] package [package...]"
+    printf >&2 'usage: %s: [-imnrRv] [-k key] package [package...]\n' "$argv0"
     exit 1
 }
 
@@ -102,19 +106,15 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-parse() { json_short; }
-by=name-desc
-sort_by=Name
-
 while getopts :imnk:rRv OPT; do
     case $OPT in
         i) by=none ;;
         m) by=maintainer ;;
         n) by=name ;;
-        k) sort_by=$OPTARG ;;
+        k) sort_key=$OPTARG ;;
         r) parse() { tee; } ;;
         R) parse() { sed 's/^/[/; s/}{/},{/g; s/$/]/' ; } ;;
-        v) parse() { json_long; } ;;
+        v) parse() { json_long "$1"; } ;;
         *) usage ;;
     esac
 done
@@ -125,6 +125,6 @@ if ((!$#)); then
     usage
 fi
 
-printf -- '%s\n' "$@" | jq -R -r '@uri' | searchby "$by" | dl_stdin | parse
+printf -- '%s\n' "$@" | jq -R -r '@uri' | searchby "$by" | dl_stdin | parse "$sort_key"
 
 # vim: set et sw=4 sts=4 ft=sh:
