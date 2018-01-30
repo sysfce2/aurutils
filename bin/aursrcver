@@ -3,22 +3,18 @@ readonly argv0=aursrcver
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly startdir=$PWD
 
-mangle() {
-    local pkgbase pkgver
+get_pkgbuild_info() {
+    env -C "$1" -i bash -c '
+        PATH= source PKGBUILD
 
-    while read -r key _ value; do
-        case $key in
-            pkgbase) pkgbase=$value ;;
-            epoch)   pkgver+=$value
-                     pkgver+=:      ;;
-            pkgver)  pkgver+=$value ;;
-            pkgrel)  pkgver+=-
-                     pkgver+=$value ;;
-            '') break ;;
-        esac
-    done
+        if [[ -v epoch ]]; then
+            fullver=$epoch:$pkgver-$pkgrel
+        else
+            fullver=$pkgver-$pkgrel
+        fi
 
-    printf '%s\t%s\n' "$pkgbase" "$pkgver"
+        printf "%s\\t%s\\n" "${pkgbase:-$pkgname}" "$fullver"
+    '
 }
 
 find_pkgbuild_path() {
@@ -35,7 +31,7 @@ trap_exit() {
     ((!$?)) && rm "$1"
 }
 
-readonly -f mangle find_pkgbuild_path trap_err trap_exit
+readonly -f get_pkgbuild_info find_pkgbuild_path trap_err trap_exit
 
 makepkg_log=$(mktemp -t makepkg.XXXXXXXX) || exit
 trap 'trap_err  $makepkg_log' ERR
@@ -43,13 +39,12 @@ trap 'trap_exit $makepkg_log' EXIT
 
 # trickery for hyphen and absolute path arguments
 mapfile -t arg_path < <(readlink -e -- "$@")
-mapfile -t arg_path < <(find_pkgbuild_path "${arg_path[@]}")
 
-for p in "${arg_path[@]}"; do
-    cd "$p"
+find_pkgbuild_path "${arg_path[@]}" | while read -r; do
+    cd "$REPLY"
 
-    makepkg --noprepare -od >"$makepkg_log" 2>&1
-    makepkg --printsrcinfo | mangle
+    makepkg --noprepare -od >>"$makepkg_log" 2>&1
+    get_pkgbuild_info "$REPLY"
 done
 
 # vim: set et sw=4 sts=4 ft=sh:
