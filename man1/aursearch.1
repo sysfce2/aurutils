@@ -5,6 +5,7 @@ aursearch \- search for AUR package
 .SH SYNOPSIS
 .SY aursearch
 .OP \-imnrRv
+.OP \-k key
 .I package
 .OP package...
 .YS
@@ -12,7 +13,8 @@ aursearch \- search for AUR package
 .SH DESCRIPTION
 \fBaursearch\fR searches the AUR by multiple strings of packages. The
 union of all results is returned. By default, searches are performed
-by name and description using the \fIsearchby\fR interface.
+by name and description using the \fIsearchby\fR interface, and
+displayed in a brief format.
 
 .SH OPTIONS
 
@@ -23,7 +25,7 @@ Output JSON from the AUR RPC.
 
 .B \-R
 .RS
-Output JSON from the AUR RPC. (merged)
+Output JSON from the AUR RPC. (single JSON structure)
 .RE
 
 .B \-v
@@ -46,10 +48,20 @@ Search by maintainer.
 Search by package name.
 .RE
 
+.B \-k
+.RS
+Sort results via a key, defaulting to \fIName\fR.
+
+Possible choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
+\fIDescription\fR (for brief output) or \fIName\fR, \fIPackageBase\fR,
+\fIVersion\fR, \fIDescription\fR, \fIURL\fR, \fINumVotes\fR,
+\fIPopularity\fR, \fIOutOfDate\fR, \fIMaintainer\fR,
+\fIFirstSubmitted\fR, \fILastModified\fR (for \fB-v\fR verbose output).
+.RE
+
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150
-arguments to avoid HTTP 414 errors (FS#49089). The results are merged
-to a single JSON structure.
+arguments to avoid HTTP 414 errors (FS#49089).
 
 .SH SEE ALSO
 .BR curl (1),
