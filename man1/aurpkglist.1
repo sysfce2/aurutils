@@ -1,17 +1,17 @@
-.TH AURCAT 1 2018-01-28 AURUTILS
+.TH AURPKGLIST 1 2018-01-31 AURUTILS
 .SH NAME
-aurcat \- print the AUR packagelist
+aurpkglist \- print the AUR packagelist
 
 .SH SYNOPSIS
-.SY aurcat
+.SY aurpkglist
 .OP \-bt
 .OP \-FP pattern
 .YS
 
 .SH DESCRIPTION
-\fIaurcat\fR prints the AUR package list (the list of `pkgname`s that
-are available in the AUR) to standard output. Optionally a pattern can
-be specified that is matched with \fIpcregrep\fR.
+\fIaurpkglist\fR prints the list of `pkgname`s that are available in the
+AUR to standard output. Optionally a pattern can be specified that is
+matched with \fIpcregrep\fR.
 
 This list is available at:
 .UR https://aur.archlinux.org/packages.gz
@@ -42,9 +42,9 @@ Interpret the given pattern as a Perl-compatible regular expression
 .RE
 
 .SH NOTES
-To avoid retrieving the package list on every query, \fIaurcat\fR uses a
+To avoid retrieving the package list on every query, \fIaurpkglist\fR uses a
 caching logic which stores the list together with its timestamp in
-\fI$XDG_CACHE_HOME/aurcat\fR. New lists are generated every 5 minutes,
+\fI$XDG_CACHE_HOME/aurpkglist\fR. New lists are generated every 5 minutes,
 thus setting a lower interval with \fI-t\fR yields no benefit. 
 
 See also:
