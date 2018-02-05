@@ -24,12 +24,9 @@ Upgrade notices are posted to the
 
 ## USAGE
 
-Documentation is included as groff manuals. [`aurutils(7)`](man7/aurutils.7) contains a
+Documentation is included as groff manuals. [`aur(1)`](man1/aur.1) contains a
 general overview, instructions on creating a local repository, and
 several examples.
-
-The various scripts are documented by pages in section 1, for
-example [`aursync(1)`](man1/aursync.1).
 
 ## TROUBLESHOOTING
 
