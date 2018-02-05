@@ -4,21 +4,7 @@ SHRDIR ?= $(PREFIX)/share
 BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
 
-.PHONY: check install
-
-check:
-	@bash -n bin/aur
-	@bash -n lib/build
-	@bash -n lib/build-nspawn
-	@bash -n lib/fetch
-	@bash -n lib/pkglist
-	@bash -n lib/rfilter
-	@bash -n lib/rpc-deps
-	@bash -n lib/search
-	@bash -n lib/src-deps
-	@bash -n lib/src-ver
-	@bash -n lib/sync
-	@bash -n lib/updates
+.PHONY: shellcheck install
 
 shellcheck:
 	@shellcheck -x lib/* bin/*
