@@ -7,14 +7,14 @@ if [[ -z $1 ]]; then
     printf >&2 -- 'available commands:\n'
 
     for p in "$lib_dir"/*; do
-        printf -- '%q\n' "${p##*/}"
+        printf -- '%q\n' "${p##*/aur-}"
     done | column >&2
 
     printf >&2 -- '\navailable user commands:\n'
 
     compgen -c aur- | while read -r; do
         if ! [[ -f $lib_dir/$REPLY ]]; then
-            printf -- '%q\n' "$REPLY"
+            printf -- '%q\n' "${REPLY#aur-}"
         fi
     done | column >&2
 
