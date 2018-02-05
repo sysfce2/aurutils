@@ -6,7 +6,7 @@ pkgdesc='helper tools for the arch user repository'
 url='https://github.com/AladW/aurutils'
 arch=('any')
 license=('custom:ISC')
-source=('git+https://github.com/AladW/aurutils#branch=lib-move')
+source=('git+https://github.com/AladW/aurutils')
 sha256sums=('SKIP')
 conflicts=('aurutils')
 provides=('aurutils')
