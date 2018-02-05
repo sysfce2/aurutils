@@ -1,19 +1,18 @@
 #!/bin/bash
 readonly argv0=aur
-readonly lib_dir=/usr/lib/aurutils
 
 if [[ -z $1 ]]; then
     printf >&2 -- 'usage: %s [command]\n\n' "$argv0"
     printf >&2 -- 'available commands:\n'
 
-    for p in "$lib_dir"/*; do
+    for p in AUR_LIBDIR/*; do
         printf -- '%q\n' "${p##*/aur-}"
     done | column >&2
 
     printf >&2 -- '\navailable user commands:\n'
 
     compgen -c aur- | while read -r; do
-        if ! [[ -f $lib_dir/$REPLY ]]; then
+        if ! [[ -f AUR_LIBDIR/$REPLY ]]; then
             printf -- '%q\n' "${REPLY#aur-}"
         fi
     done | column >&2
@@ -21,7 +20,7 @@ if [[ -z $1 ]]; then
     exit 1
 fi
 
-readonly PATH=$lib_dir:$PATH
+readonly PATH=AUR_LIBDIR:$PATH
 
 if type -P aur-"$1" >/dev/null; then
     exec aur-"$1" "${@:2}"
