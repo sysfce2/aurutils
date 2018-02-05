@@ -1,5 +1,5 @@
 PROGNM = aurutils
-PREFIX ?= /usr/local
+PREFIX ?= /usr
 SHRDIR ?= $(PREFIX)/share
 BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib

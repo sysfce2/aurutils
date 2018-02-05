@@ -1,5 +1,6 @@
 #!/bin/bash
 readonly argv0=aur
+shopt -s nullglob
 
 if [[ -z $1 ]]; then
     printf >&2 -- 'usage: %s [command]\n\n' "$argv0"
