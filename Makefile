@@ -7,7 +7,8 @@ LIBDIR ?= $(PREFIX)/lib
 .PHONY: shellcheck install
 
 bin/aur: bin/aur.in
-	m4 -DAUR_LIBDIR=$(LIBDIR)/$(PROGNM) $< >$@
+	m4 -DAUR_LIB_DIR=$(LIBDIR)/$(PROGNM) $< >$@
+	chmod 755 $@
 
 shellcheck:
 	@shellcheck -x lib/aur-* bin/aur

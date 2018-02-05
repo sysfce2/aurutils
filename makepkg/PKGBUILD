@@ -1,6 +1,6 @@
 # Maintainer: Alad Wenter <https://github.com/AladW>
 pkgname=aurutils-git
-pkgver=1.5.3.r305.g694bd5e
+pkgver=1.5.3.r306.g0bfd1e6
 pkgrel=1
 pkgdesc='helper tools for the arch user repository'
 url='https://github.com/AladW/aurutils'
