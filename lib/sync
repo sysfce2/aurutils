@@ -2,7 +2,7 @@
 set -e -o pipefail -o noclobber
 shopt -s nullglob
 
-readonly argv0=aursync
+readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -61,7 +61,8 @@ usage() {
 
 readonly -f viewer lib32 conf_file_repo uniq_by trap_exit usage
 
-source /usr/share/makepkg/util.sh
+source /usr/share/makepkg/util/util.sh
+source /usr/share/makepkg/util/message.sh
 
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
@@ -74,7 +75,7 @@ fi
 
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
-longopts+=,sign,temp,tar,repo:,root:,upgrades,aurutils,continue
+longopts+=,sign,temp,tar,repo:,root:,upgrades,nhehgvyf,continue
 shortopts=B:C:D:M:AcfLnprstTu
 
 if TEMP=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
@@ -135,7 +136,7 @@ while true; do
         -u|--upgrades)
             update=1
             shift ;;
-        --allan|--aurutils)
+        --allan|--nhehgvyf)
             rotate=1
             shift ;;
         --continue)
@@ -164,8 +165,8 @@ while true; do
 done
 
 if ((rotate)); then
-    if { hash rot13 && target=$(aurgrep .+ | shuf -n 1); } 2>/dev/null; then
-        exec bash -c "{ \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
+    if { hash rot13 && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
+        exec bash -c "{ aur \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
     else
         echo '?'; exit 16 # EBUSY
     fi
@@ -208,7 +209,7 @@ cd_safe "$tmp"
 mkdir patch
 
 if ((update)); then
-    mapfile -t < <(aurcheck -d "$repo" -lr "$root" | aurcheck -q)
+    mapfile -t < <(aur updates -d "$repo" -lr "$root" | aur updates -q)
     wait "$!"
 fi
 
@@ -220,7 +221,7 @@ if ! (($#)); then
 fi
 
 msg "Resolving dependencies..."
-aurchain -t -- "$@" >pkginfo_0
+aur rpc-deps -t -- "$@" >pkginfo_0
 
 { for i in "${pkg_i[@]}"; do
       warning "'$i': ignoring package"
@@ -228,7 +229,7 @@ aurchain -t -- "$@" >pkginfo_0
   done
 
   if ((chkver)); then
-      cut -f1,3 pkginfo_0 | aurcheck -d "$repo" -r "$root" -c
+      cut -f1,3 pkginfo_0 | aur updates -d "$repo" -r "$root" -c
   fi
 } >filter
 
@@ -246,10 +247,10 @@ if ((download)); then
 
     if ((snapshot)); then
         cd_safe "$AURDEST"/snapshot
-        cut -f4 "$tmp"/pkginfo_1 | aurfetch -t
+        cut -f4 "$tmp"/pkginfo_1 | aur fetch -t
     else
         cd_safe "$AURDEST"
-        cut -f2 "$tmp"/pkginfo_1 | aurfetch -L "$tmp"/patch
+        cut -f2 "$tmp"/pkginfo_1 | aur fetch -L "$tmp"/patch
     fi
 fi
 
@@ -262,9 +263,9 @@ if ((build)); then
     aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
 
     if ((chroot)); then
-        aurbuild "${aurbuild_args[@]}" -- "${makechrootpkg_args[@]}"
+        aur build "${aurbuild_args[@]}" -- "${makechrootpkg_args[@]}"
     else
-        aurbuild "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+        aur build "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
     fi
 else
     xargs -a "$tmp"/queue printf -- "$(pwd -P)/%s\\n"

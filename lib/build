@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-readonly argv0=aurbuild
+readonly argv0=build
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -40,7 +40,8 @@ usage() {
 
 readonly -f conf_single db_replaces find_pkg_dupes trap_exit usage
 
-source /usr/share/makepkg/util.sh
+source /usr/share/makepkg/util/util.sh
+source /usr/share/makepkg/util/message.sh
 
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
@@ -126,7 +127,7 @@ trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if ((chroot)); then
-    sudo aurbuild_chroot -d "$database" -u "${chroot_args[@]}"
+    sudo aur build-nspawn -d "$database" -u "${chroot_args[@]}"
 else
     conf_single "$database" >"$tmp"/custom.conf
 fi
@@ -146,7 +147,7 @@ while read -r -u "$fd" pkg _; do
     fi
 
     if ((chroot)); then
-        sudo PKGDEST="$var_tmp" aurbuild_chroot \
+        sudo PKGDEST="$var_tmp" aur build-nspawn \
              "${chroot_args[@]}" -- -d "$db_root" "${makechrootpkg_args[@]}"
     else
         PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"

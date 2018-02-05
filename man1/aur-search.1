@@ -1,32 +1,23 @@
-.TH AURSEARCH 1 2016-05-18 AURUTILS
+.TH AUR-SEARCH 1 2018-02-01 AURUTILS
 .SH NAME
-aursearch \- search for AUR package
+aur-search \- search for AUR package
 
 .SH SYNOPSIS
-.SY aursearch
-.OP \-imnrRv
+.SY aur
+.B search
+.OP \-imnv
 .OP \-k key
 .I package
 .OP package...
 .YS
 
 .SH DESCRIPTION
-\fBaursearch\fR searches the AUR by multiple strings of packages. The
+\fBaur-search\fR searches the AUR by multiple strings of packages. The
 union of all results is returned. By default, searches are performed
 by name and description using the \fIsearchby\fR interface, and
 displayed in a brief format.
 
 .SH OPTIONS
-
-.B \-r
-.RS
-Output JSON from the AUR RPC.
-.RE
-
-.B \-R
-.RS
-Output JSON from the AUR RPC. (single JSON structure)
-.RE
 
 .B \-v
 .RS
@@ -59,14 +50,11 @@ Possible choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
 \fIFirstSubmitted\fR, \fILastModified\fR (for \fB-v\fR verbose output).
 .RE
 
-.SH NOTES
-As the AUR RPC is limited to GET requests, queries are split by 150
-arguments to avoid HTTP 414 errors (FS#49089).
-
 .SH SEE ALSO
+.BR aur (1),
+.BR aur-query (1),
 .BR curl (1),
-.BR jq (1),
-.BR aurutils (7)
+.BR jq (1)
 
 .SH AUTHORS
 .MT https://github.com/AladW

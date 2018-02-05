@@ -1,5 +1,5 @@
 #!/bin/bash
-readonly argv0=aurcheck
+readonly argv0=updates
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
@@ -73,7 +73,7 @@ cmp_all() {
 }
 
 namever_aur() {
-    xargs -r aursearch -ir | jq -r '.results[] |
+    xargs -r aur rpc -t info | jq -r '.results[] |
         [.Name, .PackageBase, .Version] | @tsv'
 }
 
@@ -110,7 +110,7 @@ usage() {
 readonly -f my_vercmp sort_by sort_join cmp_equal_or_newer cmp_all
 readonly -f namever_aur namever_sync repo_parse fill_empty trap_exit usage
 
-source /usr/share/makepkg/util.sh || exit
+source /usr/share/makepkg/util/message.sh || exit
 
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
