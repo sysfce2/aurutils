@@ -202,31 +202,36 @@ if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
     exit 13
 fi
 
+if ((${#pkg_i[@]})); then
+    printf -- 'warning: ignoring %s package\n' "${pkg_i[@]}" >&2
+fi
+
 mkdir -p "$AURDEST"/snapshot
 chmod -c 700 "$AURDEST"
 
 cd_safe "$tmp"
 mkdir patch
 
-if ((update)); then
-    mapfile -t < <(aur updates -d "$repo" -lr "$root" | aur updates -q)
-    wait "$!"
-fi
+{ if (($#)); then
+      printf -- '%s\n' "$@"
+  fi
 
-set -- "$@" "${MAPFILE[@]}"
+  if ((update)); then
+      aur updates -d "$repo" -lr "$root" | aur updates -q
+  fi
+} >argv
 
-if ! (($#)); then
+if ! [[ -s argv ]]; then
     plain "there is nothing to do"
     exit
 fi
 
 msg "Resolving dependencies..."
-aur rpc-deps -t -- "$@" >pkginfo_0
+xargs -a argv aur rpc-deps -t >pkginfo_0
 
-{ for i in "${pkg_i[@]}"; do
-      warning "'$i': ignoring package"
-      printf -- '%s\n' "$i"
-  done
+{ if ((${#pkg_i[@]})); then
+      printf -- '%s\n' "${pkg_i[@]}"
+  fi
 
   if ((chkver)); then
       cut -f1,3 pkginfo_0 | aur updates -d "$repo" -r "$root" -c
@@ -242,14 +247,16 @@ fi
 
 cut -f2 "$tmp"/pkginfo_1 >"$tmp"/queue
 
-if ((download)); then
-    msg "Retrieving build files..."
+if ((snapshot)); then
+    cd_safe "$AURDEST"/snapshot
 
-    if ((snapshot)); then
-        cd_safe "$AURDEST"/snapshot
+    if ((download)); then
         cut -f4 "$tmp"/pkginfo_1 | aur fetch -t
-    else
-        cd_safe "$AURDEST"
+    fi
+else
+    cd_safe "$AURDEST"
+
+    if ((download)); then
         cut -f2 "$tmp"/pkginfo_1 | aur fetch -L "$tmp"/patch
     fi
 fi
