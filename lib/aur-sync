@@ -4,7 +4,7 @@ shopt -s nullglob
 
 readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/$argv0}
+readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 declare -a makepkg_args=(-cs) makechrootpkg_args=(-cu) aurbuild_args=()
@@ -227,7 +227,7 @@ if ! [[ -s argv ]]; then
 fi
 
 msg "Resolving dependencies..."
-xargs -a argv aur rpc-deps -t >pkginfo_0
+xargs -a argv aur rpc-deps -t -- >pkginfo_0
 
 { if ((${#pkg_i[@]})); then
       printf -- '%s\n' "${pkg_i[@]}"
