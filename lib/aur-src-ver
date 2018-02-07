@@ -32,7 +32,7 @@ mapfile -t arg_path < <(readlink -e -- "$@")
 find_pkgbuild_path "${arg_path[@]}" | while read -r; do
     cd "$REPLY"
 
-    if makepkg --noprepare -od >"$makepkg_log" 2>&1; then
+    if makepkg --skipinteg --noprepare -od >"$makepkg_log" 2>&1; then
         get_pkgbuild_info "$REPLY"
     else
         printf >&2 '%s: error on package %s\n' "$argv0" "$REPLY"
