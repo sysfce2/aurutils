@@ -5,6 +5,7 @@ shopt -s nullglob
 readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
+readonly AURDEST_SNAPSHOT=${AURDEST_SNAPSHOT:-$XDG_CACHE_HOME/aurutils/snapshot}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 declare -a makepkg_args=(-cs) makechrootpkg_args=(-cu) aurbuild_args=()
@@ -206,8 +207,8 @@ if ((${#pkg_i[@]})); then
     printf -- 'warning: ignoring %s package\n' "${pkg_i[@]}" >&2
 fi
 
-mkdir -p "$AURDEST"/snapshot
-chmod -c 700 "$AURDEST"
+mkdir -p "$AURDEST" "$AURDEST_SNAPSHOT"
+chmod -c 700 "$AURDEST" "$AURDEST_SNAPSHOT"
 
 cd_safe "$tmp"
 mkdir patch
@@ -248,7 +249,7 @@ fi
 cut -f2 "$tmp"/pkginfo_1 >"$tmp"/queue
 
 if ((snapshot)); then
-    cd_safe "$AURDEST"/snapshot
+    cd_safe "$AURDEST_SNAPSHOT"
 
     if ((download)); then
         cut -f4 "$tmp"/pkginfo_1 | aur fetch -t
