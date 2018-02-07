@@ -33,25 +33,24 @@ clone() {
     done
 }
 
-# stdin: /path/to/a.tar.gz
-snapshot() {
-    declare -r zipdir=$1
-
-    cd "$zipdir"
-
-    if type -P parallel >/dev/null 2>&1; then
+dl_stdin() {
+    if type -P parallel >/dev/null; then
         parallel --will-cite -X -j +5 --nice 10 --halt soon,fail=1 -r \
             curl -fLsS --remote-name-all --cert-status {}
-    elif type -P aria2c >/dev/null 2>&1; then
+    elif type -P aria2c >/dev/null; then
         aria2c --stderr=true -i -
     else
         xargs -r curl -fLsS --remote-name-all --cert-status
     fi
+}
+
+extract() {
+    cd "$1"
+    dl_stdin
 
     cd -
-
-    for _ in "$zipdir"/*.tar.gz; do
-        tar xvf "$_"
+    for a in "$1"/*.tar.gz; do
+        tar xvf "$a"
     done
 }
 
@@ -66,7 +65,7 @@ usage() {
     exit 1
 }
 
-readonly -f clone snapshot trap_exit usage
+readonly -f clone dl_stdin extract trap_exit usage
 
 while getopts :L:t OPT; do
     case $OPT in
@@ -80,7 +79,8 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 trap 'trap_exit' EXIT
 
 if ((aurball)); then
-    xargs -d '\n' printf "$aurweb/%s\\n" | snapshot "$tmp"
+    # stdin: URIPath (AurJson)
+    xargs -I{} printf "$aurweb/%s\\n" {} | extract "$tmp"
 else
     clone "$aurweb" "$logdir"
 fi
