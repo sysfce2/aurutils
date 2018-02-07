@@ -5,7 +5,7 @@ readonly aurweb='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 declare -i aurball=0
-declare logdir=/dev/null
+declare    logdir=/dev/null
 
 clone() {
     declare -r remote=$1 logdir=$2
@@ -44,14 +44,35 @@ dl_stdin() {
     fi
 }
 
+tar_no_mode_diff() {
+    if [[ -d $2/${1%%.*} ]]; then
+        # tar --compare returns 1 on any mismatch
+        LC_MESSAGES=C tar -df "$1" -C "$2" | grep -Evq '(Mode|Uid|Gid)'
+    else
+        return 1
+    fi
+}
+
 extract() {
-    cd "$1"
+    declare -r workdir=$1 logdir=$2 startdir=$PWD
+
+    cd "$workdir"
     dl_stdin
 
-    cd -
-    for a in "$1"/*.tar.gz; do
-        tar xvf "$a"
+    for a in ./*.tar.gz; do
+        tar -kxf "$a"
+
+        if [[ -d $logdir ]] && tar_no_mode_diff "${a#*/}" "$startdir"; then
+            a=${a%%.tar.gz}
+
+            diff -ur "$startdir/$a" "$a" | \
+                tee -a "$logdir/$a".diff | diffstat -CKq -f3
+        fi
+
+        cp -af "${a%%.tar.gz}" "$startdir"
     done
+
+    cd "$startdir"
 }
 
 trap_exit() {
@@ -65,7 +86,7 @@ usage() {
     exit 1
 }
 
-readonly -f clone dl_stdin extract trap_exit usage
+readonly -f clone dl_stdin extract tar_no_mode_diff trap_exit usage
 
 while getopts :L:t OPT; do
     case $OPT in
@@ -80,7 +101,7 @@ trap 'trap_exit' EXIT
 
 if ((aurball)); then
     # stdin: URIPath (AurJson)
-    xargs -I{} printf "$aurweb/%s\\n" {} | extract "$tmp"
+    xargs -I{} printf "$aurweb/%s\\n" {} | extract "$tmp" "$logdir"
 else
     clone "$aurweb" "$logdir"
 fi

@@ -252,7 +252,7 @@ if ((snapshot)); then
     cd_safe "$AURDEST_SNAPSHOT"
 
     if ((download)); then
-        cut -f4 "$tmp"/pkginfo_1 | aur fetch -t
+        cut -f4 "$tmp"/pkginfo_1 | aur fetch -L "$tmp"/patch -t
     fi
 else
     cd_safe "$AURDEST"
