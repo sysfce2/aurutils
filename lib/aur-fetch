@@ -45,7 +45,7 @@ dl_stdin() {
 }
 
 tar_no_mode_diff() {
-    if [[ -d $2/${1%%.*} ]]; then
+    if [[ -d $2/${1%%.tar*} ]]; then
         # tar --compare returns 1 on any mismatch
         LC_MESSAGES=C tar -df "$1" -C "$2" | grep -Evq '(Mode|Uid|Gid)'
     else
@@ -62,7 +62,7 @@ extract() {
     for a in ./*.tar.gz; do
         tar -kxf "$a"
 
-        if [[ -d $logdir ]] && tar_no_mode_diff "${a#*/}" "$startdir"; then
+        if [[ -d $logdir ]] && tar_no_mode_diff "$a" "$startdir"; then
             a=${a%%.tar.gz}
 
             diff -ur "$startdir/$a" "$a" | \
