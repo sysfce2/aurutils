@@ -45,6 +45,11 @@ extract() {
 }
 readonly -f extract
 
+usage() {
+    printf -- 'usage: %s [-L logdir]\n' "$argv0" >&2
+    exit 1
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -55,6 +60,7 @@ readonly -f trap_exit
 while getopts :L: OPT; do
     case $OPT in
         L) logdir=$OPTARG ;;
+        *) usage ;;
     esac
 done
 
