@@ -227,7 +227,7 @@ mkdir patch
 
 if [[ -s argv ]]; then
     msg "Resolving dependencies..."
-    aur rpc-deps -t <argv >pkginfo_0
+    aur deps-rpc -t <argv >pkginfo_0
 else
     plain "there is nothing to do"
     exit
