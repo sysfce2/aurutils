@@ -231,7 +231,7 @@ if ! [[ -s argv ]]; then
 fi
 
 msg "Resolving dependencies..."
-xargs -a argv aur rpc-deps -t -- >pkginfo_0
+aur rpc-deps -t <argv >pkginfo_0
 
 { if ((${#pkg_i[@]})); then
       printf -- '%s\n' "${pkg_i[@]}"
