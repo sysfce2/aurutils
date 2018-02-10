@@ -63,6 +63,8 @@ while getopts :L: OPT; do
         *) usage ;;
     esac
 done
+shift $((OPTIND - 1))
+OPTIND=1
 
 if tmp=$(mktemp -dt "$argv0".XXXXXXXX); then
     extract "$tmp" "${logdir:-/dev/null}"
