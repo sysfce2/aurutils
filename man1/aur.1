@@ -19,27 +19,15 @@ Build packages in an nspawn container.
 .RE
 
 .P
-.BR aur-pkglist (1)
+.BR aur-deps-rpc (1)
 .RS 4
-Print the AUR package list.
+Order dependencies using the AUR RPC.
 .RE
 
 .P
-.BR aur-rpc (1)
+.BR aur-deps-src (1)
 .RS 4
-Send GET requests to aurweb.
-.RE
-
-.P
-.BR aur-rpc-deps (1)
-.RS 4
-Solve and order dependencies using the AUR RPC.
-.RE
-
-.P
-.BR aur-updates (1)
-.RS 4
-Check packages in a given repository for AUR updates.
+Order dependencies using .SRCINFO files.
 .RE
 
 .P
@@ -49,15 +37,9 @@ Download objects from an AUR repository.
 .RE
 
 .P
-.BR aur-src-deps (1)
+.BR aur-pkglist (1)
 .RS 4
-Order dependencies using .SRCINFO files.
-.RE
-
-.P
-.BR aur-search (1)
-.RS 4
-Search for AUR packages.
+Print the AUR package list.
 .RE
 
 .P
@@ -67,9 +49,27 @@ Filter packages in the Arch Linux repositories.
 .RE
 
 .P
+.BR aur-rpc (1)
+.RS 4
+Send GET requests to aurweb.
+.RE
+
+.P
+.BR aur-search (1)
+.RS 4
+Search for AUR packages.
+.RE
+
+.P
 .BR aur-sync (1)
 .RS 4
 Download and build AUR packages automatically
+.RE
+
+.P
+.BR aur-updates (1)
+.RS 4
+Check packages in a given repository for AUR updates.
 .RE
 
 .SH EXIT STATUS
@@ -166,7 +166,7 @@ Examples below assume that \fIbash\fR is used as the interactive shell.
 Run actions on the dependency tree of an AUR package:
 .EX
 
-  $ aur rpc-deps foobar | while read -r pkg _; do ... done
+  $ aur deps-rpc foobar | while read -r pkg _; do ... done
 
 .EE
 Build all packages in the \fIpkgbuilds\fR github repository:
@@ -175,7 +175,7 @@ Build all packages in the \fIpkgbuilds\fR github repository:
   $ git clone https://www.github.com/Earnestly/pkgbuilds
   $ cd pkgbuilds
   $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \\;
-  $ aur src-deps ./* > queue # Remove unwanted targets
+  $ aur deps-src ./* > queue # Remove unwanted targets
   $ aur build -d custom -a queue
 
 .EE
@@ -224,7 +224,7 @@ Update packages from the \fIcustom\fR repository that are installed on the host:
   $ aur sync --repo=custom $(grep -Fxf <(pacman -Qq) <(pacman -Slq custom))
 
 .EE
-Build a package for a different architecture, here i686:
+Build a package for a different architecture, here \fIi686\fR:
 .EX
 
   $ setarch i686 aur sync -c --repo=custom_i686 tclkit
@@ -233,7 +233,7 @@ Build a package for a different architecture, here i686:
 Select a package matching \fIpony\fR and build the result:
 .EX
 
-  $ select a in $(aur pkglist -F pony); do aursync "$a"; break; done
+  $ select a in $(aur pkglist -F pony); do aur sync "$a"; break; done
 
 .EE
 Print packages both in AUR and [community] and compare their versions:
