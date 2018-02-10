@@ -2,8 +2,8 @@
 # aur-rpc - send GET requests to aurweb
 # https://bugs.archlinux.org/task/49089
 readonly argv0=rpc
-readonly PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly aurweb='https://aur.archlinux.org/rpc/?v=5'
+readonly PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 info() {
     awk -v rpc="$aurweb/&type=info" '{
@@ -17,12 +17,14 @@ info() {
         printf "\n"
     }'
 }
+readonly -f info
 
 search() {
     awk -v rpc="$aurweb/&type=search&by=$1&arg" '{
         printf "%s=%s\n", rpc, $0
     }'
 }
+readonly -f search
 
 dl_stdin() {
     if type -P aria2c >/dev/null 2>&1; then
@@ -32,27 +34,27 @@ dl_stdin() {
         wget --quiet -i - -O -
     fi
 }
+readonly -f dl_stdin
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
+readonly -f trap_exit
 
 usage() {
     printf >&2 'usage: %s [-t type] [-b by] [-m] package [package...]\n' "$argv0"
     exit 1
 }
-
-readonly -f info search dl_stdin trap_exit usage
+readonly -f usage
 
 unset by type
-while getopts :b:mt: OPT; do
+while getopts :b:t: OPT; do
     case $OPT in
-        b) by=$OPTARG       ;;
-        m) type=info-merged ;;
-        t) type=$OPTARG     ;;
-        *) usage            ;;
+        b) by=$OPTARG   ;;
+        t) type=$OPTARG ;;
+        *) usage        ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -67,7 +69,7 @@ readonly tmp
 trap 'trap_exit' EXIT
 
 case $type in
-    info|info-merged)
+    info)
         query() { info; } ;;
     search)
         query() { search "${by:-name-desc}"; } ;;
@@ -76,13 +78,6 @@ case $type in
         exit 1 ;;
 esac
 
-case $type in
-    info-merged)
-        sub() { sed 's/^/[/; s/}{/},{/g; s/$/]/'; } ;;
-    *)
-        sub() { tee; } ;;
-esac
-
-printf -- '%s\n' "$@" | jq -R -r '@uri' | query | dl_stdin | sub
+printf -- '%s\n' "$@" | jq -R -r '@uri' | query | dl_stdin
 
 # vim: set et sw=4 sts=4 ft=sh:
