@@ -1,22 +1,22 @@
-.TH AUR-RPC-DEPS 1 2018-02-01 AURUTILS
+.TH AUR-DEPS-RPC 1 2018-02-01 AURUTILS
 .SH NAME
-aur-rpc-deps \- solve and order dependencies using the aur rpc
+aur-deps-rpc \- order dependencies using the aur rpc
 
 .SH SYNOPSIS
 .SY aur
-.B rpc-deps
+.B deps-rpc
 .OP \-at
-.OP pkgname...
 .YS
 
 .SH DESCRIPTION
-\fIaur-rpc-deps\fR takes package names and then solves and orders the
-dependencies for those packages using the AUR RPC interface.
+\fIaur-deps-rpc\fR takes package names from \fIstdin\fR, and solves
+and orders the dependencies for those packages using the AUR RPC
+interface.
 
 .SH OPTIONS
 .B \-a
 .RS
-Print the full dependency tree, instead of only AUR packages.
+Print the full dependency tree instead of only AUR packages.
 .RE
 
 .B \-t
@@ -29,7 +29,7 @@ Version information is ignored for dependencies. See \fIFS#54096\fR.
 
 .SH SEE ALSO
 .BR aur (1),
-.BR aur-query (1),
+.BR aur-rpc (1),
 .BR jq (1),
 .BR tsort (1)
 
