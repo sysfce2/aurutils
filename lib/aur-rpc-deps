@@ -27,10 +27,10 @@ sort_by() {
 }
 readonly -f sort_by
 
-strip_ver() {
+tr_ver() {
     sed -r 's/[<>=].*$//g'
 }
-readonly -f strip_ver
+readonly -f tr_ver
 
 tabulate() {
     jq -r '.results[]
@@ -64,7 +64,7 @@ chain() {
         cut -f1 tsv/$sub >> seen
 
         # Avoid querying duplicates (#4)
-        cut -f2 tsv/$sub | strip_ver | grep -Fxvf seen | aur rpc -t info > json/$a || exit
+        cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen | aur rpc -t info > json/$a || exit
 
         if [[ -s json/$a ]]; then
             num=$(count json/$a)
@@ -84,7 +84,7 @@ chain() {
         exit 34
     fi
 
-    if ! cut -f1,2 tsv/n | strip_version | tsort; then
+    if ! cut -f1,2 tsv/n | tr_ver | tsort; then
         printf '%s: invalid argument\n' "$argv0" >&2
         exit 22
     fi
