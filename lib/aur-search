@@ -102,6 +102,7 @@ case $format in
         parse() { json_long  "$sort_key"; } ;;
 esac
 
-aur rpc -t "$type" -b "$by" "$@" | parse
+# XXX move argv to aur(1)
+printf -- '%s\n' "$@" | aur rpc -t "$type" -b "$by" | parse
 
 # vim: set et sw=4 sts=4 ft=sh:

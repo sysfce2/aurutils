@@ -27,10 +27,10 @@ sort_by() {
 }
 readonly -f sort_by
 
-strip_version() {
+strip_ver() {
     sed -r 's/[<>=].*$//g'
 }
-readonly -f strip_version
+readonly -f strip_ver
 
 tabulate() {
     jq -r '.results[]
@@ -46,7 +46,8 @@ readonly -f tabulate
 chain() {
     declare -i num
 
-    aur rpc -t info -- "$@" > json/0 || exit
+    # XXX move argv to aur(1)
+    printf -- '%s\n' "$@" | aur rpc -t info > json/0 || exit
     num=$(count json/0)
 
     if [[ $num -lt 1 ]]; then
@@ -63,21 +64,18 @@ chain() {
         cut -f1 tsv/$sub >> seen
 
         # Avoid querying duplicates (#4)
-        mapfile -t target < <(cut -f2 tsv/$sub | strip_version | grep -Fxvf seen)
+        cut -f2 tsv/$sub | strip_ver | grep -Fxvf seen | aur rpc -t info > json/$a || exit
 
-        # XXX AUR does not support querying pkgver (#10)
-        if [[ ${target[*]} ]]; then
-            aur rpc -t info -- "${target[@]}" > json/$a || exit
+        if [[ -s json/$a ]]; then
+            num=$(count json/$a)
         else
             break
         fi
 
-        num=$(count json/$a)
-
-        if [[ $num -lt 1 ]]; then
-            break
-        else
+        if ((num >= 1)); then
             cut -f2 tsv/$sub >> seen
+        else
+            break
         fi
     done
 

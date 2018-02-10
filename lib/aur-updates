@@ -78,7 +78,7 @@ cmp_all() {
 readonly -f cmp_all
 
 namever_aur() {
-    xargs -r aur rpc -t info | jq -r '.results[] |
+    aur rpc -t info | jq -r '.results[] |
         [.Name, .PackageBase, .Version] | @tsv'
 }
 readonly -f namever_aur

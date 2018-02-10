@@ -78,6 +78,6 @@ case $type in
         exit 1 ;;
 esac
 
-printf -- '%s\n' "$@" | jq -R -r '@uri' | query | dl_stdin
+jq -R -r '@uri' | query | dl_stdin
 
 # vim: set et sw=4 sts=4 ft=sh:
