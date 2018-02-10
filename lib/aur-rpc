@@ -44,7 +44,7 @@ trap_exit() {
 readonly -f trap_exit
 
 usage() {
-    printf >&2 'usage: %s [-t type] [-b by] [-m] package [package...]\n' "$argv0"
+    printf >&2 'usage: %s [-t type] [-b by] package [package...]\n' "$argv0"
     exit 1
 }
 readonly -f usage
