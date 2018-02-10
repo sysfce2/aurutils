@@ -1,0 +1,70 @@
+#!/bin/bash
+readonly argv0=fetch-snapshot
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -e
+
+dl_stdin() {
+    if type -P aria2c >/dev/null; then
+        aria2c --stderr=true -i -
+    elif type -P parallel >/dev/null; then
+        parallel --will-cite --bar -X -j +5 --nice 10 --halt soon,fail=1 -r \
+            curl -fLsS --remote-name-all --cert-status {}
+    else
+        xargs -r curl -fLsS --remote-name-all --cert-status
+    fi
+}
+readonly -f dl_stdin
+
+tar_no_mode_diff() {
+    if [[ -d $2/${1%%.tar*} ]]; then
+        # tar --compare returns 1 on any mismatch
+        LC_MESSAGES=C tar -df "$1" -C "$2" | grep -Evq '(Mode|Uid|Gid)'
+    else
+        return 1
+    fi
+}
+readonly -f tar_no_mode_diff
+
+extract() {
+    declare -r workdir=$1 logdir=$2 startdir=$PWD
+
+    cd "$workdir"
+    dl_stdin
+
+    for a in ./*.tar.gz; do
+        tar -kxf "$a"
+
+        if [[ -d $logdir ]] && tar_no_mode_diff "$a" "$startdir"; then
+            a=${a%%.tar.gz}
+
+            diff -ur "$startdir/$a" "$a" | \
+                tee -a "$logdir/$a".diff | diffstat -CKq -f3
+        fi
+
+        cp -af "${a%%.tar.gz}" "$startdir"
+    done
+
+    cd "$startdir"
+}
+readonly -f extract
+
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+readonly -f trap_exit
+
+while getopts :L: OPT; do
+    case $OPT in
+        L) logdir=$OPTARG ;;
+    esac
+done
+
+if tmp=$(mktemp -dt "$argv0".XXXXXXXX); then
+    extract "$tmp" "${logdir:-/dev/null}"
+else
+    exit 1
+fi
+
+# vim: set et sw=4 sts=4 ft=sh:
