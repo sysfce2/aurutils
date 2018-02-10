@@ -16,15 +16,18 @@ my_vercmp() {
         printf '%d' 0
     fi
 }
+readonly -f my_vercmp
 
 sort_by() {
     sort -k "${1}b,$1" -t $'\t' -- "$2"
 }
+readonly -f sort_by
 
 sort_join() {
     # Use single hyphen to fill empty fields as disallowed in pkgver/pkgname
     join -a 2 -e - -o auto -t $'\t' <(sort_by 1 "$1") <(sort_by 1 "$2")
 }
+readonly -f sort_join
 
 cmp_equal_or_newer() {
     while IFS=$'\t' read -r pkg v_cmp v_in _; do
@@ -42,6 +45,7 @@ cmp_equal_or_newer() {
         esac
     done
 }
+readonly -f cmp_equal_or_newer
 
 cmp_all() {
     while IFS=$'\t' read -r name base v_cmp v_in; do
@@ -71,11 +75,13 @@ cmp_all() {
         fi
     done
 }
+readonly -f cmp_all
 
 namever_aur() {
     xargs -r aur rpc -t info | jq -r '.results[] |
         [.Name, .PackageBase, .Version] | @tsv'
 }
+readonly -f namever_aur
 
 namever_sync() {
     # pacsift does not error if the repo is not configured
@@ -85,30 +91,31 @@ namever_sync() {
     pacsift --exact --repo="$1" --null <&- | \
         xargs -0r pacman -Sddp --print-format %n$'\t'%v
 }
+readonly -f namever_sync
 
 repo_parse() {
     awk '/%NAME%/    { getline; printf("%s\t", $1) }
          /%VERSION%/ { getline; printf("%s\n", $1) }'
 }
+readonly -f repo_parse
 
-# Ensure comparison on empty database (#273)
 fill_empty() {
     awk '{ print } END { if (!NR) printf("-\t-\n") }'
 }
+readonly -f fill_empty
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
+readonly -f trap_exit
 
 usage() {
     plain "usage: $argv0 [-abclq] [-d repository] [-r root]"
     exit 1
 }
-
-readonly -f my_vercmp sort_by sort_join cmp_equal_or_newer cmp_all
-readonly -f namever_aur namever_sync repo_parse fill_empty trap_exit usage
+readonly -f usage
 
 source /usr/share/makepkg/util/message.sh || exit
 
@@ -152,7 +159,7 @@ case $mode in
             root=$(pacconf --single --repo="$database" Server) || exit
             root=${root#*://}
         fi
-        
+
         bsdcat "$root/$database".db | repo_parse | fill_empty >"$tmp" || exit
 
         if ((cmp)); then

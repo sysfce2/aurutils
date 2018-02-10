@@ -13,6 +13,7 @@ extract_date() {
     sed -n '1p' "$1" | awk -F', ' '{print $3}'
     sed -i '1d' "$1"
 }
+readonly -f extract_date
 
 list_update() {
     if curl -fsS "$1" -o - | gzip -d - > "$2"; then
@@ -21,17 +22,18 @@ list_update() {
         printf >&2 '%s\n' 'warning: failed to retrieve package list'
     fi
 }
+readonly -f list_update
 
 list_http_date() {
     curl -fsSI "$1" | awk -F', ' 'tolower($1) ~ /^date:/ {print $2}'
 }
+readonly -f list_http_date
 
 usage() {
     printf >&2 'usage: %s: [-bt] [-FP pattern]\n' "$argv0"
     exit 1
 }
-
-readonly -f extract_date list_update list_http_date
+readonly -f usage
 
 # default to any match
 pcre_opt=('.*')

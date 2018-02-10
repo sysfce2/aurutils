@@ -1,8 +1,8 @@
 #!/bin/bash
-set -e
 readonly argv0=build-nspawn
 readonly PATH=/bin:/usr/bin
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -e
 
 machine=$(uname -m)
 directory=/var/lib/aurbuild/$machine
@@ -18,6 +18,7 @@ conf_devtools() {
     # https://git.archlinux.org/devtools.git/tree/mkarchroot.in#n54
     printf '#CacheDir=\n'
 }
+readonly -f conf_devtools
 
 conf_repo() {
     while IFS= read -r; do
@@ -25,19 +26,20 @@ conf_repo() {
         pacconf --repo="$REPLY" --raw
     done
 }
+readonly -f conf_repo
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
+readonly -f trap_exit
 
 usage() {
     printf >&2 -- 'usage: %s [-CDMu] [-d db] -- <args>' "$argv0" >&2
     exit 1
 }
-
-readonly -f conf_devtools conf_repo trap_exit usage
+readonly -f usage
 
 unset database
 while getopts :C:D:M:d:u OPT; do
@@ -78,10 +80,10 @@ case $mode in
                         "$directory"/root base-devel
         fi
 
-	if [[ -v database ]]; then
+        if [[ -v database ]]; then
             pacconf --sysroot="$directory"/root --repo="$database" >/dev/null
         fi
-	;;
+	    ;;
     build)
         PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
                -r "$directory" "${makechrootpkg_args[@]}"

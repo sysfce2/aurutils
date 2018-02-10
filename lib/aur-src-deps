@@ -17,6 +17,7 @@ deps_paired() {
             read = 0    # split package
     }' "$@"
 }
+readonly -f deps_paired
 
 # XXX Output of form " pkgname\tpkgbase" (leading space)
 base() {
@@ -28,6 +29,7 @@ base() {
         printf("%s\t%s\n", $2, pb)
     }' "$@"
 }
+readonly -f base
 
 sub() {
     awk 'NR == FNR {
@@ -38,19 +40,20 @@ sub() {
         }
     }' "$@"
 }
+readonly -f sub
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
+readonly -f trap_exit
 
 usage() {
     printf 'usage: %s pkgname...\n' "$argv0" >&2
     exit 1
 }
-
-readonly -f deps_paired base sub trap_exit usage
+readonly -f usage
 
 while getopts h OPT; do
     case $OPT in

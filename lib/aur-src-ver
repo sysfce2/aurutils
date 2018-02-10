@@ -16,12 +16,12 @@ get_pkgbuild_info() {
         printf "%s\\t%s\\n" "${pkgbase:-$pkgname}" "$fullver"
     '
 }
+readonly -f get_pkgbuild_info
 
 find_pkgbuild_path() {
     find "$@" -maxdepth 1 -type f -name PKGBUILD -printf '%h\n'
 }
-
-readonly -f get_pkgbuild_info find_pkgbuild_path
+readonly -f find_pkgbuild_path
 
 makepkg_log=$(mktemp -t makepkg.XXXXXXXX) || exit
 trap 'rm $makepkg_log' EXIT

@@ -12,13 +12,13 @@ provides() {
         }
     }'
 }
+readonly -f provides
 
 usage() {
     printf 'usage: %s [-d repo]\n' "$argv0" >&2
     exit 1
 }
-
-readonly -f provides usage
+readonly -f usage
 
 unset repo siftargs user_repo
 while getopts d: OPT; do
