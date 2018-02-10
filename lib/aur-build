@@ -35,7 +35,7 @@ trap_exit() {
         rm -rf "$tmp" "$var_tmp"
     fi
 }
-readonly -f trap-exit
+readonly -f trap_exit
 
 usage() {
     plain "usage: $argv0 -d database [-afNrs] [--] <makepkg args>"
