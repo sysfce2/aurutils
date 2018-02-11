@@ -28,11 +28,11 @@ readonly -f search
 
 dl_stdin() {
     if type -P aria2c >/dev/null 2>&1; then
-        LC_MESSAGES=C aria2c --stderr=true \
-            --download-result=hide         \
-            --console-log-level=error      \
-            --show-console-readout=false   \
-            -d "$tmp"/aria2 -i - >"$tmp"/log || return
+        LC_MESSAGES=C aria2c -d "$tmp"/aria2 -i - >"$tmp"/log \
+            --console-log-level=error    \
+            --download-result=hide       \
+            --show-console-readout=false \
+            --stderr=true || return
 
         # https://github.com/aria2/aria2/issues/637
         grep -q 'No files to download' "$tmp"/log || cat "$tmp"/aria2/*
