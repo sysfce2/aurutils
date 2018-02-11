@@ -1,7 +1,8 @@
 #!/bin/bash
 readonly argv0=fetch-snapshot
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e; shopt -s nullglob
+set   -o errexit
+shopt -s nullglob
 
 dl_stdin() {
     if type -P aria2c >/dev/null; then

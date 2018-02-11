@@ -4,7 +4,7 @@ readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 readonly AURDEST_SNAPSHOT=${AURDEST_SNAPSHOT:-$XDG_CACHE_HOME/aurutils/snapshot}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e -o pipefail -o noclobber
+set   -o errexit -o pipefail -o noclobber
 shopt -s nullglob
 
 declare -a makepkg_args=(-cs) makechrootpkg_args=(-cu) aurbuild_args=()
