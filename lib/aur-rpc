@@ -35,7 +35,7 @@ dl_stdin() {
             --show-console-readout=false \
             --stderr=true || return
 
-        files=("$tmp"/index*)
+        files=("$tmp"/aria2/*)
 
         if [[ ${files[*]} ]]; then
             cat "${files[@]}"
