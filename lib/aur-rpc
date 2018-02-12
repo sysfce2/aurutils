@@ -35,7 +35,6 @@ dl_stdin() {
             --show-console-readout=false \
             --stderr=true || return
 
-        # https://github.com/aria2/aria2/issues/637
         files=("$tmp"/index*)
 
         if [[ ${files[*]} ]]; then
