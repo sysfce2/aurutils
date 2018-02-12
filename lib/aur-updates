@@ -4,33 +4,10 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
 declare -i geq=0 ver=1 cmp=0 pkg_key=1
-declare    mode=aur
-
-# Optimize for the common case (version equality)
-my_vercmp() {
-    declare -r v_in=$1 v_cmp=$2
-
-    if [[ $v_in != "$v_cmp" ]]; then
-        vercmp "$v_in" "$v_cmp"
-    else
-        printf '%d' 0
-    fi
-}
-readonly -f my_vercmp
-
-sort_by() {
-    sort -k "${1}b,$1" -t $'\t' -- "$2"
-}
-readonly -f sort_by
-
-sort_join() {
-    # Use single hyphen to fill empty fields as disallowed in pkgver/pkgname
-    join -a 2 -e - -o auto -t $'\t' <(sort_by 1 "$1") <(sort_by 1 "$2")
-}
-readonly -f sort_join
+declare mode=aur
 
 cmp_equal_or_newer() {
-    while IFS=$'\t' read -r pkg v_cmp v_in _; do
+    while IFS=$'\t' read -r pkg v_cmp v_in; do
         case $v_cmp in
              -) msg2 "$pkg N/A -> $v_in"
                 continue ;;
@@ -48,21 +25,16 @@ cmp_equal_or_newer() {
 readonly -f cmp_equal_or_newer
 
 cmp_all() {
-    while IFS=$'\t' read -r name base v_cmp v_in; do
-        case $base in
+    while IFS=$'\t' read -r pkg v_cmp v_in; do
+        case $pkg in
             -) printf >&2 -- '%s (not available)\n' "$name"
                continue ;;
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
 
-        case $pkg_key in
-            1) [[ $pkg == "$name" ]] && continue
-               pkg=$name ;;
-            2) [[ $pkg == "$base" ]] && continue
-               pkg=$base ;;
-        esac
-
-        ((op > -1 && !geq)) && continue
+        if ((op > -1 && !geq)); then
+            continue
+        fi
 
         if ((ver)); then
             case "$op" in
@@ -77,32 +49,44 @@ cmp_all() {
 }
 readonly -f cmp_all
 
-namever_aur() {
-    aur rpc -t info | jq -r '.results[] |
-        [.Name, .PackageBase, .Version] | @tsv'
-}
-readonly -f namever_aur
-
-namever_sync() {
-    # pacsift does not error if the repo is not configured
-    pacconf --repo="$1" >/dev/null || return 1
-
-    # Use --exact as repos may have a common substring (#166)
-    pacsift --exact --repo="$1" --null <&- | \
-        xargs -0r pacman -Sddp --print-format %n$'\t'%v
-}
-readonly -f namever_sync
-
-repo_parse() {
+db_namever() {
     awk '/%NAME%/    { getline; printf("%s\t", $1) }
          /%VERSION%/ { getline; printf("%s\n", $1) }'
 }
-readonly -f repo_parse
+readonly -f db_namever
 
-fill_empty() {
-    awk '{ print } END { if (!NR) printf("-\t-\n") }'
+key_sort() {
+    sort -k 1b,1 -t $'\t'
 }
-readonly -f fill_empty
+readonly -f key_sort
+
+# optimize for the common case (version equality)
+my_vercmp() {
+    if [[ $1 != "$2" ]]; then
+        vercmp "$1" "$2"
+    else
+        printf '%d' 0
+    fi
+}
+readonly -f my_vercmp
+
+parse_aur() {
+    aur rpc -t info | jq -r '.results[] |
+        [.Name, .Version] | @tsv' | key_sort
+}
+readonly -f parse_aur
+
+parse_db() {
+    bsdcat "$1" | db_namever | key_sort | awk '{print} END {
+        if (!NR) printf("-\t-\n")
+    }'
+}
+readonly -f parse_db
+
+join_auto() {
+    join -a 2 -e - -o auto -t $'\t' "$1" "$2"
+}
+readonly -f join_auto
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
@@ -112,7 +96,7 @@ trap_exit() {
 readonly -f trap_exit
 
 usage() {
-    plain "usage: $argv0 [-abclq] [-d repository] [-r root]"
+    plain "usage: $argv0 [-aclq] [-r root]"
     exit 1
 }
 readonly -f usage
@@ -124,16 +108,14 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 unset database root
-while getopts :abcd:lqr: OPT; do
+while getopts :aclr:q OPT; do
     case $OPT in
-        a) geq=1            ;;
-        b) pkg_key=2        ;;
-        q) ver=0            ;;
-        d) database=$OPTARG ;;
-        c) mode=repo; cmp=1 ;;
-        l) mode=repo; cmp=0 ;;
-        r) root=$OPTARG     ;;
-        *) usage            ;;
+        a) geq=1        ;;
+        c) mode=db_cmp  ;;
+        l) mode=db_list ;;
+        r) root=$OPTARG ;;
+        q) ver=0        ;;
+        *) usage        ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -144,29 +126,13 @@ trap 'trap_exit' EXIT
 
 case $mode in
     aur)
-        if [[ -v database ]]; then
-            namever_sync "$database" >"$tmp" || exit
-        else
-            # XXX take input from stdin only when specified (-i)
-            tee >"$tmp"
-        fi
-
-        cut -f1 "$tmp" | namever_aur | sort_join - "$tmp" | \
-            sort_by "$pkg_key" - | cmp_all
-        ;;
-    repo)
-        if [[ ! -v root ]]; then
-            root=$(pacconf --single --repo="$database" Server) || exit
-            root=${root#*://}
-        fi
-
-        bsdcat "$root/$database".db | repo_parse | fill_empty >"$tmp" || exit
-
-        if ((cmp)); then
-            sort_join "$tmp" - | cmp_equal_or_newer
-        else
-            cat "$tmp"
-        fi
+        key_sort >"$tmp"
+        cut -f1 "$tmp" | parse_aur | join_auto - "$tmp" | cmp_all  ;;
+    db_cmp)
+        key_sort >"$tmp"
+        parse_db "$root" | join_auto "$tmp" - | cmp_equal_or_newer ;;
+    db_list)
+        parse_db "$root" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
