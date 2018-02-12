@@ -126,11 +126,11 @@ trap 'trap_exit' EXIT
 
 case $mode in
     aur)
-        key_sort >"$tmp"
-        cut -f1 "$tmp" | parse_aur | join_auto - "$tmp" | cmp_all  ;;
+        key_sort >"$tmp"; cut -f1 "$tmp" | parse_aur \
+            | join_auto - "$tmp" | cmp_all  ;;
     db_cmp)
-        key_sort >"$tmp"
-        parse_db "$root" | join_auto "$tmp" - | cmp_equal_or_newer ;;
+        key_sort >"$tmp"; parse_db "$root" \
+            | join_auto - "$tmp" | cmp_equal_or_newer ;;
     db_list)
         parse_db "$root" ;;
 esac
