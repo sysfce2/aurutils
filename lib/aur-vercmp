@@ -139,7 +139,7 @@ case $mode in
     aur_db)
         pacconf --repo="$repo" >/dev/null || exit
         parse_sync "$repo" | key_sort >"$tmp"
-        cut -f1 "$tmp" | parse_aur | join_auto - "$tmp2" | cmp_all ;;
+        cut -f1 "$tmp" | parse_aur | join_auto - "$tmp" | cmp_all ;;
     db_cmp)
         key_sort >"$tmp"
         parse_db "$root" | join_auto - "$tmp" | cmp_equal_or_newer ;;
