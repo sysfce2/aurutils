@@ -263,7 +263,7 @@ else
     cd_safe "$AURDEST"
 
     if ((download)); then
-        cut -f2 "$tmp"/pkginfo_1 | xargs -i{} printf '%s/%s.git\n' "$AURURI" {} \
+        cut -f2 "$tmp"/pkginfo_1 | xargs -I{} printf '%s/%s.git\n' "$AURURI" {} \
             aur fetch -L "$tmp"/patch
     fi
 fi

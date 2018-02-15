@@ -52,7 +52,7 @@ done
 
 case $mode in
     tar) aur fetch-snapshot -L "$log_dir" ;;
-    aur) clone "$log_dir"                 ;;
+    git) clone "$log_dir"                 ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
