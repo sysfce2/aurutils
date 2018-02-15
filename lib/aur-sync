@@ -257,14 +257,14 @@ if ((snapshot)); then
 
     if ((download)); then
         cut -f4 "$tmp"/pkginfo_1 | xargs -I{} printf '%s%s\n' "$AURURI" {} \
-            aur fetch -L "$tmp"/patch -t
+            | aur fetch -L "$tmp"/patch -t
     fi
 else
     cd_safe "$AURDEST"
 
     if ((download)); then
         cut -f2 "$tmp"/pkginfo_1 | xargs -I{} printf '%s/%s.git\n' "$AURURI" {} \
-            aur fetch -L "$tmp"/patch
+            | aur fetch -L "$tmp"/patch
     fi
 fi
 
