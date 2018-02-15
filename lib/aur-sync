@@ -52,12 +52,6 @@ uniq_by() {
 }
 readonly -f uniq_by
 
-sync_parse() {
-    pacsift --exact --repo="$1" --null <&- | \
-        xargs -0r pacman -Sddp --print-format %n$'\t'%v
-}
-readonly -f sync_parse
-
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -227,7 +221,7 @@ mkdir patch
   fi
 
   if ((update)); then
-      aur updates -r "$root/$repo".db -l | aur updates -q
+      aur vercmp -r "$root/$repo".db -l | aur vercmp -q
   fi
 } >argv
 
@@ -244,7 +238,7 @@ fi
   fi
 
   if ((chkver)); then
-      cut -f1,3 pkginfo_0 | aur updates -r "$root/$repo".db -c
+      cut -f1,3 pkginfo_0 | aur vercmp -r "$root/$repo".db -c
   fi
 } >filter
 
