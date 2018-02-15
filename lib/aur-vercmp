@@ -26,8 +26,8 @@ readonly -f cmp_equal_or_newer
 
 cmp_all() {
     while IFS=$'\t' read -r pkg v_cmp v_in; do
-        case $pkg in
-            -) printf >&2 -- '%s (not available)\n' "$name"
+        case $v_cmp in
+            -) printf >&2 -- '%s (not available)\n' "$pkg"
                continue ;;
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
