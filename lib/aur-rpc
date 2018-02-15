@@ -2,12 +2,11 @@
 # aur-rpc - send GET requests to aurweb
 # https://bugs.archlinux.org/task/49089
 readonly argv0=rpc
-readonly aurweb='https://aur.archlinux.org/rpc/?v=5'
+readonly AURURI=${AURURI:-https://aur.archlinux.org}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-shopt -s nullglob
 
 info() {
-    awk -v rpc="$aurweb/&type=info" '{
+    awk -v rpc="$AURURI/rpc/?v=5&type=info" '{
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
         else if (NR % 150 == 0)
@@ -21,25 +20,28 @@ info() {
 readonly -f info
 
 search() {
-    awk -v rpc="$aurweb/&type=search&by=$1&arg" '{
+    awk -v rpc="$AURURI/rpc/?v=5&type=search&by=$1&arg" '{
         printf "%s=%s\n", rpc, $0
     }'
 }
 readonly -f search
 
+cat_ifne() {
+    if [[ -n $* && -e $1 ]]; then
+        cat -- "$@"
+    fi
+}
+readonly -f cat_ifne
+
 dl_stdin() {
     if type -P aria2c >/dev/null; then
-        aria2c -d "$tmp"/aria2 -i - \
-            --console-log-level=error \
-            --download-result=hide \
+        aria2c -d "$tmp"/aria2 -i -      \
+            --console-log-level=error    \
+            --download-result=hide       \
             --show-console-readout=false \
             --stderr=true || return
 
-        files=("$tmp"/aria2/*)
-
-        if [[ ${files[*]} ]]; then
-            cat "${files[@]}"
-        fi
+        cat_ifne "$tmp"/aria2/*
     else
         wget --quiet -i - -O -
     fi
