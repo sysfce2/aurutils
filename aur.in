@@ -7,7 +7,7 @@ if [[ -z $1 ]]; then
     printf >&2 -- 'usage: %s [command]\n\n' "$argv0"
     printf >&2 -- 'available commands:\n'
 
-    for p in "$lib_dir"/*; do
+    for p in "$lib_dir"/aur-*; do
         printf -- '%q\n' "${p##*/aur-}"
     done | column >&2
 
@@ -24,8 +24,8 @@ fi
 
 readonly PATH=$lib_dir:$PATH
 
-if type -P aur-"$1" >/dev/null; then
-    exec aur-"$1" "${@:2}"
+if type -P "aur-$1" >/dev/null; then
+    exec "aur-$1" "${@:2}"
 else
     printf >&2 -- '%s: %q is not an aur command\n' "$argv0" "$1"
     exit 1
