@@ -93,7 +93,7 @@ trap_exit() {
 readonly -f trap_exit
 
 usage() {
-    plain "usage: $argv0 [-p file] [-ac]"
+    plain "usage: $argv0 [-d repo] [-p file] [-ac]"
     exit 1
 }
 readonly -f usage
@@ -105,13 +105,12 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 unset aux_p repo
-while getopts :d:p:abc opt; do
+while getopts :d:p:ac opt; do
     case $opt in
         d) repo=$OPTARG  ;;
         p) with=file
            aux_p=$OPTARG ;;
         a) format=all    ;;
-        b) format=brief  ;;
         c) format=equal  ;;
         *) usage         ;;
     esac
