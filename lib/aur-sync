@@ -233,7 +233,7 @@ if ((${#pkg_i[@]})); then
     printf -- 'warning: ignoring %s package\n' "${pkg_i[@]}" >&2
 fi
 
-mkdir -p "$AURDEST" "$AURDEST_SNAPSHOT"
+mkdir -p     "$AURDEST" "$AURDEST_SNAPSHOT"
 chmod -c 700 "$AURDEST" "$AURDEST_SNAPSHOT"
 
 cd_safe "$tmp"
@@ -272,6 +272,7 @@ fi
   fi
 } >filter
 
+# XXX improve this?
 if cut -f1 pkginfo_0 | lib32 | grep -Fxvf filter > queue_0; then
     uniq_by 1 2 queue_0 pkginfo_0 > pkginfo_1
 else

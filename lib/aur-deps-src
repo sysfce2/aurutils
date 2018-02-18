@@ -14,7 +14,7 @@ deps_paired() {
             printf("%s\t%s\n", pb, $2)
 
         if ($0 ~ /^$/)
-            read = 0    # split package
+            read = 0 # split package
     }' "$@"
 }
 readonly -f deps_paired
@@ -49,38 +49,13 @@ trap_exit() {
 }
 readonly -f trap_exit
 
-usage() {
-    printf 'usage: %s path [path...]\n' "$argv0" >&2
-    exit 1
-}
-readonly -f usage
-
-while getopts h opt; do
-    case $opt in
-        *) usage ;;
-    esac
-done
-shift $((OPTIND - 1))
-OPTIND=1
-
-if ((!$#)); then
-    usage
-fi
-
 tmp=$(mktemp -t "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-# XXX take file names from stdin (null-separated?) -> aur-deps wrapper
-mapfile -t arg_path < <(readlink -e -- "$@")
-
-if [[ -n ${arg_path[*]} ]]; then
-    find "${arg_path[@]}" -maxdepth 1 -type f -name .SRCINFO -print0 \
-        | xargs -0 cat > "$tmp"
-fi
+xargs -0 cat >"$tmp"
 
 if [[ -s "$tmp" ]]; then
-    deps_paired "$tmp" | tsort | sub <(base "$tmp") - \
-        | grep -Fxf <(printf -- '%s\n' "${@##*/}") | tac
+    deps_paired "$tmp" | tsort | sub <(base "$tmp") -
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

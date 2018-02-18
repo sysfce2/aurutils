@@ -1,5 +1,43 @@
 #!/bin/bash
 readonly argv0=deps
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+declare mode=aurjson
 
-# XXX argument wrapper around deps-rpc and deps-src
+find_srcinfo() {
+    find "$@" -maxdepth 1 -type f -name .SRCINFO -print0
+}
+readonly -f find_srcinfo
+
+usage() {
+    printf -- 'usage: %s [-sr] package [package...]\n' "$argv0" >&2
+    exit 1
+}
+readonly -f usage
+
+while getopts :jp opt; do
+    case $opt in
+        p) mode=src ;;
+        j) mode=rpc ;;
+        *) usage    ;;
+    esac
+done
+
+case $mode in
+    src)
+        mapfile -t arg_path < <(readlink -e -- "$@")
+
+        if [[ -z ${arg_path[*]} ]]; then
+            printf -- '%s: no data available\n' "$argv0"
+        fi
+
+        find_srcinfo "${arg_path[@]}" | aur deps-src | grep -Fxf <(basename -a "$@")
+        ;;
+    rpc)
+        printf -- '%s\n' "$@" | aur deps-rpc
+        ;;
+    *)
+        printf -- '%s: invalid argument\n' "$argv0" >&2
+        exit 22 ;;
+esac
+
+
