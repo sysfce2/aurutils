@@ -3,7 +3,8 @@
 aur-rpc \- send GET requests to aurweb
 
 .SH SYNOPSIS
-.SY aur-query
+.SY aur
+.B rpc
 .OP \-t type
 .OP \-b by
 .YS
@@ -11,6 +12,14 @@ aur-rpc \- send GET requests to aurweb
 .SH DESCRIPTION
 
 .SH OPTIONS
+
+.SH ENVIRONMENT
+.B AURURI
+.RS
+Sets the default AUR URI.
+
+Default: \fIhttps://aur.archlinux.org\fR
+.RE
 
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150

@@ -16,7 +16,7 @@ aur-sync \- download and build aur packages automatically
 .YS
 
 .SH DESCRIPTION
-\fIaur-sync\fR downloads and builds packages automatically to a local
+\fBaur-sync\fR downloads and builds packages automatically to a local
 repository. Package names serve as arguments.
 
 If \fIvifm\fR is installed, the downloaded files are shown using vifm
@@ -162,6 +162,13 @@ Default: \fI$XDG_CACHE_HOME/aurutils/sync\fR
 Parent directory for temporary files.
 .RE
 
+.B AURURI
+.RS
+Sets the default AUR URI.
+
+Default: \fIhttps://aur.archlinux.org\fR
+.RE
+
 .SH NOTES
 When version checks are enabled (\fI--no-ver\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
@@ -180,6 +187,7 @@ directory, in order to avoid conflicts with \fIgit\fR.
 .BR aur (1),
 .BR aur-build (1),
 .BR aur-fetch (1),
+.BR aur-rpc (1),
 .BR aur-deps-rpc (1),
 .BR aur-updates (1),
 .BR jq (1),
