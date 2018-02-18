@@ -82,8 +82,8 @@ case $type in
     search)
         query() { search "${by:-name-desc}"; } ;;
     *) 
-        printf '%s: error: invalid type\n' "$argv0" >&2
-        exit 1 ;;
+        printf '%s: error: invalid argument\n' "$argv0" >&2
+        exit 22 ;;
 esac
 
 jq -R -r '@uri' | query | dl_stdin
