@@ -3,7 +3,6 @@ readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 readonly AURDEST_SNAPSHOT=${AURDEST_SNAPSHOT:-$XDG_CACHE_HOME/aurutils/snapshot}
-readonly AURURI=${AURURI:-https://aur.archlinux.org}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set   -o errexit -o pipefail -o noclobber
 shopt -s nullglob
@@ -240,7 +239,7 @@ chmod -c 700 "$AURDEST" "$AURDEST_SNAPSHOT"
 cd_safe "$tmp"
 mkdir patch
 
-db_extract "$root/$repo".db >db_info
+db_extract "$root/$repo".db > db_info
 
 if ((list)); then
     column -JN pkgname,pkgver -n "$repo" db_info
@@ -252,13 +251,13 @@ fi
   fi
 
   if ((update)); then
-      aur vercmp <db_info | cut -d: -f1
+      aur vercmp < db_info | cut -d: -f1
   fi
 } >argv
 
 if [[ -s argv ]]; then
     msg "Resolving dependencies..."
-    aur deps-rpc -t <argv >pkginfo_0
+    aur deps-rpc -t < argv > pkginfo_0
 else
     plain "there is nothing to do"
     exit
@@ -273,8 +272,8 @@ fi
   fi
 } >filter
 
-if cut -f1 pkginfo_0 | lib32 | grep -Fxvf filter >queue_0; then
-    uniq_by 1 2 queue_0 pkginfo_0 >pkginfo_1
+if cut -f1 pkginfo_0 | lib32 | grep -Fxvf filter > queue_0; then
+    uniq_by 1 2 queue_0 pkginfo_0 > pkginfo_1
 else
     plain "there is nothing to do"
     exit
@@ -286,15 +285,13 @@ if ((snapshot)); then
     cd_safe "$AURDEST_SNAPSHOT"
 
     if ((download)); then
-        cut -f4 "$tmp"/pkginfo_1 | xargs -I{} printf '%s%s\n' "$AURURI" {} \
-            | aur fetch-snapshot -L "$tmp"/patch
+        cut -f2 "$tmp"/pkginfo_1 | xargs aur fetch -L "$tmp"/patch -t
     fi
 else
     cd_safe "$AURDEST"
 
     if ((download)); then
-        cut -f2 "$tmp"/pkginfo_1 | xargs -I{} printf '%s/%s.git\n' "$AURURI" {} \
-            | aur fetch-git -L "$tmp"/patch
+        cut -f2 "$tmp"/pkginfo_1 | xargs aur fetch -L "$tmp"/patch -g
     fi
 fi
 
