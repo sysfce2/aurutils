@@ -1,7 +1,7 @@
 #!/bin/bash
 readonly argv0=deps
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-declare mode=aurjson
+declare mode=rpc
 
 find_srcinfo() {
     find "$@" -maxdepth 1 -type f -name .SRCINFO -print0
@@ -21,6 +21,8 @@ while getopts :jp opt; do
         *) usage    ;;
     esac
 done
+shift $((OPTIND -1))
+OPTIND=1
 
 case $mode in
     src)
