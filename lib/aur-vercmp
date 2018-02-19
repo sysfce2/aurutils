@@ -14,7 +14,9 @@ readonly -f parse_aur
 
 parse_sync() {
     pacconf --repo="$1" >/dev/null || return
-    pacsift --repo="$1" --exact <&- | expac -S '%n\t%v' -
+
+    pacsift --repo="$1" --exact <&- | xargs -r \
+        pacman -Sddp --print-format '%n %v'
 }
 readonly -f parse_sync
 
@@ -64,7 +66,7 @@ readonly -f my_vercmp
 cmp_loop() {
     declare -f "$1" >/dev/null || return 1
 
-    while IFS=$'\t' read -r pkg v_cmp v_in _; do
+    while read -r pkg v_cmp v_in _; do
         case $v_cmp in
             -) op=2                             ;;
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
@@ -76,14 +78,9 @@ cmp_loop() {
 readonly -f cmp_loop
 
 join_auto() {
-    join -a 2 -e - -o auto -t $'\t' "$1" "$2"
+    sort -k 1b,1 "$1" | join -a 2 -e - -o auto - <(sort -k 1b,1 "$2")
 }
 readonly -f join_auto
-
-key_sort() {
-    sort -k 1b,1 -t $'\t'
-}
-readonly -f key_sort
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
@@ -123,18 +120,18 @@ trap 'trap_exit' EXIT
 
 # set input file
 if [[ -v repo ]]; then
-    parse_sync "$repo" | key_sort >"$tmp"
+    parse_sync "$repo" >"$tmp"
 else
     if [[ -t 0 ]]; then
         plain 'repository not specified, assuming stdin'
     fi
-    key_sort >"$tmp"
+    tee >"$tmp"
 fi
 
 # set filters (1)
 case $with in
-     aur) get() { cut -f1 "$tmp" | parse_aur | key_sort; } ;;
-    file) get() { key_sort < "$aux_p"; } ;;
+     aur) get() { awk '{print $1}' "$tmp" | parse_aur; } ;;
+    file) get() { awk '{print $0}' "$aux_p";           } ;;
        *) error "$argv0: invalid argument"
           exit 22 ;;
 esac
