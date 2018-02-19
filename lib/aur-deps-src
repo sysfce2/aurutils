@@ -8,10 +8,10 @@ deps_paired() {
     /pkgbase/ {
         read = 1; pb = $2
 
-        printf("%s\t%s\n", pb, pb)
+        printf("%s %s\n", pb, pb)
     } {
         if (read && $0 ~ /^\t(make|check)?depends/)
-            printf("%s\t%s\n", pb, $2)
+            printf("%s %s\n", pb, $2)
 
         if ($0 ~ /^$/)
             read = 0 # split package
@@ -19,14 +19,14 @@ deps_paired() {
 }
 readonly -f deps_paired
 
-# XXX Output of form " pkgname\tpkgbase" (leading space)
+# XXX Output of form " pkgname pkgbase" (leading space)
 base() {
     awk -v FS='[<=>]' '
     /pkgbase/ {
         pb = $2
     }
     /pkgname/ {
-        printf("%s\t%s\n", $2, pb)
+        printf("%s %s\n", $2, pb)
     }' "$@"
 }
 readonly -f base
