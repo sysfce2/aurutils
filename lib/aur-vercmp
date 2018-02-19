@@ -65,7 +65,7 @@ my_vercmp() {
 readonly -f my_vercmp
 
 join_auto() {
-    sort -k 1b,1 "$1" | join -a 2 -e - -o auto - <(sort -k 1b,1 "$2")
+    join -a 2 -e - -o auto -- "$1" "$2"
 }
 readonly -f join_auto
 
@@ -121,12 +121,12 @@ trap 'trap_exit' EXIT
 
 # set input file
 if [[ -v repo ]]; then
-    parse_sync "$repo" >"$tmp"
+    parse_sync "$repo" | sort -k 1b,1 >"$tmp"
 else
     if [[ -t 0 ]]; then
         plain 'repository not specified, assuming stdin'
     fi
-    tee >"$tmp"
+    sort -k 1b,1 >"$tmp"
 fi
 
 # set filters (1)
@@ -147,6 +147,6 @@ case $format in
 esac
 
 # pipeline
-get | join_auto - "$tmp" | compare
+get | sort -k 1b,1 | join_auto - "$tmp" | compare
 
 # vim: set et sw=4 sts=4 ft=sh:
