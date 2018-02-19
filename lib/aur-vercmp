@@ -4,7 +4,7 @@ readonly argv0=vercmp
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-declare    format=updates with=aur
+declare    format=all target=aur
 declare -i all=0
 
 cmp_equal_or_newer() {
@@ -80,12 +80,12 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 unset aux_p repo
-while getopts :d:p:ac opt; do
+while getopts :acd:p: opt; do
     case $opt in
         a) all=1         ;;
         c) format=equal  ;;
         d) repo=$OPTARG  ;;
-        p) with=file
+        p) target=file
            aux_p=$OPTARG ;;
         *) usage         ;;
     esac
@@ -95,6 +95,11 @@ OPTIND=1
 
 tmp=$(mktemp) || exit
 trap 'trap_exit' EXIT
+
+if [[ -v aux_p ]] && ! [[ -s aux_p ]]; then
+    error "$argv0: no data available"
+    exit 61
+fi
 
 # set input file
 if [[ -v repo ]]; then
@@ -107,18 +112,18 @@ else
 fi
 
 # set filters (1)
-case $with in
+case $target in
      aur) get() { awk '{print $1}' "$tmp" | parse_aur; } ;;
-    file) get() { awk '{print $0}' "$aux_p";           } ;;
+    file) get() { awk '{print $0}' "$aux_p"; } ;;
 esac
 
 # set filters (2)
 case $format in
-    updates) compare() { cmp_checkupdates;   } ;;
-      equal) compare() { cmp_equal_or_newer; } ;;
+      all) cmp() { cmp_checkupdates;   } ;;
+    equal) cmp() { cmp_equal_or_newer; } ;;
 esac
 
 # pipeline
-get | sort -k 1b,1 | join -a 1 - "$tmp" | compare
+get | sort -k 1b,1 | join -a 2 -e 'N/A' -o auto - "$tmp" | cmp
 
 # vim: set et sw=4 sts=4 ft=sh:
