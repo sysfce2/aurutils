@@ -9,7 +9,11 @@ declare -i all=0
 
 cmp_equal_or_newer() {
     while read -r pkg v_cmp v_in; do
-        op=$(my_vercmp "$v_in" "$v_cmp") || return
+        if [[ -n $v_in ]]; then
+            op=$(my_vercmp "$v_in" "$v_cmp")
+        else
+            return 1
+        fi
 
         case $op in
             1) msg2 "$pkg: $v_cmp -> $v_in" ;;
@@ -23,7 +27,11 @@ readonly -f cmp_equal_or_newer
 
 cmp_checkupdates() {
     while read -r pkg v_cmp v_in; do
-        op=$(my_vercmp "$v_in" "$v_cmp") || return
+        if [[ -n $v_in ]]; then
+            op=$(my_vercmp "$v_in" "$v_cmp")
+        else
+            return 1
+        fi
 
         case $op in
             0|1) ((!all)) && continue ;;
@@ -96,10 +104,6 @@ OPTIND=1
 tmp=$(mktemp) || exit
 trap 'trap_exit' EXIT
 
-if [[ -v aux_p ]] && ! [[ -s $aux_p ]]; then
-    warning "$argv0: $aux_p: empty file"
-fi
-
 # set input file
 if [[ -v repo ]]; then
     parse_sync "$repo" | sort -k 1b,1 >"$tmp"
@@ -122,7 +126,7 @@ case $format in
     equal) cmp() { cmp_equal_or_newer; } ;;
 esac
 
-# pipeline
+# XXX no third field if stdin is empty (ifne?)
 get | sort -k 1b,1 | join -a 2 -e 'N/A' -o auto - "$tmp" | cmp
 
 # vim: set et sw=4 sts=4 ft=sh:
