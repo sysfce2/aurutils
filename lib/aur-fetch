@@ -8,12 +8,12 @@ declare mode=git
 declare log_dir=/dev/null
 
 fmt_snapshot() {
-    printf -- "$aur_location/cgit/aur.git/snapshot/%s.tar.gz\n" "$@"
+    printf -- "$aur_location/cgit/aur.git/snapshot/%s.tar.gz\\n" "$@"
 }
 readonly -f fmt_snapshot
 
 fmt_git_clone() {
-    printf -- "$aur_location/%s.git\n" "$@"
+    printf -- "$aur_location/%s.git\\n" "$@"
 }
 readonly -f fmt_git_clone
 
