@@ -96,9 +96,8 @@ OPTIND=1
 tmp=$(mktemp) || exit
 trap 'trap_exit' EXIT
 
-if [[ -v aux_p ]] && ! [[ -s aux_p ]]; then
-    error "$argv0: no data available"
-    exit 61
+if [[ -v aux_p ]] && ! [[ -s $aux_p ]]; then
+    warning "$argv0: $aux_p: empty file"
 fi
 
 # set input file
