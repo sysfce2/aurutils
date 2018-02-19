@@ -9,17 +9,13 @@ declare -i all=0
 
 cmp_equal_or_newer() {
     while read -r pkg v_cmp v_in; do
-        if [[ -n $v_in ]]; then
-            op=$(my_vercmp "$v_in" "$v_cmp")
-        else
-            return 1
-        fi
+        op=$(my_vercmp "$v_in" "$v_cmp")
 
         case $op in
-            1) msg2 "$pkg: $v_cmp -> $v_in" ;;
-            0) printf -- '%s\n' "$pkg" ;;
            -1) plain "$pkg: $v_cmp is newer than $v_in"
-               printf -- '%s\n' "$pkg" ;;
+               printf -- '%s\n' "$pkg"      ;;
+            0) printf -- '%s\n' "$pkg"      ;;
+            1) msg2 "$pkg: $v_cmp -> $v_in" ;;
         esac
     done
 }
@@ -27,30 +23,28 @@ readonly -f cmp_equal_or_newer
 
 cmp_checkupdates() {
     while read -r pkg v_cmp v_in; do
-        if [[ -n $v_in ]]; then
-            op=$(my_vercmp "$v_in" "$v_cmp")
-        else
-            return 1
-        fi
+        op=$(my_vercmp "$v_in" "$v_cmp")
 
         case $op in
             0|1) ((!all)) && continue ;;
         esac
 
         case $op in
-            1) printf -- '%s: %s <- %s\n' "$pkg" "$v_in" "$v_cmp" ;;
-            0) printf -- '%s: %s = %s\n'  "$pkg" "$v_in" "$v_cmp" ;;
            -1) printf -- '%s: %s -> %s\n' "$pkg" "$v_in" "$v_cmp" ;;
+            0) printf -- '%s: %s = %s\n'  "$pkg" "$v_in" "$v_cmp" ;;
+            1) printf -- '%s: %s <- %s\n' "$pkg" "$v_in" "$v_cmp" ;;
         esac
     done
 }
 readonly -f cmp_checkupdates
 
 my_vercmp() {
-    if [[ $1 != "$2" ]]; then
-        vercmp "$1" "$2"
-    else
+    if [[ $2 == "(none)" ]]; then
+        printf '%d' 1
+    elif [[ $2 == "$1" ]]; then
         printf '%d' 0
+    else
+        vercmp "$1" "$2"
     fi
 }
 readonly -f my_vercmp
@@ -87,14 +81,15 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-unset aux_p repo
-while getopts :acd:p: opt; do
+unset aux repo upair
+while getopts :acd:p:u: opt; do
     case $opt in
         a) all=1         ;;
         c) format=equal  ;;
         d) repo=$OPTARG  ;;
         p) target=file
-           aux_p=$OPTARG ;;
+           aux=$OPTARG   ;;
+        u) upair=$OPTARG ;;
         *) usage         ;;
     esac
 done
@@ -117,16 +112,18 @@ fi
 # set filters (1)
 case $target in
      aur) get() { awk '{print $1}' "$tmp" | parse_aur; } ;;
-    file) get() { awk '{print $0}' "$aux_p"; } ;;
+    file) get() { awk '{print $0}' "$aux";             } ;;
 esac
 
 # set filters (2)
 case $format in
-      all) cmp() { cmp_checkupdates;   } ;;
-    equal) cmp() { cmp_equal_or_newer; } ;;
+      all) cmp() { cmp_checkupdates;   }
+           upair=${upair-1} ;;
+    equal) cmp() { cmp_equal_or_newer; }
+           upair=${upair-2} ;;
 esac
 
-# XXX no third field if stdin is empty (ifne?)
-get | sort -k 1b,1 | join -a 2 -e 'N/A' -o auto - "$tmp" | cmp
+# pipeline
+get | sort -k 1b,1 | join -a "$upair" -e '(none)' -o 0,1.2,2.2 - "$tmp" | cmp
 
 # vim: set et sw=4 sts=4 ft=sh:
