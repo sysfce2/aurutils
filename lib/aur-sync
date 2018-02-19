@@ -41,7 +41,7 @@ conf_file_repo() {
 }
 readonly -f conf_file_repo
 
-db_namever() {
+namever_db() {
     awk '/%NAME%/ {
         getline
         printf("%s\t", $1)
@@ -51,17 +51,18 @@ db_namever() {
         printf("%s\n", $1)
     }'
 }
-readonly -f db_namever
+readonly -f namever_db
 
-db_extract() {
-    bsdcat "$1" | db_namever | awk '{print} END {
-        if (!NR) printf("-\t-\n")
+fill_empty() {
+    awk -v "fmt=$1" '{print} END {
+        if (!NR)
+            printf(fmt)
     }'
 }
-readonly -f db_extract
+readonly -f fill_empty
 
 uniq_by() {
-    awk -F'\t' -v "i=$1" -v "j=$2" '
+    awk -v "i=$1" -v "j=$2" '
         NR == FNR {
             a[$0]; next
         } {
@@ -80,7 +81,7 @@ trap_exit() {
 readonly -f trap_exit
 
 usage() {
-    plain "usage: $argv0 [-ABcDfLnprstTu] [long options] [--] pkgname..."
+    plain "usage: $argv0 [-ABcCDflLMnprstTu] [long options] [--] pkgname..."
     exit 1
 }
 readonly -f usage
@@ -211,7 +212,7 @@ else
         0) error "$argv0: no file:// repository found"
            exit 2 ;;
         *) error "$argv0: repository choice is ambiguous (use --repo to specify)"
-           printf -- '%s\t%s\n' "${conf[@]}" | column -t >&2
+           printf -- '%s\n' "${conf[@]}" | paste - - | column -t >&2
            exit 2 ;;
     esac
 fi
@@ -239,7 +240,7 @@ chmod -c 700 "$AURDEST" "$AURDEST_SNAPSHOT"
 cd_safe "$tmp"
 mkdir patch
 
-db_extract "$root/$repo".db > db_info
+bsdcat "$root/$repo".db | namever_db | fill_empty '-\t-\n' > db_info
 
 if ((list)); then
     column -JN pkgname,pkgver -n "$repo" db_info
