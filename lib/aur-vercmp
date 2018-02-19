@@ -9,13 +9,17 @@ declare -i all=0
 
 cmp_equal_or_newer() {
     while read -r pkg v_cmp v_in; do
-        op=$(my_vercmp "$v_in" "$v_cmp")
+        case $v_cmp in
+            -) op=2 ;; # - on field 2
+            *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
+        esac
 
         case $op in
            -1) plain "$pkg: $v_cmp is newer than $v_in"
                printf -- '%s\n' "$pkg"      ;;
             0) printf -- '%s\n' "$pkg"      ;;
             1) msg2 "$pkg: $v_cmp -> $v_in" ;;
+            2) msg2 "$pkg: $v_cmp -> $v_in" ;;
         esac
     done
 }
@@ -23,26 +27,28 @@ readonly -f cmp_equal_or_newer
 
 cmp_checkupdates() {
     while read -r pkg v_cmp v_in; do
-        op=$(my_vercmp "$v_in" "$v_cmp")
-
-        case $op in
-            0|1) ((!all)) && continue ;;
+        case $v_in in
+            -) op=2 ;; # - on field 3
+            *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
+
+        if ((!all)) && ((op > -1)); then
+            continue #global all
+        fi
 
         case $op in
            -1) printf -- '%s: %s -> %s\n' "$pkg" "$v_in" "$v_cmp" ;;
             0) printf -- '%s: %s = %s\n'  "$pkg" "$v_in" "$v_cmp" ;;
             1) printf -- '%s: %s <- %s\n' "$pkg" "$v_in" "$v_cmp" ;;
+            2) printf -- '%s: (none) -> %s\n' "$pkg" "$v_cmp"     ;;
         esac
     done
 }
 readonly -f cmp_checkupdates
 
 my_vercmp() {
-    if [[ $2 == "(none)" ]]; then
-        printf '%d' 1
-    elif [[ $2 == "$1" ]]; then
-        printf '%d' 0
+    if [[ $1 == "$2" ]]; then
+        printf '%d' 0 # common case
     else
         vercmp "$1" "$2"
     fi
@@ -112,18 +118,18 @@ fi
 # set filters (1)
 case $target in
      aur) get() { awk '{print $1}' "$tmp" | parse_aur; } ;;
-    file) get() { awk '{print $0}' "$aux";             } ;;
+    file) get() { awk '{print}' "$aux"; } ;;
 esac
 
 # set filters (2)
 case $format in
-      all) cmp() { cmp_checkupdates;   }
-           upair=${upair-1} ;;
+      all) cmp() { cmp_checkupdates; }
+           upair=${upair-1} ;; # join unpaired of target
     equal) cmp() { cmp_equal_or_newer; }
-           upair=${upair-2} ;;
+           upair=${upair-2} ;; # join unpaired of input
 esac
 
 # pipeline
-get | sort -k 1b,1 | join -a "$upair" -e '(none)' -o 0,1.2,2.2 - "$tmp" | cmp
+get | sort -k 1b,1 | join -a "$upair" -e - -o 0,1.2,2.2 - "$tmp" | cmp
 
 # vim: set et sw=4 sts=4 ft=sh:
