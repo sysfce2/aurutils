@@ -24,7 +24,7 @@ cmp_checkupdates() {
     while read -r pkg v_cmp v_in; do
         op=$(my_vercmp "$v_in" "$v_cmp") || return
 
-        if (($1)) && ((op > -1)); then
+        if ((leq)) && ((op > -1)); then
             continue
         fi
 
