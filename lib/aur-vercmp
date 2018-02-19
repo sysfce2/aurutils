@@ -3,8 +3,8 @@ readonly argv0=vercmp
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -o pipefail
 
-declare    format=all with=aur
-declare -i leq=0
+declare    format=updates with=aur
+declare -i all=0
 
 cmp_equal_or_newer() {
     while read -r pkg v_cmp v_in; do
@@ -24,9 +24,9 @@ cmp_checkupdates() {
     while read -r pkg v_cmp v_in; do
         op=$(my_vercmp "$v_in" "$v_cmp") || return
 
-        if ((leq)) && ((op > -1)); then
-            continue
-        fi
+        case $op in
+            0|1) ((!all)) && continue ;;
+        esac
 
         case $op in
             1) printf -- '%s: %s <- %s\n' "$pkg" "$v_in" "$v_cmp" ;;
@@ -81,7 +81,7 @@ fi
 unset aux_p repo
 while getopts :d:p:ac opt; do
     case $opt in
-        a) leq=1         ;;
+        a) all=1         ;;
         c) format=equal  ;;
         d) repo=$OPTARG  ;;
         p) with=file
@@ -113,8 +113,8 @@ esac
 
 # set filters (2)
 case $format in
-      all) compare() { cmp_checkupdates;   } ;;
-    equal) compare() { cmp_equal_or_newer; } ;;
+    updates) compare() { cmp_checkupdates;   } ;;
+      equal) compare() { cmp_equal_or_newer; } ;;
 esac
 
 # pipeline
