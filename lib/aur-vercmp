@@ -20,6 +20,7 @@ cmp_loop() {
 }
 readonly -f cmp_loop
 
+# XXX breaks on sparse input (#273)
 fmt_equal_or_newer() {
     declare -r op=$1 pkg=$2 v_cmp=$3 v_in=$4
 
