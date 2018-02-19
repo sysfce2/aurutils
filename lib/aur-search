@@ -67,7 +67,7 @@ json_long() {
 readonly -f json_long
 
 usage() {
-    printf >&2 'usage: %s: [-imnrRv] [-k key] package [package...]\n' "$argv0"
+    printf >&2 'usage: %s: [-imnrv] [-k key] package [package...]\n' "$argv0"
     exit 1
 }
 readonly -f usage
@@ -78,12 +78,13 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-while getopts :imnk:v opt; do
+while getopts :ijmnk:v opt; do
     case $opt in
         i) type=info                  ;;
         m) type=search; by=maintainer ;;
         n) type=search; by=name       ;;
         k) sort_key=$OPTARG           ;;
+        r) format=json                ;;
         v) format=verbose             ;;
         *) usage                      ;;
     esac
@@ -96,13 +97,11 @@ if ((!$#)); then
 fi
 
 case $format in
-    brief)
-        parse() { json_short "$sort_key"; } ;;
-    verbose)
-        parse() { json_long  "$sort_key"; } ;;
+      brief) parse() { json_short "$sort_key"; } ;;
+    verbose) parse() { json_long  "$sort_key"; } ;;
+       json) parse() { tee; }                    ;;
 esac
 
-# XXX move argv to aur(1)
 printf -- '%s\n' "$@" | aur rpc -t "$type" -b "$by" | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
