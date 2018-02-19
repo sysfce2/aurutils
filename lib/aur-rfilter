@@ -8,7 +8,7 @@ declare -A pkgset
 provides() {
     expac '%n %R %S' -Sv -- "$@" | awk '{
         for(i = 2; i <= NF; ++i) {
-            printf("%s\t%s\n", $1, $i) | "sort -u"
+            printf("%s %s\n", $1, $i) | "sort -u"
         }
     }'
 }
@@ -54,16 +54,16 @@ fi
 mapfile -t query < <(pacsift --sync --exact "${siftargs[@]}" <&-)
 
 if [[ ${query[*]} ]]; then
-    while read -r p v; do
-        p=${p#*/}
+    while read -r pkg virt; do
+        pkg=${pkg#*/}
 
-        if [[ ${pkgset[$p]} ]]; then
-            repo+=("$p")
+        if [[ ${pkgset[$pkg]} ]]; then
+            repo+=("$pkg")
         fi
 
-        if [[ ${pkgset[$v]} ]]; then
-            printf 'virtual dependency %s provided by %s\n' "$v" "$p" >&2
-            repo+=("$v")
+        if [[ ${pkgset[$virt]} ]]; then
+            printf 'virtual dependency %s provided by %s\n' "$virt" "$pkg" >&2
+            repo+=("$virt")
         fi
     done < <(provides "${query[@]}")
 fi
