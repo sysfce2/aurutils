@@ -54,7 +54,7 @@ db_namever() {
 readonly -f db_namever
 
 db_fill_empty() {
-    awk -v "fmt=$1" '{print} END {
+    awk -v '{print} END {
         if (!NR)
             printf("%s\t%s\n", "(none)", "(none)")
     }'
