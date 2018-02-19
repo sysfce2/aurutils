@@ -13,7 +13,7 @@ get_pkgbuild_info() {
             fullver=$pkgver-$pkgrel
         fi
 
-        printf "%s\\t%s\\n" "${pkgbase:-$pkgname}" "$fullver"
+        printf %s\\t%s\\n "${pkgbase:-$pkgname}" "$fullver"
     '
 }
 readonly -f get_pkgbuild_info
@@ -40,7 +40,7 @@ makepkg_log=$(mktemp -t makepkg.XXXXXXXX) || exit
 trap 'rm $makepkg_log' EXIT
 
 find_pkgbuild_path "${arg_path[@]}" | while read -r; do
-    cd "$REPLY"
+    cd "$REPLY" || exit
 
     if makepkg --skipinteg --noprepare -od >"$makepkg_log" 2>&1; then
         get_pkgbuild_info "$REPLY"
