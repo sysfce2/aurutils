@@ -41,7 +41,7 @@ conf_file_repo() {
 }
 readonly -f conf_file_repo
 
-namever_db() {
+db_namever() {
     awk '/%NAME%/ {
         getline
         printf("%s\t", $1)
@@ -51,15 +51,15 @@ namever_db() {
         printf("%s\n", $1)
     }'
 }
-readonly -f namever_db
+readonly -f db_namever
 
-fill_empty() {
+db_fill_empty() {
     awk -v "fmt=$1" '{print} END {
         if (!NR)
-            printf(fmt)
+            printf("%s\t%s\n", "(none)", "(none)")
     }'
 }
-readonly -f fill_empty
+readonly -f db_fill_empty
 
 uniq_by() {
     awk -v "i=$1" -v "j=$2" '
@@ -240,7 +240,7 @@ chmod -c 700 "$AURDEST" "$AURDEST_SNAPSHOT"
 cd_safe "$tmp"
 mkdir patch
 
-bsdcat "$root/$repo".db | namever_db | fill_empty '-\t-\n' > db_info
+bsdcat "$root/$repo".db | db_namever | db_fill_empty  > db_info
 
 if ((list)); then
     column -JN pkgname,pkgver -n "$repo" db_info
