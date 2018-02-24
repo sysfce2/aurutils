@@ -1,5 +1,6 @@
 #!/bin/bash
 readonly argv0=fetch-snapshot
+readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set   -o errexit
 shopt -s nullglob
@@ -22,29 +23,6 @@ tar_no_mode_diff() {
     fi
 }
 readonly -f tar_no_mode_diff
-
-extract() {
-    declare -r workdir=$1 logdir=$2 startdir=$PWD
-
-    cd "$workdir"
-    dl_stdin
-
-    for a in ./*.tar.gz; do
-        tar -kxf "$a"
-
-        if [[ -d $logdir ]] && tar_no_mode_diff "$a" "$startdir"; then
-            a=${a%%.tar.gz}
-
-            diff -ur "$startdir/$a" "$a" | \
-                tee -a "$logdir/$a".diff | diffstat -CKq -f3
-        fi
-
-        cp -af "${a%%.tar.gz}" "$startdir"
-    done
-
-    cd "$startdir"
-}
-readonly -f extract
 
 usage() {
     printf -- 'usage: %s [-L logdir]\n' "$argv0" >&2
@@ -71,6 +49,19 @@ OPTIND=1
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 trap trap_exit EXIT
 
-extract "$tmp" "$logdir"
+cd "$tmp"
+dl_stdin
+
+for a in ./*.tar.gz; do
+    tar -kxf "$a"
+
+    if [[ -d $logdir ]] && tar_no_mode_diff "$a" "$startdir"; then
+        a=${a%%.tar.gz}
+
+        diff -ur "$startdir/$a" "$a" | \
+            tee -a "$logdir/$a".diff | diffstat -CKq -f3
+    fi
+    cp -af "${a%%.tar.gz}" "$startdir"
+done
 
 # vim: set et sw=4 sts=4 ft=sh:
