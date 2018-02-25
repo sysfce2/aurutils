@@ -85,7 +85,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcCDflLMnprstTu] [long options] [--] pkgname..."
+    plain "usage: $argv0 [-ABcCDflLMprstTu] [long options] [--] pkgname..."
     exit 1
 }
 
@@ -126,7 +126,7 @@ while true; do
             aurbuild_args+=(-f)
             shift ;;
         -s|--sign)
-            aurbuild_args+=(-s)
+            aurbuild_args+=(-sv)
             shift ;;
         -C)
             aurbuild_args+=(-C "$2")
@@ -150,11 +150,11 @@ while true; do
         -L|--log)
             makepkg_args+=(-L)
             shift ;;
+        --noconfirm|--no-confirm)
+            makepkg_args+=(--noconfirm)
+            shift ;;
         -l|--list)
             list=1
-            shift ;;
-        -n|--noconfirm|--no-confirm)
-            makepkg_args+=(--noconfirm)
             shift ;;
         -r|--rmdeps|--rm-deps)
             makepkg_args+=(-r)
