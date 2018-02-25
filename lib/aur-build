@@ -5,14 +5,14 @@ readonly argv0=build
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+chroot_args=()
 gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
 makepkg_args=(-rs --noconfirm)
-chroot_args=()
+repo_add_args=()
 chroot=0
 no_sync=0
 overwrite=0
-repo_add_args=()
 sign_pkg=0
 
 conf_single() {
@@ -40,7 +40,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 -d database [-afNrs] [--] <makepkg args>"
+    plain "usage: $argv0 -d database [-afNRsv] [--] <makepkg args>"
     exit 1
 }
 
@@ -52,7 +52,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 unset database db_root queue
-while getopts a:d:r:C:D:M:cfNs opt; do
+while getopts a:d:r:C:D:M:cfNRsv opt; do
     case $opt in
         a) queue=$OPTARG    ;;
         c) chroot=1         ;;
@@ -60,10 +60,13 @@ while getopts a:d:r:C:D:M:cfNs opt; do
         f) overwrite=1      ;;
         N) no_sync=1        ;;
         r) db_root=$OPTARG  ;;
-        s) sign_pkg=1       ;;
         C) chroot_args+=(-C "$OPTARG") ;;
         D) chroot_args+=(-D "$OPTARG") ;;
         M) chroot_args+=(-M "$OPTARG") ;;
+        R) repo_add_args+=(-R) ;;
+        s) repo_add_args+=(-s)
+           sign_pkg=1          ;;
+        v) repo_add_args+=(-v) ;;
         *) usage ;;
     esac
 done
@@ -92,6 +95,7 @@ else
     exec {fd}< <(printf '\n')
 fi
 
+# reset default makechrootpkg arguments
 if (($#)); then
     if ((chroot)); then
         makechrootpkg_args=("$@")
@@ -100,23 +104,19 @@ if (($#)); then
     fi
 fi
 
-if command -v xdelta3 >/dev/null; then
+if type -P xdelta3 >/dev/null; then
     repo_add_args+=(-d)
+fi
+
+if ((sign_pkg)) && [[ -v GPGKEY ]]; then
+    gpg --list-keys "$GPGKEY"
+    gpg_args+=(-u "$GPGKEY")
 fi
 
 mapfile -t db_sigs < <(find "$db_root" -maxdepth 1 -name "$database*.sig" -type f)
 
-if ((sign_pkg)); then
-    repo_add_args+=(-v -s)
-
-    if [[ -v GPGKEY ]]; then
-        gpg --list-keys "$GPGKEY"
-        gpg_args+=(-u "$GPGKEY")
-    fi
-
-elif [[ ${db_sigs[*]} ]]; then
+if ((!sign_pkg)) && [[ ${db_sigs[*]} ]]; then
     error "$argv0: signature found, but signing is disabled"
-
     printf -- '%q\n' "${db_sigs[@]}" >&2
     exit 1
 fi
