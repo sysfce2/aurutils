@@ -65,7 +65,7 @@ Print target packages and their paths instead of building them.
 
 .B \-s, --sign
 .RS
-Sign built packages and the database with gpg. (\fIaur-build -s\fR)
+Sign built packages and verify the database with gpg. (\fIaur-build -sv\fR)
 .RE
 
 .B \-t, --tar
@@ -79,12 +79,12 @@ repositories.
 Update all AUR packages in a local repository that are out-of-date.
 .RE
 
-.B \--no-ver
+.B \--nover, --no-ver
 .RS
 Disable version checking for packages in the queue.
 .RE
 
-.B \--no-view
+.B \--noview, --no-view
 .RS
 Do not view downloaded files before building.
 .RE
@@ -108,7 +108,7 @@ Skip downloading package files.
 .SS makepkg
 The default set of options is \fImakepkg -cs\fR.
 
-.B \-A, --ignore-arch
+.B \-A, --ignorearch, --ignore-arch
 .RS
 Ignore a missing or incomplete \fIarch\fR field in the build script.
 .RE
@@ -118,7 +118,7 @@ Ignore a missing or incomplete \fIarch\fR field in the build script.
 Enable logging to a text file in the build directory.
 .RE
 
-.B \-n, --no-confirm
+.B \--noconfirm, --no-confirm
 .RS
 Do not wait for user input. (\fImakepkg --noconfirm\fR)
 .RE

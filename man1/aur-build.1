@@ -6,7 +6,7 @@ aur\-build \- build packages to a local repository
 .SY aur
 .B build
 .I \-d database
-.OP \-cfNs
+.OP \-cfNRsv
 .OP \-a queue
 .OP \-r root
 .OP \--
@@ -60,9 +60,21 @@ as the files database (\fIfoo.files\fR). This defaults to the
 \fIServer\fR value of the configured repository.
 .RE
 
+.B \-R
+.RS
+Remove old package files from disk when updating their entry in the
+database (\fIrepo-add -R\fR).
+.RE
+
 .B \-s
 .RS
-Sign built packages and the database with gpg.
+Sign built packages and the database (\fIrepo-add -s\fR) with gpg.
+.RE
+
+.B \-v
+.RS
+Verify the PGP signature of the database before updating. (\fIrepo-add
+-v\fR).
 .RE
 
 .SH NOTES
