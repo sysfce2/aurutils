@@ -1,6 +1,5 @@
 #!/bin/bash
-# aur-rpc - send GET requests to aurweb
-# https://bugs.archlinux.org/task/49089
+# aur-rpc - interface with AurJson
 readonly argv0=rpc
 readonly aur_location='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -17,21 +16,18 @@ info() {
         printf "\n"
     }'
 }
-readonly -f info
 
 search() {
     awk -v rpc="$aur_location/rpc/?v=5&type=search&by=$1&arg" '{
         printf "%s=%s\n", rpc, $0
     }'
 }
-readonly -f search
 
 cat_ifne() {
-    if [[ -n $* && -e $1 ]]; then
+    if [[ -n $* ]] && [[ -e $1 ]]; then
         cat -- "$@"
     fi
 }
-readonly -f cat_ifne
 
 dl_stdin() {
     if type -P aria2c >/dev/null; then
@@ -46,20 +42,17 @@ dl_stdin() {
         wget --quiet -i - -O -
     fi
 }
-readonly -f dl_stdin
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
-readonly -f trap_exit
 
 usage() {
-    printf >&2 'usage: %s [-t type] [-b by] package [package...]\n' "$argv0"
+    printf >&2 'usage: %s [-t info] [-t search] [-b by]\n' "$argv0"
     exit 1
 }
-readonly -f usage
 
 unset by type
 while getopts :b:t: opt; do
@@ -75,12 +68,14 @@ OPTIND=1
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
+# set filters
 case $type in
       info) query() { info; }                      ;;
     search) query() { search "${by:-name-desc}"; } ;;
-         *) usage ;;
+         *) usage                                  ;;
 esac
 
+# pipeline
 jq -R -r '@uri' | query | dl_stdin
 
 # vim: set et sw=4 sts=4 ft=sh:

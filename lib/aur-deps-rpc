@@ -1,21 +1,13 @@
 #!/bin/bash
+# aur-deps-rpc - order package dependencies using AurJson
+set -o noclobber
 readonly argv0=deps-rpc
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o noclobber
-
-declare mode=aur
+mode=aur
 
 count() {
-    declare -i num
-
-    if num=$(jq -r '.resultcount' "$1" | awk '{s += $1} END {print s}'); then
-        printf '%d' "$num"
-    else
-        printf '%s: invalid argument\n' "$argv0" >&2
-        exit 22
-    fi
+    jq -r '.resultcount' "$1" | awk '{s += $1} END {print s}'
 }
-readonly -f count
 
 sort_by() {
     awk 'FNR == NR {
@@ -25,12 +17,10 @@ sort_by() {
             print a[$0]
     }' "$@"
 }
-readonly -f sort_by
 
 tr_ver() {
     sed -r 's/[<>=].*$//g'
 }
-readonly -f tr_ver
 
 tabulate() {
     jq -r '.results[]
@@ -41,21 +31,20 @@ tabulate() {
         | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
         | [$name, ., $base, $ver, $url] | @tsv' "$1"
 }
-readonly -f tabulate
 
 chain() {
-    declare -i num
+    local num sub
 
     aur rpc -t info > json/0 || exit
     num=$(count json/0)
 
-    if [[ $num -lt 1 ]]; then
+    if ((num < 1)); then
         printf '%s: no packages found\n' "$argv0" >&2
         exit 1
     fi
 
     for ((a = 1; a <= 30; ++a)); do
-        declare -i sub=$((a-1))
+        sub=$((a-1))
 
         tabulate json/$sub | tee -a tsv/n > tsv/$sub
 
@@ -88,22 +77,19 @@ chain() {
         exit 22
     fi
  
-    cut -f2 --complement tsv/n | sort -uk1,1 > pkginfo
+    cut -f2 --complement tsv/n | sort -uk 1,1 > pkginfo
 }
-readonly -f chain
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
-readonly -f trap_exit
 
 usage() {
     printf 'usage: %s [-at] pkgname...\n' "$argv0" >&2
     exit 1
 }
-readonly -f usage
 
 while getopts :at opt; do
     case $opt in
@@ -121,12 +107,12 @@ trap 'trap_exit' EXIT
 if cd "$tmp" && mkdir json tsv; then
     chain > order
 else
-    exit
+    exit "$?"
 fi
 
 case $mode in
     aur) grep -Fxf pkgname order | tac ;;
-    all) tac order ;;
+    all) tac order                     ;;
     tab) tac order | sort_by pkginfo - ;;
 esac
 

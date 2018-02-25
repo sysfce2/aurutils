@@ -1,13 +1,19 @@
 #!/bin/bash
+# aur-build - build packages to a local repository
+set -o errexit
 readonly argv0=build
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o errexit
 
-declare -a gpg_args=(--detach-sign --no-armor --batch)
-declare -a makepkg_args=(-rs --noconfirm) makechrootpkg_args=(-cu)
-declare -a chroot_args=() repo_add_args=()
-declare -i chroot=0 no_sync=0 overwrite=0 sign_pkg=0
+gpg_args=(--detach-sign --no-armor --batch)
+makechrootpkg_args=(-cu)
+makepkg_args=(-rs --noconfirm)
+chroot_args=()
+chroot=0
+no_sync=0
+overwrite=0
+repo_add_args=()
+sign_pkg=0
 
 conf_single() {
     printf '[options]\n'
@@ -16,32 +22,27 @@ conf_single() {
     printf '[%s]\n' "$1"
     pacconf --repo="$1" --raw
 }
-readonly -f conf_single
 
 db_replaces() {
     bsdcat "$1" | awk '/%REPLACES%/ {
         while(NF != 0) {getline; print}
     }'
 }
-readonly -f db_replaces
 
 find_pkg_dupes() {
     xargs -I{} find "$1" -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part|\.sig)$' -
 }
-readonly -f find_pkg_dupes
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp" "$var_tmp"
     fi
 }
-readonly -f trap_exit
 
 usage() {
     plain "usage: $argv0 -d database [-afNrs] [--] <makepkg args>"
     exit 1
 }
-readonly -f usage
 
 source /usr/share/makepkg/util/util.sh
 source /usr/share/makepkg/util/message.sh
@@ -85,8 +86,6 @@ if ! [[ -r $db_path && -w $db_path ]]; then
     exit 13
 fi
 
-readonly chroot database server db_root db_path queue overwrite no_sync sign_pkg
-
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
 else
@@ -125,12 +124,10 @@ fi
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
 var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
-readonly chroot_args makepkg_args repo_add_args gpg_args tmp var_tmp
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if ((chroot)); then
-    # XXX Move sudo call to /bin/aur to allow easy sudo whitelisting?
     sudo aur build-nspawn -d "$database" -u "${chroot_args[@]}"
 else
     conf_single "$database" >"$tmp"/custom.conf

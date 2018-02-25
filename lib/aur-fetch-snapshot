@@ -1,9 +1,13 @@
 #!/bin/bash
+# aur-fetch-snapshot - retrieve build files using tar archives
+set -o errexit
+shopt -s nullglob
 readonly argv0=fetch-snapshot
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set   -o errexit
-shopt -s nullglob
+
+# XXX default to outputting logs to /dev/stdout
+logdir=/dev/null
 
 dl_stdin() {
     if type -P aria2c >/dev/null; then
@@ -12,7 +16,6 @@ dl_stdin() {
         wget -i -
     fi
 }
-readonly -f dl_stdin
 
 tar_no_mode_diff() {
     if [[ -d $2/${1%%.tar*} ]]; then
@@ -22,7 +25,6 @@ tar_no_mode_diff() {
         return 1
     fi
 }
-readonly -f tar_no_mode_diff
 
 usage() {
     printf -- 'usage: %s [-L logdir]\n' "$argv0" >&2
@@ -34,9 +36,7 @@ trap_exit() {
         rm -rf "$tmp"
     fi
 }
-readonly -f trap_exit
 
-logdir=/dev/null
 while getopts :L: opt; do
     case $opt in
         L) logdir=$OPTARG ;;

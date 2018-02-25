@@ -1,7 +1,8 @@
 #!/bin/bash
+# aur-deps-src - order package dependencies using .SRCINFO
+set -o pipefail
 readonly argv0=deps-src
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o pipefail
 
 deps_paired() {
     awk -v FS='[<=>]' '
@@ -17,7 +18,6 @@ deps_paired() {
             read = 0 # split package
     }' "$@"
 }
-readonly -f deps_paired
 
 # XXX Output of form " pkgname pkgbase" (leading space)
 base() {
@@ -29,7 +29,6 @@ base() {
         printf("%s %s\n", $2, pb)
     }' "$@"
 }
-readonly -f base
 
 sub() {
     awk 'NR == FNR {
@@ -40,19 +39,18 @@ sub() {
         }
     }' "$@"
 }
-readonly -f sub
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
-readonly -f trap_exit
 
 tmp=$(mktemp -t "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-xargs -0 cat >"$tmp"
+# take file names from stdin, null-separated
+xargs -0 cat > "$tmp"
 
 if [[ -s "$tmp" ]]; then
     deps_paired "$tmp" | tsort | sub <(base "$tmp") -

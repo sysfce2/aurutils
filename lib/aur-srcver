@@ -1,5 +1,6 @@
 #!/bin/bash
 # shellcheck disable=SC2016
+# aur-srcver - update and print package revisions
 readonly argv0=srcver
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly startdir=$PWD
@@ -17,24 +18,21 @@ get_pkgbuild_info() {
         printf %s\\t%s\\n "${pkgbase:-$pkgname}" "$fullver"
     '
 }
-readonly -f get_pkgbuild_info
 
 find_pkgbuild_path() {
     find "$@" -maxdepth 1 -type f -name PKGBUILD -printf '%h\n'
 }
-readonly -f find_pkgbuild_path
 
 usage() {
     printf 'usage: %s path [path...]\n' "$argv0" >&2
     exit 1
 }
-readonly -f usage
 
 if ((!$#)); then
     usage
 fi
 
-# trickery for hyphen and absolute path arguments
+# XXX trickery for hyphen and absolute path arguments
 mapfile -t arg_path < <(readlink -e -- "$@")
 
 makepkg_log=$(mktemp -t makepkg.XXXXXXXX) || exit

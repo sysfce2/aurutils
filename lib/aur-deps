@@ -1,28 +1,31 @@
 #!/bin/bash
+# aur-deps - order package dependencies
 readonly argv0=deps
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-declare mode=rpc
+mode=json
 
 find_srcinfo() {
     find "$@" -maxdepth 1 -type f -name .SRCINFO -print0
 }
-readonly -f find_srcinfo
 
 usage() {
     printf -- 'usage: %s [-sr] package [package...]\n' "$argv0" >&2
     exit 1
 }
-readonly -f usage
 
 while getopts :jp opt; do
     case $opt in
-        p) mode=src ;;
-        j) mode=rpc ;;
-        *) usage    ;;
+        p) mode=src  ;;
+        j) mode=json ;;
+        *) usage     ;;
     esac
 done
 shift $((OPTIND -1))
 OPTIND=1
+
+if ((!$#)); then
+    usage
+fi
 
 case $mode in
     src)
@@ -34,9 +37,7 @@ case $mode in
 
         find_srcinfo "${arg_path[@]}" | aur deps-src | grep -Fxf <(basename -a "$@")
         ;;
-    rpc)
+    json)
         printf -- '%s\n' "$@" | aur deps-rpc
         ;;
 esac
-
-

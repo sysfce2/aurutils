@@ -1,14 +1,17 @@
 #!/bin/bash
+# aur-search - search for AUR packages
+set -o pipefail
 readonly argv0=search
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o pipefail
 
-declare by=name-desc
-declare format=brief
-declare sort_key=Name
-declare type=search
+format=brief
+sort_key=Name
+search_by=name-desc
+search_type=search
 
 json_short() {
+    local Name Version NumVotes Description
+
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
         .Version,
         .NumVotes,
@@ -23,9 +26,11 @@ json_short() {
                "$Name" "$Version" "$NumVotes" "$Description"
     done
 }
-readonly -f json_short
 
 json_long() {
+    local Name PackageBase Version Description URL NumVotes Popularity
+    local OutOfDate Maintainer FirstSubmitted LastModified
+
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
         .PackageBase,
         .Version,
@@ -64,13 +69,11 @@ json_long() {
         printf '\n'
     done
 }
-readonly -f json_long
 
 usage() {
     printf >&2 'usage: %s: [-imnrv] [-k key] package [package...]\n' "$argv0"
     exit 1
 }
-readonly -f usage
 
 source /usr/share/makepkg/util/message.sh || exit
 
@@ -80,13 +83,15 @@ fi
 
 while getopts :imnrvk: opt; do
     case $opt in
-        i) type=info                  ;;
-        m) type=search; by=maintainer ;;
-        n) type=search; by=name       ;;
-        k) sort_key=$OPTARG           ;;
-        r) format=json                ;;
-        v) format=verbose             ;;
-        *) usage                      ;;
+        i) search_type=info     ;;
+        m) search_type=search
+           search_by=maintainer ;;
+        n) search_type=search
+           search_by=name       ;;
+        k) sort_key=$OPTARG     ;;
+        r) format=json          ;;
+        v) format=verbose       ;;
+        *) usage                ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -96,12 +101,14 @@ if ((!$#)); then
     usage
 fi
 
+# set filters
 case $format in
       brief) parse() { json_short "$sort_key"; } ;;
     verbose) parse() { json_long  "$sort_key"; } ;;
        json) parse() { tee; }                    ;;
 esac
 
-printf -- '%s\n' "$@" | aur rpc -t "$type" -b "$by" | parse
+# pipeline
+printf -- '%s\n' "$@" | aur rpc -t "$search_type" -b "$search_by" | parse
 
 # vim: set et sw=4 sts=4 ft=sh:

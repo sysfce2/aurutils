@@ -1,14 +1,15 @@
 #!/bin/bash
+# aur-build-nspawn - build packages using systemd-nspawn
+set -o errexit
 readonly argv0=build-nspawn
 readonly PATH=/bin:/usr/bin
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o errexit
 
 machine=$(uname -m)
 directory=/var/lib/aurbuild/$machine
+makechrootpkg_args=(-cu)
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
-makechrootpkg_args=(-cu)
 mode=build
 
 conf_devtools() {
@@ -18,7 +19,6 @@ conf_devtools() {
     # https://git.archlinux.org/devtools.git/tree/mkarchroot.in#n54
     printf '#CacheDir=\n'
 }
-readonly -f conf_devtools
 
 conf_repo() {
     while IFS= read -r; do
@@ -26,20 +26,17 @@ conf_repo() {
         pacconf --repo="$REPLY" --raw
     done
 }
-readonly -f conf_repo
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
-readonly -f trap_exit
 
 usage() {
     printf >&2 -- 'usage: %s [-CDMu] [-d db] -- <args>' "$argv0" >&2
     exit 1
 }
-readonly -f usage
 
 unset database
 while getopts :C:D:M:d:u opt; do
@@ -64,6 +61,7 @@ readonly pacman_conf makepkg_conf directory database prepare
 trap 'trap_exit' EXIT
 tmp=$(mktemp -d)
 
+# XXX Duplication between "update" mode and makechrootpkg -u
 case $mode in
     update)
         { conf_devtools "$pacman_conf"
@@ -73,7 +71,7 @@ case $mode in
         if [[ -f $directory/root/.arch-chroot ]]; then
             # locking is done by systemd-nspawn
             arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-                        "$directory"/root pacman -Syu --noconfirm   
+                        "$directory"/root pacman -Syu --noconfirm
         else
             install -d "$directory" -m 755 -v || exit
             mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \

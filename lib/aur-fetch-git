@@ -1,8 +1,10 @@
 #!/bin/bash
+# aur-fetch-git - retrieve build files using git
+set -o errexit
 readonly argv0=fetch-git
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -o errexit
-declare log_dir=/dev/null
+
+log_dir=/dev/null
 
 merge_upstream() {
     git fetch -v
@@ -16,18 +18,16 @@ merge_upstream() {
         git merge
     fi
 }
-readonly -f merge_upstream
 
 usage() {
     printf -- 'usage: %s [-L log_dir]\n' "$argv0" >&2
     exit 1
 }
-readonly -f usage
 
 while getopts :L: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
-        *) usage       ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -38,7 +38,7 @@ while IFS= read -r uri; do
     pkg=${pkg%%.git} # strip .git suffix
 
     if [[ -d $pkg/.git ]]; then
-        # Avoid issues with exotic file system layouts (#274)
+        # Avoid issues file system boundaries (#274)
         GIT_DIR="$pkg/.git" GIT_WORK_TREE="$pkg" merge_upstream "$pkg"
     else
         git clone "$uri"
