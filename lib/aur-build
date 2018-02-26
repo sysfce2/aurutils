@@ -10,10 +10,8 @@ gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
 makepkg_args=(-rs --noconfirm)
 repo_add_args=()
-chroot=0
-no_sync=0
-overwrite=0
-sign_pkg=0
+
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
 conf_single() {
     printf '[options]\n'
