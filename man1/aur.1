@@ -164,7 +164,7 @@ Build all packages in the \fIpkgbuilds\fR github repository: (requires
   $ git clone https://www.github.com/Earnestly/pkgbuilds
   $ cd pkgbuilds
   $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \\;
-  $ aur deps -p ./* > queue # Remove unwanted targets
+  $ aur deps -s ./* > queue # Remove unwanted targets
   $ aur build -d custom -a queue
 
 .EE
@@ -201,10 +201,10 @@ Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:
   $ aur sync -c plasma-desktop-git
 
 .EE
-Update all AUR packages in the \fIcustom\fR repository:
+Update all AUR packages in a single local repository:
 .EX
 
-  $ aur sync -u --repo custom
+  $ aur sync -u
 
 .EE
 Update packages from the \fIcustom\fR repository that are installed on the host:
