@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -
 readonly argv0=aur
 readonly lib_dir='AUR_LIB_DIR'
 shopt -s nullglob
