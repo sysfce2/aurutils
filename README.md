@@ -30,4 +30,5 @@ several examples.
 
 ## TROUBLESHOOTING
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). For informal discussion, see the 
+`#aurutils` channel on [freenode](https://freenode.net/kb/answer/chat).
