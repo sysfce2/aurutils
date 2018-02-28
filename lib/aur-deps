@@ -9,14 +9,14 @@ find_srcinfo() {
 }
 
 usage() {
-    printf -- 'usage: %s [-sr] package [package...]\n' "$argv0" >&2
+    printf -- 'usage: %s [-rs] package [package...]\n' "$argv0" >&2
     exit 1
 }
 
-while getopts :jp opt; do
+while getopts :rs opt; do
     case $opt in
-        p) mode=src  ;;
-        j) mode=json ;;
+        r) mode=json ;;
+        s) mode=src  ;;
         *) usage     ;;
     esac
 done
