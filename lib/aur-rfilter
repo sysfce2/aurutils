@@ -1,5 +1,5 @@
 #!/bin/bash
-# aur-rfilter - filter repository packages
+# aur-rfilter - filter packages in the Arch Linux repositories
 readonly argv0=rfilter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
