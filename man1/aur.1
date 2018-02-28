@@ -13,27 +13,15 @@ Build packages to a local repository.
 .RE
 
 .P
-.BR aur-build-nspawn (1)
+.BR aur-deps (1)
 .RS 4
-Build packages in an nspawn container.
-.RE
-
-.P
-.BR aur-deps-rpc (1)
-.RS 4
-Order dependencies using the AUR RPC.
-.RE
-
-.P
-.BR aur-deps-src (1)
-.RS 4
-Order dependencies using .SRCINFO files.
+Order package dependencies.
 .RE
 
 .P
 .BR aur-fetch (1)
 .RS 4
-Download objects from an AUR repository.
+Retrieve build files from the AUR.
 .RE
 
 .P
@@ -49,15 +37,15 @@ Filter packages in the Arch Linux repositories.
 .RE
 
 .P
-.BR aur-rpc (1)
-.RS 4
-Send GET requests to aurweb.
-.RE
-
-.P
 .BR aur-search (1)
 .RS 4
 Search for AUR packages.
+.RE
+
+.P
+.BR aur-srcver (1)
+.RS 4
+Update and print package revisions.
 .RE
 
 .P
@@ -69,7 +57,7 @@ Download and build AUR packages automatically
 .P
 .BR aur-vercmp (1)
 .RS 4
-Check packages in a given repository for AUR updates.
+Check packages for AUR updates.
 .RE
 
 .SH EXIT STATUS
@@ -154,28 +142,29 @@ If mismatches occur, consider rebuilding the respective
 packages. Otherwise, recreate the packages with \fIbacman\fR:
 .EX
 
-  $ pacman -Qqm | while read -r b; do bacman "$b"; done
+  $ pacman -Qqm | xargs -L1 bacman
 
 .EE
 Results will be saved to \fIPKGDEST\fR, or to the current directory if
 this variable is not set.
 
 .SH EXAMPLES
-Examples below assume that \fIbash\fR is used as the interactive shell.
+Examples below assume \fIbash\fR as the interactive shell.
 
 Run actions on the dependency tree of an AUR package:
 .EX
 
-  $ aur deps-rpc foobar | while read -r pkg _; do ... done
+  $ aur deps foobar | while read -r pkg; do ... done
 
 .EE
-Build all packages in the \fIpkgbuilds\fR github repository:
+Build all packages in the \fIpkgbuilds\fR github repository: (requires
+\fIpkgbuild-introspection\fR)
 .EX
 
   $ git clone https://www.github.com/Earnestly/pkgbuilds
   $ cd pkgbuilds
   $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \\;
-  $ aur deps-src ./* > queue # Remove unwanted targets
+  $ aur deps -p ./* > queue # Remove unwanted targets
   $ aur build -d custom -a queue
 
 .EE
@@ -189,7 +178,7 @@ in the AUR:
 As above, but for orphaned packages:
 .EX
 
-  $ pacman -Slq custom | xargs aur search -Fr | \\
+  $ pacman -Slq custom | aur rpc -t info | \\
        jq -r '.[].results[] | select(.Maintainer == null)'
 
 .EE
@@ -212,10 +201,10 @@ Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:
   $ aur sync -c plasma-desktop-git
 
 .EE
-Build and update all AUR packages in a selected local repository:
+Update all AUR packages in the \fIcustom\fR repository:
 .EX
 
-  $ aur sync -u
+  $ aur sync -u --repo custom
 
 .EE
 Update packages from the \fIcustom\fR repository that are installed on the host:
@@ -239,13 +228,13 @@ Select a package matching \fIpony\fR and build the result:
 Print packages both in AUR and [community] and compare their versions:
 .EX
 
-  $ aur updates -d community -a
+  $ aur vercmp -d community -a
 
 .EE
 Check foreign packages for AUR updates:
 .EX
 
-  $ expac -Q '%n\\t%v' | aur updates
+  $ pacman -Q | aur vercmp
 
 .EE
 Repository packages can be "made foreign" by temporarily removing the
