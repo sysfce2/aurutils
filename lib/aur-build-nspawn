@@ -7,11 +7,14 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 machine=$(uname -m)
 readonly machine
 
+# default arguments
 directory=/var/lib/aurbuild/$machine
 makechrootpkg_args=(-cu)
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
-mode=build
+
+# default options
+prepare=1 build=1
 
 conf_options() {
     printf '[options]\n'
@@ -43,17 +46,18 @@ trap_exit() {
 }
 
 usage() {
-    printf -- >&2 'usage: %s [-CDMu] -- <makechrootpkg args>' "$argv0"
+    printf -- >&2 'usage: %s [-CDM <path>] [-BP] -- <makechrootpkg args>' "$argv0"
     exit 1
 }
 
-while getopts :C:D:M:u opt; do
+while getopts :BPC:D:M: opt; do
     case $opt in
         C) pacman_conf=$OPTARG  ;;
         D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
-        u) mode=update          ;;
-        *) usage                ;;
+        B) build=0   ;;
+        P) prepare=0 ;;
+        *) usage     ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -66,25 +70,28 @@ fi
 trap 'trap_exit' EXIT
 tmp=$(mktemp -d)
 
-# XXX Duplication between "update" mode and makechrootpkg -u
-case $mode in
-    update)
-        conf_devtools "$pacman_conf" >"$tmp"/pacman.conf
+if ((prepare)); then
+    conf_devtools "$pacman_conf" >"$tmp"/pacman.conf
 
-        if [[ -f $directory/root/.arch-chroot ]]; then
-            # locking is done by systemd-nspawn
-            arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-                        "$directory"/root pacman -Syu --noconfirm
-        else
-            install -d "$directory" -m 755 -v || exit
-            mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-                        "$directory"/root base-devel
-        fi
-        ;;
-    build)
-        PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
-               -r "$directory" "${makechrootpkg_args[@]}"
-        ;;
-esac
+    if [[ -f $directory/root/.arch-chroot ]]; then
+        # locking is done by systemd-nspawn
+        arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root pacman -Syu --noconfirm
+    else
+        install -d "$directory" -m 755 -v || exit
+        mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root base-devel
+    fi
+fi
+
+if ((build)); then
+    # https://git.archlinux.org/devtools.git/commit/archbuild.in?id=eab5aba9
+    if [[ ! -v SOURCE_DATE_EPOCH ]]; then
+        export SOURCE_DATE_EPOCH=$(date +%s)
+    fi
+
+    PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$directory" "${makechrootpkg_args[@]}"
+else
+    printf -- >&2 'container path: %q\n' "$directory"
+    exit 0
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
