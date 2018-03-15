@@ -4,27 +4,36 @@ set -o errexit
 readonly argv0=build-nspawn
 readonly PATH=/bin:/usr/bin
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-
 machine=$(uname -m)
+readonly machine
+
 directory=/var/lib/aurbuild/$machine
 makechrootpkg_args=(-cu)
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 pacman_conf=/usr/share/devtools/pacman-extra.conf
 mode=build
 
-conf_devtools() {
+conf_options() {
     printf '[options]\n'
     pacconf --config="$1" --options --raw
-
-    # https://git.archlinux.org/devtools.git/tree/mkarchroot.in#n54
-    printf '#CacheDir=\n'
 }
 
 conf_repo() {
     while IFS= read -r; do
-        printf '[%s]\n' "$REPLY"
-        pacconf --repo="$REPLY" --raw
+        printf -- '[%s]\n' "$REPLY"
+        pacconf --config="$1" --raw --repo="$REPLY"
     done
+}
+
+conf_devtools() {
+    # print pacman options from devtools
+    conf_options "$1"
+
+    # https://git.archlinux.org/devtools.git/tree/mkarchroot.in#n54
+    printf '#CacheDir=\n'
+
+    # print pacman repos from host
+    pacconf --repo-list | conf_repo '/etc/pacman.conf'
 }
 
 trap_exit() {
@@ -34,17 +43,15 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 -- 'usage: %s [-CDMu] [-d db] -- <args>' "$argv0" >&2
+    printf -- >&2 'usage: %s [-CDMu] -- <makechrootpkg args>' "$argv0"
     exit 1
 }
 
-unset database
-while getopts :C:D:M:d:u opt; do
+while getopts :C:D:M:u opt; do
     case $opt in
         C) pacman_conf=$OPTARG  ;;
         D) directory=$OPTARG    ;;
         M) makepkg_conf=$OPTARG ;;
-        d) database=$OPTARG     ;;
         u) mode=update          ;;
         *) usage                ;;
     esac
@@ -56,17 +63,13 @@ if (($#)); then
     makechrootpkg_args=("$@")
 fi
 
-readonly pacman_conf makepkg_conf directory database prepare
-
 trap 'trap_exit' EXIT
 tmp=$(mktemp -d)
 
 # XXX Duplication between "update" mode and makechrootpkg -u
 case $mode in
     update)
-        { conf_devtools "$pacman_conf"
-          pacconf --repo-list | conf_repo
-        } >"$tmp"/pacman.conf
+        conf_devtools "$pacman_conf" >"$tmp"/pacman.conf
 
         if [[ -f $directory/root/.arch-chroot ]]; then
             # locking is done by systemd-nspawn
@@ -77,11 +80,7 @@ case $mode in
             mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
                         "$directory"/root base-devel
         fi
-
-        if [[ -v database ]]; then
-            pacconf --sysroot="$directory"/root --repo="$database" >/dev/null
-        fi
-	    ;;
+        ;;
     build)
         PKGDEST="${PKGDEST:-$PWD}" makechrootpkg \
                -r "$directory" "${makechrootpkg_args[@]}"
