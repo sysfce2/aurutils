@@ -105,6 +105,13 @@ For example:
 
 .EE
 
+.SY Note:
+For precautions when using wildcards with \fBsudo\fR, see the
+\fIWildcards\fR section in \fBsudoers\fR (5). Whitelisting
+\fI/usr/bin/aur\fR should generally be avoided, as this allows to run
+\fIany\fR \fBaur\fR command as root without prompting.
+.YS
+
 .SH SEE ALSO
 .BR aur (1),
 .BR aur-build-nspawn (1),

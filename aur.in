@@ -13,24 +13,13 @@ if [[ -z $1 ]]; then
 
     printf >&2 -- '\navailable user commands:\n'
 
-    compgen -c aur- | while read -r; do
+    compgen -c aur- | while IFS= read -r; do
         if ! [[ -f $lib_dir/$REPLY ]]; then
             printf -- '%q\n' "${REPLY#aur-}"
         fi
     done | column >&2
 
     exit 1
-fi
-
-# allowed sudo commands
-if [[ -v SUDO_USER ]]; then
-    case $1 in
-        build|build-nspawn)
-            true ;;
-        *)
-            printf >&2 -- '%s: %q is not a sudo command\n' "$argv0" "$1"
-            exit 1 ;;
-    esac
 fi
 
 readonly PATH=$lib_dir:$PATH
