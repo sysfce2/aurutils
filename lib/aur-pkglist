@@ -2,10 +2,11 @@
 # aur-pkglist - print the AUR package list
 set -o pipefail
 readonly argv0=pkglist
-readonly aurweb='https://aur.archlinux.org'
+readonly aur_location='https://aur.archlinux.org'
 readonly cache=${XDG_CACHE_HOME:-$HOME/.cache}/aurutils/$argv0
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+# default options
 delay=300
 pkglist=packages
 update=0
@@ -19,7 +20,7 @@ list_update() {
     if wget -O - -o last_transfer "$1" | gzip -d - > "$2"; then
         extract_date "$2"
     else
-        printf >&2 'warning: failed to retrieve package list\n'
+        printf -- >&2 'warning: failed to retrieve package list\n'
     fi
 }
 
@@ -27,12 +28,12 @@ list_http_date() {
     if wget -S --spider -o last_transfer "$1"; then
         awk -F', ' '/Date:/ {print $2}' last_transfer
     else
-        printf >&2 'warning: failed to retrieve HTTP date\n'
+        printf -- >&2 'warning: failed to retrieve HTTP date\n'
     fi
 }
 
 usage() {
-    printf >&2 'usage: %s: [-bt] [-FP pattern]\n' "$argv0"
+    printf -- >&2 'usage: %s: [-bt] [-FP pattern]\n' "$argv0"
     exit 1
 }
 
@@ -57,7 +58,7 @@ cd "$cache" || exit
 
 if [[ -s $pkglist && -s timestamp ]]; then
     sec_l=$(date -f timestamp '+%s')
-    sec_r=$(list_http_date "$aurweb/$pkglist.gz" | date -f - '+%s')
+    sec_r=$(list_http_date "$aur_location/$pkglist.gz" | date -f - '+%s')
 
     if ((sec_l)) && ((sec_r)) && ((sec_r - sec_l > delay)); then
         update=1
@@ -67,7 +68,7 @@ else
 fi
 
 if ((update)); then
-    list_update "$aurweb/$pkglist.gz" "$pkglist" > timestamp
+    list_update "$aur_location/$pkglist.gz" "$pkglist" > timestamp
 fi
 
 pcregrep "${pcre_opt[@]}" < "$pkglist"
