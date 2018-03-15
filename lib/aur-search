@@ -4,10 +4,11 @@ set -o pipefail
 readonly argv0=search
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+# default options
 format=brief
-sort_key=Name
+query_type=search
 search_by=name-desc
-search_type=search
+sort_key=Name
 
 json_short() {
     local Name Version NumVotes Description
@@ -55,17 +56,17 @@ json_long() {
         read -r FirstSubmitted
         read -r LastModified
     }; do
-        printf 'Name:            %s\n' "$Name"
-        printf 'Base:            %s\n' "$PackageBase"
-        printf 'Version:         %s\n' "$Version"
-        printf 'Description:     %s\n' "$Description"
-        printf 'URL:             %s\n' "$URL"
-        printf 'Votes:           %s\n' "$NumVotes"
-        printf 'Popularity:      %s\n' "$Popularity"
-        printf 'Out Of Date:     %s\n' "$OutOfDate"
-        printf 'Maintainer:      %s\n' "$Maintainer"
-        printf 'First Submitted: %s\n' "$(date -d @"$FirstSubmitted" '+%c')"
-        printf 'Last Modified:   %s\n' "$(date -d @"$LastModified" '+%c')"
+        printf -- 'Name:            %s\n' "$Name"
+        printf -- 'Base:            %s\n' "$PackageBase"
+        printf -- 'Version:         %s\n' "$Version"
+        printf -- 'Description:     %s\n' "$Description"
+        printf -- 'URL:             %s\n' "$URL"
+        printf -- 'Votes:           %s\n' "$NumVotes"
+        printf -- 'Popularity:      %s\n' "$Popularity"
+        printf -- 'Out Of Date:     %s\n' "$OutOfDate"
+        printf -- 'Maintainer:      %s\n' "$Maintainer"
+        printf -- 'First Submitted: %s\n' "$(date -d @"$FirstSubmitted" '+%c')"
+        printf -- 'Last Modified:   %s\n' "$(date -d @"$LastModified" '+%c')"
         printf '\n'
     done
 }
@@ -83,10 +84,10 @@ fi
 
 while getopts :imnrvk: opt; do
     case $opt in
-        i) search_type=info     ;;
-        m) search_type=search
+        i) query_type=info      ;;
+        m) query_type=search
            search_by=maintainer ;;
-        n) search_type=search
+        n) query_type=search
            search_by=name       ;;
         k) sort_key=$OPTARG     ;;
         r) format=json          ;;
@@ -109,6 +110,6 @@ case $format in
 esac
 
 # pipeline
-printf -- '%s\n' "$@" | aur rpc -t "$search_type" -b "$search_by" | parse
+printf -- '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
