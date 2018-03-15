@@ -71,7 +71,7 @@ json_long() {
 }
 
 usage() {
-    printf >&2 'usage: %s: [-imnrv] [-k key] package [package...]\n' "$argv0"
+    printf -- >&2 'usage: %s: [-imnrv] [-k key] package [package...]\n' "$argv0"
     exit 1
 }
 
