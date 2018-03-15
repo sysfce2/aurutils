@@ -33,7 +33,7 @@ tabulate() {
 }
 
 chain() {
-    local num sub
+    local a num sub
 
     aur rpc -t info > json/0 || exit
     num=$(count json/0)
@@ -71,13 +71,6 @@ chain() {
         printf '%s: total requests: %d (out of range)\n' "$argv0" $((++a)) >&2
         exit 34
     fi
-
-    if ! cut -f1,2 tsv/n | tr_ver | tsort; then
-        printf '%s: invalid argument\n' "$argv0" >&2
-        exit 22
-    fi
- 
-    cut -f2 --complement tsv/n | sort -uk 1,1 > pkginfo
 }
 
 trap_exit() {
@@ -91,6 +84,7 @@ usage() {
     exit 1
 }
 
+# XXX move modes, sort_by to aur-deps
 while getopts :at opt; do
     case $opt in
         a) mode=all ;;
@@ -105,10 +99,17 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 if cd "$tmp" && mkdir json tsv; then
-    chain > order
+    chain # tsv/n, pkgname
 else
     exit "$?"
 fi
+
+if ! cut -f1,2 tsv/n | tr_ver | tsort > order; then
+    printf '%s: invalid argument\n' "$argv0" >&2
+    exit 22
+fi
+
+cut -f2 --complement tsv/n | sort -uk 1,1 > pkginfo
 
 case $mode in
     aur) grep -Fxf pkgname order | tac ;;
