@@ -8,11 +8,14 @@ readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 readonly AURDEST_SNAPSHOT=${AURDEST_SNAPSHOT:-$XDG_CACHE_HOME/aurutils/snapshot}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-aurbuild_args=()
+# default arguments
+build_args=()
+fetch_args=()
 makechrootpkg_args=(-cu)
 makechrootpkg_makepkg_args=()
 makepkg_args=(-cs)
 
+# default options
 build=1 chkver=1 download=1 view=1
 chroot=0 list=0 rotate=0 snapshot=0 update=0
 
@@ -61,15 +64,14 @@ db_fill_empty() {
     }'
 }
 
-uniq_by() {
-    awk -v "i=$1" -v "j=$2" '
-        NR == FNR {
+select_package() {
+    awk 'NR == FNR {
             a[$0]; next
         } {
-            if($i in a && !($j in seen)) {
-                print $0; seen[$j]
+            if($1 in a && !($2 in seen)) {
+                print $0; seen[$2]
             }
-        }' "$3" "$4"
+        }' "$@"
 }
 
 trap_exit() {
@@ -97,8 +99,8 @@ fi
 
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
-longopts+=,sign,temp,tar,repo:,root:,upgrades,nhehgvyf,continue,list
-shortopts=B:C:D:M:AcflLnprstTu
+longopts+=,sign,temp,tar,repo:,root:,upgrades,nhehgvyf,continue,list,git
+shortopts=B:C:D:M:AcfglLnprstTu
 
 if optstring=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$optstring"
@@ -114,22 +116,22 @@ while true; do
     case "$1" in
         -c|--chroot)
             chroot=1
-            aurbuild_args+=(-c)
+            build_args+=(-c)
             shift ;;
         -f|--force)
-            aurbuild_args+=(-f)
+            build_args+=(-f)
             shift ;;
         -s|--sign)
-            aurbuild_args+=(-sv)
+            build_args+=(-sv)
             shift ;;
         -C)
-            aurbuild_args+=(-C "$2")
+            build_args+=(-C "$2")
             shift 2 ;;
         -D|--directory)
-            aurbuild_args+=(-D "$2")
+            build_args+=(-D "$2")
             shift 2 ;;
         -M)
-            aurbuild_args+=(-M "$2")
+            build_args+=(-M "$2")
             shift 2 ;;
         -B|--bind)
             makechrootpkg_args+=(-d "$2")
@@ -155,6 +157,9 @@ while true; do
             shift ;;
         -p|--print)
             build=0
+            shift ;;
+        -g|--git)
+            snapshot=0
             shift ;;
         -t|--tar)
             snapshot=1
@@ -229,7 +234,7 @@ if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
 fi
 
 if ((${#pkg_i[@]})); then
-    printf -- 'warning: ignoring %s package\n' "${pkg_i[@]}" >&2
+    printf -- >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
 fi
 
 mkdir -p     "$AURDEST" "$AURDEST_SNAPSHOT"
@@ -273,26 +278,24 @@ fi
 
 # XXX improve this?
 if cut -f1 pkginfo_0 | lib32 | grep -Fxvf filter > queue_0; then
-    uniq_by 1 2 queue_0 pkginfo_0 > pkginfo_1
+    select_package queue_0 pkginfo_0 > pkginfo_1
 else
     plain "there is nothing to do"
     exit
 fi
 
-cut -f2 "$tmp"/pkginfo_1 >"$tmp"/queue
+cut -f2 "$tmp"/pkginfo_1 > "$tmp"/queue
 
 if ((snapshot)); then
     cd_safe "$AURDEST_SNAPSHOT"
-
-    if ((download)); then
-        cut -f2 "$tmp"/pkginfo_1 | xargs aur fetch -L "$tmp"/patch -t
-    fi
+    fetch_args=(-L "$tmp"/patch -t)
 else
     cd_safe "$AURDEST"
+    fetch_args=(-L "$tmp"/patch -g)
+fi
 
-    if ((download)); then
-        cut -f2 "$tmp"/pkginfo_1 | xargs aur fetch -L "$tmp"/patch -g
-    fi
+if ((download)); then
+    cut -f2 "$tmp"/pkginfo_1 | xargs aur fetch "${fetch_args[@]}"
 fi
 
 if ((view)); then
@@ -301,13 +304,13 @@ if ((view)); then
 fi
 
 if ((build)); then
-    aurbuild_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
+    build_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
 
     if ((chroot)); then
-        aur build "${aurbuild_args[@]}" -- "${makechrootpkg_args[@]}" \
+        aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
             -- "${makechrootpkg_makepkg_args[@]}"
     else
-        aur build "${aurbuild_args[@]}" -- "${makepkg_args[@]}"
+        aur build "${build_args[@]}" -- "${makepkg_args[@]}"
     fi
 else
     xargs -a "$tmp"/queue printf -- "$(pwd -P)/%s\\n"
