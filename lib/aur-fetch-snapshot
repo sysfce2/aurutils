@@ -6,12 +6,9 @@ readonly argv0=fetch-snapshot
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# XXX default to outputting logs to /dev/stdout
-logdir=/dev/null
-
 dl_stdin() {
     if type -P aria2c >/dev/null; then
-        aria2c --stderr=true -i -
+        aria2c --no-conf=true --stderr=true -i -
     else
         wget -i -
     fi
@@ -19,7 +16,6 @@ dl_stdin() {
 
 tar_no_mode_diff() {
     if [[ -d $2/${1%%.tar*} ]]; then
-        # tar --compare returns 1 on any mismatch
         LC_MESSAGES=C tar -df "$1" -C "$2" | grep -Evq '(Mode|Uid|Gid)'
     else
         return 1
@@ -27,7 +23,7 @@ tar_no_mode_diff() {
 }
 
 usage() {
-    printf -- 'usage: %s [-L logdir]\n' "$argv0" >&2
+    printf -- >&2 'usage: %s [-L log_dir]\n' "$argv0"
     exit 1
 }
 
@@ -37,14 +33,26 @@ trap_exit() {
     fi
 }
 
+unset log_dir
 while getopts :L: opt; do
     case $opt in
-        L) logdir=$OPTARG ;;
+        L) log_dir=$OPTARG ;;
         *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
+
+if [[ -v log_dir ]] && [[ ! -d $log_dir ]]; then
+    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$log_dir"
+    exit 20
+fi
+
+if [[ -v log_dir ]]; then
+    merge_log() { tee -a "$log_dir/$1".diff | diffstat -CKq -f3; }
+else
+    merge_log() { tee; }
+fi
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 trap trap_exit EXIT
@@ -55,11 +63,10 @@ dl_stdin
 for a in ./*.tar.gz; do
     tar -kxf "$a"
 
-    if [[ -d $logdir ]] && tar_no_mode_diff "$a" "$startdir"; then
+    if tar_no_mode_diff "$a" "$startdir"; then
         a=${a%%.tar.gz}
 
-        diff -ur "$startdir/$a" "$a" | \
-            tee -a "$logdir/$a".diff | diffstat -CKq -f3
+        diff -ur "$startdir/$a" "$a" | merge_log "$a"
     fi
     cp -af "${a%%.tar.gz}" "$startdir"
 done
