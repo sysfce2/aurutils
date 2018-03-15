@@ -44,11 +44,12 @@ find_pkgbuild_path "${arg_path[@]}" | while read -r; do
     if makepkg --skipinteg --noprepare -od >"$makepkg_log" 2>&1; then
         get_pkgbuild_info "$REPLY"
     else
+        makepkg_exit=$?
         printf >&2 '%s: error on package %s\n' "$argv0" "$REPLY"
         printf >&2 '8<----\n'
 
-        # XXX exit code
-        cat "$makepkg_log"; break
+        cat  "$makepkg_log"
+        exit "$makepkg_exit"
     fi
 done
 
