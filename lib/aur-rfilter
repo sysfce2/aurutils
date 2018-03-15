@@ -4,71 +4,58 @@ readonly argv0=rfilter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
-declare -A pkgset
-
 provides() {
     expac '%n %R %S' -Sv -- "$@" | awk '{
-        for(i = 2; i <= NF; ++i) {
-            printf("%s %s\n", $1, $i) | "sort -u"
-        }
+        for(i = 2; i <= NF; ++i)
+            printf("%s %s\n", $1, $i)
     }'
 }
-readonly -f provides
 
 usage() {
-    printf 'usage: %s [-d repo]\n' "$argv0" >&2
+    printf -- >&2 'usage: %s [-d repo]\n' "$argv0"
     exit 1
 }
-readonly -f usage
 
-unset repo siftargs user_repo
+unset user_repo
 while getopts d: opt; do
     case $opt in
         d) user_repo+=("$OPTARG") ;;
-        *) usage ;;
+        *) usage                  ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if ! [[ -v user_repo ]]; then
-    user_repo=("${arch_repo[@]}")
+if [[ -v user_repo ]]; then
+    for r in "${user_repo[@]}"; do siftargs+=("--repo=$r"); done
+else
+    for r in "${arch_repo[@]}"; do siftargs+=("--repo=$r"); done
 fi
 
-mapfile -t all < /dev/stdin
+declare -A pkgset
 
-for p in "${all[@]}"; do
-    siftargs+=("--satisfies=$p")
+while IFS= read -r; do
     pkgset[$p]=1
+
+    # prepare pacsift command line
+    siftargs+=("--satisfies=$REPLY")
 done
 
-if [[ ${pkgset[*]} ]]; then
-    for p in "${user_repo[@]}"; do
-        siftargs+=("--repo=$p")
-    done
-else
-    printf '%s: no data available\n' "$argv0" >&2
-    exit 61
-fi
-
-# https://github.com/andrewgregory/pacutils/issues/3
-mapfile -t query < <(pacsift --sync --exact "${siftargs[@]}" <&-)
-
-if [[ ${query[*]} ]]; then
-    while read -r pkg virt; do
+if [[ -n ${pkgset[*]} ]]; then
+    while read -r pkg vrt; do
         pkg=${pkg#*/}
 
         if [[ ${pkgset[$pkg]} ]]; then
             repo+=("$pkg")
         fi
 
-        if [[ ${pkgset[$virt]} ]]; then
-            printf 'virtual dependency %s provided by %s\n' "$virt" "$pkg" >&2
-            repo+=("$virt")
+        if [[ ${pkgset[$vrt]} ]]; then
+            printf -- >&2 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
+            repo+=("$vrt")
         fi
-    done < <(provides "${query[@]}")
-fi
+    done < <(pacsift --sync --exact "${siftargs[@]}" <&- | provides - | sort -u)
 
-grep -Fxvf <(printf '%s\n' "${repo[@]}") <(printf '%s\n' "${all[@]}")
+    printf -- '%s\n' "${repo[@]}"
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
