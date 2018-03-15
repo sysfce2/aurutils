@@ -35,7 +35,7 @@ fi
 declare -A pkgset
 
 while IFS= read -r; do
-    pkgset[$p]=1
+    pkgset[$REPLY]=1
 
     # prepare pacsift command line
     siftargs+=("--satisfies=$REPLY")
