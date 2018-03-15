@@ -4,19 +4,21 @@ set -o errexit
 readonly argv0=fetch-git
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-log_dir=/dev/null
-
-merge_upstream() {
+merge() {
     git fetch -v
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
-        if [[ -d $log_dir ]]; then
-            git --no-pager log --patch --stat '..@{upstream}' >> "$log_dir/$1.patch"
-        fi
+        git --no-pager log --patch --stat '..@{upstream}'
 
+        # reset index and working tree
         git reset --hard HEAD
         git merge
     fi
+}
+
+merge_across_fs() {
+    # avoid issues with filesystem boundaries (#274)
+    GIT_DIR="$1"/.git GIT_WORK_TREE="$1" merge_upstream
 }
 
 usage() {
@@ -24,6 +26,7 @@ usage() {
     exit 1
 }
 
+unset log_dir
 while getopts :L: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
@@ -33,13 +36,23 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
+if [[ -v log_dir ]] && [[ ! -d $log_dir ]]; then
+    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$log_dir"
+    exit 20
+fi
+
+if [[ -v log_dir ]]; then
+    merge_log() { merge_across_fs "$1" >>"$log_dir/$1".patch; }
+else
+    merge_log() { merge_across_fs "$1"; }
+fi
+
 while IFS= read -r uri; do
     pkg=${uri##*/}   # strip path
     pkg=${pkg%%.git} # strip .git suffix
 
     if [[ -d $pkg/.git ]]; then
-        # Avoid issues file system boundaries (#274)
-        GIT_DIR="$pkg/.git" GIT_WORK_TREE="$pkg" merge_upstream "$pkg"
+        merge_log "$pkg"
     else
         git clone "$uri"
     fi
