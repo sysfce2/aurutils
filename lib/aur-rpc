@@ -35,7 +35,7 @@ dl_stdin() {
             --console-log-level=error    \
             --download-result=hide       \
             --show-console-readout=false \
-            --stderr=true || return
+            --stderr=true --no-conf=true || return
 
         cat_ifne "$tmp"/aria2/*
     else
