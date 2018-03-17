@@ -237,13 +237,21 @@ if ((${#pkg_i[@]})); then
     printf -- >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
 fi
 
-mkdir -p     "$AURDEST" "$AURDEST_SNAPSHOT"
-chmod -c 700 "$AURDEST" "$AURDEST_SNAPSHOT"
+if ((snapshot)); then
+    aur_workdir=$AURDEST_SNAPSHOT
+    fetch_args=(-L "$tmp"/patch -t)
+else
+    aur_workdir=$AURDEST
+    fetch_args=(-L "$tmp"/patch -g)
+fi
+
+mkdir -p     "$aur_workdir"
+chmod -c 700 "$aur_workdir"
 
 cd_safe "$tmp"
 mkdir patch
 
-bsdcat "$root/$repo".db | db_namever | db_fill_empty  > db_info
+bsdcat "$root/$repo".db | db_namever | db_fill_empty >db_info
 
 if ((list)); then
     column -JN pkgname,pkgver -n "$repo" db_info
@@ -255,13 +263,13 @@ fi
   fi
 
   if ((update)); then
-      aur vercmp < db_info | cut -d: -f1
+      aur vercmp <db_info | cut -d: -f1
   fi
 } >argv
 
 if [[ -s argv ]]; then
     msg "Resolving dependencies..."
-    aur deps-rpc -t < argv > pkginfo
+    aur deps-rpc -t <argv >pkginfo
 else
     plain "there is nothing to do"
     exit
@@ -276,21 +284,14 @@ fi
   fi
 } >filter
 
-# XXX improve this?
-if cut -f1 pkginfo | lib32 | grep -Fxvf filter > queue_0; then
-    select_pkgbase queue_0 pkginfo | cut -f2 > queue
+if cut -f1 pkginfo | lib32 | grep -Fxvf filter >queue_0; then
+    select_pkgbase queue_0 pkginfo | cut -f2 >queue
 else
     plain "there is nothing to do"
     exit
 fi
 
-if ((snapshot)); then
-    cd_safe "$AURDEST_SNAPSHOT"
-    fetch_args=(-L "$tmp"/patch -t)
-else
-    cd_safe "$AURDEST"
-    fetch_args=(-L "$tmp"/patch -g)
-fi
+cd_safe "$aur_workdir"
 
 if ((download)); then
     xargs -a "$tmp"/queue aur fetch "${fetch_args[@]}"
