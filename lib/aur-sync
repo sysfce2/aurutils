@@ -64,7 +64,7 @@ db_fill_empty() {
     }'
 }
 
-select_package() {
+select_pkgbase() {
     awk 'NR == FNR {
             a[$0]; next
         } {
@@ -261,7 +261,7 @@ fi
 
 if [[ -s argv ]]; then
     msg "Resolving dependencies..."
-    aur deps-rpc -t < argv > pkginfo_0
+    aur deps-rpc -t < argv > pkginfo
 else
     plain "there is nothing to do"
     exit
@@ -272,19 +272,17 @@ fi
   fi
 
   if ((chkver)); then
-      cut -f1,3 pkginfo_0 | aur vercmp -p db_info -c
+      cut -f1,3 pkginfo | aur vercmp -p db_info -c
   fi
 } >filter
 
 # XXX improve this?
-if cut -f1 pkginfo_0 | lib32 | grep -Fxvf filter > queue_0; then
-    select_package queue_0 pkginfo_0 > pkginfo_1
+if cut -f1 pkginfo | lib32 | grep -Fxvf filter > queue_0; then
+    select_pkgbase queue_0 pkginfo | cut -f2 > queue
 else
     plain "there is nothing to do"
     exit
 fi
-
-cut -f2 "$tmp"/pkginfo_1 > "$tmp"/queue
 
 if ((snapshot)); then
     cd_safe "$AURDEST_SNAPSHOT"
@@ -295,7 +293,7 @@ else
 fi
 
 if ((download)); then
-    cut -f2 "$tmp"/pkginfo_1 | xargs aur fetch "${fetch_args[@]}"
+    xargs -a "$tmp"/queue aur fetch "${fetch_args[@]}"
 fi
 
 if ((view)); then
