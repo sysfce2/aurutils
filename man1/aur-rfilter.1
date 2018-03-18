@@ -9,15 +9,15 @@ aur-rfilter \- filter packages in the Arch Linux repositories
 .YS
 
 .SH DESCRIPTION
-\fBaur-rfilter\fR checks if \fIpkgname\fR (provided on stdin) is in the
-official Arch Linux repositories, and print it to stdout if
+\fBaur\-rfilter\fR checks if \fIpkgname\fR (provided on \fIstdin\fR) is
+in the official Arch Linux repositories, and print it to \fIstdout\fR if
 not. Virtual packages, when found, are solved and printed to stderr.
 
 .SH OPTIONS
 .B \-d
 .RS
 Check a given repository instead of those from Arch Linux. Multiple
-repositories can be specified by repeating \fI-d\fR.
+repositories can be specified by repeating \fB\-d\fR.
 .RE
 
 .SH SEE ALSO

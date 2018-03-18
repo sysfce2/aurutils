@@ -16,10 +16,10 @@ aur-build-nspawn \- build packages to a local repository inside a chroot
 
 .SH DESCRIPTION
 Build packages in an nspawn container, adding the results to a local
-repository. See also \fIaur-build\fR(1).
+repository. See also \fBaur\-build\fR(1).
 
 .SH OPTIONS
-All arguments after -- are passed to \fImakechrootpkg\fR.
+All arguments after \-\- are passed to \fBmakechrootpkg\fR.
 
 .B \-C
 .RS
@@ -30,20 +30,20 @@ The \fIpacman.conf\fR file to be used in the container. Defaults to
 .B \-D
 .RS
 The base directory for containers. This directory usually contains a
-\fI/root\fR subdirectory that serves as template for user containers
-(named after \fI$SUDO_USER\fR, or \fI/copy\fR if unset).
+\fB/root\fR subdirectory that serves as template for user containers
+(named after \fI$SUDO_USER\fR, or \fB/copy\fR if unset).
 .RE
 
 .B \-M
 .RS
 The makepkg.conf file to be used in the container. Defaults to
-\fImakepkg-<machine>.conf\fR from devtools.
+\fImakepkg\-<machine>.conf\fR from devtools.
 .RE
 
 .B \-d
 .RS
 Check if the specified repository is configured in the /root container.
-Only effective for \fI-u\fR.
+Only effective for \fB-u\fR.
 .RE
 
 .B \-u
@@ -52,35 +52,35 @@ Update or create the /root copy of the container; do not build a package.
 .RE
 
 .SH ENVIRONMENT
-Packages are placed in the directory specified in \fIPKGDEST\fR. If not
+Packages are placed in the directory specified in \fBPKGDEST\fR. If not
 set, the current directory (\fI$PWD\fR) is used. See also
-\fImakepkg.conf\fR(5).
+\fBmakepkg.conf\fR(5).
 
 .SH NOTES
 .SS Building with \fBmakechrootpkg\fR
-Changes to the pacman database are \fBnot\fR propagated from the
+Changes to the pacman database are \fInot\fR propagated from the
 container to the local system. Packages must be installed and updated
-separately, typically through \fIpacman -Syu <package_name>\fR.
+separately, typically through \fBpacman \-Syu \fIpackage_name\fR.
 
 Package conflicts inside the container must be solved manually, as
-\fBmakechrootpkg\fR uses \fImakepkg --confirm -s\fR internally. For
-example, to replace \fBgcc\fR with \fBgcc-multilib\fR, run \fIarch-nspawn
-/var/lib/aurbuild/root pacman -S gcc-multilib\fR as root.
+\fBmakechrootpkg\fR uses \fBmakepkg \-\-confirm \-s\fR internally. For
+example, to replace \fIgcc\fR with \fIgcc-multilib\fR, run \fBarch\-nspawn
+/var/lib/aurbuild/root pacman \-S gcc\-multilib\fR as root.
 
 Signature verification requires that \fBgpg2\fR(1) configuration is
 stored in \fI~/.gnupg\fR. See Github issue #151 for details.
 
 .SS Building for a different architecture
 To build packages for a different architecture, prepend \fBsetarch
-<arch>\fR to the aurbuild command line. The target architecture must
-both be supported by the current system (run \fIsetarch --list\fR for an
+\fIarch\fR to the aurbuild command line. The target architecture must
+both be supported by the current system (run \fBsetarch \-\-list\fR for an
 approximation) and have a respective \fImakepkg.conf\fR file available
 in \fI/usr/share/devtools\fR (such as
-\fI/usr/share/devtools/makepkg-i686.conf\fR for \fIi686\fR).
+\fI/usr/share/devtools/makepkg\-i686.conf\fR for \fIi686\fR).
 
 .SH SEE ALSO
 .BR aur (1),
-.BR aur-build (1),
+.BR aur\-build (1),
 .BR pacconf (1),
 .BR pacman (1),
 .BR makepkg.conf (5),

@@ -7,55 +7,55 @@ aur \- helper tool for the arch user repository
 The below gives a short overview; see the respective documentation for
 details.
 .P
-.BR aur-build (1)
+.BR aur\-build (1)
 .RS 4
 Build packages to a local repository.
 .RE
 
 .P
-.BR aur-deps (1)
+.BR aur\-deps (1)
 .RS 4
 Order package dependencies.
 .RE
 
 .P
-.BR aur-fetch (1)
+.BR aur\-fetch (1)
 .RS 4
 Retrieve build files from the AUR.
 .RE
 
 .P
-.BR aur-pkglist (1)
+.BR aur\-pkglist (1)
 .RS 4
 Print the AUR package list.
 .RE
 
 .P
-.BR aur-rfilter (1)
+.BR aur\-rfilter (1)
 .RS 4
 Filter packages in the Arch Linux repositories.
 .RE
 
 .P
-.BR aur-search (1)
+.BR aur\-search (1)
 .RS 4
 Search for AUR packages.
 .RE
 
 .P
-.BR aur-srcver (1)
+.BR aur\-srcver (1)
 .RS 4
 Update and print package revisions.
 .RE
 
 .P
-.BR aur-sync (1)
+.BR aur\-sync (1)
 .RS 4
 Download and build AUR packages automatically
 .RE
 
 .P
-.BR aur-vercmp (1)
+.BR aur\-vercmp (1)
 .RS 4
 Check packages for AUR updates.
 .RE
@@ -92,7 +92,7 @@ Include the configuration in \fI/etc/pacman.conf\fR:
   Include = /etc/pacman.d/custom
 
 .EE
-Add \fIInclude \fRto the \fBend \fRof pacman.conf, where possible.
+Add \fBInclude\fR to the \fIend\fR of pacman.conf, where possible.
 .P
 Create the repository root and database:
 .EX
@@ -115,7 +115,7 @@ Synchronize pacman:
 
 .EE
 .SY Note:
-It is recommended to use a pacman cache directory (\fICacheDir\fR) as
+It is recommended to use a pacman cache directory (\fBCacheDir\fR) as
 the package pool. This avoids checksum mismatches between built
 packages and any cached versions.
 .YS
@@ -139,17 +139,17 @@ and the local filesystem:
 
 .EE
 If mismatches occur, consider rebuilding the respective
-packages. Otherwise, recreate the packages with \fIbacman\fR:
+packages. Otherwise, recreate the packages with \fBbacman\fR:
 .EX
 
   $ pacman -Qqm | xargs -L1 bacman
 
 .EE
-Results will be saved to \fIPKGDEST\fR, or to the current directory if
+Results will be saved to \fBPKGDEST\fR, or to the current directory if
 this variable is not set.
 
 .SH EXAMPLES
-Examples below assume \fIbash\fR as the interactive shell.
+Examples below assume \fBbash\fR as the interactive shell.
 
 Run actions on the dependency tree of an AUR package:
 .EX
@@ -249,7 +249,7 @@ For example, create the following script in
  pacman --config=/usr/share/devtools/pacman-extra.conf "$@"
 
 .EE
-This script can then be propagated through the \fIPACMAN\fR variable
+This script can then be propagated through the \fBPACMAN\fR variable
 for programs supporting it.
 
 .SH AUTHORS

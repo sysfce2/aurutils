@@ -10,9 +10,9 @@ aur-pkglist \- print the AUR packagelist
 .YS
 
 .SH DESCRIPTION
-\fBaur-pkglist\fR prints the list of `pkgname`s that are available in the
+\fBaur\-pkglist\fR prints the list of \fIpkgname\fRs that are available in the
 AUR to standard output. Optionally a pattern can be specified that is
-matched with \fIpcregrep\fR.
+matched with \fBpcregrep\fR.
 
 This list is available at:
 .UR https://aur.archlinux.org/packages.gz
@@ -43,15 +43,15 @@ Interpret the given pattern as a Perl-compatible regular expression
 .RE
 
 .SH NOTES
-To avoid retrieving the package list on every query, \fIaur-pkglist\fR uses a
+To avoid retrieving the package list on every query, \fBaur\-pkglist\fR uses a
 caching logic which stores the list together with its timestamp in
-\fI$XDG_CACHE_HOME/aur-pkglist\fR. New lists are generated every 5 minutes,
-thus setting a lower interval with \fI-t\fR yields no benefit. 
+\fI$XDG_CACHE_HOME/aur\-pkglist\fR. New lists are generated every 5 minutes,
+thus setting a lower interval with \fB\-t\fR yields no benefit.
 
 See also:
 
 .UR https://lists.archlinux.org/pipermail/aur-dev/2016-May/004036.html
-[aur-dev] Making the package list more useful
+[aur\-dev] Making the package list more useful
 .UE
 
 .SH SEE ALSO
