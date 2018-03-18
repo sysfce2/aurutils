@@ -1,11 +1,10 @@
 .TH AUR-RFILTER 1 2017-10-04 AURUTILS
 .SH NAME
-aur-rfilter \- filter packages in the Arch Linux repositories
+aur\-rfilter \- filter packages in the Arch Linux repositories
 
 .SH SYNOPSIS
-.SY aur
-.B rfilter
-.OP -d database
+.SY "aur rfilter"
+.OP \-d database
 .YS
 
 .SH DESCRIPTION
@@ -14,7 +13,7 @@ in the official Arch Linux repositories, and print it to \fIstdout\fR if
 not. Virtual packages, when found, are solved and printed to stderr.
 
 .SH OPTIONS
-.B \-d
+.BI "\-d " database
 .RS
 Check a given repository instead of those from Arch Linux. Multiple
 repositories can be specified by repeating \fB\-d\fR.

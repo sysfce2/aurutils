@@ -3,9 +3,8 @@
 aur\-build \- build packages to a local repository
 
 .SH SYNOPSIS
-.SY aur
-.B build
-.I \-d database
+.SY "aur build"
+.BI "\-d " database
 .OP \-cfNRsv
 .OP \-a queue
 .OP \-r root
@@ -24,7 +23,7 @@ directory, and described in a text file which is taken as argument.
 All arguments after \-\- are passed to \fBmakepkg\fR, or
 \fBaur\-build\-nspawn\fR when \fB\-c\fR is specified.
 
-.B \-a
+.BI "\-a " queue
 .RS
 A text file with directories containing a PKGBUILD. If none is
 specified, the current directory is assumed.
@@ -35,7 +34,7 @@ specified, the current directory is assumed.
 Build packages with \fBaurbuild_chroot\fR(1).
 .RE
 
-.B \-d
+.BI "\-d " database
 .RS
 The name of the pacman database.
 .RE
@@ -52,7 +51,7 @@ Continue the build process if a package with the same name is found
 Do not sync the local repository after building.
 .RE
 
-.B \-r
+.BI "\-r " root
 .RS
 The root for the repository. The \fIroot\fR is the location for the
 pacman database (\fIfoo.db\fR), built packages, and secondary files such

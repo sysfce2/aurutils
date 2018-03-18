@@ -1,17 +1,16 @@
 .TH AUR-BUILD-NSPAWN 1 2018-02-01 AURUTILS
 .SH NAME
-aur-build-nspawn \- build packages to a local repository inside a chroot
+aur\-build\-nspawn \- build packages to a local repository inside a chroot
 
 .SH SYNOPSIS
-.SY aur
-.B build-nspawn
+.SY "aur build\-nspawn"
 .OP \-C pacman_conf
 .OP \-D directory
 .OP \-M makepkg_conf
 .OP \-d database
 .OP \-u
 .OP \--
-.OP "makechrootpkg args"
+[\fImakechrootpkg args\fR]
 .YS
 
 .SH DESCRIPTION
@@ -21,26 +20,26 @@ repository. See also \fBaur\-build\fR(1).
 .SH OPTIONS
 All arguments after \-\- are passed to \fBmakechrootpkg\fR.
 
-.B \-C
+.BI "\-C " pacman_conf
 .RS
 The \fIpacman.conf\fR file to be used in the container. Defaults to
 \fIpacman-extra.conf\fR from devtools.
 .RE
 
-.B \-D
+.BI "\-D " directory
 .RS
 The base directory for containers. This directory usually contains a
 \fB/root\fR subdirectory that serves as template for user containers
 (named after \fI$SUDO_USER\fR, or \fB/copy\fR if unset).
 .RE
 
-.B \-M
+.BI "\-M " makepkg_conf
 .RS
 The makepkg.conf file to be used in the container. Defaults to
 \fImakepkg\-<machine>.conf\fR from devtools.
 .RE
 
-.B \-d
+.BI "\-d " database
 .RS
 Check if the specified repository is configured in the /root container.
 Only effective for \fB-u\fR.
