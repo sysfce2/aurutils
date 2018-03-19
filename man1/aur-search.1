@@ -1,18 +1,16 @@
 .TH AUR-SEARCH 1 2018-02-01 AURUTILS
 .SH NAME
-aur-search \- search for AUR package
+aur\-search \- search for AUR package
 
 .SH SYNOPSIS
-.SY aur
-.B search
+.SY "aur search"
 .OP \-imnv
 .OP \-k key
-.I package
-.OP package...
+.IR package ...
 .YS
 
 .SH DESCRIPTION
-\fBaur-search\fR searches the AUR by multiple strings of packages. The
+\fBaur\-search\fR searches the AUR by multiple strings of packages. The
 union of all results is returned. By default, searches are performed
 by name and description using the \fIsearchby\fR interface, and
 displayed in a brief format.
@@ -39,7 +37,7 @@ Search by maintainer.
 Search by package name.
 .RE
 
-.B \-k
+.BI "\-k " key
 .RS
 Sort results via a key, defaulting to \fIName\fR.
 
@@ -52,7 +50,7 @@ Possible choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
 
 .SH SEE ALSO
 .BR aur (1),
-.BR aur-rpc (1),
+.BR aur\-rpc (1),
 .BR jq (1)
 
 .SH AUTHORS

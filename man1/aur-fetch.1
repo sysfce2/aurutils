@@ -1,22 +1,21 @@
 .TH AUR-FETCH 1 2018-02-14 AURUTILS
 .SH NAME
-aur-fetch \- fetches packages from a location
+aur\-fetch \- fetches packages from a location
 
 .SH SYNOPSIS
-.SY aur
-.B fetch
-.OP -L log_dir
-.OP -t
-.OP -g
+.SY "aur fetch"
+.OP \-L log_dir
+.OP \-t
+.OP \-g
 .YS
 
 .SH DESCRIPTION
-\fBaur-fetch\fR accepts URIs to packages from stdin, and attempts to
+\fBaur\-fetch\fR accepts URIs to packages from stdin, and attempts to
 download them. It's capable of handling \fItar\fR archives and \fIgit\fR
 repositories.
 
 .SH OPTIONS
-.B \-L
+.BI "\-L " log_dir
 .RS
 The location of where to store the diffs of previously unpacked
 archives.
@@ -24,12 +23,12 @@ archives.
 
 .B \-t
 .RS
-Downloads the package as a \fItar\fR archive with \fIaur-fetch-snapshot\fR.
+Downloads the package as a \fItar\fR archive with \fBaur\-fetch\-snapshot\fR.
 .RE
 
 .B \-g
 .RS
-Downloads the package as a \fIgit\fR repository with \fIaur-fetch-git\fR.
+Downloads the package as a \fIgit\fR repository with \fBaur\-fetch\-git\fR.
 .RE
 
 .SH SEE ALSO

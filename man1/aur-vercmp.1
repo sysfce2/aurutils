@@ -1,10 +1,9 @@
 .TH AUR-VERCMP 1 2018-02-01 AURUTILS
 .SH NAME
-aur-vercmp \- check packages for AUR updates
+aur\-vercmp \- check packages for AUR updates
 
 .SH SYNOPSIS
-.SY aur
-.B vercmp
+.SY "aur vercmp"
 .OP \-aclq
 .OP \-d repository
 .OP \-r root
@@ -12,7 +11,7 @@ aur-vercmp \- check packages for AUR updates
 .SH OPTIONS
 .B \-a
 .RS
-If \fI-c\fR is \fBnot\fR specified, this option also shows packages with
+If \fB-c\fR is \fInot\fR specified, this option also shows packages with
 older or the same version in the AUR. If specified twice, packages that
 are not available in AUR are also shown.
 .RE
@@ -22,14 +21,14 @@ are not available in AUR are also shown.
 Takes packages and their versions from stdin (\fIpkgname\fR as the first
 field, \fIpkgver\fR as the second, both separated by tabs), printing
 packages with equal or newer versions in a repository specified with
-\fI\-d\fR to stdout. If this argument or \fI\-d\fR is \fBnot\fR
+\fB\-d\fR to stdout. If this argument or \fB\-d\fR is \fInot\fR
 specified, compare packages in the repository with their respective
 versions in the AUR, and print updates to stdout.
 .RE
 
 .B \-d
 .RS
-The name of a pacman repository. If \fBnot\fR specified, packages and their
+The name of a pacman repository. If \fInot\fR specified, packages and their
 versions are taken from stdin (tab-separated).
 .RE
 
@@ -45,12 +44,12 @@ For all comparisons, show only package names.
 
 .B \-r
 .RS
-Path for the repository root. Used in conjuction with \fI\-c\fR.
+Path for the repository root. Used in conjuction with \fB\-c\fR.
 .RE
 
 .SH SEE ALSO
 .BR aur (1),
-.BR aur-rpc (1),
+.BR aur\-rpc (1),
 .BR jq (1),
 .BR pacman (1),
 .BR vercmp (1)

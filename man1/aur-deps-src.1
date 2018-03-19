@@ -1,20 +1,18 @@
 .TH AUR-DEPS-SRC 1 2018-02-01 AURUTILS
 .SH NAME
-aur-deps-src \- order dependencies using .SRCINFO files
+aur\-deps\-src \- order dependencies using .SRCINFO files
 
 .SH SYNOPSIS
-.SY aur
-.B deps-src
-.OP pkgbase
-.OP pkgbase...
+.SY "aur deps\-src"
+[\fIpkgbase\fR...]
 .YS
 
 .SH DESCRIPTION
-\fBaur-deps-src\fR takes the names of packages and orders the dependency chains
+\fBaur\-deps\-src\fR takes the names of packages and orders the dependency chains
 using tsort.
 
 It is assumed that source directories are already available, and that
-\fIaur-deps-src\fR is used in the same directory as those source directories.
+\fBaur\-deps\-src\fR is used in the same directory as those source directories.
 
 .SH SEE ALSO
 .BR aur (1),
