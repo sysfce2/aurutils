@@ -31,12 +31,8 @@ cat_ifne() {
 
 dl_stdin() {
     if type -P aria2c >/dev/null; then
-        aria2c -d "$tmp"/aria2 -i -      \
-            --console-log-level=error    \
-            --download-result=hide       \
-            --show-console-readout=false \
-            --stderr=true --no-conf=true || return
-
+        aria2c -d "$tmp"/aria2 -i - --download-result=hide --no-conf=true --stderr=true \
+            --console-log-level=error --show-console-readout=false || return
         cat_ifne "$tmp"/aria2/*
     else
         wget --quiet -i - -O -
