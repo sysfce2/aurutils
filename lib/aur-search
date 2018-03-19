@@ -5,7 +5,6 @@ readonly argv0=search
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-format=brief
 query_type=search
 search_by=name-desc
 sort_key=Name
@@ -28,6 +27,7 @@ json_short() {
     done
 }
 
+# XXX Add additional info fields: make/check/depends, license, keyword (#207)
 json_long() {
     local Name PackageBase Version Description URL NumVotes Popularity
     local OutOfDate Maintainer FirstSubmitted LastModified
@@ -82,16 +82,17 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-while getopts :imnrvk: opt; do
+unset format
+while getopts :isdmnqvk: opt; do
     case $opt in
         i) query_type=info      ;;
-        m) query_type=search
-           search_by=maintainer ;;
-        n) query_type=search
-           search_by=name       ;;
+        s) query_type=search    ;;
+        d) search_by=name-desc  ;;
+        m) search_by=maintainer ;;
+        n) search_by=name       ;;
+        q) format=short         ;;
+        v) format=long          ;;
         k) sort_key=$OPTARG     ;;
-        r) format=json          ;;
-        v) format=verbose       ;;
         *) usage                ;;
     esac
 done
@@ -102,11 +103,16 @@ if ((!$#)); then
     usage
 fi
 
+# set format depending on query type (#319)
+case $query_type in
+      info) format=${format-long}  ;;
+    search) format=${format-short} ;;
+esac
+
 # set filters
 case $format in
-      brief) parse() { json_short "$sort_key"; } ;;
-    verbose) parse() { json_long  "$sort_key"; } ;;
-       json) parse() { tee; }                    ;;
+     long) parse() { json_long  "$sort_key"; } ;;
+    short) parse() { json_short "$sort_key"; } ;;
 esac
 
 # pipeline
