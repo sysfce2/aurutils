@@ -22,11 +22,16 @@ merge_across_fs() {
 }
 
 usage() {
-    printf -- 'usage: %s [-L log_dir]\n' "$argv0" >&2
+    printf -- >&2 'usage: %s [-L log_dir]\n' "$argv0"
     exit 1
 }
 
-unset log_dir
+not_a_directory() {
+    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$1"
+    exit 20
+}
+
+log_dir=/dev/stdout
 while getopts :L: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
@@ -36,15 +41,12 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ -v log_dir ]] && [[ ! -d $log_dir ]]; then
-    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$log_dir"
-    exit 20
-fi
-
-if [[ -v log_dir ]]; then
+if [[ $log_dir == /dev/stdout ]]; then
+    merge_log() { tee; }
+elif [[ -d $log_dir ]]; then
     merge_log() { tee -a "$log_dir/$1".patch >/dev/null; }
 else
-    merge_log() { tee; }
+    not_a_directory "$log_dir"
 fi
 
 while IFS= read -r uri; do

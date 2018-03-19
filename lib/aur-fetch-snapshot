@@ -27,13 +27,18 @@ usage() {
     exit 1
 }
 
+not_a_directory() {
+    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$1"
+    exit 20
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
     fi
 }
 
-unset log_dir
+log_dir=/dev/stdout
 while getopts :L: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
@@ -43,15 +48,12 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ -v log_dir ]] && [[ ! -d $log_dir ]]; then
-    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$log_dir"
-    exit 20
-fi
-
-if [[ -v log_dir ]]; then
+if [[ $log_dir == /dev/stdout ]]; then
+    merge_log() { tee; }
+elif [[ -d $log_dir ]]; then
     merge_log() { tee -a "$log_dir/$1".diff | diffstat -CKq -f3; }
 else
-    merge_log() { tee; }
+    not_a_directory "$log_dir"
 fi
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
