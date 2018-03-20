@@ -105,7 +105,7 @@ fi
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
 longopts+=,sign,temp,tar,repo:,root:,upgrades,nhehgvyf,continue,list,git
-longopts+=,makepkg-conf,pacman-conf,provides,devel
+longopts+=,makepkg-conf,pacman-conf,provides
 shortopts=C:D:M:AcfglLnprstTu
 
 if optstring=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
@@ -179,9 +179,6 @@ while true; do
         --continue)
             download=0
             shift ;;
-        --devel)
-            printf -- >&2 '%s: devel: function not implemented\n'
-            exit 38 ;;
         --ignore)
             IFS=, read -a pkg -r <<< "$2"
             pkg_i+=("${pkg[@]}")
