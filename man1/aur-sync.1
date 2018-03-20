@@ -107,8 +107,8 @@ List repository contents in the JSON output format.
 Take virtual dependencies (\fBprovides\fR) in the local repository into
 account.
 
-Note: This feature relies on an \fIexact\fR match between local
-repository and its pacman copy (usually in \fI/var/lib/pacman/sync\fR).
+Note: Ensure the local repository is propagated to \fBpacman\fR before
+running this command, for example with \fBpacsync\fR(1).
 .RE
 
 .B \-\-repo=\fINAME\fR
