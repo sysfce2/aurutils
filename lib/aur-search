@@ -16,7 +16,7 @@ json_short() {
         .Version,
         .NumVotes,
         .Maintainer // "",
-        .OutOfDate // "",
+        .OutOfDate  // "",
         .Description' | while
     {
         read -r Name
@@ -26,10 +26,11 @@ json_short() {
         read -r OutOfDate
         read -r Description
     }; do
-        [[ -n "$OutOfDate" ]] && OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))"
-        [[ -z "$Maintainer" ]] && Maintainer="(Orphaned)" || Maintainer=""
+        [[ "$OutOfDate"  ]] && OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))"
+        [[ "$Maintainer" ]] && unset Maintainer
+
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s) ${RED}%s %s${ALL_OFF}\\n    %s\\n" \
-               "$Name" "$Version" "$NumVotes" "$Maintainer" "$OutOfDate" "$Description"
+               "$Name" "$Version" "$NumVotes" "${Maintainer+(Orphaned)}" "$OutOfDate" "$Description"
     done
 }
 
