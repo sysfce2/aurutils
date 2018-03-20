@@ -20,35 +20,30 @@ repository. See also \fBaur\-build\fR(1).
 .SH OPTIONS
 All arguments after \-\- are passed to \fBmakechrootpkg\fR.
 
+.TP
 .BI "\-C " pacman_conf
-.RS
 The \fIpacman.conf\fR file to be used in the container. Defaults to
 \fIpacman-extra.conf\fR from devtools.
-.RE
 
+.TP
 .BI "\-D " directory
-.RS
 The base directory for containers. This directory usually contains a
 \fB/root\fR subdirectory that serves as template for user containers
 (named after \fI$SUDO_USER\fR, or \fB/copy\fR if unset).
-.RE
 
+.TP
 .BI "\-M " makepkg_conf
-.RS
 The makepkg.conf file to be used in the container. Defaults to
 \fImakepkg\-<machine>.conf\fR from devtools.
-.RE
 
+.TP
 .BI "\-d " database
-.RS
 Check if the specified repository is configured in the /root container.
 Only effective for \fB-u\fR.
-.RE
 
+.TP
 .B \-u
-.RS
 Update or create the /root copy of the container; do not build a package.
-.RE
 
 .SH ENVIRONMENT
 Packages are placed in the directory specified in \fBPKGDEST\fR. If not

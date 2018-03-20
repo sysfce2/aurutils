@@ -24,149 +24,126 @@ and can be edited. If not, the files are shown in \fIless\fR, or
 
 .SH OPTIONS
 .SS Build options
+.TP
 .BR \-f ", " \-\-force
-.RS
 Continue the build process if a package with the same name exists
 already. (\fBaur build \-f\fR)
-.RE
 
+.TP
 .B \-\-ignore=\fIPACKAGE\fR
-.RS
 Ignore a package upgrade. Multiple packages can be specified by
 separating them with a comma, or by repeating the \fB\-\-ignore\fR option.
-.RE
 
-.BR \-\-nover ", " \-\-no-ver
-.RS
+.TP
+.BR \-\-nover ", " \-\-no\-ver
 Disable version checking for packages in the queue.
-.RE
 
+.TP
 .BR \-p ", " \-\-print
-.RS
 Print target packages and their paths instead of building them.
-.RE
 
+.TP
 .BR \-s ", " \-\-sign
-.RS
 Sign built packages and verify the database with gpg. (\fBaur build \-sv\fR)
-.RE
 
 .SS Container options
+.TP
 .BR \-c ", " \-\-chroot
-.RS
 Build packages with makechrootpkg. (\fBaur build \-c\fR)
-.RE
 
+.TP
 .BR "\-C \fIFILE\fR" ", " \-\-pacman\-conf=\fIFILE\fR
-.RS
 Set the \fIpacman.conf\fR file to be used in the container. (\fBaur
 build \-C\fR)
 .RE
 
+.TP
 .BR "\-M \fIFILE\fR" ", " \-\-makepkg\-conf=\fIFILE\fR
-.RS
 Set the \fImakepkg.conf\fR file to be used in the container. (\fBaur
 build \-M\fR)
-.RE
 
+.TP
 .BR "\-D \fIDIR\fR" ", " \-\-directory=\fIDIR\fR
-.RS
 Set the container path to \fIDIR\fR. (\fBaur build \-D\fR)
-.RE
 
 .SS Download options
+.TP
 .B \-\-continue
-.RS
 Skip downloading package files.
-.RE
 
+.TP
 .BR \-g ", " \-\-git
-.RS
 Clone AUR repositories with \fBgit-clone\fR(1).
-.RE
 
-.BR \-\-noview ", " \-\-no-view
-.RS
+.TP
+.BR \-\-noview ", " \-\-no\-view
 Do not view downloaded files before building.
-.RE
 
+.TP
 .BR \-t ", " \-\-tar
-.RS
 Download AUR snapshots (\fIpkgbase.tar.gz\fR) and extract them with
 \fBtar\fR(1).
-.RE
 
 .SS Repository options
+.TP
 .B \-\-list
-.RS
 List repository contents in the JSON output format.
-.RE
 
+.TP
 .B \-\-provides
-.RS
 Take virtual dependencies (\fBprovides\fR) in the local repository into
 account. Packages specified on the command line or available upgrades
 are considered regardless of this setting.
 
 Note: Ensure the local repository is propagated to \fBpacman\fR before
 using this option, for example with \fBpacsync\fR(1).
-.RE
 
+.TP
 .B \-\-repo=\fINAME\fR
-.RS
 Use the \fINAME\fR repository. If this option is not specified,
 \fBaur\-sync\fR defaults to the first \fIfile://\fR repository in
 \fBpacman.conf\fR(5), or aborts if multiple are available.
-.RE
 
+.TP
 .B \-\-root=\fIDIR\fR
-.RS
 The location of the repository root. Defaults to the \fIServer\fR
 value of the configured repository.
-.RE
 
+.TP
 .BR \-u ", " \-\-upgrades
-.RS
 Update all AUR packages in a local repository that are out-of-date.
-.RE
 
 .SS makepkg
 The default set of options is \fBmakepkg \-cs\fR.
 
-.BR \-A ", " \-\-ignorearch ", " \-\-ignore-arch
-.RS
+.TP
+.BR \-A ", " \-\-ignorearch ", " \-\-ignore\-arch
 Ignore a missing or incomplete \fIarch\fR field in the build script.
 (\fBmakepkg \-A\fR)
-.RE
 
+.TP
 .BR \-L ", " \-\-log
-.RS
 Enable logging to a text file in the build directory. (\fBmakepkg
 \-L\fR)
-.RE
 
-.BR \-\-noconfirm ", " \-\-no-confirm
-.RS
+.TP
+.BR \-\-noconfirm ", " \-\-no\-confirm
 Do not wait for user input. (\fBmakepkg \-\-noconfirm\fR)
-.RE
 
+.TP
 .BR \-r ", " \-\-rmdeps
-.RS
 Remove dependencies installed by makepkg. (\fBmakepkg \-r\fR)
-.RE
 
 .SS makechrootpkg
 The default set of options is \fBmakechrootpkg \-cu\fR.
 
+.TP
 .B \-\-bind=\fIDIR\fR
-.RS
 Bind a directory read-only. (\fBmakechrootpkg \-D\fR)
-.RE
 
+.TP
 .BR \-T ", " \-\-temp
-.RS
 Build in a temporary container. (\fBmakechrootpkg \-T\fR)
-.RE
 
 .SH ENVIRONMENT
 .B AURDEST
