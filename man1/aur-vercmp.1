@@ -4,9 +4,9 @@ aur\-vercmp \- check packages for AUR updates
 
 .SH SYNOPSIS
 .SY "aur vercmp"
-.OP \-aclq
+.OP \-acq
 .OP \-d repository
-.OP \-r root
+.OP \-p path
 
 .SH OPTIONS
 .B \-a
@@ -32,19 +32,9 @@ The name of a pacman repository. If \fInot\fR specified, packages and their
 versions are taken from stdin (tab-separated).
 .RE
 
-.B \-l
-.RS
-List packages in a pacman repository by name and version, tab-separated.
-.RE
-
 .B \-q
 .RS
 For all comparisons, show only package names.
-.RE
-
-.B \-r
-.RS
-Path for the repository root. Used in conjuction with \fB\-c\fR.
 .RE
 
 .SH SEE ALSO
