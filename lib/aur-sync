@@ -74,6 +74,11 @@ select_pkgbase() {
         }' "$@"
 }
 
+complement() {
+    # empty set should not return 1
+    grep -f "$1" -Fxv "$@" || true
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -291,11 +296,13 @@ fi
 
   if ((provides)); then
       # note: this uses pacman's copy of the repo (as used by makepkg -s)
-      cut -f1 pkginfo | grep -Fxvf argv | aur rfilter -d "$repo"
+      cut -f1 pkginfo | complement argv - | aur rfilter -d "$repo"
   fi
 } >filter
 
-if cut -f1 pkginfo | lib32 | grep -Fxvf filter >queue_0; then
+cut -f1 pkginfo | lib32 | complement filter - >queue_0
+
+if [[ -s queue_0 ]]; then
     select_pkgbase queue_0 pkginfo | cut -f2 >queue
 else
     plain "there is nothing to do"
