@@ -105,10 +105,11 @@ List repository contents in the JSON output format.
 .B \-\-provides
 .RS
 Take virtual dependencies (\fBprovides\fR) in the local repository into
-account.
+account. Packages specified on the command line or available upgrades
+are considered regardless of this setting.
 
 Note: Ensure the local repository is propagated to \fBpacman\fR before
-running this command, for example with \fBpacsync\fR(1).
+using this option, for example with \fBpacsync\fR(1).
 .RE
 
 .B \-\-repo=\fINAME\fR
