@@ -275,7 +275,6 @@ fi
 } >argv
 
 if [[ -s argv ]]; then
-    msg "Resolving dependencies..."
     aur deps-rpc -t <argv >pkginfo
 else
     plain "there is nothing to do"
