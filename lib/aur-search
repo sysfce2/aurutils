@@ -37,13 +37,15 @@ json_short() {
 # XXX Add additional info fields: make/check/depends, license, keyword (#207)
 json_long() {
     local Name PackageBase Version Description URL NumVotes Popularity
-    local OutOfDate Maintainer FirstSubmitted LastModified
+    local OutOfDate Maintainer FirstSubmitted LastModified License Keywords
 
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
         .PackageBase,
         .Version,
         .Description,
         .URL,
+        (.Keywords // ["(null)"] | join(" ")),
+        (.License  // ["(null)"] | join(" ")),
         .NumVotes,
         .Popularity,
         .OutOfDate,
@@ -56,6 +58,8 @@ json_long() {
         read -r Version
         read -r Description
         read -r URL
+        read -r Keywords
+        read -r License
         read -r NumVotes
         read -r Popularity
         read -r OutOfDate
@@ -68,6 +72,8 @@ json_long() {
         printf -- 'Version:         %s\n' "$Version"
         printf -- 'Description:     %s\n' "$Description"
         printf -- 'URL:             %s\n' "$URL"
+        printf -- 'Keywords:        %s\n' "$Keywords"
+        printf -- 'License:         %s\n' "$License"
         printf -- 'Votes:           %s\n' "$NumVotes"
         printf -- 'Popularity:      %s\n' "$Popularity"
         printf -- 'Out Of Date:     %s\n' "$OutOfDate"
