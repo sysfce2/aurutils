@@ -34,10 +34,9 @@ json_short() {
     done
 }
 
-# XXX Add additional info fields: make/check/depends, license, keyword (#207)
 json_long() {
-    local Name PackageBase Version Description URL NumVotes Popularity
-    local OutOfDate Maintainer FirstSubmitted LastModified License Keywords
+    local Name PackageBase Version Description URL Keywords License
+    local NumVotes Popularity OutOfDate Maintainer FirstSubmitted LastModified
 
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
         .PackageBase,
@@ -67,19 +66,19 @@ json_long() {
         read -r FirstSubmitted
         read -r LastModified
     }; do
-        printf -- 'Name:            %s\n' "$Name"
-        printf -- 'Base:            %s\n' "$PackageBase"
-        printf -- 'Version:         %s\n' "$Version"
-        printf -- 'Description:     %s\n' "$Description"
-        printf -- 'URL:             %s\n' "$URL"
-        printf -- 'Keywords:        %s\n' "$Keywords"
-        printf -- 'License:         %s\n' "$License"
-        printf -- 'Votes:           %s\n' "$NumVotes"
-        printf -- 'Popularity:      %s\n' "$Popularity"
-        printf -- 'Out Of Date:     %s\n' "$OutOfDate"
-        printf -- 'Maintainer:      %s\n' "$Maintainer"
-        printf -- 'First Submitted: %s\n' "$(date -d @"$FirstSubmitted" '+%c')"
-        printf -- 'Last Modified:   %s\n' "$(date -d @"$LastModified" '+%c')"
+        printf -- 'Name:          %s\n' "$Name"
+        printf -- 'Base:          %s\n' "$PackageBase"
+        printf -- 'Version:       %s\n' "$Version"
+        printf -- 'Description:   %s\n' "$Description"
+        printf -- 'URL:           %s\n' "$URL"
+        printf -- 'Keywords:      %s\n' "$Keywords"
+        printf -- 'License:       %s\n' "$License"
+        printf -- 'Votes:         %s\n' "$NumVotes"
+        printf -- 'Popularity:    %s\n' "$Popularity"
+        printf -- 'Out Of Date:   %s\n' "$OutOfDate"
+        printf -- 'Maintainer:    %s\n' "$Maintainer"
+        printf -- 'Submitted:     %s\n' "$(date -d @"$FirstSubmitted" '+%c')"
+        printf -- 'Last Modified: %s\n' "$(date -d @"$LastModified" '+%c')"
         printf '\n'
     done
 }
