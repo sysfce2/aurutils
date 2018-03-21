@@ -76,7 +76,7 @@ select_pkgbase() {
 
 complement() {
     # empty set should not return 1
-    grep -f "$1" -Fxv "$@" || true
+    grep -Fxvf "$@" || true
 }
 
 trap_exit() {
@@ -293,11 +293,11 @@ fi
 
   if ((provides)); then
       # note: this uses pacman's copy of the repo (as used by makepkg -s)
-      cut -f1 pkginfo | complement argv - | aur rfilter -d "$repo"
+      cut -f1 pkginfo | complement argv | aur rfilter -d "$repo"
   fi
 } >filter
 
-cut -f1 pkginfo | lib32 | complement filter - >queue_0
+cut -f1 pkginfo | lib32 | complement filter >queue_0
 
 if [[ -s queue_0 ]]; then
     select_pkgbase queue_0 pkginfo | cut -f2 >queue
