@@ -9,33 +9,29 @@ aur\-vercmp \- check packages for AUR updates
 .OP \-p path
 
 .SH OPTIONS
+.TP
 .B \-a
-.RS
 If \fB-c\fR is \fInot\fR specified, this option also shows packages with
 older or the same version in the AUR. If specified twice, packages that
 are not available in AUR are also shown.
-.RE
 
+.TP
 .B \-c
-.RS
 Takes packages and their versions from stdin (\fIpkgname\fR as the first
 field, \fIpkgver\fR as the second, both separated by tabs), printing
 packages with equal or newer versions in a repository specified with
 \fB\-d\fR to stdout. If this argument or \fB\-d\fR is \fInot\fR
 specified, compare packages in the repository with their respective
 versions in the AUR, and print updates to stdout.
-.RE
 
+.TP
 .B \-d
-.RS
 The name of a pacman repository. If \fInot\fR specified, packages and their
 versions are taken from stdin (tab-separated).
-.RE
 
+.TP
 .B \-q
-.RS
 For all comparisons, show only package names.
-.RE
 
 .SH SEE ALSO
 .BR aur (1),
