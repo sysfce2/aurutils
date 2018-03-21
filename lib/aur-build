@@ -30,7 +30,7 @@ db_replaces() {
 }
 
 find_pkg_dupes() {
-    xargs -I{} find "$1" -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part|\.sig)$' -
+    xargs -I{} find "$1" -maxdepth 1 -name '{}*' | grep -Exv '.+(~|_namcap\.log|\.part|\.sig)$' -
 }
 
 trap_exit() {
