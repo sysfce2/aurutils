@@ -18,8 +18,8 @@ aur\-sync \- download and build aur packages automatically
 \fBaur\-sync\fR downloads and builds packages automatically to a local
 repository. Package names serve as arguments.
 
-If \fIvifm\fR is installed, the downloaded files are shown using vifm
-and can be edited. If not, the files are shown in \fIless\fR, or
+If \fBvifm\fR(1) is installed, the downloaded files are shown using vifm
+and can be edited. If not, the files are shown in \fBless\fR(1), or
 \fI$PAGER\fR if configured.
 
 .SH OPTIONS
@@ -95,8 +95,8 @@ Take virtual dependencies (\fBprovides\fR) in the local repository into
 account. Packages specified on the command line or available upgrades
 are considered regardless of this setting.
 
-Note: Ensure the local repository is propagated to \fBpacman\fR before
-using this option, for example with \fBpacsync\fR(1).
+Note: Ensure the local repository is propagated to \fBpacman\fR(8)
+before using this option, for example with \fBpacsync\fR(1).
 
 .TP
 .B \-\-repo=\fINAME\fR

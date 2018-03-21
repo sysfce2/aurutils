@@ -20,8 +20,8 @@ It is assumed that build directories are located in the current
 directory, and described in a text file which is taken as argument.
 
 .SH OPTIONS
-All arguments after \-\- are passed to \fBmakepkg\fR, or
-\fBaur\-build\-nspawn\fR when \fB\-c\fR is specified.
+All arguments after \-\- are passed to \fBmakepkg\fR(8), or
+\fBaur\-build\-nspawn\fR(1) when \fB\-c\fR is specified.
 
 .TP
 .BI "\-a " queue
@@ -30,7 +30,7 @@ specified, the current directory is assumed.
 
 .TP
 .B \-c
-Build packages with \fBaurbuild_chroot\fR(1).
+Build packages with \fBaur\-build\-nspawn\fR(1).
 
 .TP
 .BI "\-d " database
@@ -83,10 +83,10 @@ entries if the locale is not set (FS#49342). Packages are signed
 manually with \fBgpg \-\-verbose \-\-detach\-sign \-\-no\-armor\fR (FS#49946).
 
 .SS Avoiding password prompts
-makepkg must be run as a regular user as of version 4.2, with
-privileged operations done via \fBsudo\fR. As such, \fBaurbuild\fR can
-not be run directly as root. To avoid password prompts,
-\fBsudoers\fR(5) can be used instead.
+\fBmakepkg\fR(8) must be run as a regular user as of version 4.2, with
+privileged operations done via \fBsudo\fR(8). As such,
+\fBaur\-build\fR(1) can not be run directly as root. To avoid password
+prompts, \fBsudoers\fR(5) can be used instead.
 
 For example:
 .EX
@@ -96,10 +96,11 @@ For example:
 .EE
 
 .SY Note:
-For precautions when using wildcards with \fBsudo\fR, see the
-\fIWildcards\fR section in \fBsudoers\fR (5). Whitelisting
+For precautions when using wildcards with \fBsudo\fR(8), see the
+\fIWildcards\fR section in \fBsudoers\fR(5). Whitelisting
 \fI/usr/bin/aur\fR should generally be avoided, as this allows to run
-\fIany\fR \fBaur\fR command as root without prompting.
+\fIany\fR \fBaur\fR command as root without prompting. (Including
+scripts found in $PATH using the 'aur-' prefix)
 .YS
 
 .SH SEE ALSO
@@ -110,6 +111,7 @@ For precautions when using wildcards with \fBsudo\fR, see the
 .BR makepkg.conf (5),
 .BR pacman.conf (5),
 .BR makepkg (8),
+.BR repo-add (8),
 .BR setarch (8)
 
 .SH AUTHORS
