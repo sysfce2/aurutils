@@ -170,7 +170,7 @@ while read -r -u "$fd" pkg _; do
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     # fixed by: https://git.archlinux.org/pacman.git/commit/?id=c0a5884b
-    find "$startdir/$pkg" -type l -xtype f -lname "$var_tmp*" -delete
+    find "$startdir/$pkg" -maxdepth 1 -type l -xtype f -lname "$var_tmp*" -delete
 
     if ((chroot)) || ((no_sync)); then
         continue
