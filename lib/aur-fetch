@@ -26,18 +26,27 @@ EOF
     exit 1
 }
 
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='rgtL:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
 unset log_dir
-while getopts :rgtL: opt; do
-    case $opt in
-        L) log_dir=$OPTARG ;;
-        r) recurse=1       ;;
-        g) mode=git        ;;
-        t) mode=snapshot   ;;
-        *) usage           ;;
+while true; do
+    case "$1" in
+        -L) shift; log_dir=$1 ;;
+        -r) recurse=1 ;;
+        -g) mode=git ;;
+        -t) mode=snapshot ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND -1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 if ((!$#)); then
     usage

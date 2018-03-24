@@ -34,16 +34,25 @@ usage() {
     exit 1
 }
 
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='b:t:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
 unset by type
-while getopts :b:t: opt; do
-    case $opt in
-        b) by=$OPTARG   ;;
-        t) type=$OPTARG ;;
-        *) usage        ;;
+while true; do
+    case "$1" in
+        -b) shift; by=$1 ;;
+        -t) shift; type=$1 ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT

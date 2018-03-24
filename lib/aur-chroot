@@ -37,24 +37,33 @@ usage() {
     exit 1
 }
 
-tmp=$(mktemp -d)
-trap 'trap_exit' EXIT
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='BPd:r:C:D:M:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
 
 # FIXME: add --sysroot to set pacconf host, see pacutils-sysroot(7)
 unset pacman_conf makepkg_conf host_repo server
-while getopts :BPd:r:C:D:M: opt; do
-    case $opt in
-        d) host_repo+=("$OPTARG") ;;
-        D) directory=$OPTARG    ;;
-        C) pacman_conf=$OPTARG  ;;
-        M) makepkg_conf=$OPTARG ;;
-        B) build=0   ;;
-        P) prepare=0 ;;
-        *) usage     ;;
+while true; do
+    case "$1" in
+        -d) shift; host_repo+=("$1") ;;
+        -D) shift; directory=$1 ;;
+        -C) shift; pacman_conf=$1 ;;
+        -M) shift; makepkg_conf=$1 ;;
+        -B) build=0 ;;
+        -P) prepare=0 ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
+
+tmp=$(mktemp -d)
+trap 'trap_exit' EXIT
 
 # reset default makechrootpkg arguments
 if (($#)); then

@@ -104,23 +104,32 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='aisdmnqvk:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
 unset format
-while getopts :aisdmnqvk: opt; do
-    case $opt in
-        a) multiple=union       ;;
-        i) query_type=info      ;;
-        s) query_type=search    ;;
-        d) search_by=name-desc  ;;
-        m) search_by=maintainer ;;
-        n) search_by=name       ;;
-        q) format=short         ;;
-        v) format=long          ;;
-        k) sort_key=$OPTARG     ;;
-        *) usage                ;;
+while true; do
+    case "$1" in
+        -a) multiple=union ;;
+        -i) query_type=info ;;
+        -s) query_type=search ;;
+        -d) search_by=name-desc ;;
+        -m) search_by=maintainer ;;
+        -n) search_by=name ;;
+        -q) format=short ;;
+        -v) format=long ;;
+        -k) shift; sort_key=$1 ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 if ((!$#)); then
     usage

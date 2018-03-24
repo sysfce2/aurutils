@@ -68,6 +68,7 @@ usage() {
 
 source /usr/share/makepkg/util/util.sh
 source /usr/share/makepkg/util/message.sh
+source /usr/share/makepkg/util/parseopts.sh
 
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
@@ -79,28 +80,35 @@ var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
+opt_short='a:d:r:C:D:M:cfNRsv'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
 unset database db_root queue
-while getopts a:d:r:C:D:M:cfNRsv opt; do
-    case $opt in
-        a) queue=$OPTARG    ;;
-        c) chroot=1         ;;
-        f) overwrite=1      ;;
-        N) no_sync=1        ;;
-        r) db_root=$OPTARG  ;;
-        d) database=$OPTARG
-           chroot_args+=(-d "$OPTARG") ;;
-        C) chroot_args+=(-C "$OPTARG") ;;
-        D) chroot_args+=(-D "$OPTARG") ;;
-        M) chroot_args+=(-M "$OPTARG") ;;
-        R) repo_add_args+=(-R) ;;
-        s) sign_pkg=1
-           repo_add_args+=(-s) ;;
-        v) repo_add_args+=(-v) ;;
-        *) usage ;;
+while true; do
+    case "$1" in
+        -a) shift; queue=$1 ;;
+        -c) chroot=1 ;;
+        -f) overwrite=1 ;;
+        -N) no_sync=1 ;;
+        -r) shift; db_root=$1 ;;
+        -d) shift; database=$1
+            chroot_args+=(-d "$1") ;;
+        -C) shift; chroot_args+=(-C "$1") ;;
+        -D) shift; chroot_args+=(-D "$1") ;;
+        -M) shift; chroot_args+=(-M "$1") ;;
+        -R) repo_add_args+=(-R) ;;
+        -s) sign_pkg=1
+            repo_add_args+=(-s) ;;
+        -v) repo_add_args+=(-v) ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 if [[ ${database=$AUR_REPO} ]]; then
     server=$(pacconf --single --repo="$database" Server)

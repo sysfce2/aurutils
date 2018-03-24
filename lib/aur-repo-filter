@@ -41,17 +41,25 @@ usage() {
 }
 
 source /usr/share/makepkg/util/message.sh
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='od:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
 
 unset argv_repo reposet
-while getopts od: opt; do
-    case $opt in
-        d) argv_repo+=("$OPTARG") ;;
-        o) mode=arch ;;
-        *) usage     ;;
+while true; do
+    case "$1" in
+        -d) shift; argv_repo+=("$1") ;;
+        -o) mode=arch ;;
+        --) shift; break;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 if [[ -v argv_repo ]]; then
     for i in "${argv_repo[@]}"; do

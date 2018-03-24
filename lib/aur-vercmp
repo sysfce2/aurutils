@@ -84,26 +84,34 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh || exit
+source /usr/share/makepkg/util/message.sh
+source /usr/share/makepkg/util/parseopts.sh
 
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
+opt_short='acd:p:u:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
 unset all aux repo upair
-while getopts :acd:p:u: opt; do
-    case $opt in
-        a) all=1         ;;
-        c) format=equal  ;;
-        d) repo=$OPTARG  ;; # FIXME remove this? (#316)
-        p) target=file
-           aux=$OPTARG   ;;
-        u) upair=$OPTARG ;;
-        *) usage         ;;
+while true; do
+    case "$1" in
+        -a) all=1 ;;
+        -c) format=equal ;;
+        -d) shift; repo=$1 ;; # FIXME remove this? (#316)
+        -p) target=file
+            shift; aux=$1 ;;
+        -u) shift; upair=$1 ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 tmp=$(mktemp) || exit
 trap 'trap_exit' EXIT
