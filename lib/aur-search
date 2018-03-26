@@ -11,19 +11,21 @@ search_by=name-desc
 sort_key=Name
 
 tabulate() {
+    # It is important to have a default value for every field, or parsing of the @tsv result might break.
+    # See: https://lists.gnu.org/archive/html/help-bash/2016-05/msg00041.html
     # XXX Add missing fields (depends, makedepends, checkdepends)
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | [
-        .Name,
-        .PackageBase,
-        .Version,
-        .Description,
-        .URL,
-        (.Keywords | select (length > 0) // ["(null)"] | join(" ")),
-        (.License  | select (length > 0) // ["(null)"] | join(" ")),
-        .NumVotes,
-        .Popularity,
-        .Maintainer // "-",
-        .OutOfDate  // "-",
+        .Name            // "-",
+        .PackageBase     // "-",
+        .Version         // "-",
+        .Description     // "-",
+        .URL             // "-",
+        (.Keywords       | select (length > 0) // ["-"] | join(" ")),
+        (.License        | select (length > 0) // ["-"] | join(" ")),
+        .NumVotes        // "-",
+        .Popularity      // "-",
+        .Maintainer      // "-",
+        .OutOfDate       // "-",
         (.FirstSubmitted | todate),
         (.LastModified   | todate)
     ] | @tsv'
@@ -124,7 +126,7 @@ esac
 
 # set filters (1)
 case $format in
-     long) parse() { parse_long | column -ts $'\t' | sed -E 's/^-$//; $d'; } ;;
+     long) parse() { parse_long | column -ts $'\t' | sed -E 's/^-//; $d'; } ;;
     short) parse() { parse_short; } ;;
 esac
 
