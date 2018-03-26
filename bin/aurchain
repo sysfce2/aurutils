@@ -42,12 +42,10 @@ chain() {
     for ((a = 1; a <= 30; ++a)); do
         declare -i sub=$((a-1))
 
-        pair json/$sub > tsv/$sub
+        pair json/$sub | tee -a tsv/n > tsv/$sub
 
         fld 1 tsv/$sub >> pkgname
         fld 1 tsv/$sub >> seen
-
-        sort -u tsv/$sub >> tsv/n
 
         # Avoid querying duplicates (#4)
         readarray -t target < <(fld 2 tsv/$sub | grep -Fxvf seen)
