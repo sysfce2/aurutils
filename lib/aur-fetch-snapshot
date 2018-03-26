@@ -1,7 +1,6 @@
 #!/bin/bash
 # aur-fetch-snapshot - retrieve build files using tar archives
 set -o errexit
-shopt -s nullglob
 readonly argv0=fetch-snapshot
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -30,11 +29,6 @@ usage() {
     exit 1
 }
 
-not_a_directory() {
-    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$1"
-    exit 20
-}
-
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp"
@@ -50,12 +44,13 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ $log_dir == /dev/stdout ]]; then
-    merge_log() { tee; }
-elif [[ -d $log_dir ]]; then
-    merge_log() { tee -a "$log_dir/$1".diff | diffstat -CKq -f3; }
+if [[ -d $log_dir ]]; then
+    diff_log() { tee -a "$log_dir/$1".diff | diffstat -CKq -f3; }
+elif [[ $log_dir == /dev/stdout ]]; then
+    diff_log() { tee; }
 else
-    not_a_directory "$log_dir"
+    printf -- >&2 '%s: %q: not a directory or /dev/stdout\n' "$argv0" "$log_dir"
+    exit 1
 fi
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
@@ -65,14 +60,19 @@ cd "$tmp"
 dl_stdin
 
 for a in ./*.tar.gz; do
-    tar -kxf "$a"
+    if [[ -f $a ]]; then
+        tar -kxf "$a"
+    else
+        continue
+    fi
+
+    x=${a%%.tar.gz}
 
     if tar_no_mode_diff "$a" "$startdir"; then
-        a=${a%%.tar.gz}
-
-        diff -ur "$startdir/$a" "$a" | merge_log "$a"
+        diff -ur "$startdir/$x" "$x" | diff_log "$x"
     fi
-    cp -af "${a%%.tar.gz}" "$startdir"
+
+    cp -af "$x" "$startdir"
 done
 
 # vim: set et sw=4 sts=4 ft=sh:
