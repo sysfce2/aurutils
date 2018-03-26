@@ -212,7 +212,7 @@ if ((rotate)); then
     fi
 fi
 
-if [[ -v repo ]]; then
+if [[ ${repo-$AUR_REPO} ]]; then
     server=$(pacconf --single --repo="$repo" Server)
     server=${server#*://}
 else

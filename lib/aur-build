@@ -73,7 +73,7 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ -v database ]]; then
+if [[ ${database-$AUR_REPO} ]]; then
     server=$(pacconf --single --repo="$database" Server)
     server=${server#*//}
 else
