@@ -62,11 +62,10 @@ dl_stdin
 for a in ./*.tar.gz; do
     if [[ -f $a ]]; then
         tar -kxf "$a"
+        x=${a%%.tar.gz}
     else
         continue
     fi
-
-    x=${a%%.tar.gz}
 
     if tar_no_mode_diff "$a" "$startdir"; then
         diff -ur "$startdir/$x" "$x" | diff_log "$x"
