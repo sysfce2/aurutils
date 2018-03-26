@@ -71,11 +71,11 @@ parse_short() {
         esac
 
         case $Maintainer in
-            -) Maintainer='(Orphaned)' ;;
+            -) Maintainer='(Orphaned) ' ;;
             *) unset Maintainer ;;
         esac
 
-        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s) ${RED}%s %s${ALL_OFF}\\n    %s\\n" \
+        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
                "$Name" "$Version" "$NumVotes" "$Maintainer" "$OutOfDate" "$Description"
     done
 }
