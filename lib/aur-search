@@ -26,10 +26,10 @@ tabulate() {
         .Popularity  // "-",
         .OutOfDate   // "-",
         (.FirstSubmitted | todate),
-        (.LastModified   | todate)
+        (.LastModified   | todate),
         (.Depends        | select (length > 0) // ["-"] | join(" ")),
         (.MakeDepends    | select (length > 0) // ["-"] | join(" ")),
-        (.CheckDepends   | select (length > 0) // ["-"] | join(" ")),
+        (.CheckDepends   | select (length > 0) // ["-"] | join(" "))
     ] | @tsv'
 }
 
