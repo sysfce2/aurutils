@@ -12,7 +12,7 @@ clone() {
 
     while IFS= read -r; do
         # Avoid issues with exotic file system layouts (#274)
-        git_wrap() { git --work-tree="$REPLY" --git-dir="$REPLY"/.git "$@"; }
+        git_wrap() { git --work-tree="$PWD/$REPLY" --git-dir="$PWD/$REPLY"/.git "$@"; }
         
         if [[ -d $REPLY/.git ]]; then
             # returns 0 even if nothing was fetched
