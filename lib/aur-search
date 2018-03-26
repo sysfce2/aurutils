@@ -66,7 +66,7 @@ parse_long() {
 parse_short() {
     local Name Version NumVotes Maintainer OutOfDate Description
 
-    while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes _ OutOfDate _ _ _ _ _; do
+    while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes _ OutOfDate _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
             *) # XXX move date command to jq (must only be run if OutOfDate is set)
