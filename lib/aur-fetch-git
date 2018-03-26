@@ -5,14 +5,14 @@ readonly argv0=fetch-git
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 merge() {
-    git fetch -v
+    git fetch -v >&2
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
         git --no-pager log --patch --stat '..@{upstream}'
 
         # reset index and working tree
-        git reset --hard HEAD
-        git merge
+        git reset --hard HEAD >&2
+        git merge >&2
     fi
 }
 
@@ -41,6 +41,7 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
+# XXX Specify this function directly as argument to merge()?
 if [[ $log_dir == /dev/stdout ]]; then
     merge_log() { tee; }
 elif [[ -d $log_dir ]]; then
