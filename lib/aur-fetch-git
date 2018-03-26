@@ -7,13 +7,12 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 log_dir=/dev/stdout
 
-# XXX git usually prints to stdout, which is processed by later filters.
-# Redirect to stderr or take an argument for the "git log" output.
 merge_upstream() {
     git fetch -v >&2
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
-        git --no-pager log --patch --stat '..@{upstream}'
+        # only print log on upstream changes
+        git --no-pager log --patch --stat '..@{upstream}' >> "$1"
 
         # reset index and working tree
         git reset --hard HEAD >&2
@@ -23,17 +22,12 @@ merge_upstream() {
 
 merge_across_fs() {
     # avoid issues with filesystem boundaries (#274)
-    GIT_DIR="$1"/.git GIT_WORK_TREE="$1" merge_upstream
+    GIT_DIR="$1"/.git GIT_WORK_TREE="$1" merge_upstream "$2"
 }
 
 usage() {
     printf -- >&2 'usage: %s [-L log_dir]\n' "$argv0"
     exit 1
-}
-
-not_a_directory() {
-    printf -- >&2 '%s: %q: not a directory\n' "$argv0" "$1"
-    exit 20
 }
 
 while getopts :L: opt; do
@@ -45,12 +39,13 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ $log_dir == /dev/stdout ]]; then
-    merge_log() { tee; }
-elif [[ -d $log_dir ]]; then
-    merge_log() { tee -a "$log_dir/$1".patch >/dev/null; }
+if [[ -d $log_dir ]]; then
+    merge() { merge_across_fs "$1" "$log_dir/$1".patch; }
+elif [[ $log_dir == /dev/stdout ]]; then
+    merge() { merge_across_fs "$1" "/dev/stdout"; }
 else
-    not_a_directory "$log_dir"
+    printf -- >&2 '%s: %q: not a directory or /dev/stdout\n' "$argv0" "$log_dir"
+    exit 1
 fi
 
 while IFS= read -r uri; do
@@ -58,7 +53,7 @@ while IFS= read -r uri; do
     pkg=${pkg%%.git} # strip .git suffix
 
     if [[ -d $pkg/.git ]]; then
-        merge_across_fs "$pkg" | merge_log "$pkg"
+        merge "$pkg"
     else
         git clone "$uri"
     fi
