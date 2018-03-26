@@ -20,7 +20,7 @@ split_info() {
 
 dl_stdin() {
     if type -P aria2c >/dev/null 2>&1; then
-        aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp"/aria2 -i - && cat "$tmp"/aria2/*
+        aria2c --download-result=hide --console-log-level=error --stderr=true -d "$tmp"/aria2 --no-conf=true -i - && cat "$tmp"/aria2/*
     elif type -P parallel >/dev/null 2>&1; then
         parallel --will-cite -X -j +8 --nice 10 --halt soon,fail=1 -r curl -fgLsS --compressed --cert-status {}
     else
