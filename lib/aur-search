@@ -50,8 +50,11 @@ parse_long() {
     # XXX use some less bash-heavy way here
     while IFS=$'\t' read -r -a info; do
         for i in "${!info[@]}"; do
-            printf -- '%s:\t%s\n' "${desc[i]}" "${info[i]}"
+            printf -- "$BOLD%s:$ALL_OFF\t%s\n" "${desc[i]}" "${info[i]}"
         done
+
+        # XXX no canonical way for column (util-linux) to respect empty lines?
+        printf -- '-\n'
     done
 }
 
@@ -119,13 +122,13 @@ case $query_type in
     search) format=${format-short} ;;
 esac
 
-# set filters
+# set filters (1)
 case $format in
-     # XXX no canonical way for column (util-linux) to respect empty lines?
-     long) parse() { parse_long | column -ts $'\t' | sed '0~13 a\\'; } ;;
+     long) parse() { parse_long | column -ts $'\t' | sed -E 's/^-$//; $d'; } ;;
     short) parse() { parse_short; } ;;
 esac
 
+# set filters (2)
 case $multiple in
     section) combine() { sort | uniq -d; } ;;
       union) combine() { sort | uniq -u; } ;;
