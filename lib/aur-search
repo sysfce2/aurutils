@@ -5,86 +5,73 @@ readonly argv0=search
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
+multiple=section
 query_type=search
 search_by=name-desc
 sort_key=Name
 
-json_short() {
-    local Name Version NumVotes Maintainer OutOfDate Description
-
-    jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
-        .Version,
-        .NumVotes,
-        .Maintainer // "",
-        .OutOfDate  // "",
-        .Description' | while
-    {
-        read -r Name
-        read -r Version
-        read -r NumVotes
-        read -r Maintainer
-        read -r OutOfDate
-        read -r Description
-    }; do
-        [[ "$OutOfDate"  ]] && OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))"
-        [[ "$Maintainer" ]] && unset Maintainer
-
-        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s) ${RED}%s %s${ALL_OFF}\\n    %s\\n" \
-               "$Name" "$Version" "$NumVotes" "${Maintainer+(Orphaned)}" "$OutOfDate" "$Description"
-    done
-}
-
-json_long() {
-    local Name PackageBase Version Description URL Keywords License
-    local NumVotes Popularity OutOfDate Maintainer FirstSubmitted LastModified
-
-    jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | .Name,
+tabulate() {
+    jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | [
+        .Name,
         .PackageBase,
         .Version,
         .Description,
         .URL,
-        (.Keywords // ["(null)"] | join(" ")),
-        (.License  // ["(null)"] | join(" ")),
+        (.Keywords  // ["(null)"] | join(" ")),
+        (.License   // ["(null)"] | join(" ")),
         .NumVotes,
         .Popularity,
-        .OutOfDate,
-        .Maintainer,
-        .FirstSubmitted,
-        .LastModified' | while
-    {
-        read -r Name
-        read -r PackageBase
-        read -r Version
-        read -r Description
-        read -r URL
-        read -r Keywords
-        read -r License
-        read -r NumVotes
-        read -r Popularity
-        read -r OutOfDate
-        read -r Maintainer
-        read -r FirstSubmitted
-        read -r LastModified
-    }; do
-        printf -- 'Name:          %s\n' "$Name"
-        printf -- 'Base:          %s\n' "$PackageBase"
-        printf -- 'Version:       %s\n' "$Version"
-        printf -- 'Description:   %s\n' "$Description"
-        printf -- 'URL:           %s\n' "$URL"
-        printf -- 'Keywords:      %s\n' "$Keywords"
-        printf -- 'License:       %s\n' "$License"
-        printf -- 'Votes:         %s\n' "$NumVotes"
-        printf -- 'Popularity:    %s\n' "$Popularity"
-        printf -- 'Out Of Date:   %s\n' "$OutOfDate"
-        printf -- 'Maintainer:    %s\n' "$Maintainer"
-        printf -- 'Submitted:     %s\n' "$(date -d @"$FirstSubmitted" '+%c')"
-        printf -- 'Last Modified: %s\n' "$(date -d @"$LastModified" '+%c')"
-        printf '\n'
+        .Maintainer // "-",
+        .OutOfDate  // "-",
+        (.FirstSubmitted | todate),
+        (.LastModified   | todate)
+    ] | @tsv'
+}
+
+parse_long() {
+    local -a desc=(
+        'Name'
+        'Base'
+        'Version'
+        'Description'
+        'URL'
+        'Keywords'
+        'License'
+        'Votes'
+        'Popularity'
+        'Maintainer'
+        'Out Of Date'
+        'Submitted'
+        'Last Modified'
+    )
+    local -a info
+
+    while IFS=$'\t' read -r -a info; do
+        printf '%s:\n' "${desc[@]}" | paste - <(printf '%s\n' "${info[@]}") | column -t
+    done
+}
+
+parse_short() {
+    local Name Version NumVotes Maintainer OutOfDate Description
+
+    while IFS=$'\t' read -r Name _ Version Description _ _ _ NumVotes _ Maintainer OutOfDate _ _; do
+        case $OutOfDate in
+            -) unset OutOfDate ;;
+            *) OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
+        esac
+
+        case $Maintainer in
+            -) Maintainer='(Orphaned)' ;;
+            *) unset Maintainer ;;
+        esac
+
+        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s) ${RED}%s %s${ALL_OFF}\\n    %s\\n" \
+               "$Name" "$Version" "$NumVotes" "$Maintainer" "$OutOfDate" "$Description"
     done
 }
 
 usage() {
-    printf -- >&2 'usage: %s: [-imnrv] [-k key] package [package...]\n' "$argv0"
+    printf -- >&2 'usage: %s: [-aimnrv] [-k key] package [package...]\n' "$argv0"
     exit 1
 }
 
@@ -95,8 +82,9 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 unset format
-while getopts :isdmnqvk: opt; do
+while getopts :aisdmnqvk: opt; do
     case $opt in
+        a) multiple=union       ;;
         i) query_type=info      ;;
         s) query_type=search    ;;
         d) search_by=name-desc  ;;
@@ -123,11 +111,16 @@ esac
 
 # set filters
 case $format in
-     long) parse() { json_long  "$sort_key"; } ;;
-    short) parse() { json_short "$sort_key"; } ;;
+     long) parse() { parse_long;  } ;;
+    short) parse() { parse_short; } ;;
+esac
+
+case $multiple in
+      union) combine() { sort | uniq -u; } ;;
+    section) combine() { sort | uniq -d; } ;;
 esac
 
 # pipeline
-printf -- '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | parse
+printf -- '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | tabulate "$sort_key" | combine | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
