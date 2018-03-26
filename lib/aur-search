@@ -13,21 +13,23 @@ sort_key=Name
 tabulate() {
     # It is important to have a default value for every field, or parsing of the @tsv result might break.
     # See: https://lists.gnu.org/archive/html/help-bash/2016-05/msg00041.html
-    # XXX Add missing fields (depends, makedepends, checkdepends)
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | [
-        .Name            // "-",
-        .PackageBase     // "-",
-        .Version         // "-",
-        .Description     // "-",
-        .URL             // "-",
-        (.Keywords       | select (length > 0) // ["-"] | join(" ")),
-        (.License        | select (length > 0) // ["-"] | join(" ")),
-        .NumVotes        // "-",
-        .Popularity      // "-",
-        .Maintainer      // "-",
-        .OutOfDate       // "-",
+        .Name        // "-",
+        .PackageBase // "-",
+        .Version     // "-",
+        .Description // "-",
+        .URL         // "-",
+        (.Keywords   | select (length > 0) // ["-"] | join(" ")),
+        (.License    | select (length > 0) // ["-"] | join(" ")),
+        .Maintainer  // "-",
+        .NumVotes    // "-",
+        .Popularity  // "-",
+        .OutOfDate   // "-",
         (.FirstSubmitted | todate),
         (.LastModified   | todate)
+        (.Depends        | select (length > 0) // ["-"] | join(" ")),
+        (.MakeDepends    | select (length > 0) // ["-"] | join(" ")),
+        (.CheckDepends   | select (length > 0) // ["-"] | join(" ")),
     ] | @tsv'
 }
 
@@ -40,22 +42,23 @@ parse_long() {
         'URL'
         'Keywords'
         'License'
+        'Maintainer'
         'Votes'
         'Popularity'
-        'Maintainer'
         'Out Of Date'
         'Submitted'
         'Last Modified'
+        'Depends On'
+        'Makedepends'
+        'Checkdepends'
     )
     local -a info
 
-    # XXX use some less bash-heavy way here
     while IFS=$'\t' read -r -a info; do
         for i in "${!info[@]}"; do
             printf -- "$BOLD%s:$ALL_OFF\t%s\n" "${desc[i]}" "${info[i]}"
         done
 
-        # XXX no canonical way for column (util-linux) to respect empty lines?
         printf -- '-\n'
     done
 }
