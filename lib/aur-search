@@ -47,7 +47,9 @@ parse_long() {
     local -a info
 
     while IFS=$'\t' read -r -a info; do
-        printf '%s:\n' "${desc[@]}" | paste - <(printf '%s\n' "${info[@]}") | column -t
+        for i in "${!info[@]}"; do
+            printf -- '%s:\t%s\n' "${desc[i]}" "${info[i]}"
+        done
     done
 }
 
@@ -57,7 +59,7 @@ parse_short() {
     while IFS=$'\t' read -r Name _ Version Description _ _ _ NumVotes _ Maintainer OutOfDate _ _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
-            *) OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
+            *) OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;; # XXX move to tabulate()
         esac
 
         case $Maintainer in
@@ -103,6 +105,11 @@ if ((!$#)); then
     usage
 fi
 
+# union is already done on info searches
+if (($# < 2)) || [[ $query_type == info ]]; then
+    multiple=none
+fi
+
 # set format depending on query type (#319)
 case $query_type in
       info) format=${format-long}  ;;
@@ -111,13 +118,15 @@ esac
 
 # set filters
 case $format in
-     long) parse() { parse_long;  } ;;
+     # XXX no canonical way for column to respect empty lines?
+     long) parse() { parse_long | column -ts $'\t' | sed '0~13 a\\'; } ;;
     short) parse() { parse_short; } ;;
 esac
 
 case $multiple in
-      union) combine() { sort | uniq -u; } ;;
+       none) combine() { tee; } ;;
     section) combine() { sort | uniq -d; } ;;
+      union) combine() { sort | uniq -u; } ;;
 esac
 
 # pipeline
