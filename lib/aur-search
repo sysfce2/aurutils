@@ -13,17 +13,17 @@ sort_key=Name
 tabulate() {
     # XXX Add missing fields (depends, makedepends, checkdepends)
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | [
-        .Name,
-        .PackageBase,
-        .Version,
-        .Description,
-        .URL,
-        (.Keywords | select (length > 0) // ["(null)"] | join(" ")),
-        (.License  | select (length > 0) // ["(null)"] | join(" ")),
-        .NumVotes,
-        .Popularity,
-        .Maintainer // "-",
-        .OutOfDate  // "-",
+        .Name            // "-",
+        .PackageBase     // "-",
+        .Version         // "-",
+        .Description     // "-",
+        .URL             // "-",
+        (.Keywords       | select (length > 0) // ["-"] | join(" ")),
+        (.License        | select (length > 0) // ["-"] | join(" ")),
+        .NumVotes        // "-",
+        .Popularity      // "-",
+        .Maintainer      // "-",
+        .OutOfDate       // "-",
         (.FirstSubmitted | todate),
         (.LastModified   | todate)
     ] | @tsv'
