@@ -3,6 +3,8 @@
 set -o noclobber
 readonly argv0=deps-rpc
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# default options
 mode=aur
 
 count() {

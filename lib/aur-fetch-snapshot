@@ -6,6 +6,9 @@ readonly argv0=fetch-snapshot
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+# default options
+log_dir=/dev/stdout
+
 dl_stdin() {
     if type -P aria2c >/dev/null; then
         aria2c --no-conf=true --stderr=true -i -
@@ -38,7 +41,6 @@ trap_exit() {
     fi
 }
 
-log_dir=/dev/stdout
 while getopts :L: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;

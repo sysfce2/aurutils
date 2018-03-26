@@ -4,7 +4,12 @@ set -o errexit
 readonly argv0=fetch-git
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-merge() {
+# default options
+log_dir=/dev/stdout
+
+# XXX git usually prints to stdout, which is processed by later filters.
+# Redirect to stderr or take an argument for the "git log" output.
+merge_upstream() {
     git fetch -v >&2
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
@@ -18,7 +23,7 @@ merge() {
 
 merge_across_fs() {
     # avoid issues with filesystem boundaries (#274)
-    GIT_DIR="$1"/.git GIT_WORK_TREE="$1" merge
+    GIT_DIR="$1"/.git GIT_WORK_TREE="$1" merge_upstream
 }
 
 usage() {
@@ -31,7 +36,6 @@ not_a_directory() {
     exit 20
 }
 
-log_dir=/dev/stdout
 while getopts :L: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
@@ -41,7 +45,6 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# XXX Specify this function directly as argument to merge()?
 if [[ $log_dir == /dev/stdout ]]; then
     merge_log() { tee; }
 elif [[ -d $log_dir ]]; then

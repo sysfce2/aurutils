@@ -121,15 +121,15 @@ esac
 
 # set filters
 case $format in
-     # XXX no canonical way for column to respect empty lines?
+     # XXX no canonical way for column (util-linux) to respect empty lines?
      long) parse() { parse_long | column -ts $'\t' | sed '0~13 a\\'; } ;;
     short) parse() { parse_short; } ;;
 esac
 
 case $multiple in
-       none) combine() { tee; } ;;
     section) combine() { sort | uniq -d; } ;;
       union) combine() { sort | uniq -u; } ;;
+       none) combine() { tee; } ;;
 esac
 
 # pipeline
