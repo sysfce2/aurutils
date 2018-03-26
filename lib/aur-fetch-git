@@ -22,7 +22,7 @@ merge_upstream() {
 
 merge_across_fs() {
     # avoid issues with filesystem boundaries (#274)
-    GIT_DIR="$1"/.git GIT_WORK_TREE="$1" merge_upstream "$2"
+    GIT_DIR="$PWD/$1"/.git GIT_WORK_TREE="$PWD/$1" merge_upstream "$2"
 }
 
 usage() {
