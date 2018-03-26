@@ -11,6 +11,7 @@ search_by=name-desc
 sort_key=Name
 
 tabulate() {
+    # XXX Add missing fields (depends, makedepends, checkdepends)
     jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | [
         .Name,
         .PackageBase,
@@ -46,6 +47,7 @@ parse_long() {
     )
     local -a info
 
+    # XXX use some less bash-heavy way here
     while IFS=$'\t' read -r -a info; do
         for i in "${!info[@]}"; do
             printf -- '%s:\t%s\n' "${desc[i]}" "${info[i]}"
@@ -59,7 +61,8 @@ parse_short() {
     while IFS=$'\t' read -r Name _ Version Description _ _ _ NumVotes _ Maintainer OutOfDate _ _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
-            *) OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;; # XXX move to tabulate()
+            *) # XXX move date command to jq (must only be run if OutOfDate is set)
+               OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
         esac
 
         case $Maintainer in
@@ -83,6 +86,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
+# XXX add option for intersection or only leave -a?
 unset format
 while getopts :aisdmnqvk: opt; do
     case $opt in
@@ -105,7 +109,7 @@ if ((!$#)); then
     usage
 fi
 
-# union is already done on info searches
+# XXX union is done by the AUR for info type, but not search
 if (($# < 2)) || [[ $query_type == info ]]; then
     multiple=none
 fi
