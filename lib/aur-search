@@ -86,7 +86,6 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-# XXX add option for intersection or only leave -a?
 unset format
 while getopts :aisdmnqvk: opt; do
     case $opt in
