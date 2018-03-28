@@ -12,7 +12,7 @@ merge_upstream() {
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
         # only print log on upstream changes
-        git --no-pager log --patch --stat '..@{upstream}' >> "$1"
+        git --no-pager log --patch --stat '..@{upstream}' >> "${1:-/dev/stdout}"
 
         # reset index and working tree
         git reset --hard HEAD >&2
@@ -42,7 +42,7 @@ OPTIND=1
 if [[ -d $log_dir ]]; then
     merge() { merge_across_fs "$1" "$log_dir/$1".patch; }
 elif [[ $log_dir == /dev/stdout ]]; then
-    merge() { merge_across_fs "$1" "/dev/stdout"; }
+    merge() { merge_across_fs "$1"; }
 else
     printf -- >&2 '%s: %q: not a directory or /dev/stdout\n' "$argv0" "$log_dir"
     exit 1
