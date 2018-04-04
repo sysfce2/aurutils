@@ -28,6 +28,12 @@ usage() {
     exit 1
 }
 
+trap_exit() {
+    if ! [[ -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
 if ((!$#)); then
     usage
 fi
@@ -35,22 +41,30 @@ fi
 # XXX trickery for hyphen and absolute path arguments
 mapfile -t arg_path < <(readlink -e -- "$@")
 
-makepkg_log=$(mktemp -t makepkg.XXXXXXXX) || exit
-trap 'rm $makepkg_log' EXIT
+tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
+trap 'trap_exit' EXIT
+
+cd "$tmp" || exit
+parallel --will-cite --nice 10 -j +2 --joblog makepkg_log --results '{#}_makepkg' \
+  'cd {}; makepkg --skipinteg --noprepare -od' &>/dev/null ::: "${arg_path[@]}"
+num_failed=$?
+
+if [[ "$num_failed" -gt 0 ]]; then
+    printf >&2 '%s: failed to update %s packages\n\n' "$argv0" "$num_failed"
+
+    while IFS=$'\t' read -r seq _ _ _ _ _ exitcode _ command; do
+        [[ "$exitcode" -eq 0 ]] && continue
+
+        printf >&2 '8<----\n'
+        printf >&2 '%s\n' "$command"
+        cat "${seq}_makepkg" >&2
+        cat "${seq}_makepkg.err" >&2
+        printf >&2 '8<----\n\n'
+    done <makepkg_log
+fi
 
 find_pkgbuild_path "${arg_path[@]}" | while read -r; do
-    cd "$REPLY" || exit
-
-    if makepkg --skipinteg --noprepare -od >"$makepkg_log" 2>&1; then
-        get_pkgbuild_info "$REPLY"
-    else
-        makepkg_exit=$?
-        printf >&2 '%s: error on package %s\n' "$argv0" "$REPLY"
-        printf >&2 '8<----\n'
-
-        cat  "$makepkg_log"
-        exit "$makepkg_exit"
-    fi
+    get_pkgbuild_info "$REPLY"
 done
 
 # vim: set et sw=4 sts=4 ft=sh:
