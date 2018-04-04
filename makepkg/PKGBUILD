@@ -16,6 +16,7 @@ optdepends=('aria2: thread downloads'
             'devtools: aur-build-nspawn'
             'diffstat: aur-fetch-snapshot'
             'expac: aur-rfilter'
+            'parallel: aur-srcver'
             'vifm: build file interaction'
             'xdelta3: generate delta files')
 
