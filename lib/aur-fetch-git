@@ -6,6 +6,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
 log_dir=/dev/stdout
+reset=1
 
 merge_upstream() {
     git fetch -v >&2
@@ -14,9 +15,10 @@ merge_upstream() {
         # only print log on upstream changes
         git --no-pager log --patch --stat '..@{upstream}' >> "${1:-/dev/stdout}"
 
-        # reset index and working tree
-        git reset --hard HEAD >&2
-        git merge >&2
+        if ((reset)); then
+            git reset --hard HEAD >&2
+        fi
+        git merge --no-edit >&2
     fi
 }
 
@@ -26,14 +28,15 @@ merge_across_fs() {
 }
 
 usage() {
-    printf -- >&2 'usage: %s [-L log_dir]\n' "$argv0"
+    printf -- >&2 'usage: %s [-R] [-L log_dir]\n' "$argv0"
     exit 1
 }
 
-while getopts :L: opt; do
+while getopts :L:R opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
-        *) usage ;;
+        R) reset=0 ;;
+        *) usage   ;;
     esac
 done
 shift $((OPTIND - 1))

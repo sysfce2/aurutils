@@ -16,7 +16,7 @@ makechrootpkg_makepkg_args=()
 makepkg_args=(-cs)
 
 # default options
-build=1 chkver=1 download=1 view=1
+build=1 chkver=1 download=1 view=1 reset=1
 chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0
 
 viewer() {
@@ -105,7 +105,7 @@ fi
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
 longopts+=,sign,temp,tar,repo:,root:,upgrades,nhehgvyf,continue,list,git
-longopts+=,makepkg-conf,pacman-conf,provides
+longopts+=,makepkg-conf,pacman-conf,provides,noreset,no-reset
 shortopts=C:D:M:AcfglLnprstTu
 
 if optstring=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
@@ -183,6 +183,9 @@ while true; do
             IFS=, read -a pkg -r <<< "$2"
             pkg_i+=("${pkg[@]}")
             shift 2 ;;
+        --noreset|--no-reset)
+            reset=0
+            shift ;;
         --nover|--no-ver)
             chkver=0
             shift ;;
@@ -252,6 +255,10 @@ if ((snapshot)); then
 else
     aur_workdir=$AURDEST
     fetch_args=(-L "$tmp"/patch -g)
+
+    if ! ((reset)); then
+        fetch_args+=(-R)
+    fi
 fi
 
 mkdir -p     "$aur_workdir"
@@ -313,16 +320,14 @@ if ((download)); then
 fi
 
 if ((view)); then
-    printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
-        | xargs -I{} find {} -maxdepth 1 | viewer
+    printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue | xargs -I{} find {} -maxdepth 1 | viewer
 fi
 
 if ((build)); then
     build_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
 
     if ((chroot)); then
-        aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
-            -- "${makechrootpkg_makepkg_args[@]}"
+        aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
     else
         aur build "${build_args[@]}" -- "${makepkg_args[@]}"
     fi
