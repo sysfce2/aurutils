@@ -65,8 +65,7 @@ parse_aur() {
 parse_sync() {
     pacconf --repo="$1" >/dev/null || return
 
-    pacsift --repo="$1" --exact <&- | xargs -r \
-        pacman -Sddp --print-format '%n %v'
+    pacsift --repo="$1" --exact <&- | xargs -r pacman -Sddp --print-format '%n %v'
 }
 
 trap_exit() {
