@@ -6,7 +6,6 @@ aur\-sync \- download and build aur packages automatically
 .SY "aur sync"
 .OP \-AcfgLnprstu
 .OP \-\-ignore
-.OP \-\-no\-reset
 .OP \-\-no\-ver
 .OP \-\-no\-view
 .OP \-\-provides
@@ -81,11 +80,6 @@ Clone AUR repositories with \fBgit-clone\fR(1).
 .BR \-t ", " \-\-tar
 Download AUR snapshots (\fIpkgbase.tar.gz\fR) and extract them with
 \fBtar\fR(1).
-
-.TP
-.BR \-\-noreset ", ", \-\-no\-reset
-Do not use \fBgit-reset\fR(1) when merging changes from AUR
-repositories.
 
 .TP
 .BR \-\-noview ", " \-\-no\-view
