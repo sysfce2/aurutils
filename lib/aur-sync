@@ -76,7 +76,7 @@ select_pkgbase() {
 
 complement() {
     # empty set should not return 1
-    grep -Fxvf "$@" || true
+    grep -Fxvf "$@" || return $(($?-1))
 }
 
 trap_exit() {
