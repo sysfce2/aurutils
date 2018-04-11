@@ -63,9 +63,11 @@ parse_aur() {
 }
 
 parse_sync() {
-    pacconf --repo="$1" >/dev/null || return
-
-    pacsift --repo="$1" --exact <&- | xargs -r pacman -Sddp --print-format '%n %v'
+    if pacconf --repo="$1" >/dev/null; then
+        pacsift --repo="$1" --exact <&- | xargs -r pacman -Sddp --print-format '%n %v'
+    else
+        return
+    fi
 }
 
 trap_exit() {
