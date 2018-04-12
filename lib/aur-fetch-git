@@ -13,7 +13,9 @@ merge_upstream() {
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
         # only print log on upstream changes
         git --no-pager log --patch --stat '..@{upstream}' >> "${1:-/dev/stdout}"
-        git merge --no-edit >&2
+
+        # discard any local changes (#349)
+        git reset --hard HEAD@{upstream} >&2
     fi
 }
 
