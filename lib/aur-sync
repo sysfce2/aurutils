@@ -314,19 +314,18 @@ if ((download)); then
 fi
 
 if ((view)); then
-    if [[ -v AUR_PAGER ]] && type -P lndir >/dev/null; then
-        cd_safe "$tmp_view"
-        lndir "$aur_workdir"
+    if [[ -v AUR_PAGER ]]; then
+        # link build files in the queue (relative links)
+        xargs -a "$tmp"/queue ln -rst "$tmp_view"
 
-        # remove files that are not part of the build queue
-        find -maxdepth 1 -mindepth 1 -printf '%f\0' \
-            | complement "$tmp"/queue --null | xargs -0 rm -rf
+        # move diffs if available
+        diffs=("$tmp"/patch/*)
+        if [[ ${diffs[*]} ]]; then
+            mv "${diffs[@]}" -t "$tmp_view"
+        fi
 
-        # add patch files
-        lndir "$tmp"/patch
-
-        command -- $AUR_PAGER
-        cd_safe "$aur_workdir"
+        # start file manager in link directory
+        command -- $AUR_PAGER "$tmp_view"
     else
         printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
             | xargs -I{} find {} -maxdepth 1 | viewer
