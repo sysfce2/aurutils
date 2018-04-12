@@ -315,16 +315,17 @@ fi
 
 if ((view)); then
     if [[ -v AUR_PAGER ]] && type -P lndir >/dev/null; then
-        # create shadow copy of workdir and patch files
         cd_safe "$tmp_view"
         lndir "$aur_workdir"
-        lndir "$tmp"/patch
 
-        # remove links to build files that are not part of the queue
-        find -maxdepth 1 -mindepth 1 -xtype d -printf '%f\0' \
+        # remove files that are not part of the build queue
+        find -maxdepth 1 -mindepth 1 -printf '%f\0' \
             | complement "$tmp"/queue --null | xargs -0 rm -rf
 
-        command -- "$AUR_PAGER"
+        # add patch files
+        lndir "$tmp"/patch
+
+        command -- $AUR_PAGER
         cd_safe "$aur_workdir"
     else
         printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
