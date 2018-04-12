@@ -20,7 +20,7 @@ get_pkgbuild_info() {
 }
 
 find_pkgbuild_path() {
-    find "$@" -maxdepth 1 -type f -name PKGBUILD -printf '%h\n'
+    find "$@" -maxdepth 1 -type f -name PKGBUILD -printf '%h\0'
 }
 
 usage() {
@@ -46,24 +46,26 @@ trap 'trap_exit' EXIT
 
 cd "$tmp" || exit
 parallel --will-cite --nice 10 -j +2 --joblog makepkg_log --results '{#}_makepkg' \
-  'cd {}; makepkg --skipinteg --noprepare -od' &>/dev/null ::: "${arg_path[@]}"
+  'cd {}; makepkg --skipinteg --noprepare -od' >/dev/null 2>&1 ::: "${arg_path[@]}"
 num_failed=$?
 
-if [[ "$num_failed" -gt 0 ]]; then
-    printf >&2 '%s: failed to update %s packages\n\n' "$argv0" "$num_failed"
+if ((num_failed > 0 )); then
+    printf >&2 '%s: failed to update %s packages\n' "$argv0" "$num_failed"
 
     while IFS=$'\t' read -r seq _ _ _ _ _ exitcode _ command; do
-        [[ "$exitcode" -eq 0 ]] && continue
+        if ((!exitcode)); then
+            continue
+        else
+            printf >&2 '8<----\n'
+            printf >&2 '%s\n' "$command"
 
-        printf >&2 '8<----\n'
-        printf >&2 '%s\n' "$command"
-        cat "${seq}_makepkg" >&2
-        cat "${seq}_makepkg.err" >&2
-        printf >&2 '8<----\n\n'
-    done <makepkg_log
+            cat "${seq}_makepkg" >&2
+            cat "${seq}_makepkg.err" >&2
+        fi
+    done < makepkg_log
 fi
 
-find_pkgbuild_path "${arg_path[@]}" | while read -r; do
+find_pkgbuild_path "${arg_path[@]}" | while IFS=$'\0' read -r; do
     get_pkgbuild_info "$REPLY"
 done
 
