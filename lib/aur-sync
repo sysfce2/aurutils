@@ -86,7 +86,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcCDflLMprstTu] [long options] [--] pkgname..."
+    plain "usage: $argv0 [-ABcDfglLprstTu] [long options] [--] pkgname..."
     exit 1
 }
 
@@ -106,7 +106,7 @@ longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
 longopts+=,sign,temp,tar,repo:,root:,upgrades,nhehgvyf,continue,list,git
 longopts+=,makepkg-conf,pacman-conf,provides
-shortopts=C:D:M:AcfglLnprstTu
+shortopts=D:AcfglLnprstTu
 
 if optstring=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
     eval set -- "$optstring"
@@ -131,14 +131,14 @@ while true; do
         -s|--sign)
             build_args+=(-sv)
             shift ;;
-        -C|--pacman-conf) # XXX rename to -P?
-            build_args+=(-C "$2")
-            shift 2 ;;
         -D|--directory)
             build_args+=(-D "$2")
             shift 2 ;;
-        -M|--makepkg-conf)
+        --makepkg-conf)
             build_args+=(-M "$2")
+            shift 2 ;;
+        --pacman-conf)
+            build_args+=(-C "$2")
             shift 2 ;;
         --bind)
             makechrootpkg_args+=(-D "$2")

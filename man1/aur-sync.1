@@ -53,13 +53,13 @@ Sign built packages and verify the database with gpg. (\fBaur build \-sv\fR)
 Build packages with makechrootpkg. (\fBaur build \-c\fR)
 
 .TP
-.BR "\-C \fIFILE\fR" ", " \-\-pacman\-conf=\fIFILE\fR
+.BR \-\-pacman\-conf=\fIFILE\fR
 Set the \fIpacman.conf\fR file to be used in the container. (\fBaur
 build \-C\fR)
 .RE
 
 .TP
-.BR "\-M \fIFILE\fR" ", " \-\-makepkg\-conf=\fIFILE\fR
+.BR \-\-makepkg\-conf=\fIFILE\fR
 Set the \fImakepkg.conf\fR file to be used in the container. (\fBaur
 build \-M\fR)
 
@@ -179,7 +179,7 @@ this by stripping the \fIlib32\-\fR prefix from packages and removing
 \fIgcc\-multilib\fR if the i686 architecture is detected.
 
 \fItar\fR snapshots are extracted to the \fI$AURDEST_SNAPSHOT\fR
-directory, in order to avoid conflicts with \fBgit\fR.
+directory, in order to avoid conflicts with \fBgit\fR(1).
 
 .SH SEE ALSO
 .BR aur (1),
