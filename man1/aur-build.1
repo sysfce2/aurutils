@@ -93,17 +93,10 @@ prompts, \fBsudoers\fR(5) can be used instead.
 For example:
 .EX
 
-  %build localhost = (root) NOPASSWD: SETENV: /usr/bin/aur build-nspawn *
+  %build localhost = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
+  %build localhost = (root) NOPASSWD: /usr/bin/mkarchroot, /usr/bin/arch-nspawn
 
 .EE
-
-.SY Note:
-For precautions when using wildcards with \fBsudo\fR(8), see the
-\fIWildcards\fR section in \fBsudoers\fR(5). Whitelisting
-\fI/usr/bin/aur\fR should generally be avoided, as this allows to run
-\fIany\fR \fBaur\fR command as root without prompting. (Including
-scripts found in $PATH using the 'aur-' prefix)
-.YS
 
 .SH SEE ALSO
 .BR aur (1),

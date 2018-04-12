@@ -75,10 +75,9 @@ if ((prepare)); then
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
-        arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root pacman -Syu --noconfirm
+        sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root pacman -Syu --noconfirm
     else
-        install -d "$directory" -m 755 -v || exit
-        mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root base-devel
+        sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root base-devel
     fi
 fi
 
@@ -88,7 +87,7 @@ if ((build)); then
         export SOURCE_DATE_EPOCH=$(date +%s)
     fi
 
-    PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$directory" "${makechrootpkg_args[@]}"
+    sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$directory" "${makechrootpkg_args[@]}"
 else
     printf -- >&2 'container path: %q\n' "$directory"
     exit 0
