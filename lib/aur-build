@@ -160,10 +160,10 @@ while read -r -u "$fd" pkg _; do
     if ((sign_pkg)); then
         for p in "${pkglist[@]}"; do
             gpg "${gpg_args[@]}" --output "$p".sig "$p"
-            mv -bf "$p" "$p".sig -t "$db_root"
+            mv -bf "$p" "$p".sig "$db_root"
         done
     else
-        mv -bf "${pkglist[@]}" -t "$db_root"
+        mv -bf "${pkglist[@]}" "$db_root"
     fi
 
     cd_safe "$db_root"
