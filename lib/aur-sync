@@ -243,18 +243,6 @@ if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
     exit 13
 fi
 
-if ((${#pkg_i[@]})); then
-    printf -- >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
-fi
-
-if ((snapshot)); then
-    aur_workdir=$AURDEST_SNAPSHOT
-    fetch_args=(-L "$tmp"/patch -t)
-else
-    aur_workdir=$AURDEST
-    fetch_args=(-L "$tmp"/patch -g)
-fi
-
 mkdir -p     "$aur_workdir"
 chmod -c 700 "$aur_workdir"
 
@@ -285,6 +273,7 @@ else
 fi
 
 { if ((${#pkg_i[@]})); then
+      printf -- >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
       printf -- '%s\n' "${pkg_i[@]}"
   fi
 
@@ -307,6 +296,14 @@ else
     exit
 fi
 
+if ((snapshot)); then
+    aur_workdir=$AURDEST_SNAPSHOT
+    fetch_args=(-L "$tmp"/patch -t)
+else
+    aur_workdir=$AURDEST
+    fetch_args=(-L "$tmp"/patch -g)
+fi
+
 cd_safe "$aur_workdir"
 
 if ((download)); then
@@ -316,12 +313,13 @@ fi
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
         # link build files in the queue (relative links)
-        xargs -a "$tmp"/queue ln -rst "$tmp_view"
+        xargs -a "$tmp"/queue ln -t "$tmp_view" -rs
 
         # move diffs if available
-        diffs=("$tmp"/patch/*)
-        if [[ ${diffs[*]} ]]; then
-            mv "${diffs[@]}" -t "$tmp_view"
+        files=("$tmp"/patch/*)
+
+        if [[ -f ${files[0]} ]]; then
+            mv "${files[@]}" "$tmp_view"
         fi
 
         # start file manager in link directory
