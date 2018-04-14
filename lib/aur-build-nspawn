@@ -82,11 +82,6 @@ if ((prepare)); then
 fi
 
 if ((build)); then
-    # https://git.archlinux.org/devtools.git/commit/archbuild.in?id=eab5aba9
-    if [[ ! -v SOURCE_DATE_EPOCH ]]; then
-        export SOURCE_DATE_EPOCH=$(date +%s)
-    fi
-
     sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$directory" "${makechrootpkg_args[@]}"
 else
     printf -- >&2 'container path: %q\n' "$directory"
