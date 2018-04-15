@@ -243,6 +243,14 @@ if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
     exit 13
 fi
 
+if ((snapshot)); then
+    aur_workdir=$AURDEST_SNAPSHOT
+    fetch_args=(-L "$tmp"/patch -t)
+else
+    aur_workdir=$AURDEST
+    fetch_args=(-L "$tmp"/patch -g)
+fi
+
 mkdir -p     "$aur_workdir"
 chmod -c 700 "$aur_workdir"
 
@@ -294,14 +302,6 @@ if [[ -s queue_0 ]]; then
 else
     plain "there is nothing to do"
     exit
-fi
-
-if ((snapshot)); then
-    aur_workdir=$AURDEST_SNAPSHOT
-    fetch_args=(-L "$tmp"/patch -t)
-else
-    aur_workdir=$AURDEST
-    fetch_args=(-L "$tmp"/patch -g)
 fi
 
 cd_safe "$aur_workdir"
