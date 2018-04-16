@@ -2,36 +2,33 @@
 # aur-fetch - retrieve build files from the AUR
 readonly argv0=fetch
 readonly aur_location='https://aur.archlinux.org'
+readonly fmt_git_clone=$aur_location/%s.git
+readonly fmt_snapshot=$aur_location/cgit/aur.git/snapshot/%s.tar.gz
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+# default arguments
+fetch_args=()
+
 # default options
-log_dir=/dev/stdout
+deps=0
 mode=git
-
-fmt_snapshot() {
-    # https://git.archlinux.org/aurweb.git/tree/conf/config.proto
-    printf -- "$aur_location/cgit/aur.git/snapshot/%s.tar.gz\\n" "$@"
-}
-
-fmt_git_clone() {
-    printf -- "$aur_location/%s.git\\n" "$@"
-}
 
 usage() {
     base64 -d <<EOF
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAsXyAg
 ICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 EOF
-    printf -- 'usage: %s [-gt] [-L log_dir] pkgname [pkgname...]\n' "$argv0" >&2
+    printf >&2 'usage: %s [-dgt] [-L log_dir] pkgname [pkgname...]\n' "$argv0"
     exit 1
 }
 
-# XXX add recursive mode (aur-deps-rpc)
-while getopts :gtL: opt; do
+unset log_dir
+while getopts :dgtL: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
+        d) deps=1   ;;
         g) mode=git ;;
-        t) mode=tar ;;
+        t) mode=snapshot ;;
         *) usage    ;;
     esac
 done
@@ -42,7 +39,28 @@ if ((!$#)); then
     usage
 fi
 
-case $mode in
-    git) fmt_git_clone "$@" | aur fetch-git      -L "$log_dir" ;;
-    tar) fmt_snapshot  "$@" | aur fetch-snapshot -L "$log_dir" ;;
+if [[ -v log_dir ]]; then
+    fetch_args+=(-L "$log_dir")
+
+    if ! [[ -d $log_dir ]]; then
+        printf >&2 '%s: %q: not a directory' "$argv0" "$log_dir"
+        exit 21
+    fi
+fi
+
+# set filters (1)
+case $deps in
+    1) print_deps() { printf '%s\n' "$@" | aur deps-rpc; } ;;
+    0) print_deps() { printf '%s\n' "$@"; } ;;
 esac
+
+# set filters (2)
+case $mode in
+         git) format() { xargs printf "$fmt_git_clone\n"; } ;;
+    snapshot) format() { xargs printf "$fmt_snapshot\n" ; } ;;
+esac
+
+# pipeline
+print_deps "$@" | format | aur "fetch-$mode" "${fetch_args[@]}"
+
+# vim: set et sw=4 sts=4 ft=sh:

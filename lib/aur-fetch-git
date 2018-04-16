@@ -5,7 +5,7 @@ readonly argv0=fetch-git
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-log_dir=/dev/stdout
+log=stdout
 
 merge_upstream() {
     git fetch -v >&2
@@ -25,27 +25,25 @@ merge_across_fs() {
 }
 
 usage() {
-    printf -- >&2 'usage: %s [-L log_dir]\n' "$argv0"
+    printf >&2 'usage: %s [-L log_dir]\n' "$argv0"
     exit 1
 }
 
 while getopts :L: opt; do
     case $opt in
-        L) log_dir=$OPTARG ;;
-        *) usage   ;;
+        L) log_dir=$OPTARG
+           log=directory ;;
+        *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ -d $log_dir ]]; then
-    merge() { merge_across_fs "$1" "$log_dir/$1".patch; }
-elif [[ $log_dir == /dev/stdout ]]; then
-    merge() { merge_across_fs "$1"; }
-else
-    printf -- >&2 '%s: %q: not a directory or /dev/stdout\n' "$argv0" "$log_dir"
-    exit 1
-fi
+# set filters
+case $log in
+    directory) merge() { merge_across_fs "$log_dir/$1".patch; } ;;
+    stdout)    merge() { merge_across_fs; } ;;
+esac
 
 while IFS= read -r uri; do
     pkg=${uri##*/}   # strip path
