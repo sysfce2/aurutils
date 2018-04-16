@@ -6,7 +6,7 @@ readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-log_dir=/dev/stdout
+log=stdout
 
 dl_stdin() {
     if type -P aria2c >/dev/null; then
@@ -37,24 +37,22 @@ trap_exit() {
 
 while getopts :L: opt; do
     case $opt in
-        L) log_dir=$OPTARG ;;
+        L) log_dir=$OPTARG
+           log=directory ;;
         *) usage ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
-if [[ -d $log_dir ]]; then
-    diff_log() { tee -a "$log_dir/$1".diff | diffstat -CKq -f3; }
-elif [[ $log_dir == /dev/stdout ]]; then
-    diff_log() { tee; }
-else
-    printf -- >&2 '%s: %q: not a directory or /dev/stdout\n' "$argv0" "$log_dir"
-    exit 1
-fi
-
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 trap trap_exit EXIT
+
+# set filters
+case $log in
+    directory) diff_log() { tee -a "$log_dir/$1".diff | diffstat -Ckq -f3; } ;;
+       stdout) diff_log() { tee; } ;;
+esac
 
 cd "$tmp"
 dl_stdin
@@ -62,10 +60,11 @@ dl_stdin
 for a in ./*.tar.gz; do
     if [[ -f $a ]]; then
         tar -kxf "$a"
-        x=${a%%.tar.gz}
     else
         continue
     fi
+
+    x=${a%%.tar.gz}
 
     if tar_no_mode_diff "$a" "$startdir"; then
         diff -ur "$startdir/$x" "$x" | diff_log "$x"
