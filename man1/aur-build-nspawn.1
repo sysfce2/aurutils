@@ -31,6 +31,10 @@ The base directory for containers. This directory usually contains a
 \fB/root\fR subdirectory that serves as template for user containers
 (named after \fI$SUDO_USER\fR, or \fB/copy\fR if unset).
 
+.SY Note:
+If the \fB\-T\fR parameter is specified to \fBmakechrootpkg\fR, the 
+user container has a random name and is removed on build completion.
+
 .TP
 .BI "\-M " makepkg_conf
 The makepkg.conf file to be used in the container. Defaults to
