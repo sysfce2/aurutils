@@ -65,7 +65,7 @@ if ((num_failed > 0 )); then
     done < makepkg_log
 fi
 
-find_pkgbuild_path "${arg_path[@]}" | while IFS=$'\0' read -r; do
+find_pkgbuild_path "${arg_path[@]}" | while IFS= read -d $'\0' -r; do
     get_pkgbuild_info "$REPLY"
 done
 
