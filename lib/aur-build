@@ -113,12 +113,15 @@ if ((sign_pkg)) && [[ -v GPGKEY ]]; then
     gpg_args+=(-u "$GPGKEY")
 fi
 
-mapfile -t db_sigs < <(find "$db_root" -maxdepth 1 -name "$database*.sig" -type f)
+if ((!sign_pkg)); then
+    db_sigs=("$db_root/$database"*.sig)
+  
+    if [[ -f ${db_sigs[0]} ]]; then
+        error "$argv0: signature found, but signing is disabled"
 
-if ((!sign_pkg)) && [[ ${db_sigs[*]} ]]; then
-    error "$argv0: signature found, but signing is disabled"
-    printf -- '%q\n' "${db_sigs[@]}" >&2
-    exit 1
+        printf '%q\n' "${db_sigs[@]}" >&2
+        exit 1
+    fi
 fi
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
