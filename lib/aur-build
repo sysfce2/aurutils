@@ -15,6 +15,16 @@ repo_add_args=()
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
+build_failure() {
+    error "$argv0: a package failed to build ($1)"
+
+    mapfile -tu "$2" pkg_todo
+    printf >&2 'remaining packages: %s\n' "${pkg_todo[*]}" 
+    
+    mapfile -tu "$3" pkg_done
+    printf >&2 'successfully processed packages: %s\n' "${pkg_done[*]}"
+}
+
 conf_single() {
     printf '[options]\n'
     pacconf --options --raw
@@ -50,6 +60,12 @@ source /usr/share/makepkg/util/message.sh
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
+
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
+var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
+
+trap 'trap_exit' EXIT
+trap 'exit' INT
 
 unset database db_root queue
 while getopts a:d:r:C:D:M:cfNRsv opt; do
@@ -95,6 +111,9 @@ else
     exec {fd}< <(printf '\n')
 fi
 
+# keep track of processed packages (#264)
+exec {fd_done} >"$tmp"/queue_processed
+
 # reset default makechrootpkg arguments
 if (($#)); then
     if ((chroot)); then
@@ -124,12 +143,6 @@ if ((!sign_pkg)); then
     fi
 fi
 
-tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
-var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
-
-trap 'trap_exit' EXIT
-trap 'exit' INT
-
 if ((chroot)); then
     aur build-nspawn -B "${chroot_args[@]}"
 else
@@ -154,7 +167,11 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$var_tmp" aur build-nspawn -P "${chroot_args[@]}" \
             -- -d "$db_root" "${makechrootpkg_args[@]}"
     else
-        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
+        if PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"; then
+            printf '%s\n' "$pkg" >&"$fd_done" 
+        else
+            build_failure "$pkg" "$fd" "$fd_done"
+        fi
     fi
 
     cd_safe "$var_tmp"
