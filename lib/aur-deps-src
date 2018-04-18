@@ -1,59 +1,45 @@
-#!/bin/bash
-# aur-deps-src - order package dependencies using .SRCINFO
-set -o pipefail
-readonly argv0=deps-src
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+#!/bin/gawk -f
 
-deps_paired() {
-    awk -v FS='[<=>]' '
-    /pkgbase/ {
-        read = 1; pb = $2
-
-        printf("%s %s\n", pb, pb)
-    } {
-        if (read && $0 ~ /^\t(make|check)?depends/)
-            printf("%s %s\n", pb, $2)
-
-        if ($0 ~ /^$/)
-            read = 0 # split package
-    }' "$@"
+BEGIN {
+    FS="[<=>]"
 }
 
-# XXX Output of form " pkgname pkgbase" (leading space)
-base() {
-    awk -v FS='[<=>]' '
-    /pkgbase/ {
-        pb = $2
+/pkgbase/ {
+    dep_count = 0
+    in_split_pkg = 0
+    pkgbase = $2
+}
+
+/^\t(make|check)?depends/ {
+    if (!length(pkgbase)) {
+        print "pkgbase unavailable" > "/dev/stderr"
+        exit 1
     }
-    /pkgname/ {
-        printf("%s %s\n", $2, pb)
-    }' "$@"
+    if (!in_split_pkg) {
+        # note: gawk array of arrays
+        pkg_deps[pkgbase][dep_count++] = $2
+    }
 }
 
-sub() {
-    awk 'NR == FNR {
-        x[$1] = $2; next
-    } {
-        if ($1 in x && !(x[$1] in seen)) {
-            print x[$1]; seen[x[$1]];
+/^$/ {
+    in_split_pkg = 1
+}
+
+/pkgname/ {
+    if (!length(pkgbase)) {
+        print "pkgbase unavailable" > "/dev/stderr"
+        exit 1
+    }
+    pkg_map[$2] = pkgbase
+}
+
+END {
+    for (pkgbase in pkg_deps) {
+        for (dep in pkg_deps[pkgbase]) {
+            dep_pkgname = pkg_deps[pkgbase][dep]
+            # only print dependency if it was encountered before
+            if (dep_pkgname in pkg_map)
+                printf("%s\t%s\n", pkgbase, pkg_map[dep_pkgname])
         }
-    }' "$@"
+    }
 }
-
-trap_exit() {
-    if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp"
-    fi
-}
-
-tmp=$(mktemp -t "$argv0".XXXXXXXX) || exit
-trap 'trap_exit' EXIT
-
-# take file names from stdin, null-separated
-xargs -0 cat > "$tmp"
-
-if [[ -s "$tmp" ]]; then
-    deps_paired "$tmp" | tsort | sub <(base "$tmp") -
-fi
-
-# vim: set et sw=4 sts=4 ft=sh:
