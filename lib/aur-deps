@@ -33,9 +33,11 @@ case $mode in
     src)
         mapfile -t arg_path < <(readlink -e -- "$@")
 
-        if [[ -f ${arg_path[0]} ]]; then
-            find_srcinfo "${arg_path[@]}" | aur deps-src | grep -Fxf <(basename -a "$@")
-        fi        
+        if [[ -z ${arg_path[*]} ]]; then
+            printf -- '%s: no data available\n' "$argv0"
+        fi
+
+        find_srcinfo "${arg_path[@]}" | aur deps-src | grep -Fxf <(basename -a "$@")
         ;;
     json)
         printf -- '%s\n' "$@" | aur deps-rpc
