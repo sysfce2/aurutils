@@ -112,7 +112,7 @@ else
 fi
 
 # keep track of processed packages (#264)
-exec {fd_done} >"$tmp"/queue_processed
+exec {fd_done}> "$tmp"/queue_processed
 
 # reset default makechrootpkg arguments
 if (($#)); then
@@ -167,6 +167,7 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$var_tmp" aur build-nspawn -P "${chroot_args[@]}" \
             -- -d "$db_root" "${makechrootpkg_args[@]}"
     else
+        # XXX implement for chroot builds
         if PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"; then
             printf '%s\n' "$pkg" >&"$fd_done" 
         else
