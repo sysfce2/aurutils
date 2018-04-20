@@ -171,7 +171,7 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}" || m_err=$?
     fi
 
-    if ((m_err)); then
+    if ((!m_err)); then
         printf '%s\n' "$pkg" >&"$fd_done" 
     else
         build_failure "$pkg" "$fd" "$fd_done"
