@@ -10,6 +10,7 @@ chroot_args=()
 gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
 makepkg_args=(-rs --noconfirm)
+m_err=0
 repo_add_args=()
 
 # default options
@@ -165,14 +166,16 @@ while read -r -u "$fd" pkg _; do
 
     if ((chroot)); then
         PKGDEST="$var_tmp" aur build-nspawn -P "${chroot_args[@]}" \
-            -- -d "$db_root" "${makechrootpkg_args[@]}"
+            -- -d "$db_root" "${makechrootpkg_args[@]}" || m_err=$?
     else
-        # XXX implement for chroot builds
-        if PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"; then
-            printf '%s\n' "$pkg" >&"$fd_done" 
-        else
-            build_failure "$pkg" "$fd" "$fd_done"
-        fi
+        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}" || m_err=$?
+    fi
+
+    if ((m_err)); then
+        printf '%s\n' "$pkg" >&"$fd_done" 
+    else
+        build_failure "$pkg" "$fd" "$fd_done"
+        exit "$m_err"
     fi
 
     cd_safe "$var_tmp"
