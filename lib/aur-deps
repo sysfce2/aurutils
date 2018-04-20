@@ -37,7 +37,7 @@ case $mode in
             printf -- '%s: no data available\n' "$argv0"
         fi
 
-        find_srcinfo "${arg_path[@]}" | aur deps-src | grep -Fxf <(basename -a "$@")
+        find_srcinfo "${arg_path[@]}" | xargs -0 cat | aur deps-src | tsort
         ;;
     json)
         printf -- '%s\n' "$@" | aur deps-rpc
