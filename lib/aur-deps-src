@@ -1,13 +1,15 @@
-#!/bin/gawk -f
+#!/bin/awk -f
 
 BEGIN {
     FS="[<=>]"
 }
 
 /pkgbase/ {
-    dep_count = 0
     in_split_pkg = 0
     pkgbase = $2
+
+    # track both the pkgbases themselves and their number of deps
+    dep_counts[pkgbase] = 0 
 }
 
 /^\t(make|check)?depends/ {
@@ -16,8 +18,8 @@ BEGIN {
         exit 1
     }
     if (!in_split_pkg) {
-        # note: gawk array of arrays
-        pkg_deps[pkgbase][dep_count++] = $2
+        # POSIX array of arrays!
+        pkg_deps[pkgbase,++dep_counts[pkgbase]] = $2
     }
 }
 
@@ -34,12 +36,13 @@ BEGIN {
 }
 
 END {
-    for (pkgbase in pkg_deps) {
-        for (dep in pkg_deps[pkgbase]) {
-            dep_pkgname = pkg_deps[pkgbase][dep]
+    for (pkgbase in dep_counts) {
+      for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
+            dep_pkgname = pkg_deps[pkgbase,dep]
             # only print dependency if it was encountered before
             if (dep_pkgname in pkg_map)
                 printf("%s\t%s\n", pkgbase, pkg_map[dep_pkgname])
         }
     }
 }
+
