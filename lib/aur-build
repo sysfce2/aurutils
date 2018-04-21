@@ -10,7 +10,6 @@ chroot_args=()
 gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
 makepkg_args=(-rs --noconfirm)
-m_err=0
 repo_add_args=()
 
 # default options
@@ -20,10 +19,10 @@ build_failure() {
     error "$argv0: a package failed to build ($1)"
 
     mapfile -tu "$2" pkg_todo
-    printf >&2 'remaining packages: %s\n' "${pkg_todo[*]}" 
+    printf >&2 'remaining packages: %s\n' "${pkg_todo[*]:-(none)}"
     
     mapfile -tu "$3" pkg_done
-    printf >&2 'successfully processed packages: %s\n' "${pkg_done[*]}"
+    printf >&2 'successfully processed packages: %s\n' "${pkg_done[*]:-(none)}"
 }
 
 conf_single() {
@@ -164,6 +163,7 @@ while read -r -u "$fd" pkg _; do
         fi
     fi
 
+    m_err=0
     if ((chroot)); then
         PKGDEST="$var_tmp" aur build-nspawn -P "${chroot_args[@]}" \
             -- -d "$db_root" "${makechrootpkg_args[@]}" || m_err=$?
