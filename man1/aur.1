@@ -7,15 +7,21 @@ aur \- helper tool for the arch user repository
 The below gives a short overview; see the respective documentation for
 details.
 .P
+.BR aur\-arrow (1)
+.RS 4
+Print package/dependency pairs.
+.RE
+
+.P
 .BR aur\-build (1)
 .RS 4
 Build packages to a local repository.
 .RE
 
 .P
-.BR aur\-deps (1)
+.BR aur\-deps-rpc (1)
 .RS 4
-Order package dependencies.
+Order package dependencies using AurJson.
 .RE
 
 .P
@@ -154,7 +160,7 @@ Examples below assume \fBbash\fR as the interactive shell.
 Run actions on the dependency tree of an AUR package:
 .EX
 
-  $ aur deps foobar | while read -r pkg; do ... done
+  $ echo foo | aur deps-rpc | while read -r pkg; do ... done
 
 .EE
 Build all packages in the \fIpkgbuilds\fR github repository: (requires
@@ -164,7 +170,7 @@ Build all packages in the \fIpkgbuilds\fR github repository: (requires
   $ git clone https://www.github.com/Earnestly/pkgbuilds
   $ cd pkgbuilds
   $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \\;
-  $ aur deps -s ./* > queue # Remove unwanted targets
+  $ aur arrow */.SRCINFO | tsort > queue # Remove unwanted targets
   $ aur build -d custom -a queue
 
 .EE
