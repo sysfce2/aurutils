@@ -168,6 +168,18 @@ Determines where build files will be copied when using snapshots
 Default: \fI$XDG_CACHE_HOME/aurutils/sync\fR
 .RE
 
+.B AUR_PAGER
+.RS
+The file manager used to view and edit build files. A single directory
+must be accepted as argument.
+.RE
+
+.B AUR_REPO
+.RS
+The repository used for building packages. The entry must be a valid
+\fBfile://\fR repository configured in \fBpacman.conf\fR(5).
+.RE
+
 .SH NOTES
 When version checks are enabled (\fB\-\-no\-ver\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
