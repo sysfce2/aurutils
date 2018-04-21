@@ -42,7 +42,7 @@ OPTIND=1
 # set filters
 case $log in
     directory) merge() { merge_across_fs "$1" "$log_dir/$1".patch; } ;;
-    stdout)    merge() { merge_across_fs "$1"; } ;;
+       stdout) merge() { merge_across_fs "$1"; } ;;
 esac
 
 while IFS= read -r uri; do
