@@ -216,7 +216,7 @@ Update all AUR packages in a single local repository:
 Update packages from the \fIcustom\fR repository that are installed on the host:
 .EX
 
-  $ aur sync --repo=custom $(grep -Fxf <(pacman -Qq) <(pacman -Slq custom))
+  $ grep -Fxf <(pacman -Qq) <(pacman -Slq custom) | aur sync --repo=custom -
 
 .EE
 Build a package for a different architecture, here \fIi686\fR:
