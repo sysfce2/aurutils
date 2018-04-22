@@ -31,7 +31,7 @@ cat_ifne() {
 
 dl_stdin() {
     if type -P aria2c >/dev/null; then
-        if aria2c -d "$tmp"/aria2 -i - -q --no-conf=true; then
+        if aria2c -d "$tmp"/aria2 -i - -q --no-conf=true --stderr; then
             cat_ifne "$tmp"/aria2/*
         else
             return
