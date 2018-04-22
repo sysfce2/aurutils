@@ -23,6 +23,8 @@ build_failure() {
     
     mapfile -tu "$3" pkg_done
     printf >&2 'successfully processed packages: %s\n' "${pkg_done[*]:-(none)}"
+
+    exit "$4"
 }
 
 conf_single() {
@@ -171,11 +173,8 @@ while read -r -u "$fd" pkg _; do
         PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}" || m_err=$?
     fi
 
-    if ((!m_err)); then
-        printf '%s\n' "$pkg" >&"$fd_done" 
-    else
-        build_failure "$pkg" "$fd" "$fd_done"
-        exit "$m_err"
+    if ((m_err)); then
+        build_failure "$pkg" "$fd" "$fd_done" "$m_err"
     fi
 
     cd_safe "$var_tmp"
@@ -192,6 +191,9 @@ while read -r -u "$fd" pkg _; do
 
     cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+
+    # count a package as processed if built and added to the repo
+    printf '%s\n' "$pkg" >&"$fd_done"
 
     # fixed by: https://git.archlinux.org/pacman.git/commit/?id=c0a5884b
     find "$startdir/$pkg" -maxdepth 1 -type l -xtype f -lname "$var_tmp*" -delete
