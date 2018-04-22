@@ -88,7 +88,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcDfglLprstTu] [long options] [--] pkgname..."
+    plain "usage: $argv0 [-ABcDfglLprstTu] [long options] [--] pkgname... [-]"
     exit 1
 }
 
@@ -274,9 +274,12 @@ if ((list)); then
     exit
 fi
 
-{ if (($#)); then
-      printf -- '%s\n' "$@"
-  fi
+{ for arg in "$@"; do
+      case $arg in
+          -) cat ;;
+          *) printf -- '%s\n' "$arg" ;;
+      esac
+  done
 
   if ((update)); then
       aur vercmp <db_info | cut -d: -f1
