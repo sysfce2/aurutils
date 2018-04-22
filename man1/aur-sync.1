@@ -13,6 +13,7 @@ aur\-sync \- download and build aur packages automatically
 .OP \-\-root
 .OP \-\-
 .IR pkgname ...
+.OP \-
 .YS
 
 .SH DESCRIPTION
@@ -86,6 +87,10 @@ Download AUR snapshots (\fIpkgbase.tar.gz\fR) and extract them with
 Do not view downloaded files before building.
 
 .SS Repository options
+.TP
+.B \-
+Read package names from standard input (newline-delimited, one per line).
+
 .TP
 .B \-\-list
 List repository contents in the JSON output format.
