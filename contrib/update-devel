@@ -1,0 +1,39 @@
+#!/bin/bash
+set -e
+readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+readonly AURVCS=${AURVCS:-.*-(bzr|git|hg|svn)$}
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+db_tsv() {
+    jq -r '.[][] | [.pkgname, .pkgver] | @tsv'
+}
+
+db_join() {
+    grep -E "$1" | xargs -I{} find "$2" -maxdepth 1 -type d -name {}
+}
+
+ifne() {
+    xargs -r "$@"
+}
+
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+tmp=$(mktemp -d)
+trap 'trap_exit' EXIT
+
+# get repo contents
+cd "$tmp"
+aur sync --list | db_tsv >db_info
+
+# checkout latest revision for existing pkgbuilds
+# this sources the pkgbuilds assuming they have been viewed priorly
+cut -f1 db_info | db_join "$AURVCS" "$AURDEST" | ifne aur srcver >vcs_info
+
+# sync VCS packages that are outdated according to aur-srcver
+# sync all packages that are outdated according to AurJson (--upgrades)
+aur vercmp -p vcs_info < db_info | cut -d: -f1 | ifne aur sync --no-ver-shallow --upgrades
