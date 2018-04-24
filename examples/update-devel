@@ -1,0 +1,31 @@
+#!/bin/bash
+set -e
+readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
+readonly AURVCS=${AURVCS:-.*-(bzr|git|hg|svn)$}
+readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+tmp=$(mktemp -d)
+
+db_tsv() {
+    jq '.[] | [.pkgname, .pkgver] | @ tsv'
+}
+
+db_join() {
+    grep -E "$1" | xargs -I{} find "$2" -maxdepth 1 -type d -name {}
+}
+
+ifne() {
+    xargs -r "$@"
+}
+
+cd "$tmp"
+# get repo contents
+aur sync --list | db_tsv >db_info
+
+# checkout latest revision for existing pkgbuilds
+# this sources the pkgbuilds assuming they have been viewed priorly
+cut -f1 db_info | db_join "$AURVCS" "$AURDEST" | ifne aur srcver >vcs_info
+
+# sync VCS packages that are outdated according to aur-srcver
+# RPC information may be outdated and is thus disabled
+aur vercmp -p vcs_info < db_info | cut -d: -f1 | ifne aur sync --no-ver
