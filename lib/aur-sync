@@ -19,7 +19,7 @@ makepkg_args=(-cs)
 build=1 chkver=1 download=1 view=1
 
 # default options (disabled)
-chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0
+chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0 chkver_shallow=0
 
 viewer() {
     if type -P vifm >/dev/null; then
@@ -81,6 +81,15 @@ complement() {
     grep -Fxvf "$@" || return $(($?-1))
 }
 
+complement_if() {
+    if (($1)); then
+        shift
+        complement "$@"
+    else
+        tee
+    fi    
+}
+
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp" "$tmp_view"
@@ -107,7 +116,7 @@ fi
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
 longopts+=,sign,temp,tar,repo:,database:,root:,upgrades,nhehgvyf,continue,list,git
-longopts+=,makepkg-conf,pacman-conf,provides,repo-list
+longopts+=,makepkg-conf,pacman-conf,provides,repo-list,nover-shallow,no-ver-shallow
 shortopts=d:D:AcfglLnprstTu
 
 if optstring=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
@@ -191,6 +200,10 @@ while true; do
             shift 2 ;;
         --nover|--no-ver)
             chkver=0
+            shift ;;
+        --nover-shallow|--no-ver-shallow)
+            chkver=1
+            chkver_shallow=1
             shift ;;
         --noview|--no-view)
             view=0
@@ -299,7 +312,10 @@ fi
   fi
 
   if ((chkver)); then
-      cut -f1,3 pkginfo | aur vercmp -p db_info -c
+      # packages with equal or newer versions are taken as complement for
+      # the queue. if chkver_shallow is enabled, packages on the command-line
+      # are excluded from this complement.
+      cut -f1,3 pkginfo | aur vercmp -p db_info -c | complement_if chkver_shallow argv
   fi
 
   if ((provides)); then
