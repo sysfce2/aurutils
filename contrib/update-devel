@@ -4,10 +4,9 @@ readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 readonly AURVCS=${AURVCS:-.*-(bzr|git|hg|svn)$}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-tmp=$(mktemp -d)
 
 db_tsv() {
-    jq '.[][] | [.pkgname, .pkgver] | @tsv'
+    jq -r '.[][] | [.pkgname, .pkgver] | @tsv'
 }
 
 db_join() {
@@ -18,8 +17,17 @@ ifne() {
     xargs -r "$@"
 }
 
-cd "$tmp"
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
+tmp=$(mktemp -d)
+trap 'trap_exit' EXIT
+
 # get repo contents
+cd "$tmp"
 aur sync --list | db_tsv >db_info
 
 # checkout latest revision for existing pkgbuilds
