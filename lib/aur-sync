@@ -138,6 +138,7 @@ while true; do
             shift ;;
         -f|--force)
             build_args+=(-f)
+            chkver_shallow=1
             shift ;;
         -s|--sign)
             build_args+=(-sv)
@@ -202,7 +203,6 @@ while true; do
             chkver=0
             shift ;;
         --nover-shallow|--no-ver-shallow)
-            chkver=1
             chkver_shallow=1
             shift ;;
         --noview|--no-view)
