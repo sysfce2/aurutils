@@ -17,7 +17,7 @@ In the last line, the resulting package versions (`vcs_info`) are compared again
 aur vercmp-devel "$@" | cut -d: -f1 | aur sync --no-ver-shallow -
 ```
 
-VCS packages typically have `pkgver` set to the upstream revision at the time of package submission, making the AUR-advertised version older than the latest version. The `--no-ver-shallow` option ignores information from the AUR, but _only_ for packages specified on the command line.
+VCS packages typically have `pkgver` set to the upstream revision at the time of package submission, making the AUR-advertised version older than the latest version. Here, the `--no-ver-shallow` option ignores the AUR information _only_ for packages from standard input (`-`).
 
 As described, the above relies on already available `PKGBUILD`s. If the `aur-sync` cache is sparse or the package has meanwhile been updated by the AUR maintainer (for example, to indicate a new upstream), information reported by `aur-vercmp-devel` may be incomplete. 
 
