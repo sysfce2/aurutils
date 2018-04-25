@@ -7,12 +7,22 @@ $ cp -s /usr/share/aurutils/contrib/aur-vercmp-devel /usr/local/bin
 $ aur vercmp-devel
 ```
 
-You can build upon these scripts to fit your own workflow. For example, you can use `aur-vercmp-devel` to make a script that updates both regular and VCS packages:
+### aur-vercmp-devel
+
+This script takes the contents of a local repository (`aur sync --list`) and matches them against a common pattern for VCS packages (`grep -E $AURVCS`). It then looks in the `aur-sync` cache (`find $AURDEST`) for relevant directories. Any existing `PKGBUILD`s in these directories are executed, with upstream sources updated to their latest revision. (`aur srcver` using `makepkg -o`)
+
+In the last line, the resulting package versions (`vcs_info`) are compared against the local repository (`db_info`). If the package version is newer, it is printed to `stdout`. This may be combined with `aur-sync` as follows:
 
 ```
-#!/usr/bin/env bash
+aur vercmp-devel "$@" | cut -d: -f1 | aur sync --no-ver-shallow -
+```
 
-# sync VCS packages that are outdated according to aur-vercmp-devel
-# sync all packages that are outdated according to AurJson (--upgrades)
-aur vercmp-devel "$@" | cut -d: -f1 | xargs -r aur sync --no-ver-shallow --upgrades "$@"
+VCS packages typically have `pkgver` set to the upstream revision at the time of package submission, making the AUR-advertised version older than the latest version. The `--no-ver-shallow` option ignores information from the AUR, but _only_ for packages specified on the command line.
+
+As described, the above relies on already available `PKGBUILD`s. If the `aur-sync` cache is sparse or the package has meanwhile been updated by the AUR maintainer (for example, to indicate a new upstream), information reported by `aur-vercmp-devel` may be inaccurate. 
+
+The following mediates this by downloading all VCS packages in a local repository anew, with all build files and their diffs offered for inspection.
+
+```
+aur sync --list | cut -f2 | grep -E "$AURVCS" | aur sync --no-ver --print -
 ```
