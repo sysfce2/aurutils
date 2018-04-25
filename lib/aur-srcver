@@ -38,6 +38,11 @@ if ((!$#)); then
     usage
 fi
 
+if ! type -P parallel >/dev/null; then
+    printf >&2 '%s: "parallel" is not found in $PATH\n' "$argv0"
+    exit 1
+fi
+
 # XXX trickery for hyphen and absolute path arguments
 mapfile -t arg_path < <(readlink -e -- "$@")
 
@@ -47,10 +52,15 @@ trap 'trap_exit' EXIT
 cd "$tmp" || exit
 parallel --will-cite --nice 10 -j +2 --joblog makepkg_log --results '{#}_makepkg' \
   'cd {}; makepkg --skipinteg --noprepare -od' >/dev/null 2>&1 ::: "${arg_path[@]}"
-num_failed=$?
+exitcode=$?
 
-if ((num_failed > 0 )); then
-    printf >&2 '%s: failed to update %s packages\n' "$argv0" "$num_failed"
+if ((exitcode > 101)); then
+    printf >&2 '%s: error running "parallel", exit code %d\n' "$argv0" "$exitcode"
+    exit $exitcode
+fi
+
+if ((exitcode > 0 )); then
+    printf >&2 '%s: failed to update %s packages\n' "$argv0" "$exitcode"
 
     while IFS=$'\t' read -r seq _ _ _ _ _ exitcode _ command; do
         if ((!exitcode)); then
