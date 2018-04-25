@@ -12,7 +12,7 @@ $ cp -s /usr/share/aurutils/contrib/aur-vercmp-devel /usr/local/bin
 $ aur vercmp-devel
 ```
 
-### aur-vercmp-devel
+## aur-vercmp-devel
 
 This script takes the contents of a local repository (`aur sync
 --list`) and matches them against a common pattern for VCS packages
@@ -39,6 +39,7 @@ ignores the AUR information _only_ for packages from standard input
 Further arguments can be added to `aur-sync`, such as `--upgrades` to
 update regular and VCS packages in one go.
 
+----
 As described, the above relies on already available `PKGBUILD`s. If
 the `aur-sync` cache is sparse or the package has meanwhile been
 updated by the AUR maintainer (for example, to indicate a new
