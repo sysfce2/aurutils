@@ -27,7 +27,7 @@ version is newer, it is printed to `stdout`. This may be combined with
 `aur-sync` as follows:
 
 ```
-aur vercmp-devel "$@" | cut -d: -f1 | aur sync --no-ver-shallow -
+aur vercmp-devel | cut -d: -f1 | aur sync --no-ver-shallow -
 ```
 
 VCS packages typically have `pkgver` set to the upstream revision at

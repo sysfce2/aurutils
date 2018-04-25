@@ -14,7 +14,7 @@ trap 'rm -rf "$tmp"' EXIT
 # get repo contents
 # this assumes that options irrelevant to --list are ignored
 cd "$tmp"
-aur sync --list "$@" | cut -f2,3 >db_info
+aur sync --list | cut -f2,3 >db_info
 
 # checkout latest revision for existing pkgbuilds
 # this sources the pkgbuilds assuming they have been viewed priorly
