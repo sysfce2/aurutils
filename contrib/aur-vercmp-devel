@@ -5,14 +5,6 @@ readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 readonly AURVCS=${AURVCS:-.*-(bzr|git|hg|svn)$}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-db_tsv() {
-    jq -r '.[][] | [.pkgname, .pkgver] | @tsv'
-}
-
-db_join() {
-    grep -E "$1" | xargs -I{} find "$2" -maxdepth 1 -type d -name {}
-}
-
 ifne() {
     xargs -r "$@"
 }
@@ -29,7 +21,7 @@ trap 'trap_exit' EXIT
 # get repo contents
 # this assumes that options irrelevant to --list are ignored
 cd "$tmp"
-aur sync --list "$@" | db_tsv >db_info
+aur sync --list "$@" | cut -f2,3 >db_info
 
 # checkout latest revision for existing pkgbuilds
 # this sources the pkgbuilds assuming they have been viewed priorly
