@@ -273,7 +273,10 @@ mkdir patch
 bsdcat "$root/$repo".db | db_namever | db_fill_empty >db_info
 
 if ((list)); then
-    column -JN pkgname,pkgver -n "$repo" db_info
+    while read -r pkgname pkgver; do
+        printf '%q\t%s\t%s\n' "$repo" "$pkgname" "$pkgver"
+    done <db_info
+
     exit
 fi
 
