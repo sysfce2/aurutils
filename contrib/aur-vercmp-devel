@@ -35,6 +35,5 @@ aur sync --list "$@" | db_tsv >db_info
 # this sources the pkgbuilds assuming they have been viewed priorly
 cut -f1 db_info | db_join "$AURVCS" "$AURDEST" | ifne aur srcver >vcs_info
 
-# sync VCS packages that are outdated according to aur-srcver
-# sync all packages that are outdated according to AurJson (--upgrades)
-aur vercmp -p vcs_info < db_info | cut -d: -f1 | ifne aur sync --no-ver-shallow --upgrades "$@"
+# find VCS packages that are outdated according to aur-srcver
+aur vercmp -p vcs_info <db_info
