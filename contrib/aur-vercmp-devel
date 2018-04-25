@@ -1,12 +1,11 @@
 #!/bin/bash
-set -e
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 readonly AURVCS=${AURVCS:-.*-(bzr|git|hg|svn)$}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-db_join() {
-    grep -E "$1" | xargs -I{} find "$2" -maxdepth 1 -type d -name {}
+find_subdir() {
+    xargs -I{} find "$1" -maxdepth 1 -type d -name {}
 }
 
 ifne() {
@@ -27,7 +26,7 @@ aur sync --list "$@" | cut -f2,3 >db_info
 
 # checkout latest revision for existing pkgbuilds
 # this sources the pkgbuilds assuming they have been viewed priorly
-cut -f1 db_info | db_join "$AURVCS" "$AURDEST" | ifne aur srcver >vcs_info
+cut -f1 db_info | grep -E "$AURVCS" | find_subdir "$AURDEST" | ifne aur srcver >vcs_info
 
 # find VCS packages that are outdated according to aur-srcver
 aur vercmp -p vcs_info <db_info
