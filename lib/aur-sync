@@ -226,7 +226,7 @@ if ((repo_list)); then
     exit
 fi
 
-if [[ ${repo-$AUR_REPO} ]]; then
+if [[ ${repo=$AUR_REPO} ]]; then
     server=$(pacconf --single --repo="$repo" Server)
     server=${server#*://}
 else
