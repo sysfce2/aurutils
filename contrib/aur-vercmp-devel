@@ -14,9 +14,7 @@ ifne() {
 }
 
 trap_exit() {
-    if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp"
-    fi
+    rm -rf "$tmp"
 }
 
 tmp=$(mktemp -d)
