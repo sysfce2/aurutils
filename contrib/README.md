@@ -52,3 +52,7 @@ inspection.
 ```
 aur sync --list | cut -f2 | grep -E "$AURVCS" | aur sync --no-ver --print -
 ```
+
+[//]: # (The last pipeline will also show any non-VCS dependencies.)
+[//]: # (Since the respective PKGBUILDs are not run by aur-srcver,)
+[//]: # (they are not of relevance. Use aur-fetch manually?)
