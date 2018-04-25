@@ -19,7 +19,7 @@ aur vercmp-devel "$@" | cut -d: -f1 | aur sync --no-ver-shallow -
 
 VCS packages typically have `pkgver` set to the upstream revision at the time of package submission, making the AUR-advertised version older than the latest version. The `--no-ver-shallow` option ignores information from the AUR, but _only_ for packages specified on the command line.
 
-As described, the above relies on already available `PKGBUILD`s. If the `aur-sync` cache is sparse or the package has meanwhile been updated by the AUR maintainer (for example, to indicate a new upstream), information reported by `aur-vercmp-devel` may be inaccurate. 
+As described, the above relies on already available `PKGBUILD`s. If the `aur-sync` cache is sparse or the package has meanwhile been updated by the AUR maintainer (for example, to indicate a new upstream), information reported by `aur-vercmp-devel` may be incomplete. 
 
 The following mediates this by downloading all VCS packages in a local repository anew, with all build files and their diffs offered for inspection.
 
