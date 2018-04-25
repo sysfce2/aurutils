@@ -81,15 +81,6 @@ complement() {
     grep -Fxvf "$@" || return $(($?-1))
 }
 
-complement_if() {
-    if (($1)); then
-        shift
-        complement "$@"
-    else
-        tee
-    fi    
-}
-
 trap_exit() {
     if [[ ! -o xtrace ]]; then
         rm -rf "$tmp" "$tmp_view"
@@ -138,7 +129,6 @@ while true; do
             shift ;;
         -f|--force)
             build_args+=(-f)
-            chkver_shallow=1
             shift ;;
         -s|--sign)
             build_args+=(-sv)
@@ -306,6 +296,12 @@ else
     exit
 fi
 
+if ((chkver_shallow)); then
+    chkver_argv() { complement argv; }
+else
+    chkver_argv() { tee; }
+fi
+
 { if ((${#pkg_i[@]})); then
       printf -- >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
       printf -- '%s\n' "${pkg_i[@]}"
@@ -315,7 +311,7 @@ fi
       # packages with equal or newer versions are taken as complement for
       # the queue. if chkver_shallow is enabled, packages on the command-line
       # are excluded from this complement.
-      cut -f1,3 pkginfo | aur vercmp -p db_info -c | complement_if chkver_shallow argv
+      cut -f1,3 pkginfo | aur vercmp -p db_info -c | chkver_argv
   fi
 
   if ((provides)); then
