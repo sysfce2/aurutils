@@ -58,16 +58,18 @@ my_vercmp() {
     fi
 }
 
+prefix() {
+    awk -v pre="$1" '{
+        printf("%s/%s\n", pre, $0)
+    }'
+}
+
 parse_aur() {
     aur rpc -t info | jq -r '.results[] | [.Name, .Version] | @tsv'
 }
 
 parse_sync() {
-    if pacconf --repo="$1" >/dev/null; then
-        pacsift --repo="$1" --exact <&- | xargs -r pacman -Sddp --print-format '%n %v'
-    else
-        return
-    fi
+    pacman -Slq "$1" | prefix "$1" | xargs -r pacman -Sddp --print-format '%n %v'
 }
 
 trap_exit() {
