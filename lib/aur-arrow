@@ -38,7 +38,7 @@ BEGIN {
 
 END {
     for (pkgbase in dep_counts) {
-      for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
+        for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
             dep_pkgname = pkg_deps[pkgbase,dep]
             # only print dependency if it was encountered before
             if (dep_pkgname in pkg_map)
