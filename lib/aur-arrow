@@ -28,7 +28,7 @@ BEGIN {
     in_split_pkg = 1
 }
 
-/pkgname/ || /provides/ {
+/pkgname/ || /^\tprovides/ {
     if (!length(pkgbase)) {
         print "pkgbase unavailable" > "/dev/stderr"
         exit 1
