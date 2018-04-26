@@ -38,10 +38,7 @@ if ((!$#)); then
     usage
 fi
 
-if ! type -P parallel >/dev/null; then
-    printf >&2 '%s: "parallel" is not found in $PATH\n' "$argv0"
-    exit 1
-fi
+command -V parallel >/dev/null || exit
 
 # XXX trickery for hyphen and absolute path arguments
 mapfile -t arg_path < <(readlink -e -- "$@")
@@ -56,14 +53,14 @@ exitcode=$?
 
 if ((exitcode > 101)); then
     printf >&2 '%s: error running "parallel", exit code %d\n' "$argv0" "$exitcode"
-    exit $exitcode
+    exit "$exitcode"
 fi
 
 if ((exitcode > 0 )); then
     printf >&2 '%s: failed to update %s packages\n' "$argv0" "$exitcode"
 
-    while IFS=$'\t' read -r seq _ _ _ _ _ exitcode _ command; do
-        if ((!exitcode)); then
+    while IFS=$'\t' read -r seq _ _ _ _ _ jobexitcode _ command; do
+        if ((!jobexitcode)); then
             continue
         else
             printf >&2 '8<----\n'
