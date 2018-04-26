@@ -38,6 +38,8 @@ if ((!$#)); then
     usage
 fi
 
+command -V parallel >/dev/null || exit
+
 # XXX trickery for hyphen and absolute path arguments
 mapfile -t arg_path < <(readlink -e -- "$@")
 
@@ -47,13 +49,18 @@ trap 'trap_exit' EXIT
 cd "$tmp" || exit
 parallel --will-cite --nice 10 -j +2 --joblog makepkg_log --results '{#}_makepkg' \
   'cd {}; makepkg --skipinteg --noprepare -od' >/dev/null 2>&1 ::: "${arg_path[@]}"
-num_failed=$?
+exitcode=$?
 
-if ((num_failed > 0 )); then
-    printf >&2 '%s: failed to update %s packages\n' "$argv0" "$num_failed"
+if ((exitcode > 101)); then
+    printf >&2 '%s: error running "parallel", exit code %d\n' "$argv0" "$exitcode"
+    exit "$exitcode"
+fi
 
-    while IFS=$'\t' read -r seq _ _ _ _ _ exitcode _ command; do
-        if ((!exitcode)); then
+if ((exitcode > 0 )); then
+    printf >&2 '%s: failed to update %s packages\n' "$argv0" "$exitcode"
+
+    while IFS=$'\t' read -r seq _ _ _ _ _ jobexitcode _ command; do
+        if ((!jobexitcode)); then
             continue
         else
             printf >&2 '8<----\n'
@@ -63,6 +70,8 @@ if ((num_failed > 0 )); then
             cat "${seq}_makepkg.err" >&2
         fi
     done < makepkg_log
+
+    exit "$exitcode"
 fi
 
 find_pkgbuild_path "${arg_path[@]}" | while IFS= read -d $'\0' -r; do
