@@ -19,7 +19,7 @@ makepkg_args=(-cs)
 build=1 chkver=1 download=1 view=1
 
 # default options (disabled)
-chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0 chkver_shallow=0
+chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0 chkver_deps_only=0
 
 viewer() {
     if type -P vifm >/dev/null; then
@@ -193,7 +193,7 @@ while true; do
             chkver=0
             shift ;;
         --nover-shallow|--no-ver-shallow)
-            chkver_shallow=1
+            chkver_deps_only=1
             shift ;;
         --noview|--no-view)
             view=0
@@ -299,7 +299,7 @@ else
     exit
 fi
 
-if ((chkver_shallow)); then
+if ((chkver_deps_only)); then
     chkver_argv() { complement argv; }
 else
     chkver_argv() { tee; }
@@ -312,7 +312,7 @@ fi
 
   if ((chkver)); then
       # packages with equal or newer versions are taken as complement for
-      # the queue. if chkver_shallow is enabled, packages on the command-line
+      # the queue. if chkver_deps_only is enabled, packages on the command-line
       # are excluded from this complement.
       cut -f1,3 pkginfo | aur vercmp -p db_info -c | chkver_argv
   fi
