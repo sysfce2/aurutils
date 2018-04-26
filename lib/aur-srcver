@@ -70,6 +70,8 @@ if ((exitcode > 0 )); then
             cat "${seq}_makepkg.err" >&2
         fi
     done < makepkg_log
+
+    exit "$exitcode"
 fi
 
 find_pkgbuild_path "${arg_path[@]}" | while IFS= read -d $'\0' -r; do
