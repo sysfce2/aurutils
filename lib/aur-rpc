@@ -48,7 +48,7 @@ trap_exit() {
 }
 
 usage() {
-    printf -- >&2 'usage: %s [-t [info|search] ] [-b by]\n' "$argv0"
+    printf >&2 'usage: %s [-t [info|search] ] [-b by]\n' "$argv0"
     exit 1
 }
 

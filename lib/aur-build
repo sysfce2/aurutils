@@ -160,7 +160,7 @@ while read -r -u "$fd" pkg _; do
         if [[ ${mark[*]} ]]; then
             warning "$argv0: skipping built package (use -f to overwrite)"
 
-            printf -- '%q\n' "${mark[@]}" >&2
+            printf '%q\n' "${mark[@]}" >&2
             continue
         fi
     fi

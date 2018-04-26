@@ -12,7 +12,7 @@ provides() {
 }
 
 usage() {
-    printf -- >&2 'usage: %s [-d repo]\n' "$argv0"
+    printf >&2 'usage: %s [-d repo]\n' "$argv0"
     exit 1
 }
 
@@ -55,7 +55,7 @@ if [[ -n ${pkgset[*]} ]]; then
         fi
     done < <(pacsift --sync --exact "${siftargs[@]}" <&- | provides - | sort -u)
 
-    printf -- '%s\n' "${repo[@]}"
+    printf '%s\n' "${repo[@]}"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

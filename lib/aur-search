@@ -19,8 +19,8 @@ tabulate() {
         .Version     // "-",
         .Description // "-",
         .URL         // "-",
-        (.Keywords   | select (length > 0) // ["-"] | join(" ")),
-        (.License    | select (length > 0) // ["-"] | join(" ")),
+        (.Keywords | select (length > 0) // ["-"] | join(" ")),
+        (.License  | select (length > 0) // ["-"] | join(" ")),
         .Maintainer  // "-",
         .NumVotes    // "-",
         .Popularity  // "-",
@@ -56,10 +56,10 @@ parse_long() {
 
     while IFS=$'\t' read -r -a info; do
         for i in "${!info[@]}"; do
-            printf -- "$BOLD%s:$ALL_OFF\t%s\n" "${desc[i]}" "${info[i]}"
+            printf "$BOLD%s:$ALL_OFF\t%s\n" "${desc[i]}" "${info[i]}"
         done
 
-        printf -- '-\n'
+        printf '%s\n' '-'
     done
 }
 
@@ -84,7 +84,7 @@ parse_short() {
 }
 
 usage() {
-    printf -- >&2 'usage: %s: [-aimnrv] [-k key] package [package...]\n' "$argv0"
+    printf >&2 'usage: %s: [-aimnrv] [-k key] package [package...]\n' "$argv0"
     exit 1
 }
 
@@ -141,6 +141,6 @@ case $multiple in
 esac
 
 # pipeline
-printf -- '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | tabulate "$sort_key" | combine | parse
+printf '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | tabulate "$sort_key" | combine | parse
 
 # vim: set et sw=4 sts=4 ft=sh:

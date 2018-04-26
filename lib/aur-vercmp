@@ -20,8 +20,8 @@ cmp_equal_or_newer() {
 
         case $op in
            -1) plain "$pkg: $v_cmp is newer than $v_in"
-               printf -- '%s\n' "$pkg"      ;;
-            0) printf -- '%s\n' "$pkg"      ;;
+               printf '%s\n' "$pkg"      ;;
+            0) printf '%s\n' "$pkg"      ;;
             1) msg2 "$pkg: $v_cmp -> $v_in" ;;
             2) msg2 "$pkg: (none) -> $v_in" ;;
         esac
@@ -42,10 +42,10 @@ cmp_checkupdates() {
         fi
 
         case $op in
-           -1) printf -- '%s: %s -> %s\n' "$pkg" "$v_in" "$v_cmp" ;;
-            0) printf -- '%s: %s = %s\n'  "$pkg" "$v_in" "$v_cmp" ;;
-            1) printf -- '%s: %s <- %s\n' "$pkg" "$v_in" "$v_cmp" ;;
-            2) printf -- '%s: (none) -> %s\n' "$pkg" "$v_cmp"     ;;
+           -1) printf '%s: %s -> %s\n' "$pkg" "$v_in" "$v_cmp" ;;
+            0) printf '%s: %s = %s\n'  "$pkg" "$v_in" "$v_cmp" ;;
+            1) printf '%s: %s <- %s\n' "$pkg" "$v_in" "$v_cmp" ;;
+            2) printf '%s: (none) -> %s\n' "$pkg" "$v_cmp"     ;;
         esac
     done
 }

@@ -23,7 +23,7 @@ conf_options() {
 
 conf_repo() {
     while IFS= read -r; do
-        printf -- '[%s]\n' "$REPLY"
+        printf '[%s]\n' "$REPLY"
         pacconf --config="$1" --raw --repo="$REPLY"
     done
 }
@@ -46,7 +46,7 @@ trap_exit() {
 }
 
 usage() {
-    printf -- >&2 'usage: %s [-CDM <path>] [-BP] -- <makechrootpkg args>' "$argv0"
+    printf >&2 'usage: %s [-CDM <path>] [-BP] -- <makechrootpkg args>' "$argv0"
     exit 1
 }
 
@@ -84,7 +84,7 @@ fi
 if ((build)); then
     sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$directory" "${makechrootpkg_args[@]}"
 else
-    printf -- >&2 'container path: %q\n' "$directory"
+    printf >&2 'container path: %q\n' "$directory"
     exit 0
 fi
 

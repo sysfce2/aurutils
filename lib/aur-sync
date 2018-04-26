@@ -238,7 +238,7 @@ else
         0) error "$argv0: no file:// repository found"
            exit 2 ;;
         *) error "$argv0: repository choice is ambiguous (use --repo to specify)"
-           printf -- '%s\n' "${conf[@]}" | paste - - | column -t >&2
+           printf '%s\n' "${conf[@]}" | paste - - | column -t >&2
            exit 2 ;;
     esac
 fi
@@ -283,7 +283,7 @@ fi
 { for arg in "$@"; do
       case $arg in
           -) cat ;;
-          *) printf -- '%s\n' "$arg" ;;
+          *) printf '%s\n' "$arg" ;;
       esac
   done
 
@@ -306,8 +306,8 @@ else
 fi
 
 { if ((${#pkg_i[@]})); then
-      printf -- >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
-      printf -- '%s\n' "${pkg_i[@]}"
+      printf >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
+      printf '%s\n' "${pkg_i[@]}"
   fi
 
   if ((chkver)); then
