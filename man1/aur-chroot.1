@@ -1,9 +1,9 @@
-.TH AUR-BUILD-NSPAWN 1 2018-02-01 AURUTILS
+.TH AUR-CHROOT 2018-04-27 AURUTILS
 .SH NAME
-aur\-build\-nspawn \- build packages to a local repository inside a chroot
+aur\-chroot \- build packages to a local repository inside a chroot
 
 .SH SYNOPSIS
-.SY "aur build\-nspawn"
+.SY "aur chroot"
 .OP \-C pacman_conf
 .OP \-D directory
 .OP \-M makepkg_conf
@@ -15,7 +15,7 @@ aur\-build\-nspawn \- build packages to a local repository inside a chroot
 
 .SH DESCRIPTION
 Build packages in an nspawn container, adding the results to a local
-repository. See also \fBaur\-build\fR(1).
+repository.
 
 .SH OPTIONS
 All arguments after \-\- are passed to \fBmakechrootpkg\fR.

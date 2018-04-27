@@ -21,7 +21,7 @@ directory, and described in a text file which is taken as argument.
 
 .SH OPTIONS
 All arguments after \-\- are passed to \fBmakepkg\fR(8), or
-\fBaur\-build\-nspawn\fR(1) when \fB\-c\fR is specified.
+\fBaur\-chroot\fR(1) when \fB\-c\fR is specified.
 
 .TP
 .BI "\-a " queue
@@ -30,7 +30,7 @@ specified, the current directory is assumed.
 
 .TP
 .B \-c
-Build packages with \fBaur\-build\-nspawn\fR(1).
+Build packages with \fBaur\-chroot\fR(1).
 
 .TP
 .BI "\-d " database
@@ -100,7 +100,7 @@ For example:
 
 .SH SEE ALSO
 .BR aur (1),
-.BR aur\-build\-nspawn (1),
+.BR aur\-chroot (1),
 .BR pacconf (1),
 .BR pacman (1),
 .BR makepkg.conf (5),
