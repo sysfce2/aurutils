@@ -1,5 +1,5 @@
 #!/bin/bash
-# aur-build-nspawn - build packages using systemd-nspawn
+# aur-chroot - build packages using systemd-nspawn
 set -o errexit
 readonly argv0=build-nspawn
 readonly PATH=/bin:/usr/bin

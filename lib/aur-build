@@ -146,7 +146,7 @@ if ((!sign_pkg)); then
 fi
 
 if ((chroot)); then
-    aur build-nspawn -B "${chroot_args[@]}"
+    aur chroot -B "${chroot_args[@]}"
 else
     conf_single "$database" >"$tmp"/custom.conf
 fi
@@ -167,7 +167,7 @@ while read -r -u "$fd" pkg _; do
 
     m_err=0
     if ((chroot)); then
-        PKGDEST="$var_tmp" aur build-nspawn -P "${chroot_args[@]}" \
+        PKGDEST="$var_tmp" aur chroot -P "${chroot_args[@]}" \
             -- -d "$db_root" "${makechrootpkg_args[@]}" || m_err=$?
     else
         PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}" || m_err=$?
