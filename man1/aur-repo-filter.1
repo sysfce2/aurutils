@@ -1,16 +1,17 @@
-.TH AUR-RFILTER 1 2017-10-04 AURUTILS
+.TH AUR-REPO-FILTER 1 2017-10-04 AURUTILS
 .SH NAME
-aur\-rfilter \- filter packages in the Arch Linux repositories
+aur\-repo\-filter \- filter packages in the Arch Linux repositories
 
 .SH SYNOPSIS
-.SY "aur rfilter"
+.SY "aur repofilter"
 .OP \-d database
 .YS
 
 .SH DESCRIPTION
-\fBaur\-rfilter\fR checks if \fIpkgname\fR (provided on \fIstdin\fR) is
-in the official Arch Linux repositories, and print it to \fIstdout\fR if
-not. Virtual packages, when found, are solved and printed to stderr.
+\fBaur\-repo\-filter\fR checks if \fIpkgname\fR (provided on
+\fIstdin\fR) is in the official Arch Linux repositories, and print it to
+\fIstdout\fR if not. Virtual packages, when found, are solved and
+printed to stderr.
 
 .SH OPTIONS
 .TP

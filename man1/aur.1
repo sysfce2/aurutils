@@ -19,6 +19,12 @@ Build packages to a local repository.
 .RE
 
 .P
+.BR aur\-chroot (1)
+.RS 4
+Build packages inside a chroot.
+.RE
+
+.P
 .BR aur\-deps-rpc (1)
 .RS 4
 Order package dependencies using AurJson.
@@ -37,7 +43,7 @@ Print the AUR package list.
 .RE
 
 .P
-.BR aur\-rfilter (1)
+.BR aur\-repo\-filter (1)
 .RS 4
 Filter packages in the Arch Linux repositories.
 .RE
@@ -192,7 +198,7 @@ Print Perl modules that are both in the AUR and official repositories:
 .EX
 
   $ aur pkglist -P '^perl-.+' > perl.txt
-  $ grep -Fxvf <(aur rfilter < perl.txt) perl.txt
+  $ grep -Fxvf <(aur repo-filter < perl.txt) perl.txt
 
 .EE
 Search for packages with both 'wm' and 'git' in the name:

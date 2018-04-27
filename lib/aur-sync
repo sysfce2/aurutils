@@ -319,7 +319,7 @@ fi
 
   if ((provides)); then
       # note: this uses pacman's copy of the repo (as used by makepkg -s)
-      cut -f1 pkginfo | complement argv | aur rfilter -d "$repo"
+      cut -f1 pkginfo | complement argv | aur repo-filter -d "$repo"
   fi
 } >filter
 
