@@ -77,6 +77,9 @@ if ((prepare)); then
         # locking is done by systemd-nspawn
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root pacman -Syu --noconfirm
     else
+        # XXX parent path is not created by mkarchroot
+        # sudoers rules should be adjusted accordingly
+        sudo install -d "$directory" -m 755 -v || exit
         sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root base-devel
     fi
 fi
