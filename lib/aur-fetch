@@ -10,7 +10,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 fetch_args=()
 
 # default options
-deps=0
+recurse=0
 mode=git
 
 usage() {
@@ -26,10 +26,10 @@ unset log_dir
 while getopts :rgtL: opt; do
     case $opt in
         L) log_dir=$OPTARG ;;
-        r) deps=1   ;;
-        g) mode=git ;;
-        t) mode=snapshot ;;
-        *) usage    ;;
+        r) recurse=1       ;;
+        g) mode=git        ;;
+        t) mode=snapshot   ;;
+        *) usage           ;;
     esac
 done
 shift $((OPTIND -1))
@@ -49,9 +49,10 @@ if [[ -v log_dir ]]; then
 fi
 
 # set filters (1)
-case $deps in
-    1) print_deps() { printf '%s\n' "$@" | aur depends; } ;;
-    0) print_deps() { printf '%s\n' "$@"; } ;;
+case $recurse in
+    # total order is not required, though output must be unique.
+    1) deps() { aur depends | cut -f3 | sort -u; } ;;
+    0) deps() { tee; } ;;
 esac
 
 # set filters (2)
@@ -61,6 +62,6 @@ case $mode in
 esac
 
 # pipeline
-print_deps "$@" | format | aur "fetch-$mode" "${fetch_args[@]}"
+printf '%s\n' "$@" | deps | format | aur "fetch-$mode" "${fetch_args[@]}"
 
 # vim: set et sw=4 sts=4 ft=sh:

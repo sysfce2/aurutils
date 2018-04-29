@@ -1,34 +1,37 @@
-.TH AUR-DEPENDS 1 2018-02-01 AURUTILS
+.TH AUR-DEPENDS 1 2018-04-29 AURUTILS
 .SH NAME
-aur\-depends \- retrieve dependencies using the aur rpc
+aur\-depends \- retrieve dependencies using AurJson
 
 .SH SYNOPSIS
 .SY "aur depends"
-.OP \-at
 .YS
 
 .SH DESCRIPTION
 \fBaur-depends\fR takes package names from \fIstdin\fR, and solves
-and orders the dependencies for those packages using the AUR RPC
-interface.
+the dependencies for those packages using AurJson. The output is in
+the following format:
 
-.SH OPTIONS
-.TP
-.B \-a
-Print the full dependency tree instead of only AUR packages.
+\fIpkgname\\tdepends\\tpkgbase\\tpkgver\fR
 
-.TP
-.B \-t
-Copy retrieved JSON files to a specified directory.
+.SH EXAMPLES
+Retrieve the total dependency order for the \fIplasma-desktop-git\fR
+package:
+.EX
+
+  $ echo plasma-desktop-git | aur depends | cut -f1,2 | tsort | tac
+
+.EE
 
 .SH NOTES
 Version information is ignored for dependencies. See \fIFS#54096\fR.
 
+Unlike \fBaur-graph(1)\fR, dependencies are kept in \fBpkgname\fR
+form.
+
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-rpc (1),
-.BR jq (1),
-.BR tsort (1)
+.BR jq (1)
 
 .SH AUTHORS
 .MT https://github.com/AladW
