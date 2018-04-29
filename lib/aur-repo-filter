@@ -20,6 +20,8 @@ usage() {
     exit 1
 }
 
+source /usr/share/makepkg/util/message.sh
+
 unset argv_repo
 while getopts d: opt; do
     case $opt in
@@ -53,7 +55,7 @@ if [[ -n ${pkgset[*]} ]]; then
         fi
 
         if [[ ${pkgset[$vrt]} ]]; then
-            printf >&2 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
+            plain 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
             printf '%s\n' "$vrt"
         fi
     done
