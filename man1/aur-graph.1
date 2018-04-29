@@ -1,14 +1,14 @@
-.TH AUR-ARROW 1 2018-04-21 AURUTILS
+.TH AUR-GRAPH 1 2018-04-21 AURUTILS
 .SH NAME
-aur\-arrow \- print package/dependency pairs
+aur\-graph \- package/dependency directed graph
 
 .SH SYNOPSIS
-.SY "aur arrow" .SRCINFO [.SRCINFO...]
+.SY "aur graph" .SRCINFO [.SRCINFO...]
 .YS
 
 .SH DESCRIPTION
-\fBaur-arrow\fR takes package information from \fB.SRCINFO\fR files
-and prints them as \fIpackage<TAB>dependency\fR pairs. Any
+\fBaur-graph\fR takes package information from \fB.SRCINFO\fR files
+and prints them as \fIpkgbase<TAB>dependency\fR pairs. Any
 dependencies are converted from \fBpkgname\fR to \fBpkgbase\fR or
 skipped if absent from the input.
 
@@ -17,13 +17,13 @@ The paired output is suitable as input for \fBtsort(1)\fR, provided no
 cycles are present. For example:
 .EX
   cd ~/.cache/aurutils/sync
-  aur arrow */.SRCINFO | tsort
+  aur graph */.SRCINFO | tsort | tac
 .EE
 
 \fB.SRCINFO\fR can be concatenated before processing to improve
 performance:
 .EX
-  cat */.SRCINFO | aur arrow | tsort
+  cat */.SRCINFO | aur graph | tsort | tac
 .EE
 
 .SH NOTES

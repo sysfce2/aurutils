@@ -1,5 +1,5 @@
 #!/bin/awk -f
-# aur-arrow - print package/dependency pairs
+# aur-graph - print package/dependency pairs
 
 BEGIN {
     FS="[<=>]"
