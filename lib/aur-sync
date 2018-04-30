@@ -293,7 +293,7 @@ fi
 } >argv
 
 if [[ -s argv ]]; then
-    aur deps-rpc -t <argv >pkginfo
+    aur depends -t <argv >pkginfo
 else
     plain "there is nothing to do"
     exit

@@ -50,7 +50,7 @@ fi
 
 # set filters (1)
 case $deps in
-    1) print_deps() { printf '%s\n' "$@" | aur deps-rpc; } ;;
+    1) print_deps() { printf '%s\n' "$@" | aur depends; } ;;
     0) print_deps() { printf '%s\n' "$@"; } ;;
 esac
 

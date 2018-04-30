@@ -25,7 +25,7 @@ Build packages inside a chroot.
 .RE
 
 .P
-.BR aur\-deps-rpc (1)
+.BR aur\-depends (1)
 .RS 4
 Order package dependencies using AurJson.
 .RE
@@ -166,7 +166,7 @@ Examples below assume \fBbash\fR as the interactive shell.
 Run actions on the dependency tree of an AUR package:
 .EX
 
-  $ echo foo | aur deps-rpc | while read -r pkg; do ... done
+  $ echo foo | aur depends | while read -r pkg; do ... done
 
 .EE
 Build all packages in the \fIpkgbuilds\fR github repository: (requires
