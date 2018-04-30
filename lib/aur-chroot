@@ -78,8 +78,9 @@ if ((prepare)); then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root pacman -Syu --noconfirm
     else
         # XXX parent path is not created by mkarchroot
-        # sudoers rules should be adjusted accordingly
-        sudo install -d "$directory" -m 755 -v || exit
+        if [[ ! -d $directory ]]; then
+            sudo install -d "$directory" -m 755 -v
+        fi
         sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" "$directory"/root base-devel
     fi
 fi
