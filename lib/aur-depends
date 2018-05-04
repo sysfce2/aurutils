@@ -1,27 +1,11 @@
 #!/bin/bash
 # aur-depends - retrieve package dependencies using AurJson
-set -o noclobber
 readonly argv0=depends
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-
-# default options
-mode=aur
+readonly max_request=30
 
 count() {
     jq -r '.resultcount' "$1" | awk '{s += $1} END {print s}'
-}
-
-sort_by() {
-    awk 'FNR == NR {
-        a[$1] = $0; next
-    } {
-        if($0 in a)
-            print a[$0]
-    }' "$@"
-}
-
-tr_ver() {
-    sed -r 's/[<>=].*$//g'
 }
 
 tabulate() {
@@ -29,9 +13,12 @@ tabulate() {
         | .Name         as $name
         | .PackageBase  as $base
         | .Version      as $ver
-        | .URLPath      as $url
         | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
-        | [$name, ., $base, $ver, $url] | @tsv' "$1"
+        | [$name, ., $base, $ver] | @tsv' "$1"
+}
+
+tr_ver() {
+    sed -r 's/[<>=].*$//g'
 }
 
 chain() {
@@ -45,34 +32,33 @@ chain() {
         exit 1
     fi
 
-    for ((a = 1; a <= 30; ++a)); do
+    for ((a = 1; a <= max_request; ++a)); do
         sub=$((a-1))
-
         tabulate json/$sub | tee -a tsv/n > tsv/$sub
 
-        cut -f1 tsv/$sub >> pkgname
-        cut -f1 tsv/$sub >> seen
-
         # Avoid querying duplicates (#4)
-        cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen | aur rpc -t info > json/$a || exit
+        cut -f1 tsv/$sub >> seen # pkgname
+        cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen \
+            | aur rpc -t info > json/$a || exit # rpc error
 
         if [[ -s json/$a ]]; then
             num=$(count json/$a)
         else
-            break
+            cat tsv/n
+            return # no unique results
         fi
 
         if ((num >= 1)); then
-            cut -f2 tsv/$sub >> seen
+            cut -f2 tsv/$sub >> seen # depends
         else
-            break
+            cat tsv/n
+            return # no results, recursion complete
         fi
     done
 
-    if ((a > 30)); then
-        printf '%s: total requests: %d (out of range)\n' "$argv0" $((++a)) >&2
-        exit 34
-    fi
+    # recursion limit exceeded
+    printf >&2 '%s: total requests: %d (out of range)\n' "$argv0" "$a"
+    exit 34
 }
 
 trap_exit() {
@@ -82,41 +68,17 @@ trap_exit() {
 }
 
 usage() {
-    printf 'usage: %s [-at] pkgname...\n' "$argv0" >&2
+    printf 'usage: %s pkgname...\n' "$argv0" >&2
     exit 1
 }
-
-# XXX move modes, sort_by to aur-deps
-while getopts :at opt; do
-    case $opt in
-        a) mode=all ;;
-        t) mode=tab ;;
-        *) usage    ;;
-    esac
-done
-shift $((OPTIND - 1))
-OPTIND=1
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 if cd "$tmp" && mkdir json tsv; then
-    chain # tsv/n, pkgname
+    chain # tsv/n: pkgname\tdepends\tpkgbase\pkgver
 else
-    exit "$?"
+    exit
 fi
-
-if ! cut -f1,2 tsv/n | tr_ver | tsort > order; then
-    printf '%s: invalid argument\n' "$argv0" >&2
-    exit 22
-fi
-
-cut -f2 --complement tsv/n | sort -uk 1,1 > pkginfo
-
-case $mode in
-    aur) grep -Fxf pkgname order | tac ;;
-    all) tac order                     ;;
-    tab) tac order | sort_by pkginfo - ;;
-esac
 
 # vim: set et sw=4 sts=4 ft=sh:

@@ -1,6 +1,6 @@
 #!/bin/bash
 # aur-sync - download and build AUR packages automatically
-set -o errexit -o pipefail -o noclobber
+set -o errexit -o pipefail
 shopt -s nullglob
 readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
@@ -66,6 +66,7 @@ db_fill_empty() {
     }'
 }
 
+# fields: $1 pkgname, $2 pkgbase, $3 pkgver
 select_pkgbase() {
     awk 'NR == FNR {
             a[$0]; next
@@ -74,6 +75,11 @@ select_pkgbase() {
                 print $0; seen[$2]
             }
         }' "$@"
+}
+
+# fields: $1 pkgname, $2 depends[<>=]
+tr_ver() {
+    awk -F'[<>=]' '{print $1}'
 }
 
 complement() {
@@ -293,7 +299,7 @@ fi
 } >argv
 
 if [[ -s argv ]]; then
-    aur depends -t <argv >pkginfo
+    aur depends <argv | tee deps | cut -f2 --complement | sort -u >pkginfo
 else
     plain "there is nothing to do"
     exit
@@ -311,9 +317,9 @@ fi
   fi
 
   if ((chkver)); then
-      # packages with equal or newer versions are taken as complement for
-      # the queue. if chkver_deps_only is enabled, packages on the command-line
-      # are excluded from this complement.
+      # packages with equal or newer versions are taken as complement
+      # for the queue. if chkver_deps_only is enabled, packages on the
+      # command-line are excluded from this complement.
       cut -f1,3 pkginfo | aur vercmp -p db_info -c | chkver_argv
   fi
 
@@ -323,7 +329,7 @@ fi
   fi
 } >filter
 
-cut -f1 pkginfo | lib32 | complement filter >queue_0
+cut -f1,2 deps | tr_ver | tsort | tac | lib32 | complement filter >queue_0
 
 if [[ -s queue_0 ]]; then
     select_pkgbase queue_0 pkginfo | cut -f2 >queue
