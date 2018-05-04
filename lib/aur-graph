@@ -82,17 +82,18 @@ END {
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
             # warning: split: fourth argument is a gawk extension
             split(pkg_deps[pkgbase, dep], dep_split, "(<|<=|=|>|>=)", dep_op)
+            dep_pkgname = dep_split[1]
 
             # only print dependency if it was encountered before
-            if (!(dep_split[1] in pkg_map))
+            if (!(dep_pkgname in pkg_map))
                 continue
 
             # run vercmp with provider and versioned dependency
-            if (get_vercmp(ver_map[dep_split[1]], dep_split[2], dep_op[1])) {
-                printf("%s\t%s\n", pkgbase, pkg_map[dep_split[1]])
+            if (get_vercmp(ver_map[dep_pkgname], dep_split[2], dep_op[1])) {
+                printf("%s\t%s\n", pkgbase, pkg_map[dep_pkgname])
             } else {
                 printf("invalid node: %s %s (required: %s%s)\n",
-                       dep_split[1], ver_map[dep_split[1]], dep_op[1], dep_split[2]) > "/dev/stderr"
+                       dep_pkgname, ver_map[dep_pkgname], dep_op[1], dep_split[2]) > "/dev/stderr"
                 close("/dev/stderr")
 
                 # delay mismatches to loop end
