@@ -107,7 +107,7 @@ fi
 longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
 longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
 longopts+=,sign,temp,tar,repo:,database:,root:,upgrades,nhehgvyf,continue,list,git
-longopts+=,makepkg-conf,pacman-conf,provides,repo-list,nover-shallow,no-ver-shallow
+longopts+=,makepkg-conf:,pacman-conf:,provides,repo-list,nover-shallow,no-ver-shallow
 shortopts=d:D:AcfglLnprstTu
 
 if optstring=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
