@@ -7,7 +7,7 @@
 function get_vercmp(ver1, ver2, op) {
     command = ("vercmp " ver1 " " ver2)
 
-    if (op == "" || ver2 == "") {
+    if (op == "-" || ver2 == "-") {
         return "true" # dependency is unversioned
     } else if (op == "=") {
         return (ver1 == ver2) # common case
@@ -80,6 +80,7 @@ function get_vercmp(ver1, ver2, op) {
 END {
     for (pkgbase in dep_counts) {
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
+            # retrieve comparison operator
             split(pkg_deps[pkgbase, dep], dep_split, "<")
             if ("2" in dep_split) dep_op = "<"
             split(pkg_deps[pkgbase, dep], dep_split, "<=")
@@ -92,8 +93,11 @@ END {
             if ("2" in dep_split) dep_op = "="
 
             dep_pkgname = dep_split[1]
+            if ("2" in dep_split == 0)
+                dep_op = dep_split[2] = "-"
+
             # only print dependency if it was encountered before
-            if (!(dep_pkgname in pkg_map))
+            if (dep_pkgname in pkg_map == 0)
                 continue
 
             # run vercmp with provider and versioned dependency
