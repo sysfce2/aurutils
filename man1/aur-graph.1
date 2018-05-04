@@ -1,4 +1,4 @@
-.TH AUR-GRAPH 1 2018-04-21 AURUTILS
+.TH AUR-GRAPH 1 2018-05-05 AURUTILS
 .SH NAME
 aur\-graph \- package/dependency directed graph
 
@@ -26,8 +26,12 @@ performance:
   cat */.SRCINFO | aur graph | tsort | tac
 .EE
 
-.SH NOTES
-Version information is ignored for dependencies.
+\fBprovides\fR and versioned dependencies are fully supported. This
+can be used to verify dependency chains from \fBaur-depends\fR(1). For
+example:
+.EX
+  aur sync --print <package> | xargs printf '%s/.SRCINFO\n' | xargs aur graph
+.EE
 
 .SH SEE ALSO
 .BR aur (1)
