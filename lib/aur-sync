@@ -264,18 +264,18 @@ fi
 
 if ((snapshot)); then
     aur_workdir=$AURDEST_SNAPSHOT
-    fetch_args=(-L "$tmp"/patch -t)
+    fetch_args=(-L "$tmp_view" -t)
 else
     aur_workdir=$AURDEST
-    fetch_args=(-L "$tmp"/patch -g)
+    fetch_args=(-L "$tmp_view" -g)
 fi
 
 mkdir -p     "$aur_workdir"
 chmod -c 700 "$aur_workdir"
 
 cd_safe "$tmp"
-mkdir patch
 
+# parse repo contents
 bsdcat "$root/$repo".db | db_namever | db_fill_empty >db_info
 
 if ((list)); then
@@ -344,23 +344,17 @@ if ((download)); then
     xargs -a "$tmp"/queue aur fetch "${fetch_args[@]}"
 fi
 
+# link build files in the queue (relative links)
+printf '%q\n' "$tmp_view" | cat "$tmp"/queue - | xargs ln -rs
+
+# check if dependency graph is valid
+find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null
+
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
-        # link build files in the queue (relative links)
-        xargs -a "$tmp"/queue ln -t "$tmp_view" -rs
-
-        # move diffs if available
-        files=("$tmp"/patch/*)
-
-        if [[ -f ${files[0]} ]]; then
-            mv "${files[@]}" "$tmp_view"
-        fi
-
-        # start file manager in link directory
         command -- $AUR_PAGER "$tmp_view"
     else
-        printf '%s\n' "$tmp"/patch/* | cat - "$tmp"/queue \
-            | xargs -I{} find {} -maxdepth 1 | viewer
+        printf '%s\n' "$tmp_view"/* | viewer
     fi
 fi
 
