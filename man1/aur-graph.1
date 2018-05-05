@@ -16,21 +16,27 @@ skipped if absent from the input.
 The paired output is suitable as input for \fBtsort(1)\fR, provided no
 cycles are present. For example:
 .EX
+
   cd ~/.cache/aurutils/sync
   aur graph */.SRCINFO | tsort | tac
+
 .EE
 
 \fB.SRCINFO\fR can be concatenated before processing to improve
 performance:
 .EX
+
   cat */.SRCINFO | aur graph | tsort | tac
+
 .EE
 
 \fBprovides\fR and versioned dependencies are fully supported. This
 can be used to verify dependency chains from \fBaur-depends\fR(1). For
 example:
 .EX
+
   aur sync --print <package> | xargs printf '%s/.SRCINFO\n' | xargs aur graph
+
 .EE
 
 .SH SEE ALSO
