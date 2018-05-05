@@ -2,41 +2,61 @@
 # aur-repo-filter - filter packages in the Arch Linux repositories
 readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+readonly arch_json=https://www.archlinux.org/packages/search/json
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
+
+# default options
+mode=sync
 
 provides() {
     expac '%n %R %S' -Sv - | awk '{
-        for(i = 2; i <= NF; ++i)
-            printf("%s %s\n", $1, $i)
+	for(i = 2; i <= NF; ++i)
+	    printf("%s %s\n", $1, $i)
     }'
 }
 
-xargs_sift() {
-    xargs -0 pacsift --sync --exact "$@" <&- | provides | sort -u
+tabulate() {
+    jq -r '.results[] 
+       | .pkgname as $name
+       | ([$name] + .provides + .replaces)[]?
+       | [$name, .] | @tsv'
 }
 
 usage() {
-    printf >&2 'usage: %s [-d repo]\n' "$argv0"
+    printf >&2 'usage: %s [-o] [-d repo]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/message.sh
 
-unset argv_repo
-while getopts d: opt; do
+unset argv_repo reposet
+while getopts od: opt; do
     case $opt in
-        d) argv_repo+=("$OPTARG") ;;
-        *) usage                  ;;
+	d) argv_repo+=("$OPTARG") ;;
+	o) mode=archweb ;;
+	*) usage        ;;
     esac
 done
 shift $((OPTIND - 1))
 OPTIND=1
 
 if [[ -v argv_repo ]]; then
-    reposet=("${argv_repo[@]}")
+    for i in "${argv_repo[@]}"; do
+	reposet+=("--repo=$i")
+    done
 else
-    reposet=("${arch_repo[@]}")
+    for i in "${arch_repo[@]}"; do
+	reposet+=("--repo=$i")
+    done
 fi
+
+
+case $mode in
+    sync)
+	output() { pacsift --sync --exact "$@" <&- | provides | sort -u; } ;;
+    archweb)
+	output() { wget "$arch_json/?q=" -O - -q   | tabulate | sort -u; } ;;
+esac
 
 declare -A pkgset
 
@@ -45,19 +65,16 @@ while IFS= read -r; do
 done
 
 if [[ -n ${pkgset[*]} ]]; then
-    printf '--satisfies=%s\0' "${!pkgset[@]}" | xargs_sift "${reposet[@]}" | while
-        read -r pkg vrt
-    do
-        pkg=${pkg#*/}
+    # XXX expac output is unversioned (%S), json output is versioned
+    output "${reposet[@]}" | while read -r pkg vrt; do
+	pkg=${pkg#*/}
 
-        if [[ ${pkgset[$pkg]} ]]; then
-            printf '%s\n' "$pkg"
-        fi
-
-        if [[ ${pkgset[$vrt]} ]]; then
-            plain 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
-            printf '%s\n' "$vrt"
-        fi
+	if [[ ${pkgset[$pkg]} ]]; then
+	    printf '%s\n' "$pkg"
+	elif [[ ${pkgset[$vrt]} ]]; then
+	    plain 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
+	    printf '%s\n' "$vrt"
+	fi
     done
 fi
 
