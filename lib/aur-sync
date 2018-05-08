@@ -344,8 +344,8 @@ if ((download)); then
     xargs -a "$tmp"/queue aur fetch "${fetch_args[@]}"
 fi
 
-# link build files in the queue (relative links)
-printf '%q\n' "$tmp_view" | cat "$tmp"/queue - | xargs ln -rs
+# link build files in the queue (absolute links)
+xargs -a "$tmp"/queue printf "$(pwd -P)/%s\\0" | xargs -0 ln -st "$tmp_view"
 
 # check if dependency graph is valid
 find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null
@@ -368,7 +368,7 @@ if ((build)); then
         aur build "${build_args[@]}" -- "${makepkg_args[@]}"
     fi
 else
-    xargs -a "$tmp"/queue printf -- "$(pwd -P)/%s\\n"
+    xargs -a "$tmp"/queue printf "$(pwd -P)/%s\\n"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
