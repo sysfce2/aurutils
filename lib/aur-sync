@@ -344,13 +344,17 @@ xargs -a "$tmp"/queue printf "$(pwd -P)/%s\\0" | xargs -0 ln -st "$tmp_view"
 find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null
 
 if ((view)); then
+    cd_safe "$tmp_view"
+
     if [[ -v AUR_PAGER ]]; then
-        command -- $AUR_PAGER "$tmp_view"
+        command -- $AUR_PAGER
     elif type -P vifm >/dev/null; then
-        find "$tmp_view" -maxdepth 1 | vifm - '+view!'
+        find -maxdepth 2 | vifm - '+view!'
     else
-        find "$tmp_view" -maxdepth 1 | command -- ${PAGER:-less}
+        find -maxdepth 2 | command -- ${PAGER:-less}
     fi
+
+    cd_safe -
 fi
 
 if ((build)); then
