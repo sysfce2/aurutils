@@ -348,7 +348,7 @@ if ((view)); then
     elif type -P vifm >/dev/null; then
         find "$tmp_view" -maxdepth 1 | vifm - '+view!'
     else
-        find "$tmp_view" -maxdepth 1 | command -- "${PAGER:-less}"
+        find "$tmp_view" -maxdepth 1 | command -- ${PAGER:-less}
     fi
 fi
 
