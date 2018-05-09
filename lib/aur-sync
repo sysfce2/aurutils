@@ -21,14 +21,6 @@ build=1 chkver=1 download=1 view=1
 # default options (disabled)
 chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0 chkver_deps_only=0
 
-viewer() {
-    if type -P vifm >/dev/null; then
-        vifm - '+view!'
-    else
-        command -- "${PAGER:-less}"
-    fi
-}
-
 lib32() {
     awk -v arch="$(uname -m)" '{
         if(arch == "i686") {
@@ -353,8 +345,10 @@ find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
         command -- $AUR_PAGER "$tmp_view"
+    elif type -P vifm >/dev/null; then
+        find "$tmp_view" -maxdepth 1 | vifm - '+view!'
     else
-        printf '%s\n' "$tmp_view"/* | viewer
+        find "$tmp_view" -maxdepth 1 | command -- "${PAGER:-less}"
     fi
 fi
 
