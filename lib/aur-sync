@@ -339,9 +339,6 @@ fi
 # link build files in the queue (absolute links)
 xargs -a "$tmp"/queue printf "$(pwd -P)/%s\\0" | xargs -0 ln -st "$tmp_view"
 
-# check if dependency graph is valid
-find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null
-
 if ((view)); then
     cd_safe "$tmp_view"
 
@@ -358,6 +355,9 @@ fi
 
 if ((build)); then
     build_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
+
+    # check if dependency graph is valid
+    find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null
 
     if ((chroot)); then
         aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
