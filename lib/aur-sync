@@ -349,9 +349,9 @@ if ((view)); then
     if [[ -v AUR_PAGER ]]; then
         command -- $AUR_PAGER
     elif type -P vifm >/dev/null; then
-        find -maxdepth 2 | vifm - '+view!'
+        find -L -maxdepth 2 | vifm - '+view!'
     else
-        find -maxdepth 2 | command -- ${PAGER:-less}
+        find -L -maxdepth 2 | command -- ${PAGER:-less}
     fi
 
     cd_safe -
