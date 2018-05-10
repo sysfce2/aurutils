@@ -357,7 +357,7 @@ if ((build)); then
     build_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
 
     # check if dependency graph is valid
-    find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null
+    printf '%s\0' "$tmp_view"/*/.SRCINFO | xargs -0 aur graph >/dev/null
 
     if ((chroot)); then
         aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
