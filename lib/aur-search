@@ -13,25 +13,33 @@ sort_key=Name
 tabulate() {
     # It is important to have a default value for every field, or parsing of the @tsv result might break.
     # See: https://lists.gnu.org/archive/html/help-bash/2016-05/msg00041.html
-    jq -r --arg key "$1" '[.results[]] | sort_by(.[$key])[] | [
-        .Name        // "-",
-        .PackageBase // "-",
-        .Version     // "-",
-        .Description // "-",
-        .URL         // "-",
-        (.Keywords | select (length > 0) // ["-"] | join(" ")),
-        (.License  | select (length > 0) // ["-"] | join(" ")),
-        .Maintainer  // "-",
-        .NumVotes    // "-",
-        .Popularity  // "-",
-        .OutOfDate   // "-",
-        (.FirstSubmitted | todate),
-        (.LastModified   | todate),
-        (.Depends        | select (length > 0) // ["-"] | join(" ")),
-        (.MakeDepends    | select (length > 0) // ["-"] | join(" ")),
-        (.CheckDepends   | select (length > 0) // ["-"] | join(" "))
-    ] | @tsv'
+    jq -r --arg key "$1" '
+        def sel_join:
+            select (length > 0) // ["-"] | join(" ");
+
+        [.results[]] | sort_by(.[$key])[] | [
+            .Name        // "-",
+            .PackageBase // "-",
+            .Version     // "-",
+            .Description // "-",
+            .URL         // "-",
+
+            (.Keywords | sel_join),
+            (.License  | sel_join),
+
+            .Maintainer  // "-",
+            .NumVotes    // "-",
+            .Popularity  // "-",
+            .OutOfDate   // "-",
+
+            (.FirstSubmitted | todate),
+            (.LastModified   | todate),
+            (.Depends        | sel_join),
+            (.MakeDepends    | sel_join),
+            (.CheckDepends   | sel_join)
+        ] | @tsv'
 }
+
 
 parse_long() {
     local -a desc=(
