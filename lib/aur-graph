@@ -82,7 +82,7 @@ END {
 
     for (pkgbase in dep_counts) {
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
-            dep_op = "-"
+            dep_op = "-" # unversioned / no comparison
 
             # valid operators (important: <= before <)
             split("<=|>=|<|=|>", cmp, "|")
