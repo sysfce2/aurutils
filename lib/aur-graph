@@ -78,34 +78,45 @@ function get_vercmp(ver1, ver2, op) {
 }
 
 END {
+    _vercmp_exit = 0
+
     for (pkgbase in dep_counts) {
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
-            # retrieve comparison operator
-            split(pkg_deps[pkgbase, dep], dep_split, "<")
-            if ("2" in dep_split) dep_op = "<"
-            split(pkg_deps[pkgbase, dep], dep_split, "<=")
-            if ("2" in dep_split) dep_op = "<="
-            split(pkg_deps[pkgbase, dep], dep_split, ">")
-            if ("2" in dep_split) dep_op = ">"
-            split(pkg_deps[pkgbase, dep], dep_split, ">=")
-            if ("2" in dep_split) dep_op = ">="
-            split(pkg_deps[pkgbase, dep], dep_split, "=")
-            if ("2" in dep_split) dep_op = "="
+            dep_op = "-"
 
-            dep_pkgname = dep_split[1]
-            if ("2" in dep_split == 0)
-                dep_op = dep_split[2] = "-"
+            # valid operators (important: <= before <)
+            split("<=|>=|<|=|>", cmp, "|")
+
+            # split: fourth argument is gawk extension
+            for (i in cmp) {
+                split(pkg_deps[pkgbase, dep], dep_split, cmp[i])
+
+                if ("2" in dep_split) {
+                    dep_op = cmp[i]
+                    break
+                }
+            }
+
+            if ("1" in dep_split)
+                dep_pkgname = dep_split[1]
+            else
+                exit 2
+
+            if ("2" in dep_split)
+                dep_pkgver = dep_split[2]
+            else
+                dep_pkgver = "-"
 
             # only print dependency if it was encountered before
             if (dep_pkgname in pkg_map == 0)
                 continue
 
             # run vercmp with provider and versioned dependency
-            if (get_vercmp(ver_map[dep_pkgname], dep_split[2], dep_op)) {
+            if (get_vercmp(ver_map[dep_pkgname], dep_pkgver, dep_op)) {
                 printf("%s\t%s\n", pkgbase, pkg_map[dep_pkgname])
             } else {
                 printf("invalid node: %s %s (required: %s%s)\n",
-                       dep_pkgname, ver_map[dep_pkgname], dep_op, dep_split[2]) > "/dev/stderr"
+                       dep_pkgname, ver_map[dep_pkgname], dep_op, dep_pkgver) > "/dev/stderr"
                 close("/dev/stderr")
 
                 # delay mismatches to loop end
