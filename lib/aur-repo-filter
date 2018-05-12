@@ -19,19 +19,20 @@ provides() {
 
 tabulate() {
     jq -r '.results[]
-        | .pkgname as $n | ([$n] + .replaces + .provides)[]? | [$n, .] | @tsv'
-}
-
-tr_ver() {
-    sed -r 's/[<>=].*$//g'
+        | .pkgname as $n | ([$n] + .replaces + .provides)[]? | [$n, .]
+        | @tsv'
 }
 
 get_json() {
-    wget "$arch_json/?q=" -O - -q | tr_ver
+    wget "$arch_json/?q=" -O - --quiet
 }
 
 get_sync() {
     pacsift --sync --exact "$@" <&-
+}
+
+tr_ver() {
+    sed -r 's/[<>=].*$//g'
 }
 
 usage() {
@@ -63,8 +64,8 @@ else
 fi
 
 case $mode in
-    sync) output() { get_sync "$@" | provides | sort -u; } ;;
-    arch) output() { get_json "$@" | tabulate | sort -u; } ;;
+    sync) output() { get_sync "$@" | provides; } ;;
+    arch) output() { get_json "$@" | tabulate | tr_ver; } ;;
 esac
 
 declare -A pkgset
@@ -74,7 +75,7 @@ while IFS= read -r; do
 done
 
 if [[ -n ${pkgset[*]} ]]; then
-    output "${reposet[@]}" | while read -r pkg vrt; do
+    output "${reposet[@]}" | sort -u | while read -r pkg vrt; do
         pkg=${pkg#*/}
 
         if [[ ${pkgset[$pkg]} ]]; then
