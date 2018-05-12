@@ -8,18 +8,30 @@ readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 # default options
 mode=sync
 
+# Unlike the jq function, this prints "None" in case of a missing entry.
+# See: https://github.com/falconindy/expac/issues/23
 provides() {
     expac '%n %R %S' -Sv - | awk '{
-	for(i = 2; i <= NF; ++i)
-	    printf("%s %s\n", $1, $i)
+        for(i = 2; i <= NF; ++i)
+            printf("%s %s\n", $1, $i)
     }'
 }
 
 tabulate() {
-    jq -r '.results[] 
-       | .pkgname as $name
-       | ([$name] + .provides + .replaces)[]?
-       | [$name, .] | @tsv'
+    jq -r '.results[]
+        | .pkgname as $n | ([$n] + .replaces + .provides)[]? | [$n, .] | @tsv'
+}
+
+tr_ver() {
+    sed -r 's/[<>=].*$//g'
+}
+
+get_json() {
+    wget "$arch_json/?q=" -O - -q | tr_ver
+}
+
+get_sync() {
+    pacsift --sync --exact "$@" <&-
 }
 
 usage() {
@@ -32,9 +44,9 @@ source /usr/share/makepkg/util/message.sh
 unset argv_repo reposet
 while getopts od: opt; do
     case $opt in
-	d) argv_repo+=("$OPTARG") ;;
-	o) mode=archweb ;;
-	*) usage        ;;
+        d) argv_repo+=("$OPTARG") ;;
+        o) mode=arch ;;
+        *) usage     ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -42,20 +54,17 @@ OPTIND=1
 
 if [[ -v argv_repo ]]; then
     for i in "${argv_repo[@]}"; do
-	reposet+=("--repo=$i")
+        reposet+=("--repo=$i")
     done
 else
     for i in "${arch_repo[@]}"; do
-	reposet+=("--repo=$i")
+        reposet+=("--repo=$i")
     done
 fi
 
-
 case $mode in
-    sync)
-	output() { pacsift --sync --exact "$@" <&- | provides | sort -u; } ;;
-    archweb)
-	output() { wget "$arch_json/?q=" -O - -q   | tabulate | sort -u; } ;;
+    sync) output() { get_sync "$@" | provides | sort -u; } ;;
+    arch) output() { get_json "$@" | tabulate | sort -u; } ;;
 esac
 
 declare -A pkgset
@@ -65,16 +74,15 @@ while IFS= read -r; do
 done
 
 if [[ -n ${pkgset[*]} ]]; then
-    # XXX expac output is unversioned (%S), json output is versioned
     output "${reposet[@]}" | while read -r pkg vrt; do
-	pkg=${pkg#*/}
+        pkg=${pkg#*/}
 
-	if [[ ${pkgset[$pkg]} ]]; then
-	    printf '%s\n' "$pkg"
-	elif [[ ${pkgset[$vrt]} ]]; then
-	    plain 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
-	    printf '%s\n' "$vrt"
-	fi
+        if [[ ${pkgset[$pkg]} ]]; then
+            printf '%s\n' "$pkg"
+        elif [[ ${pkgset[$vrt]} ]]; then
+            plain 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
+            printf '%s\n' "$vrt"
+        fi
     done
 fi
 
