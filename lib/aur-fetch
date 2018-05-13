@@ -13,6 +13,10 @@ fetch_args=()
 recurse=0
 mode=git
 
+linef() {
+    awk -v "f=$1" '{printf(f, $0);}'
+}
+
 usage() {
     base64 -d <<EOF
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAsXyAg
@@ -57,11 +61,11 @@ esac
 
 # set filters (2)
 case $mode in
-         git) format() { xargs printf "$fmt_git_clone\n"; } ;;
-    snapshot) format() { xargs printf "$fmt_snapshot\n" ; } ;;
+         git) uri() { linef "$fmt_git_clone\n"; } ;;
+    snapshot) uri() { linef "$fmt_snapshot\n" ; } ;;
 esac
 
 # pipeline
-printf '%s\n' "$@" | deps | format | aur "fetch-$mode" "${fetch_args[@]}"
+printf '%s\n' "$@" | deps | uri | aur "fetch-$mode" "${fetch_args[@]}"
 
 # vim: set et sw=4 sts=4 ft=sh:
