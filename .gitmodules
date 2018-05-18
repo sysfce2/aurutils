@@ -1,0 +1,3 @@
+[submodule "xe"]
+	path = xe
+	url = git://github.com/chneukirchen/xe.git
