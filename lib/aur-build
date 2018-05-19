@@ -151,8 +151,8 @@ else
     conf_single "$database" >"$tmp"/custom.conf
 fi
 
-while read -r -u "$fd" pkg _; do
-    cd_safe "$startdir/$pkg"
+while IFS= read -ru "$fd" path; do
+    cd_safe "$path"
 
     if ((!overwrite)); then
         mapfile -t mark < <(makepkg --packagelist | find_pkg_dupes "$db_root")
@@ -193,10 +193,12 @@ while read -r -u "$fd" pkg _; do
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     # count a package as processed if built and added to the repo
-    printf '%s\n' "$pkg" >&"$fd_done"
+    basename "$path" >&"$fd_done"
 
     # fixed by: https://git.archlinux.org/pacman.git/commit/?id=c0a5884b
-    find "$startdir/$pkg" -maxdepth 1 -type l -xtype f -lname "$var_tmp*" -delete
+    find . -maxdepth 1 -type l -xtype f -lname "$var_tmp*" -delete
+
+    cd_safe "$startdir"
 
     if ((chroot)) || ((no_sync)); then
         continue
