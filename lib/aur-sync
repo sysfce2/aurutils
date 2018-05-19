@@ -291,6 +291,7 @@ fi
 } >argv
 
 if [[ -s argv ]]; then
+    # $1 pkgname $2 depends $3 pkgbase $4 pkgver
     aur depends <argv | tee deps | cut -f2 --complement | sort -u >pkginfo
 else
     plain "there is nothing to do"
@@ -321,16 +322,18 @@ fi
   fi
 } >filter
 
+# pkgname queue (AUR + repos)
 cut -f1,2 deps | tr_ver | tsort | tac | lib32 | complement filter >queue_0
 
-if [[ -s queue_0 ]]; then
-    select_pkgbase queue_0 pkginfo | cut -f2 >queue
+# pkgbase queue (AUR)
+select_pkgbase queue_0 pkginfo | cut -f2 >queue
+
+if [[ -s queue ]]; then
+    cd_safe "$aur_workdir"
 else
     plain "there is nothing to do"
     exit
 fi
-
-cd_safe "$aur_workdir"
 
 if ((download)); then
     xargs -a "$tmp"/queue aur fetch "${fetch_args[@]}"
