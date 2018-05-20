@@ -40,7 +40,7 @@ if ((!$#)); then
     usage
 fi
 
-# XXX trickery for hyphen and absolute path arguments
+# FIXME trickery for hyphen and absolute path arguments
 mapfile -t arg_path < <(readlink -e -- "$@")
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit

@@ -94,7 +94,7 @@ while getopts :acd:p:u: opt; do
     case $opt in
         a) all=1         ;;
         c) format=equal  ;;
-        d) repo=$OPTARG  ;; # XXX remove this? (#316)
+        d) repo=$OPTARG  ;; # FIXME remove this? (#316)
         p) target=file
            aux=$OPTARG   ;;
         u) upair=$OPTARG ;;

@@ -77,7 +77,7 @@ parse_short() {
     while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes _ OutOfDate _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
-            *) # XXX move date command to jq (must only be run if OutOfDate is set)
+            *) # FIXME move date command to jq (must only be run if OutOfDate is set)
                OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
         esac
 
