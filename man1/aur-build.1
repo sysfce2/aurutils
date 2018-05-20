@@ -49,9 +49,14 @@ Do not sync the local repository after building.
 .TP
 .BI "\-r " root
 The root for the repository. The \fIroot\fR is the location for the
-pacman database (\fIfoo.db\fR), built packages, and secondary files such
-as the files database (\fIfoo.files\fR). This defaults to the
+pacman database (\fIfoo.db\fR), built packages, and secondary files
+such as the files database (\fIfoo.files\fR). This defaults to the
 \fIServer\fR value of the configured repository.
+
+.SY Note:
+The \fIServer\fR value configured in \fBpacman.conf\fR is used for
+\fBpacman\fR sync operations regardless of this setting. See also
+\fB\-N\fR.
 
 .TP
 .B \-R
@@ -61,13 +66,13 @@ database (\fBrepo\-add \-R\fR).
 .TP
 .B \-s
 Sign built packages and the database (\fBrepo\-add \-s\fR) with gpg.
-To use another key than the default, the \fBGPGKEY\fR environment variable can be
-set to the appopriate key identifier.
+To use another key than the default, the \fBGPGKEY\fR environment
+variable can be set to the appopriate key identifier.
 
 .TP
 .B \-v
-Verify the PGP signature of the database before updating. (\fBrepo\-add
-\-v\fR).
+Verify the PGP signature of the database before
+updating. (\fBrepo\-add \-v\fR).
 
 .SH NOTES
 When building locally (outside a container), \fBpacman \-Syu\fR is run
@@ -82,7 +87,8 @@ system.
 
 Databases are built with \fBLANG=C\fR to avoid libalpm from skipping
 entries if the locale is not set (FS#49342). Packages are signed
-manually with \fBgpg \-\-verbose \-\-detach\-sign \-\-no\-armor\fR (FS#49946).
+manually with \fBgpg \-\-verbose \-\-detach\-sign \-\-no\-armor\fR
+(FS#49946).
 
 .SS Avoiding password prompts
 \fBmakepkg\fR(8) must be run as a regular user as of version 4.2, with
