@@ -5,7 +5,7 @@ readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 # Isolate parallel to aurutils usage.
 # See: https://git.savannah.gnu.org/cgit/parallel.git/commit/?id=685018f
 export PARALLEL_HOME=$XDG_CONFIG_HOME/aurutils/parallel
-mkdir -p "$PARALLEL_HOME"
+mkdir -p "$PARALLEL_HOME" || exit
 
 # Disable citation notice.
 # See: https://www.gnu.org/licenses/gpl-faq.en.html#RequireCitation
