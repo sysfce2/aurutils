@@ -340,7 +340,7 @@ if ((download)); then
 fi
 
 # link build files in the queue (absolute links)
-aur jobs -Xj1 ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
+aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if ((view)); then
     cd_safe "$tmp_view"
@@ -369,7 +369,7 @@ if ((build)); then
         aur build "${build_args[@]}" -- "${makepkg_args[@]}"
     fi
 else
-    aur jobs -Xj1 printf '%s\n' "$(pwd -P)"/{} :::: "$tmp"/queue
+    aur jobs -X printf '%s\n' "$(pwd -P)"/{} :::: "$tmp"/queue
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
