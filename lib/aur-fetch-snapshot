@@ -8,10 +8,6 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 log=stdout
 
-dl_stdin() {
-    parallel -j +5 --halt soon,fail=1 wget -i -
-}
-
 tar_no_mode_diff() {
     if [[ -d $2/${1%%.tar*} ]]; then
         LC_MESSAGES=C tar -df "$1" -C "$2" | grep -Evq '(Mode|Uid|Gid)'
@@ -51,7 +47,7 @@ case $log in
 esac
 
 cd "$tmp"
-dl_stdin
+wget -i -
 
 for a in ./*.tar.gz; do
     if [[ -f $a ]]; then
