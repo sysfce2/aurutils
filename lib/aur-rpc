@@ -23,10 +23,6 @@ query_search() {
     }'
 }
 
-wget_jobs() {
-    aur jobs -j +8 --halt soon,fail=1 --pipe wget -q -i - -O -
-}
-
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
@@ -60,6 +56,6 @@ case $type in
 esac
 
 # pipeline
-jq -R -r '@uri' | query | wget_jobs
+jq -R -r '@uri' | query | wget -q -i - -O -
 
 # vim: set et sw=4 sts=4 ft=sh:
