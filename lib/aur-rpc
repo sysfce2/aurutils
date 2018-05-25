@@ -4,7 +4,7 @@ readonly argv0=rpc
 readonly aur_location='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-info() {
+query_info() {
     awk -v rpc="$aur_location/rpc/?v=5&type=info" '{
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
@@ -17,14 +17,14 @@ info() {
     }'
 }
 
-search() {
+query_search() {
     awk -v rpc="$aur_location/rpc/?v=5&type=search&by=$1&arg" '{
         printf "%s=%s\n", rpc, $0
     }'
 }
 
-dl_stdin() {
-    aur jobs -j +8 --halt soon,fail=1 wget -qi - -O -
+wget_jobs() {
+    aur jobs -j +8 --halt soon,fail=1 --pipe wget -q -i - -O -
 }
 
 trap_exit() {
@@ -54,12 +54,12 @@ trap 'trap_exit' EXIT
 
 # set filters
 case $type in
-      info) query() { info; }                      ;;
-    search) query() { search "${by:-name-desc}"; } ;;
-         *) usage                                  ;;
+      info) query() { query_info; }                      ;;
+    search) query() { query_search "${by:-name-desc}"; } ;;
+         *) usage ;;
 esac
 
 # pipeline
-jq -R -r '@uri' | query | dl_stdin
+jq -R -r '@uri' | query | wget_jobs
 
 # vim: set et sw=4 sts=4 ft=sh:
