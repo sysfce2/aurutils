@@ -92,7 +92,7 @@ parse_short() {
 }
 
 rpc_jobs() {
-    aur jobs -j +8 --halt soon,fail=1 --pipe aur rpc -t "$1" -b "$2" "$@{:3}"
+    aur jobs -j +8 --halt soon,fail=1 --pipe aur rpc -t "$1" -b "$2" "${@:3}"
 }
 
 usage() {
