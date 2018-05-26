@@ -91,10 +91,6 @@ parse_short() {
     done
 }
 
-rpc_jobs() {
-    aur jobs -j +8 --halt soon,fail=1 --pipe aur rpc -t "$1" -b "$2" "${@:3}"
-}
-
 usage() {
     printf >&2 'usage: %s: [-aimnrv] [-k key] package [package...]\n' "$argv0"
     exit 1
@@ -153,6 +149,6 @@ case $multiple in
 esac
 
 # pipeline
-rpc_jobs "$query_type" "$search_by" ::: "$@" | tabulate "$sort_key" | combine | parse
+printf '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | tabulate "$sort_key" | combine | parse
 
 # vim: set et sw=4 sts=4 ft=sh:
