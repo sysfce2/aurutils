@@ -81,6 +81,9 @@ END {
     _vercmp_exit = 0
 
     for (pkgbase in dep_counts) {
+        # add a loop to isolated nodes (#402)
+        printf("%s\t%s\n", pkgbase, pkgbase)
+
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
             dep_op = "-" # unversioned / no comparison
 
