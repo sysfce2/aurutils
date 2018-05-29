@@ -178,7 +178,7 @@ while IFS= read -ru "$fd" path; do
     fi
 
     if ((m_err)); then
-        build_failure "$pkg" "$fd" "$fd_done" "$m_err"
+        build_failure "${path##*/}" "$fd" "$fd_done" "$m_err"
     fi
 
     cd_safe "$var_tmp"
