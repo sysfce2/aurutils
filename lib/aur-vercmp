@@ -62,8 +62,15 @@ parse_aur() {
     aur rpc -t info | jq -r '.results[] | [.Name, .Version] | @tsv'
 }
 
+check_sync() {
+    # https://github.com/andrewgregory/pacutils/issues/22
+    pacconf --repo="$1" >/dev/null || exit 1
+}
+
 parse_sync() {
-    pacman -Slq "$1" | aur jobs -Xr pacman -Sddp --print-format '%n %v' "$1"/{}
+    # https://git.archlinux.org/pacman.git/commit/?id=ab3d8478
+    pacsift --exact --null --repo "$1" <&- \
+        | xargs -0r pacman -Sddp --print-format '%n %v'
 }
 
 trap_exit() {
@@ -103,6 +110,7 @@ trap 'trap_exit' EXIT
 
 # set input file
 if [[ -v repo ]]; then
+    check_sync "$repo"
     parse_sync "$repo" | sort -k 1b,1 >"$tmp"
 else
     if [[ -t 0 ]]; then
