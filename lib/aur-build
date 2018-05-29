@@ -198,7 +198,6 @@ while IFS= read -ru "$fd" path; do
 
     # count a package as processed if built and added to the repo
     basename "$path" >&"$fd_done"
-
     cd_safe "$startdir"
 
     if ((chroot)) || ((no_sync)); then
