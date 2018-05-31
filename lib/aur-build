@@ -1,6 +1,7 @@
 #!/bin/bash
 # aur-build - build packages to a local repository
 set -o errexit
+shopt -s extglob
 readonly argv0=build
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -16,13 +17,13 @@ repo_add_args=()
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
 build_failure() {
-    error "$argv0: a package failed to build ($1)"
+    error "$argv0: failure on package $1"
 
     mapfile -tu "$2" pkg_todo
     printf >&2 'remaining packages: %s\n' "${pkg_todo[*]:-(none)}"
-    
+
     mapfile -tu "$3" pkg_done
-    printf >&2 'successfully processed packages: %s\n' "${pkg_done[*]:-(none)}"
+    printf >&2 'processed packages: %s\n' "${pkg_done[*]:-(none)}"
 
     exit "$4"
 }
@@ -133,18 +134,22 @@ if type -P xdelta3 >/dev/null; then
     repo_add_args+=(-d)
 fi
 
-if ((sign_pkg)) && [[ -v GPGKEY ]]; then
-    gpg --list-keys "$GPGKEY"
-    gpg_args+=(-u "$GPGKEY")
-fi
+if ((sign_pkg)); then
+    if [[ -v GPGKEY ]]; then
+        if gpg --list-keys "$GPGKEY"; then
+            gpg_args+=(-u "$GPGKEY")
+        else
+            error "$argv0: GPGKEY: invalid key"
+            exit 1
+        fi
+    fi
+else
+    db_sigs=("$db_root/$database"{,.files}.sig)
 
-if ((!sign_pkg)); then
-    db_sigs=("$db_root/$database"*.sig)
-  
     if [[ -f ${db_sigs[0]} ]]; then
         error "$argv0: signature found, but signing is disabled"
 
-        printf '%q\n' "${db_sigs[@]}" >&2
+        printf '%q\n' "${db_sigs[@]}"
         exit 1
     fi
 fi
@@ -182,21 +187,29 @@ while IFS= read -ru "$fd" path; do
     fi
 
     cd_safe "$var_tmp"
-    pkglist=(./*)
+    pkglist=(./!(*.sig))
+    siglist=()
 
     if ((sign_pkg)); then
         for p in "${pkglist[@]}"; do
-            gpg "${gpg_args[@]}" --output "$p".sig "$p"
-            mv -bf "$p" "$p".sig "$db_root"
+            if [[ -f $p.sig ]]; then
+                # existing signatures from makepkg --sign (#401)
+                warning "$argv0: existing signature found"
+            else
+                gpg "${gpg_args[@]}" --output "$p".sig "$p"
+            fi
+            siglist+=("$p".sig)
         done
-    else
-        mv -bf "${pkglist[@]}" "$db_root"
     fi
 
+    # move build products (relative paths)
+    mv -bf "${pkglist[@]}" "${siglist[@]}" "$db_root"
+
+    # update package database
     cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
-    # count a package as processed if built and added to the repo
+    # count package as processed if built and added to repo
     basename "$path" >&"$fd_done"
     cd_safe "$startdir"
 
