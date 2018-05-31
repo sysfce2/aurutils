@@ -336,7 +336,8 @@ else
 fi
 
 if ((download)); then
-    aur jobs -Xj +2 --nice 10 --halt soon,fail=1 aur fetch "${fetch_args[@]}" :::: "$tmp"/queue
+    aur jobs -Xj +2 --nice 10 --halt soon,fail=1 \
+        aur fetch "${fetch_args[@]}" :::: "$tmp"/queue
 fi
 
 # link build files in the queue (absolute links)
