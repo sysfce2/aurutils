@@ -82,7 +82,7 @@ separately, typically through \fBpacman \-Syu \fIpackage_name\fR.
 
 Package conflicts inside the container must be solved manually, as
 \fBmakechrootpkg\fR uses \fBmakepkg \-\-confirm \-s\fR internally.
-For example, to replace \fIgcc\fR with \fIgcc-multilib\fR, run
+For example, to replace \fIgcc\fR with \fIgcc\-multilib\fR, run
 \fBarch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib\fR as
 root.
 
@@ -96,7 +96,7 @@ available in \fI/usr/share/devtools\fR (such as
 
 .SS Accessing the local repository
 To install packages from the local repository (for example, on
-dependency resolution with \fImakepkg -s\fR), the container requires
+dependency resolution with \fImakepkg \-s\fR), the container requires
 at least read-only access to the host directory where it is
 located. This can be ensured through a \fIbind mount\fR.
 
@@ -105,18 +105,18 @@ The following describes this procedure in \fBdevtools\fR programs.
 .SY \fBmkarchroot\fR
 .IP \(bu 2
 This calls \fBpacstrap -GMcd\fR, which in turn calls \fIpacman -r
-<directory/root> -Sy\fR which uses the host system's
+<directory/root> \-Sy\fR which uses the host system's
 configuration. No bind mounts are required. Reference:
 
 .UR https://git.archlinux.org/pacman.git/commit/?id=fae33a1f
 .UE
 
-\fBarch-nspawn\fR is only run with \fBlocale-gen\fR.
+\fBarch-nspawn\fR is only run with \fBlocale\-gen\fR.
 
 .SY \fBarch-nspawn\fR
 .IP \(bu 2
 Without \fB\-c\fR, \fBCacheDir\fR paths on the host are determined
-with \fBpacman -v\fR. Any found paths are split on whitespace and
+with \fBpacman\-conf\fR. Any found paths are split on whitespace and
 mounted as follows:
 .RS
 .TP
@@ -139,8 +139,8 @@ and \fB\-\-bind\-ro\fR arguments, which are passed directly to
 
 .SY \fBmakechrootpkg\fR
 .IP \(bu 2
-This calls \fIarch-nspawn <directory/copy> pacman -Syu\fR, thus the
-above rules on \fBCacheDir\fR without \fB-c\fR apply. Additional
+This calls \fIarch\-nspawn <directory/copy> pacman -Syu\fR, thus the
+above rules on \fBCacheDir\fR without \fB\-c\fR apply. Additional
 paths may be specified with \fB\-d\fR (read-write) or \fB\-D\fR
 (read-only).
 
