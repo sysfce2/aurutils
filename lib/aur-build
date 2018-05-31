@@ -149,7 +149,7 @@ else
     if [[ -f ${db_sigs[0]} ]]; then
         error "$argv0: signature found, but signing is disabled"
 
-        printf '%q\n' "${db_sigs[@]}"
+        printf '%q\n' "${db_sigs[@]}" >&2
         exit 1
     fi
 fi
