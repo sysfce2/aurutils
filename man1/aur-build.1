@@ -69,11 +69,6 @@ Sign built packages and the database (\fBrepo\-add \-s\fR) with
 \fBgpg\fR(1).  To use another key than the default, the \fBGPGKEY\fR
 environment variable can be set to the appopriate key identifier.
 
-.SY Note:
-If signing packages is enabled through \fBmakepkg \-\-sign\fR or
-\fBBUILDENV\fR in \fBmakepkg.conf\fR(5), the resulting signatures are
-skipped if \fB\aur-build -s\fR is disabled.
-
 .TP
 .B \-v
 Verify the PGP signature of the database before

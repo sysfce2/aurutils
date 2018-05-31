@@ -91,8 +91,8 @@ while getopts a:d:r:C:D:M:cfNRsv opt; do
         D) chroot_args+=(-D "$OPTARG") ;;
         M) chroot_args+=(-M "$OPTARG") ;;
         R) repo_add_args+=(-R) ;;
-        s) repo_add_args+=(-s)
-           sign_pkg=1          ;;
+        s) sign_pkg=1
+           repo_add_args+=(-s) ;;
         v) repo_add_args+=(-v) ;;
         *) usage ;;
     esac
@@ -147,7 +147,8 @@ else
     db_sigs=("$db_root/$database"{,.files}.sig)
 
     if [[ -f ${db_sigs[0]} ]]; then
-        error "$argv0: signature found, but signing is disabled"
+        # avoid errors from stale db.sig files
+        error "$argv0: database signature found, but signing is disabled"
 
         print_quoted >&2 "${db_sigs[@]}"
         exit 1
@@ -187,21 +188,19 @@ while IFS= read -ru "$fd" path; do
     fi
 
     cd_safe "$var_tmp"
-    pkglist=(./!(*.sig)) # discard makepkg --sign signatures (#401)
+    pkglist=(./!(*.sig)) # discard makepkg --sign from package list (#401)
     siglist=()
 
-    if ((sign_pkg)); then
-        for p in "${pkglist[@]}"; do
-            if [[ -f $p.sig ]]; then
-                warning "$argv0: existing signature found"
-                print_quoted >&2 "$p".sig
-            else
-                gpg "${gpg_args[@]}" --output "$p".sig "$p"
-            fi
-
+    for p in "${pkglist[@]}"; do
+        if [[ -f $p.sig ]]; then
+            warning "$argv0: existing package signature found"
             siglist+=("$p".sig)
-        done
-    fi
+
+        elif ((sign_pkg)); then
+            gpg "${gpg_args[@]}" --output "$p".sig "$p"
+            siglist+=("$p".sig)
+        fi
+    done
 
     # move build products (relative paths)
     mv -bf "${pkglist[@]}" "${siglist[@]}" "$db_root"
