@@ -17,13 +17,13 @@ bindmounts_ro=()
 # default options
 prepare=1 build=1
 
+get_file_server() {
+    pacini --section="$1" "$2" Server | grep -Em1 '^file://'
+}
+
 get_repo_config() {
     printf '[%s]\n' "$2"
     pacconf --config="$1" --repo="$2"
-}
-
-get_cachedir() {
-    pacconf --config="$1" CacheDir
 }
 
 trap_exit() {
@@ -36,6 +36,9 @@ usage() {
     printf >&2 'usage: %s [-CDLM <path>] [-d <repo>] [-BP] -- <makechrootpkg args>' "$argv0"
     exit 1
 }
+
+tmp=$(mktemp -d)
+trap 'trap_exit' EXIT
 
 unset pacman_conf makepkg_conf host_repo host_conf server
 while getopts :BPd:r:C:D:L:M: opt; do
@@ -63,39 +66,37 @@ readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 readonly host_conf=${host_conf-/etc/pacman.conf}
 
-trap 'trap_exit' EXIT
-tmp=$(mktemp -d)
-
 # FIXME possibly extend -d to multiple local repos
 if [[ ${host_repo=$AUR_REPO} ]]; then
     get_repo_config "$host_conf" "$host_repo"
-fi >"$tmp"/custom.conf
+fi > "$tmp"/custom.conf
 
 # FIXME custom.conf may contain (besides http:// or others) multiple
 # file:// entries for a single local repo
-server=$(pacini --section="$host_repo" "$tmp"/custom.conf Server | grep -Em1 '^file://')
+server=$(get_file_server "$host_repo" "$tmp"/custom.conf)
 server=${server#file://}
 
-if [[ $server ]]; then
+if [[ -n $server ]]; then
     bindmounts_ro+=("--bind-ro=$server")
-    makechrootpkg_bindmounts_ro+=('-D' "$server")
+    makechrootpkg_bindmounts_ro+=(-D "$server")
 fi
 
 # Note: any CacheDir entries are bind-mounted by arch-nspawn (bind-rw
 # for the first entry, bind-ro for any others)
 if ((prepare)); then
-    cat "$pacman_conf" "$tmp"/custom.conf >"$tmp"/pacman.conf
+    cat "$pacman_conf" "$tmp"/custom.conf > "$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
              "$directory"/root "${bindmounts_ro[@]}" pacman -Syu --noconfirm
     else
+        # parent path is not created by mkarchroot (#371)
         if [[ ! -d $directory ]]; then
-            # parent path is not created by mkarchroot (#371)
             sudo install -d "$directory" -m 755 -v
         fi
-        sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
+
+        sudo mkarchroot -C "$tmp"/pacman.conf -M "$makepkg_conf" \
              "$directory"/root base-devel
     fi
 fi
