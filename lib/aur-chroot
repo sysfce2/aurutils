@@ -23,7 +23,7 @@ get_conf_repo() {
 }
 
 get_file_server() {
-    pacini --section="$1" "$2" Server | grep -Em1 '^file://'
+    pacini --section="$1" "$2" Server
 }
 
 trap_exit() {
@@ -40,7 +40,7 @@ usage() {
 tmp=$(mktemp -d)
 trap 'trap_exit' EXIT
 
-# FIXME add --sysroot to set pacconf host, see pacutils-sysroot(7)
+# FIXME: add --sysroot to set pacconf host, see pacutils-sysroot(7)
 unset pacman_conf makepkg_conf host_repo server
 while getopts :BPd:r:C:D:M: opt; do
     case $opt in
@@ -56,41 +56,42 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# reset default makechrootpkg arguments
+# Reset default makechrootpkg arguments
 if (($#)); then
     makechrootpkg_args=("$@")
 fi
 
-# baseline configuration
+# Baseline configuration
 readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
-# FIXME possibly extend -d to multiple local repos
+# FIXME: possibly extend -d to multiple local repos
 if [[ -n ${host_repo=$AUR_REPO} ]]; then
     get_conf_repo "$host_repo"
 fi >"$tmp"/custom.conf
 
-# FIXME custom.conf may contain (besides http:// or others) multiple
+# FIXME: custom.conf may contain (besides http:// or others) multiple
 # file:// entries for a single local repo
-server=$(get_file_server "$host_repo" "$tmp"/custom.conf)
+server=$(get_file_server "$host_repo" "$tmp"/custom.conf | grep -Em1 '^file://')
 server=${server#file://}
 
+# NOTE: any CacheDir entries are bind-mounted by arch-nspawn (bind-rw
+# for the first entry, bind-ro for any others)
 if [[ -n $server ]]; then
     bindmounts_ro+=("--bind-ro=$server")
     makechrootpkg_bindmounts_ro+=(-D "$server")
 fi
 
-# Note: any CacheDir entries are bind-mounted by arch-nspawn (bind-rw
-# for the first entry, bind-ro for any others)
 if ((prepare)); then
+    # Do not print DBPath (#412)
     pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
-        # locking is done by systemd-nspawn
+        # NOTE: locking is done by systemd-nspawn
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
              "$directory"/root "${bindmounts_ro[@]}" pacman -Syu --noconfirm
     else
-        # parent path is not created by mkarchroot (#371)
+        # Parent path is not created by mkarchroot (#371)
         if [[ ! -d $directory ]]; then
             sudo install -d "$directory" -m 755 -v
         fi
