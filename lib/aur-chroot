@@ -17,6 +17,11 @@ bindmounts_ro=()
 # default options
 prepare=1 build=1
 
+get_conf_repo() {
+    printf '[%s]\n' "$1"
+    pacconf --repo="$1" --raw
+}
+
 get_file_server() {
     pacini --section="$1" "$2" Server | grep -Em1 '^file://'
 }
@@ -62,8 +67,7 @@ readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 # FIXME possibly extend -d to multiple local repos
 if [[ -n ${host_repo=$AUR_REPO} ]]; then
-    printf '[%s]\n' "$host_repo"
-    pacconf --repo  "$host_repo"
+    get_conf_repo "$host_repo"
 fi >"$tmp"/custom.conf
 
 # FIXME custom.conf may contain (besides http:// or others) multiple
@@ -79,7 +83,7 @@ fi
 # Note: any CacheDir entries are bind-mounted by arch-nspawn (bind-rw
 # for the first entry, bind-ro for any others)
 if ((prepare)); then
-    pacconf --config="$pacman_conf" | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
+    pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
