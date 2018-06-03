@@ -21,11 +21,6 @@ get_file_server() {
     pacini --section="$1" "$2" Server | grep -Em1 '^file://'
 }
 
-get_repo_config() {
-    printf '[%s]\n' "$2"
-    pacconf --config="$1" --repo="$2"
-}
-
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
@@ -40,14 +35,14 @@ usage() {
 tmp=$(mktemp -d)
 trap 'trap_exit' EXIT
 
+# FIXME add --sysroot to set pacconf host, see pacutils-sysroot(7)
 unset pacman_conf makepkg_conf host_repo host_conf server
-while getopts :BPd:r:C:D:L:M: opt; do
+while getopts :BPd:r:C:D:M: opt; do
     case $opt in
         d) host_repo=$OPTARG    ;;
-        L) host_conf=$OPTARG    ;;
+        D) directory=$OPTARG    ;;
         C) pacman_conf=$OPTARG  ;;
         M) makepkg_conf=$OPTARG ;;
-        D) directory=$OPTARG    ;;
         B) build=0   ;;
         P) prepare=0 ;;
         *) usage     ;;
@@ -64,12 +59,12 @@ fi
 # baseline configuration
 readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
-readonly host_conf=${host_conf-/etc/pacman.conf}
 
 # FIXME possibly extend -d to multiple local repos
 if [[ ${host_repo=$AUR_REPO} ]]; then
-    get_repo_config "$host_conf" "$host_repo"
-fi > "$tmp"/custom.conf
+    printf '[%s]\n' "$host_repo"
+    pacconf --repo  "$host_repo"
+fi >"$tmp"/custom.conf
 
 # FIXME custom.conf may contain (besides http:// or others) multiple
 # file:// entries for a single local repo
@@ -84,7 +79,7 @@ fi
 # Note: any CacheDir entries are bind-mounted by arch-nspawn (bind-rw
 # for the first entry, bind-ro for any others)
 if ((prepare)); then
-    cat "$pacman_conf" "$tmp"/custom.conf > "$tmp"/pacman.conf
+    pacconf --config="$pacman_conf" | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
