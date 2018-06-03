@@ -28,10 +28,12 @@ build_failure() {
     exit "$4"
 }
 
-conf_single() {
+conf_options() {
     printf '[options]\n'
     pacconf --options --raw
+}
 
+conf_repo() {
     printf '[%s]\n' "$1"
     pacconf --repo="$1" --raw
 }
@@ -158,7 +160,7 @@ fi
 if ((chroot)); then
     aur chroot -B "${chroot_args[@]}"
 else
-    conf_single "$database" >"$tmp"/custom.conf
+    (conf_options; conf_repo "$database") >"$tmp"/custom.conf
 fi
 
 while IFS= read -ru "$fd" path; do
