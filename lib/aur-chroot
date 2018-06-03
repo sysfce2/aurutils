@@ -36,7 +36,7 @@ tmp=$(mktemp -d)
 trap 'trap_exit' EXIT
 
 # FIXME add --sysroot to set pacconf host, see pacutils-sysroot(7)
-unset pacman_conf makepkg_conf host_repo host_conf server
+unset pacman_conf makepkg_conf host_repo server
 while getopts :BPd:r:C:D:M: opt; do
     case $opt in
         d) host_repo=$OPTARG    ;;
@@ -61,7 +61,7 @@ readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 # FIXME possibly extend -d to multiple local repos
-if [[ ${host_repo=$AUR_REPO} ]]; then
+if [[ -n ${host_repo=$AUR_REPO} ]]; then
     printf '[%s]\n' "$host_repo"
     pacconf --repo  "$host_repo"
 fi >"$tmp"/custom.conf
