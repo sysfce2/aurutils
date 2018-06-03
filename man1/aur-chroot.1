@@ -8,7 +8,6 @@ aur\-chroot \- build packages with systemd-nspawn
 .OP \-D directory
 .OP \-M makepkg_conf
 .OP \-C pacman_conf
-.OP \-L pacman_conf
 .OP \-B
 .OP \-P
 .OP \-\-
@@ -35,13 +34,10 @@ user container has a random name and is removed on build completion.
 .TP
 .BI "\-C " pacman_conf
 The \fIpacman.conf\fR file to be used in the container. Defaults to
-\fIpacman-extra.conf\fR from devtools. If a local repository name is
-specified with \fB\-d\fR, its configuration is appended to this file.
-
-.TP
-.BI "\-L " pacman_conf
-The \fBpacman.conf\fR file where local repositories are queried
-from. Defaults to \fI/etc/pacman.conf\fR.
+\fIpacman-extra.conf\fR from devtools. This file is processed with
+\fBpacconf\fR(1) to include necessary information from the host, such
+as mirrors. If a local repository name is specified with \fB\-d\fR,
+its configuration is appended to this file.
 
 .TP
 .BI "\-M " makepkg_conf
