@@ -19,7 +19,7 @@ prepare=1 build=1
 
 get_conf_repo() {
     printf '[%s]\n' "$1"
-    pacconf --repo="$1" --raw
+    pacconf --repo="$1"
 }
 
 get_file_server() {

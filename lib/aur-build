@@ -35,7 +35,7 @@ conf_options() {
 
 conf_repo() {
     printf '[%s]\n' "$1"
-    pacconf --repo="$1" --raw
+    pacconf --repo="$1"
 }
 
 db_replaces() {
