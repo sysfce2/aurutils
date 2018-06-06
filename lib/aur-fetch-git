@@ -8,17 +8,18 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 log=stdout
 
 merge_upstream() {
+    local orderfile=${GIT_DIR:-$PWD/.git}/orderfile
     git fetch -v >&2
 
     # default to showing PKGBUILD diffs first (#399)
-    if [[ ! -s ${GIT_WORK_TREE:-$PWD}/git.orderfile ]]; then
-        echo PKGBUILD > "${GIT_WORK_TREE:-$PWD}"/git.orderfile
+    if [[ ! -s $orderfile ]]; then
+        echo PKGBUILD > "$orderfile"
     fi
 
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
         # only print log on upstream changes
-        git --no-pager log -O "${GIT_WORK_TREE:-$PWD}"/git.orderfile \
-            --patch --stat '..@{upstream}' >> "${1:-/dev/stdout}"
+        git --no-pager log -O "$orderfile" --patch --stat \
+            '..@{upstream}' >> "${1:-/dev/stdout}"
 
         # discard any local changes (#349)
         git reset --hard HEAD@{upstream} >&2
