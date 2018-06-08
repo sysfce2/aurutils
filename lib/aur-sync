@@ -61,20 +61,20 @@ db_fill_empty() {
 # files: $1 pkgname\tpkgbase $2 pkgname (order by $2)
 select_pkgbase() {
     awk 'NR == FNR {
-	map[$1] = $2
-	next
+        map[$1] = $2
+        next
     } {
-	if ($1 in map) {
-	    base = map[$1]
+        if ($1 in map) {
+            base = map[$1]
 
-	    # only print pkgbase on first occurence
-	    if (base in seen) {
-		next
-	    } else {
-		print base
-		seen[base]
-	    }
-	}
+            # only print pkgbase on first occurence
+            if (base in seen) {
+                next
+            } else {
+                print base
+                seen[base]
+            }
+        }
     }' "$@"
 }
 
