@@ -58,15 +58,24 @@ db_fill_empty() {
     }'
 }
 
-# fields: $1 pkgname, $2 pkgbase, $3 pkgver
+# files: $1 pkgname\tpkgbase $2 pkgname (order by $2)
 select_pkgbase() {
     awk 'NR == FNR {
-            a[$0]; next
-        } {
-            if($1 in a && !($2 in seen)) {
-                print $0; seen[$2]
-            }
-        }' "$@"
+	map[$1] = $2
+	next
+    } {
+	if ($1 in map) {
+	    base = map[$1]
+
+	    # only print pkgbase on first occurence
+	    if (base in seen) {
+		next
+	    } else {
+		print base
+		seen[base]
+	    }
+	}
+    }' "$@"
 }
 
 # fields: $1 pkgname, $2 depends[<>=]
@@ -292,11 +301,14 @@ fi
 
 if [[ -s argv ]]; then
     # $1 pkgname $2 depends $3 pkgbase $4 pkgver
-    aur depends <argv | tee deps | cut -f2 --complement | sort -u >pkginfo
+    aur depends <argv >depends
 else
     plain "there is nothing to do"
     exit
 fi
+
+# $1 pkgname $2 pkgbase $3 pkgver
+cut -f2 --complement depends | sort -u >pkginfo
 
 if ((chkver_deps_only)); then
     chkver_argv() { complement argv; }
@@ -323,10 +335,10 @@ fi
 } >filter
 
 # pkgname queue (AUR + repos)
-cut -f1,2 deps | tr_ver | tsort | tac | lib32 | complement filter >queue_0
+cut -f1,2 depends | tr_ver | tsort | tac | lib32 | complement filter >queue_0
 
 # pkgbase queue (AUR)
-select_pkgbase queue_0 pkginfo | cut -f2 >queue
+cut -f1,2 pkginfo | select_pkgbase - queue_0 | cut -f2 >queue
 
 if [[ -s queue ]]; then
     cd_safe "$aur_workdir"
