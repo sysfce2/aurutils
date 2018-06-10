@@ -83,10 +83,10 @@ done
 
 if ((prepare)); then
     # do not print DBPath (#412)
-    pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
+    pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
 
     # NOTE: CacheDir specified here will be replaced by devtools (#416)
-    ed -s "$tmp"/pacman.conf <<< $'/[options]/r !pacconf CacheDir\nw'
+    ed -s "$tmp"/pacman.conf <<< $'/[options]/r !pacconf --verbose CacheDir\nw'
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
