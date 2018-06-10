@@ -18,8 +18,8 @@ bindmounts_ro=()
 prepare=1 build=1
 
 get_conf_repo() {
-    printf [%s]\\n "$1"
-    pacconf --repo="$1"
+    printf '[%s]\n' "$1"
+    pacconf --repo "$1"
 }
 
 get_file_server() {
@@ -85,7 +85,8 @@ if ((prepare)); then
     # do not print DBPath (#412)
     pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
-    # add CacheDir from host (#416)
+    # add CacheDir from host. this assumes broken devtools logic from
+    # 2011 guesses bind mounts for CacheDir right (#416)
     ed -s "$tmp"/pacman.conf <<< $'[options]/r !pacconf CacheDir\nw'
 
     if [[ -f $directory/root/.arch-chroot ]]; then
