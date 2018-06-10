@@ -18,7 +18,7 @@ bindmounts_ro=()
 prepare=1 build=1
 
 get_conf_repo() {
-    printf '[%s]\n' "$1"
+    printf [%s]\\n "$1"
     pacconf --repo="$1"
 }
 
@@ -56,12 +56,12 @@ done
 shift $((OPTIND - 1))
 OPTIND=1
 
-# Reset default makechrootpkg arguments
+# reset default makechrootpkg arguments
 if (($#)); then
     makechrootpkg_args=("$@")
 fi
 
-# Baseline configuration
+# baseline configuration
 readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
@@ -75,23 +75,25 @@ fi >"$tmp"/custom.conf
 server=$(get_file_server "$host_repo" "$tmp"/custom.conf | grep -Em1 '^file://')
 server=${server#file://}
 
-# NOTE: any CacheDir entries are bind-mounted by arch-nspawn (bind-rw
-# for the first entry, bind-ro for any others)
+# NOTE: arch-nspawn only supports specifying a single CacheDir via -c
 if [[ -n $server ]]; then
     bindmounts_ro+=("--bind-ro=$server")
     makechrootpkg_bindmounts_ro+=(-D "$server")
 fi
 
 if ((prepare)); then
-    # Do not print DBPath (#412)
+    # do not print DBPath (#412)
     pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
+    # add CacheDir from host (#416)
+    ed -s "$tmp"/pacman.conf <<< $'[options]/r !pacconf CacheDir\nw'
+
     if [[ -f $directory/root/.arch-chroot ]]; then
-        # NOTE: locking is done by systemd-nspawn
+        # locking is done by systemd-nspawn
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
              "$directory"/root "${bindmounts_ro[@]}" pacman -Syu --noconfirm
     else
-        # Parent path is not created by mkarchroot (#371)
+        # parent path is not created by mkarchroot (#371)
         if [[ ! -d $directory ]]; then
             sudo install -d "$directory" -m 755 -v
         fi
