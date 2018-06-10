@@ -338,7 +338,7 @@ fi
 cut -f1,2 depends | tr_ver | tsort | tac | lib32 | complement filter >queue_0
 
 # pkgbase queue (AUR)
-cut -f1,2 pkginfo | select_pkgbase - queue_0 | cut -f2 >queue
+cut -f1,2 pkginfo | select_pkgbase - queue_0 >queue
 
 if [[ -s queue ]]; then
     cd_safe "$aur_workdir"
