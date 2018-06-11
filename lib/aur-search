@@ -72,9 +72,9 @@ parse_long() {
 }
 
 parse_short() {
-    local Name Version NumVotes Maintainer OutOfDate Description
+    local Name Version NumVotes Popularity Maintainer OutOfDate Description
 
-    while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes _ OutOfDate _; do
+    while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes Popularity OutOfDate _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
             *) # FIXME move date command to jq (must only be run if OutOfDate is set)
@@ -86,8 +86,10 @@ parse_short() {
             *) unset Maintainer ;;
         esac
 
-        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(%s) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
-               "$Name" "$Version" "$NumVotes" "$Maintainer" "$OutOfDate" "$Description"
+        printf -v Popularity "%.2f" "$Popularity"
+
+        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(+%s %s%%) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
+               "$Name" "$Version" "$NumVotes" "$Popularity" "$Maintainer" "$OutOfDate" "$Description"
     done
 }
 
