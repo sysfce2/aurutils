@@ -86,10 +86,8 @@ parse_short() {
             *) unset Maintainer ;;
         esac
 
-        printf -v Popularity "%.2f" "$Popularity"
-
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(+%s %s%%) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
-               "$Name" "$Version" "$NumVotes" "$Popularity" "$Maintainer" "$OutOfDate" "$Description"
+               "$Name" "$Version" "$NumVotes" "${Popularity:0:4}" "$Maintainer" "$OutOfDate" "$Description"
     done
 }
 
