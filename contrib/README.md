@@ -8,7 +8,7 @@ To use a script with `aur(1)`, copy it to a directory in
 changes and always want to use the latest version.
 
 ```
-$ cp -s /usr/share/aurutils/contrib/aur-vercmp-devel /usr/local/bin
+$ cp -s /usr/share/aurutils/contrib/vercmp-devel /usr/local/bin/aur-vercmp-devel
 $ aur vercmp-devel
 ```
 
