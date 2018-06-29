@@ -101,124 +101,70 @@ usage() {
 
 source /usr/share/makepkg/util/util.sh
 source /usr/share/makepkg/util/message.sh
+source /usr/share/makepkg/util/parseopts.sh
 
 if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-if getopt -T || (($? != 4)); then
-    error "$argv0: util-linux getopt required"
-    exit 22
-fi
+opt_short='d:D:AcfglLnprstTu'
+opt_long=('allan' 'bind:' 'chroot' 'directory:' 'force' 'ignore:' 'ignorearch'
+          'ignore-arch' 'log' 'noconfirm' 'no-confirm' 'nover' 'no-ver' 'noview'
+          'no-view' 'print' 'rmdeps' 'rm-deps' 'sign' 'temp' 'tar' 'repo:'
+          'database:' 'root:' 'upgrades' 'nhehgvyf' 'continue' 'list' 'git'
+          'makepkg-conf:' 'pacman-conf:' 'provides' 'repo-list' 'nover-shallow'
+          'no-ver-shallow')
 
-longopts=allan,bind:,chroot,directory:,force,ignore:,ignorearch,ignore-arch,log
-longopts+=,noconfirm,no-confirm,nover,no-ver,noview,no-view,print,rmdeps,rm-deps
-longopts+=,sign,temp,tar,repo:,database:,root:,upgrades,nhehgvyf,continue,list,git
-longopts+=,makepkg-conf:,pacman-conf:,provides,repo-list,nover-shallow,no-ver-shallow
-shortopts=d:D:AcfglLnprstTu
-
-if optstring=$(getopt -o "$shortopts" -l "$longopts" -n "$argv0" -- "$@"); then
-    eval set -- "$optstring"
-else
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi
-
-tmp=$(mktemp -dt "$argv0".XXXXXXXX)
-tmp_view=$(mktemp -dt view.XXXXXXXX)
-trap 'trap_exit' EXIT
+set -- "${OPTRET[@]}"
 
 unset pkg pkg_i root repo
 while true; do
     case "$1" in
-        -c|--chroot)
-            chroot=1
-            build_args+=(-c)
-            shift ;;
-        -f|--force)
-            build_args+=(-f)
-            shift ;;
-        -s|--sign)
-            build_args+=(-sv)
-            shift ;;
-        -D|--directory)
-            build_args+=(-D "$2")
-            shift 2 ;;
-        --makepkg-conf)
-            build_args+=(-M "$2")
-            shift 2 ;;
-        --pacman-conf)
-            build_args+=(-C "$2")
-            shift 2 ;;
-        --bind)
-            makechrootpkg_args+=(-D "$2")
-            shift 2 ;;
-        -T|--temp)
-            makechrootpkg_args+=(-T)
-            shift ;;
+        -c|--chroot)           chroot=1; build_args+=(-c) ;;
+        -f|--force)            build_args+=(-f) ;;
+        -s|--sign)             build_args+=(-sv) ;;
+        -D|--directory)        shift; build_args+=(-D "$1") ;;
+        --makepkg-conf)        shift; build_args+=(-M "$1") ;;
+        --pacman-conf)         shift; build_args+=(-C "$1") ;;
+        --bind)                shift; makechrootpkg_args+=(-D "$1") ;;
+        -T|--temp)             makechrootpkg_args+=(-T) ;;
         -A|--ignorearch|--ignore-arch)
-            makepkg_args+=(-A)
-            makechrootpkg_makepkg_args+=(-A)
-            shift ;;
-        -L|--log)
-            makepkg_args+=(-L)
-            shift ;;
+                               makepkg_args+=(-A);
+                               makechrootpkg_makepkg_args+=(-A) ;;
+        -L|--log)              makepkg_args+=(-L) ;;
         --noconfirm|--no-confirm)
-            makepkg_args+=(--noconfirm)
-            shift ;;
-        -l|--list)
-            list=1
-            shift ;;
-        --repo-list)
-            repo_list=1
-            shift ;;
-        -r|--rmdeps|--rm-deps)
-            makepkg_args+=(-r)
-            shift ;;
-        -p|--print)
-            build=0
-            shift ;;
-        -g|--git)
-            snapshot=0
-            shift ;;
-        -t|--tar)
-            snapshot=1
-            shift ;;
-        -u|--upgrades)
-            update=1
-            shift ;;
-        --allan|--nhehgvyf)
-            rotate=1
-            shift ;;
-        --continue)
-            download=0
-            shift ;;
-        --ignore)
-            IFS=, read -a pkg -r <<< "$2"
-            pkg_i+=("${pkg[@]}")
-            shift 2 ;;
-        --nover|--no-ver)
-            chkver=0
-            shift ;;
+                               makepkg_args+=(--noconfirm) ;;
+        -l|--list)             list=1 ;;
+        --repo-list)           repo_list=1 ;;
+        -r|--rmdeps|--rm-deps) makepkg_args+=(-r) ;;
+        -p|--print)            build=0 ;;
+        -g|--git)              snapshot=0 ;;
+        -t|--tar)              snapshot=1 ;;
+        -u|--upgrades)         update=1 ;;
+        --allan|--nhehgvyf)    rotate=1 ;;
+        --continue)            download=0 ;;
+        --ignore)              shift
+                               IFS=, read -a pkg -r <<< "$1"
+                               pkg_i+=("${pkg[@]}") ;;
+        --nover|--no-ver)      chkver=0 ;;
         --nover-shallow|--no-ver-shallow)
-            chkver_deps_only=1
-            shift ;;
-        --noview|--no-view)
-            view=0
-            shift ;;
-        --provides)
-            provides=1
-            shift ;;
-        -d|--database|--repo)
-            repo=$2
-            shift 2 ;;
-        --root)
-            root=$2
-            shift 2 ;;
-        *)
-            shift
-            break ;;
+                               chkver_deps_only=1 ;;
+        --noview|--no-view)    view=0 ;;
+        --provides)            provides=1 ;;
+        -d|--database|--repo)  shift; repo=$1 ;;
+        --root)                shift; root=$1 ;;
+        --)                    shift; break ;;
     esac
+    shift
 done
+unset opt_short opt_long OPTRET
+
+tmp=$(mktemp -dt "$argv0".XXXXXXXX)
+tmp_view=$(mktemp -dt view.XXXXXXXX)
+trap 'trap_exit' EXIT
 
 if ((rotate)); then
     if { hash rot13 && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then

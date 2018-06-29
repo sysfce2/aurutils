@@ -27,15 +27,24 @@ trap_exit() {
     fi
 }
 
-while getopts :L: opt; do
-    case $opt in
-        L) log_dir=$OPTARG
-           log=directory ;;
-        *) usage ;;
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='L:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
+while true; do
+    case "$1" in
+        -L) shift; log_dir=$1
+            log=directory ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 trap trap_exit EXIT

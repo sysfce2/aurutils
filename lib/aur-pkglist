@@ -40,17 +40,26 @@ usage() {
 # default to any match
 pcre_opt=('.*')
 
-while getopts :btF:P: opt; do
-    case "$opt" in
-        b) pkglist=pkgbase                ;;
-        t) delay=$OPTARG                  ;;
-        F) pcre_opt=('-e' "$OPTARG" '-F') ;;
-        P) pcre_opt=('-e' "$OPTARG")      ;;
-        *) usage                          ;;
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='btF:P:'
+opt_long=()
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
+while true; do
+    case "$1" in
+        -b) pkglist=pkgbase ;;
+        -t) shift; delay=$1 ;;
+        -F) shift; pcre_opt=('-e' "$1" '-F') ;;
+        -P) shift; pcre_opt=('-e' "$1") ;;
+        --) shift; break ;;
     esac
+    shift
 done
-shift $((OPTIND - 1))
-OPTIND=1
+unset opt_short opt_long OPTRET
 
 mkdir -p     "$cache"
 chmod -c 700 "$cache"
