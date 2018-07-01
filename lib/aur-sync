@@ -16,10 +16,10 @@ makechrootpkg_makepkg_args=()
 makepkg_args=(-cs)
 
 # default options (enabled)
-build=1 chkver=1 download=1 view=1
+build=1 chkver_depth=2 download=1 view=1
 
 # default options (disabled)
-chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0 chkver_deps_only=0
+chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -149,9 +149,9 @@ while true; do
         --ignore)              shift
                                IFS=, read -a pkg -r <<< "$1"
                                pkg_i+=("${pkg[@]}") ;;
-        --nover|--no-ver)      chkver=0 ;;
+        --nover|--no-ver)      chkver_depth=0 ;;
         --nover-shallow|--no-ver-shallow)
-                               chkver_deps_only=1 ;;
+                               chkver_depth=1 ;;
         --noview|--no-view)    view=0 ;;
         --provides)            provides=1 ;;
         -d|--database|--repo)  shift; repo=$1 ;;
@@ -256,22 +256,21 @@ fi
 # $1 pkgname $2 pkgbase $3 pkgver
 cut -f2 --complement depends | sort -u >pkginfo
 
-if ((chkver_deps_only)); then
-    chkver_argv() { complement argv; }
-else
-    chkver_argv() { tee; }
-fi
+case $chkver_depth in
+    1) chkver_i() { complement argv; } ;;
+    2) chkver_i() { tee; } ;;
+esac
 
 { if ((${#pkg_i[@]})); then
       printf >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
       printf '%s\n' "${pkg_i[@]}"
   fi
 
-  if ((chkver)); then
+  if ((chkver_depth)); then
       # packages with equal or newer versions are taken as complement
-      # for the queue. if chkver_deps_only is enabled, packages on the
+      # for the queue. if chkver_shallow is enabled, packages on the
       # command-line are excluded from this complement.
-      cut -f1,3 pkginfo | aur vercmp -p db_info -c | chkver_argv
+      cut -f1,3 pkginfo | aur vercmp -p db_info -c | chkver_i
   fi
 
   if ((provides)); then
