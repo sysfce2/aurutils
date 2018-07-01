@@ -2,6 +2,7 @@
 # aur-sync - download and build AUR packages automatically
 set -o errexit -o pipefail
 shopt -s nullglob
+shopt -s extglob
 readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
@@ -107,13 +108,14 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='d:D:AcfglLnprstTu'
-opt_long=('allan' 'bind:' 'chroot' 'directory:' 'force' 'ignore:' 'ignorearch'
-          'ignore-arch' 'log' 'noconfirm' 'no-confirm' 'nover' 'no-ver' 'noview'
-          'no-view' 'print' 'rmdeps' 'rm-deps' 'sign' 'temp' 'tar' 'repo:'
-          'database:' 'root:' 'upgrades' 'nhehgvyf' 'continue' 'list' 'git'
-          'makepkg-conf:' 'pacman-conf:' 'provides' 'repo-list' 'nover-shallow'
-          'no-ver-shallow')
+opt_short='d:D:AcfglLprstTu'
+opt_long=('bind:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
+          'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot' 'continue'
+          'force' 'ignore-arch' 'ignorearch' 'log' 'no-confirm'
+          'noconfirm' 'no-ver' 'nover' 'nover-shallow'
+          'no-ver-shallow' 'no-view' 'noview' 'print' 'rm-deps'
+          'rmdeps' 'sign' 'temp' 'tar' 'upgrades' 'list' 'git'
+          'provides' 'repo-list' )
 
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
@@ -123,40 +125,36 @@ set -- "${OPTRET[@]}"
 unset pkg pkg_i root repo
 while true; do
     case "$1" in
-        -c|--chroot)           chroot=1; build_args+=(-c) ;;
-        -f|--force)            build_args+=(-f) ;;
-        -s|--sign)             build_args+=(-sv) ;;
-        -D|--directory)        shift; build_args+=(-D "$1") ;;
-        --makepkg-conf)        shift; build_args+=(-M "$1") ;;
-        --pacman-conf)         shift; build_args+=(-C "$1") ;;
-        --bind)                shift; makechrootpkg_args+=(-D "$1") ;;
-        -T|--temp)             makechrootpkg_args+=(-T) ;;
-        -A|--ignorearch|--ignore-arch)
-                               makepkg_args+=(-A);
-                               makechrootpkg_makepkg_args+=(-A) ;;
-        -L|--log)              makepkg_args+=(-L) ;;
-        --noconfirm|--no-confirm)
-                               makepkg_args+=(--noconfirm) ;;
-        -l|--list)             list=1 ;;
-        --repo-list)           repo_list=1 ;;
-        -r|--rmdeps|--rm-deps) makepkg_args+=(-r) ;;
-        -p|--print)            build=0 ;;
-        -g|--git)              snapshot=0 ;;
-        -t|--tar)              snapshot=1 ;;
-        -u|--upgrades)         update=1 ;;
-        --allan|--nhehgvyf)    rotate=1 ;;
-        --continue)            download=0 ;;
-        --ignore)              shift
-                               IFS=, read -a pkg -r <<< "$1"
-                               pkg_i+=("${pkg[@]}") ;;
-        --nover|--no-ver)      chkver_depth=0 ;;
-        --nover-shallow|--no-ver-shallow)
-                               chkver_depth=1 ;;
-        --noview|--no-view)    view=0 ;;
-        --provides)            provides=1 ;;
-        -d|--database|--repo)  shift; repo=$1 ;;
-        --root)                shift; root=$1 ;;
-        --)                    shift; break ;;
+        -d|--repo|--database) shift; repo=$1 ;;
+        -D|--directory)       shift; build_args+=(-D "$1") ;;
+        --bind)               shift; makechrootpkg_args+=(-D "$1") ;;
+        --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
+                              pkg_i+=("${pkg[@]}") ;;
+        --makepkg-conf)       shift; build_args+=(-M "$1") ;;
+        --pacman-conf)        shift; build_args+=(-C "$1") ;;
+        --root)               shift; root=$1 ;;
+        -A|--ignore?(-)arch)  makepkg_args+=(-A)
+                              makechrootpkg_makepkg_args+=(-A) ;;
+        -c|--chroot)          chroot=1; build_args+=(-c) ;;
+        -f|--force)           build_args+=(-f) ;;
+        -g|--git)             snapshot=0 ;;
+        -l|--list)            list=1 ;;
+        -L|--log)             makepkg_args+=(-L) ;;
+        -p|--print)           build=0 ;;
+        -r|--rm?(-)deps)      makepkg_args+=(-r) ;;
+        -t|--tar)             snapshot=1 ;;
+        -s|--sign)            build_args+=(-sv) ;;
+        -T|--temp)            makechrootpkg_args+=(-T) ;;
+        -u|--upgrades)        update=1 ;;
+        --allan)              rotate=1 ;;
+        --continue)           download=0 ;;
+        --no?(-)confirm)      makepkg_args+=(--noconfirm) ;;
+        --no?(-)ver)          chkver_depth=0 ;;
+        --no?(-)ver-shallow)  chkver_depth=1 ;;
+        --no?(-)view)         view=0 ;;
+        --provides)           provides=1 ;;
+        --repo-list)          repo_list=1 ;;
+        --)                   shift; break ;;
     esac
     shift
 done
@@ -256,20 +254,20 @@ fi
 # $1 pkgname $2 pkgbase $3 pkgver
 cut -f2 --complement depends | sort -u >pkginfo
 
-case $chkver_depth in
-    1) chkver_i() { complement argv; } ;;
-    2) chkver_i() { tee; } ;;
-esac
-
 { if ((${#pkg_i[@]})); then
       printf >&2 'warning: ignoring %s package\n' "${pkg_i[@]}"
       printf '%s\n' "${pkg_i[@]}"
   fi
 
+  # packages with equal or newer versions are taken as complement
+  # for the queue. if chkver_shallow is enabled, packages on the
+  # command-line are excluded from this complement
   if ((chkver_depth)); then
-      # packages with equal or newer versions are taken as complement
-      # for the queue. if chkver_shallow is enabled, packages on the
-      # command-line are excluded from this complement.
+      case $chkver_depth in
+          1) chkver_i() { complement argv; } ;;
+          2) chkver_i() { tee; } ;;
+      esac
+
       cut -f1,3 pkginfo | aur vercmp -p db_info -c | chkver_i
   fi
 
