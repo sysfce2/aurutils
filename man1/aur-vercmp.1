@@ -30,6 +30,12 @@ The name of a pacman repository. If \fInot\fR specified, packages and their
 versions are taken from stdin (tab-separated).
 
 .TP
+.B \-p
+Read package versions from a file instead of the AUR. The package list should
+be in the same format as stdin (\fIpkgname\fR as the first
+field, \fIpkgver\fR as the second, both separated by tabs).
+
+.TP
 .B \-q
 For all comparisons, show only package names.
 
