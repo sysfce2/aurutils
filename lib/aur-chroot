@@ -113,7 +113,7 @@ if ((prepare)); then
 fi
 
 if ((build)); then
-    sudo PKGDEST="${PKGDEST:-$PWD}" makechrootpkg -r "$directory" \
+    sudo --preserve-env=GNUPGHOME,PKGDEST makechrootpkg -r "$directory" \
          "${makechrootpkg_bindmounts_ro[@]}" "${makechrootpkg_args[@]}"
 else
     printf >&2 'container path: %q\n' "$directory"
