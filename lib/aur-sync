@@ -109,7 +109,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 opt_short='d:D:AcfglLprstTu'
-opt_long=('bind:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
+opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot' 'continue'
           'force' 'ignore-arch' 'ignorearch' 'log' 'no-confirm'
           'noconfirm' 'no-ver' 'nover' 'nover-shallow'
@@ -128,6 +128,7 @@ while true; do
         -d|--repo|--database) shift; repo=$1 ;;
         -D|--directory)       shift; build_args+=(-D "$1") ;;
         --bind)               shift; makechrootpkg_args+=(-D "$1") ;;
+        --bind-rw)            shift; makechrootpkg_args+=(-d "$1") ;;
         --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
                               pkg_i+=("${pkg[@]}") ;;
         --makepkg-conf)       shift; build_args+=(-M "$1") ;;
