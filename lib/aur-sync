@@ -115,7 +115,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
           'noconfirm' 'no-ver' 'nover' 'nover-shallow'
           'no-ver-shallow' 'no-view' 'noview' 'print' 'rm-deps'
           'rmdeps' 'sign' 'temp' 'tar' 'upgrades' 'list' 'git'
-          'provides' 'repo-list' )
+          'provides' 'repo-list' 'rebuild' 'rebuildtree' 'rebuild-tree')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
@@ -155,6 +155,10 @@ while true; do
         --no?(-)view)         view=0 ;;
         --provides)           provides=1 ;;
         --repo-list)          repo_list=1 ;;
+        --rebuild)            build_args+=(-f)
+                              chkver_depth=1 ;;
+        --rebuild?(-)tree)    build_args+=(-f)
+                              chkver_depth=0 ;;
         --)                   shift; break ;;
     esac
     shift
