@@ -81,6 +81,22 @@ For example, to replace \fIgcc\fR with \fIgcc\-multilib\fR, run
 \fBarch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib\fR as
 root.
 
+.SS Using \fBccache\fR and \fBdistcc\fR
+As in the example above, install the required packages:
+.EX
+
+  # arch-nspawn /var/lib/aurbuild/root pacman \-S ccache distcc
+
+.EE
+Ensure write access to \fBccache\fR directories on the host:
+.EX
+
+  # aur chroot -- -d /home/_ccache:/build/.ccache -cu
+
+.EE
+Necessary \fBmakepkg\fR options may be set in a specified (\-M)
+\fImakepkg.conf\fR file. See GitHub issue #334 for details.
+
 .SS Building for a different architecture
 To build packages for a different architecture, prepend \fBsetarch
 \fIarch\fR to the aurbuild command line. The target architecture must
