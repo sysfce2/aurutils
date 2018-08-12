@@ -205,6 +205,21 @@ The repository used for building packages. The entry must be a valid
 .RE
 
 .SH NOTES
+Targets may be taken from stdin using \fBxargs\fR(1). For example:
+
+.EX
+  $ aur vercmp-devel | xargs aur sync --noconfirm
+.EE
+
+Note that command output interferes with input from the tty. The
+\fB\-\-noconfirm\fR option may be used to disable interaction, or
+output redirected to a file:
+
+.EX
+  $ aur vercmp-devel > new.txt
+  $ xargs -a new.txt aur sync
+.EE
+
 When version checks are enabled (\fB\-\-no\-ver\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
 than a version in the pacman database. Checks assume there are no

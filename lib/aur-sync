@@ -236,12 +236,7 @@ if ((list)); then
     exit
 fi
 
-{ for arg in "$@"; do
-      case $arg in
-          -) cat ;;
-          *) printf '%s\n' "$arg" ;;
-      esac
-  done
+{ printf '%s\n' "$@"
 
   if ((update)); then
       aur vercmp <db_info | cut -d: -f1
