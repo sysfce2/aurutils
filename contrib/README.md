@@ -22,10 +22,11 @@ latest revision. (`aur srcver` using `makepkg -o`)
 In the last line, the resulting package versions (`vcs_info`) are
 compared against the local repository (`db_info`). If the package
 version is newer, it is printed to `stdout`. This may be combined with
-`aur-sync` as follows:
+`aur-sync`:
 
 ```
-aur vercmp-devel | cut -d: -f1 | aur sync --no-ver-shallow -
+aur vercmp-devel | cut -d: -f1 >vcs.txt
+xargs -a vcs.txt aur sync --no-ver-shallow
 ```
 
 VCS packages typically have `pkgver` set to the upstream revision at
@@ -49,7 +50,7 @@ repository anew, with all build files and their diffs offered for
 inspection.
 
 ```
-aur sync --list | cut -f2 | grep -E "$AURVCS" | aur sync --no-ver --print -
+aur sync --list | cut -f2 | grep -E "$AURVCS" | xargs aur sync --no-ver --print
 ```
 
 [//]: # (The last pipeline will also show any non-VCS dependencies.)
