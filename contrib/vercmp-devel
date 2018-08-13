@@ -4,20 +4,28 @@ readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 readonly AURVCS=${AURVCS:-.*-(bzr|git|hg|svn)$}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-find_subdir() {
-    xargs -I{} find "$1" -maxdepth 1 -type d -name {}
+source /usr/share/makepkg/util/util.sh
+
+filter_vcs() {
+    cut -f1 "$1" | grep -E "$AURVCS"
 }
 
+get_latest_revision() {
+    xargs -I{} find "$1" -maxdepth 1 -type d -name {} | xargs -r aur srcver
+}
+
+# prepare temporary directory
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
+cd_safe "$tmp"
+
 # get repo contents
-cd "$tmp"
 aur sync --list "$@" | cut -f2,3 >db_info
 
 # checkout latest revision for existing pkgbuilds
 # this sources the pkgbuilds assuming they have been viewed priorly
-cut -f1 db_info | grep -E "$AURVCS" | find_subdir "$AURDEST" | xargs -r aur srcver >vcs_info
+filter_vcs db_info | get_latest_revision "$AURDEST" >vcs_info
 
 # find VCS packages that are outdated according to aur-srcver
-aur vercmp -p vcs_info <db_info
+cat db_info | aur vercmp -p vcs_info
