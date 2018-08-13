@@ -204,7 +204,7 @@ if ! (($# + update + list)); then
     exit 1
 fi
 
-msg2 "Using [$repo] repository"
+msg "Using [$repo] repository"
 root=$(realpath -- "${root-$server}")
 
 if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
@@ -291,7 +291,9 @@ else
 fi
 
 if ((download)); then
-    aur jobs -Xj +2 --nice 10 --halt soon,fail=1 \
+    msg "Retrieving package files"
+    
+    aur jobs -Xj +3 --nice 10 --halt soon,fail=1 --bar \
         aur fetch "${fetch_args[@]}" :::: "$tmp"/queue
 fi
 
