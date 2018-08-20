@@ -2,14 +2,8 @@
 # aur-repo-filter - filter packages in the Arch Linux repositories
 readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly arch_json=https://www.archlinux.org/packages/search/json
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
-# default options
-mode=sync
-
-# Unlike the jq function, this prints "None" in case of a missing entry.
-# See: https://github.com/falconindy/expac/issues/23
 provides() {
     expac '%n %R %S' -Sv - | awk '{
         for(i = 2; i <= NF; ++i)
@@ -17,64 +11,32 @@ provides() {
     }'
 }
 
-tabulate() {
-    jq -r '.results[]
-        | .pkgname as $n | ([$n] + .replaces + .provides)[]? | [$n, .]
-        | @tsv'
-}
-
-get_json() {
-    wget "$arch_json/?q=" -O - --quiet
-}
-
-get_sync() {
-    pacsift --sync --exact "$@" <&-
-}
-
-tr_ver() {
-    sed -r 's/[<>=].*$//g'
+xargs_sift() {
+    xargs -0 pacsift --sync --exact "$@" <&- | provides | sort -u
 }
 
 usage() {
-    printf >&2 'usage: %s [-o] [-d repo]\n' "$argv0"
+    printf >&2 'usage: %s [-d repo]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/message.sh
-source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='od:'
-opt_long=()
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
-    usage
-fi
-set -- "${OPTRET[@]}"
-
-unset argv_repo reposet
-while true; do
-    case "$1" in
-        -d) shift; argv_repo+=("$1") ;;
-        -o) mode=arch ;;
-        --) shift; break;;
+unset argv_repo
+while getopts d: opt; do
+    case $opt in
+        d) argv_repo+=("$OPTARG") ;;
+        *) usage                  ;;
     esac
-    shift
 done
-unset opt_short opt_long OPTRET
+shift $((OPTIND - 1))
+OPTIND=1
 
 if [[ -v argv_repo ]]; then
-    for i in "${argv_repo[@]}"; do
-        reposet+=("--repo=$i")
-    done
+    reposet=("${argv_repo[@]}")
 else
-    for i in "${arch_repo[@]}"; do
-        reposet+=("--repo=$i")
-    done
+    reposet=("${arch_repo[@]}")
 fi
-
-case $mode in
-    sync) output() { get_sync "$@" | provides; } ;;
-    arch) output() { get_json "$@" | tabulate | tr_ver; } ;;
-esac
 
 declare -A pkgset
 
@@ -83,12 +45,16 @@ while IFS= read -r; do
 done
 
 if [[ -n ${pkgset[*]} ]]; then
-    output "${reposet[@]}" | sort -u | while read -r pkg vrt; do
+    printf '--satisfies=%s\0' "${!pkgset[@]}" | xargs_sift "${reposet[@]}" | while
+        read -r pkg vrt
+    do
         pkg=${pkg#*/}
 
         if [[ ${pkgset[$pkg]} ]]; then
             printf '%s\n' "$pkg"
-        elif [[ ${pkgset[$vrt]} ]]; then
+        fi
+
+        if [[ ${pkgset[$vrt]} ]]; then
             plain 'virtual dependency %s provided by %s\n' "$vrt" "$pkg"
             printf '%s\n' "$vrt"
         fi
