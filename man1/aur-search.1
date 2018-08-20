@@ -4,9 +4,9 @@ aur\-search \- search for AUR package
 
 .SH SYNOPSIS
 .SY "aur search"
-.OP \-imnv
+.OP \-aisdmnqv
 .OP \-k key
-.IR package ...
+.IR keyword ...
 .YS
 
 .SH DESCRIPTION
@@ -18,28 +18,44 @@ displayed in a brief format.
 .SH OPTIONS
 
 .TP
-.B \-q
+.B \-q ", " \-\-short
 Only display package name, version and description.
 
 .TP
-.B \-v
+.B \-v ", " \-\-verbose
 Display more package information.
 
 .TP
-.B \-i
+.B \-i ", " \-\-info
 Use the \fIinfo\fR interface instead of \fIsearchby\fR.
 
 .TP
-.B \-d
+.B \-d ", " \-\-desc
 Search by package name and description.
 
 .TP
-.B \-m
+.B \-m ", " \-\-maintainer
 Search by maintainer.
 
 .TP
-.B \-n
+.B \-n ", " \-\-name
 Search by package name.
+
+.TP
+.B \-\-depends
+Search for packages with keywords in \fBdepends\fR.
+
+.TP
+.B \-\-makedepends
+Search for packages with keywords in \fBmakedepends\fR.
+
+.TP
+.B \-\-optdepends
+Search for packages with keywords in \fBoptdepends\fR.
+
+.TP
+.B \-\-checkdepends
+Search for pacakges with keyworsd in \fBcheckdepends\fR.
 
 .TP
 .BI "\-k " key
