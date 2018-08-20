@@ -336,7 +336,7 @@ if ((build)); then
         aur build "${build_args[@]}" -- "${makepkg_args[@]}"
     fi
 else
-    aur jobs -X printf '%s\n' "$(pwd -P)"/{} :::: "$tmp"/queue
+    xargs -a "$tmp"/queue -I{} printf '%s\n' "$(pwd -P)"/{}
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
