@@ -160,7 +160,7 @@ else
 fi
 
 while IFS= read -ru "$fd" path; do
-    cd_safe "$path"
+    cd_safe "$startdir/$path"
 
     if ((!overwrite)); then
         mapfile -t mark < <(find_pkg_dupes "$db_root")
