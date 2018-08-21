@@ -103,10 +103,6 @@ Do not view downloaded files before building.
 
 .SS Repository options
 .TP
-.B \-
-Read package names from standard input (newline-delimited, one per line).
-
-.TP
 .B \-\-list
 List repository contents in a tab-separated format.
 
@@ -116,13 +112,10 @@ Print all configured \fBfile://\fR repositories, together with their
 file paths.
 
 .TP
-.B \-\-provides
-Take virtual dependencies (\fBprovides\fR) in the local repository into
-account. Packages specified on the command line or available upgrades
-are considered regardless of this setting.
-
-Note: Ensure the local repository is propagated to \fBpacman\fR(8)
-before using this option, for example with \fBpacsync\fR(1).
+.B \-\-noprovides ", " \-\-no\-provides
+Do not take virtual dependencies (\fBprovides\fR) in the local
+repository into account. Packages specified on the command line or
+available upgrades are considered regardless of this setting.
 
 .TP
 .B \-d \fINAME\fR ", " \-\-database=\fINAME\fR ", " \-\-repo=\fINAME\fR
