@@ -140,7 +140,7 @@ value of the configured repository.
 Update all AUR packages in a local repository that are out-of-date.
 
 .SS makepkg
-The default set of options is \fBmakepkg \-cs\fR.
+The default set of options is \fBmakepkg \-crs\fR.
 
 .TP
 .BR \-A ", " \-\-ignorearch ", " \-\-ignore\-arch
@@ -157,8 +157,8 @@ Enable logging to a text file in the build directory. (\fBmakepkg
 Do not wait for user input. (\fBmakepkg \-\-noconfirm\fR)
 
 .TP
-.BR \-r ", " \-\-rmdeps
-Remove dependencies installed by makepkg. (\fBmakepkg \-r\fR)
+.BR \-k ", " \-\-keep
+Do not remove dependencies installed by makepkg.
 
 .SS makechrootpkg
 The default set of options is \fBmakechrootpkg \-cu\fR. For more information 

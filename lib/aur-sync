@@ -20,7 +20,7 @@ makepkg_args=(-cs)
 build=1 chkver_depth=2 download=1 view=1
 
 # default options (disabled)
-chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0
+chroot=0 list=0 rotate=0 snapshot=0 update=0 provides=0 repo_list=0 keep_deps=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -116,13 +116,13 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='d:D:AcfglLprstTu'
+opt_short='d:D:AcfgklLpstTu'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot' 'continue'
           'force' 'ignore-arch' 'ignorearch' 'log' 'no-confirm'
           'noconfirm' 'no-ver' 'nover' 'nover-shallow'
           'no-ver-shallow' 'no-view' 'noview' 'print' 'rm-deps'
-          'rmdeps' 'sign' 'temp' 'tar' 'upgrades' 'list' 'git'
+          'keep' 'sign' 'temp' 'tar' 'upgrades' 'list' 'git'
           'provides' 'repo-list' 'rebuild' 'rebuildtree' 'rebuild-tree')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
@@ -150,7 +150,7 @@ while true; do
         -l|--list)            list=1 ;;
         -L|--log)             makepkg_args+=(-L) ;;
         -p|--print)           build=0 ;;
-        -r|--rm?(-)deps)      makepkg_args+=(-r) ;;
+        -k|--keep)            keep_deps=1 ;;
         -t|--tar)             snapshot=1 ;;
         -s|--sign)            build_args+=(-sv) ;;
         -T|--temp)            makechrootpkg_args+=(-T) ;;
@@ -188,6 +188,10 @@ fi
 if ((repo_list)); then
     pacconf | conf_file_repo
     exit
+fi
+
+if ((!keep_deps)); then
+    makepkg_args+=(-r)
 fi
 
 if [[ ${repo=$AUR_REPO} ]]; then
