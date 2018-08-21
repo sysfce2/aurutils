@@ -11,10 +11,6 @@ provides() {
     }'
 }
 
-xargs_sift() {
-    xargs -0 pacsift --sync --exact "$@" <&- | provides | sort -u
-}
-
 usage() {
     printf >&2 'usage: %s [-a] [-d repo]\n' "$argv0"
     exit 1
@@ -31,11 +27,11 @@ if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset argv_repo reposet
+unset argv_repo reposet sync_repo fields
 while true; do
     case "$1" in
         -a|--all)
-            mapfile -t argv_repo < <(pacconf --repo-list) ;;
+            sync_repo=1 ;;
         -d|--repo|--database)
             shift; argv_repo+=("$1") ;;
         -h|--help)
@@ -46,7 +42,12 @@ while true; do
 done
 unset opt_short opt_long OPTRET
 
-if [[ -v argv_repo ]]; then
+# temporary file for constructing pacsift arguments
+tmp=$(mktemp) || exit
+
+if ((sync_repo)); then
+    reposet=(--invert --repo=local)
+elif [[ -v argv_repo ]]; then
     reposet=("${argv_repo[@]}")
 else
     reposet=("${arch_repo[@]}")
@@ -56,10 +57,12 @@ declare -A pkgset
 
 while IFS= read -r; do
     pkgset[$REPLY]=1
-done
+    printf '%s\0' "--satisfies=$REPLY"
+done >"$tmp"
 
 if [[ -n ${pkgset[*]} ]]; then
-    printf '--satisfies=%s\0' "${!pkgset[@]}" | xargs_sift "${reposet[@]}" | while
+    # use xargs -a to bypass isatty() check
+    xargs -0a "$tmp" pacsift --exact "${reposet[@]}" | provides | sort -u | while
         read -r pkg vrt
     do
         pkg=${pkg#*/}
