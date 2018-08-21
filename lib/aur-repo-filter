@@ -46,7 +46,7 @@ unset opt_short opt_long OPTRET
 tmp=$(mktemp) || exit
 
 if ((sync_repo)); then
-    reposet=(--invert --repo=local)
+    reposet=(--sync)
 elif [[ -v argv_repo ]]; then
     reposet=("${argv_repo[@]}")
 else
