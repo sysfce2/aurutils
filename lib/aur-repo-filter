@@ -19,6 +19,10 @@ usage() {
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
 
+if [[ -t 2 && ! -o xtrace ]]; then
+    colorize
+fi
+
 opt_short='ad:h'
 opt_long=('all' 'repo' 'database' 'help')
 
@@ -57,7 +61,10 @@ declare -A pkgset
 
 while IFS= read -r; do
     pkgset[$REPLY]=1
-    printf '%s\0' "--satisfies=$REPLY"
+done
+
+for i in "${!pkgset[@]}"; do
+    printf '%s\0' "--satisfies=$i"
 done >"$tmp"
 
 if [[ -n ${pkgset[*]} ]]; then
