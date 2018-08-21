@@ -62,7 +62,7 @@ done >"$tmp"
 
 if [[ -n ${pkgset[*]} ]]; then
     # use xargs -a to bypass isatty() check
-    xargs -0a "$tmp" pacsift --exact "${reposet[@]}" | provides | sort -u | while
+    xargs -0a "$tmp" pacsift --exact "${reposet[@]}" <&- | provides | sort -u | while
         read -r pkg vrt
     do
         pkg=${pkg#*/}
