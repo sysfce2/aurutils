@@ -4,8 +4,8 @@ aur\-repo\-filter \- filter packages in the Arch Linux repositories
 
 .SH SYNOPSIS
 .SY "aur repo-filter"
+.OP \-a
 .OP \-d database
-.OP \-o
 .YS
 
 .SH DESCRIPTION
@@ -16,14 +16,13 @@ printed to stderr.
 
 .SH OPTIONS
 .TP
-.BI "\-d " database
-Check a given repository instead of those from Arch Linux. Multiple
-repositories can be specified by repeating \fB\-d\fR.
+.BI \-a ", " \-\-all
+Query all available repositories. (\fBpacconf \-\-repo\-list\fR)
 
 .TP
-.BI "\-o"
-Use the JSON interface for the official repositories to query
-packages.
+.B \-d \fINAME\fR ", " \-\-database=\fINAME\fR ", " \-\-repo=\fINAME\fR
+Check a given repository. Multiple repositories can be specified by
+repeating this argument.
 
 .SH SEE ALSO
 .BR aur (1),
