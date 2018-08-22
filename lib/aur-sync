@@ -119,7 +119,7 @@ fi
 opt_short='d:D:AcfgklLpstTu'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot' 'continue'
-          'force' 'ignore-arch' 'ignorearch' 'log' 'no-confirm' 'no-confirm'
+          'force' 'ignore-arch' 'ignorearch' 'log' 'noconfirm' 'no-confirm'
           'no-ver' 'nover' 'nover-shallow' 'noprovides' 'no-provides'
           'no-ver-shallow' 'no-view' 'noview' 'print' 'rm-deps'
           'keep' 'sign' 'temp' 'tar' 'upgrades' 'list' 'git'
