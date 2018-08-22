@@ -32,13 +32,6 @@ db_replaces() {
     }'
 }
 
-find_pkg_dupes() {
-    # This function uses the extended --packagelist introduced with
-    # pacman 5.1. It assumes that PKGEXT does not change between
-    # invoking --packagelist and makepkg in the later build process.
-    makepkg --packagelist | xargs -I{} find "$1" -maxdepth 1 -name '{}'
-}
-
 print_quoted() {
     printf '%q\n' "$@"
 }
@@ -163,7 +156,11 @@ while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
 
     if ((!overwrite)); then
-        mapfile -t mark < <(find_pkg_dupes "$db_root")
+        unset mark
+
+        while IFS= read -r; do
+            [[ -f $REPLY ]] && mark+=("$REPLY")
+        done < <(PKGDEST="$db_root" makepkg --packagelist)
 
         if [[ ${mark[*]} ]]; then
             warning "$argv0: skipping built package (use -f to overwrite)"
