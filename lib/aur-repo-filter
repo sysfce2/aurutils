@@ -52,9 +52,9 @@ tmp=$(mktemp) || exit
 if ((sync_repo)); then
     reposet=(--sync)
 elif [[ -v argv_repo ]]; then
-    reposet=("${argv_repo[@]}")
+    reposet=("${argv_repo[@]/#/--repo=}")
 else
-    reposet=("${arch_repo[@]}")
+    reposet=("${arch_repo[@]/#/--repo=}")
 fi
 
 declare -A pkgset
