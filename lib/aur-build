@@ -16,12 +16,10 @@ repo_add_args=()
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
-conf_options() {
+conf_repo() {
     printf '[options]\n'
     pacconf --options --raw
-}
 
-conf_repo() {
     printf '[%s]\n' "$1"
     pacconf --repo="$1"
 }
@@ -149,7 +147,7 @@ fi
 if ((chroot)); then
     aur chroot -B "${chroot_args[@]}"
 else
-    (conf_options; conf_repo "$database") >"$tmp"/custom.conf
+    conf_repo "$database" >"$tmp"/custom.conf
 fi
 
 while IFS= read -ru "$fd" path; do
