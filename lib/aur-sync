@@ -217,7 +217,7 @@ if ! (($# + update + list)); then
 fi
 
 msg "Using [$repo] repository"
-root=$(realpath -- "${root-$server}")
+root=$(realpath -- "${root-${AUR_DBROOT-$server}}")
 
 if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
     error "$argv0: $repo: permission denied (read-write)"

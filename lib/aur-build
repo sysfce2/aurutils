@@ -97,7 +97,7 @@ else
     usage
 fi
 
-db_root=$(realpath -e -- "${db_root-$server}")
+db_root=$(realpath -e -- "${db_root-${AUR_DBROOT-$server}}")
 db_path=$(realpath -e -- "${db_root}/$database.db") # .db symbolic link to archive
 
 if ! [[ -r $db_path && -w $db_path ]]; then
