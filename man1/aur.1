@@ -179,7 +179,7 @@ Print Perl modules that are both in the AUR and official repositories:
 .EX
 
   $ aur pkglist -P '^perl-.+' > perl.txt
-  $ grep -Fxvf <(aur repo-filter < perl.txt) perl.txt
+  $ grep -Fxf <(aur repo-filter < perl.txt) perl.txt
 
 .EE
 Search for packages with both 'wm' and 'git' in the name:
@@ -227,7 +227,7 @@ Print packages both in AUR and [community] and compare their versions:
 Check foreign packages for AUR updates:
 .EX
 
-  $ pacman -Q | aur vercmp
+  $ pacman -Qm | aur vercmp
 
 .EE
 Repository packages can be "made foreign" by temporarily removing the
