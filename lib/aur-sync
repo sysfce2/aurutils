@@ -7,7 +7,6 @@ readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 readonly AURDEST_SNAPSHOT=${AURDEST_SNAPSHOT:-$XDG_CACHE_HOME/aurutils/snapshot}
-readonly AUR_VIEWDIR=${AUR_VIEWDIR:-$XDG_CACHE_HOME/aurutils/view}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
@@ -92,7 +91,7 @@ complement() {
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp"
+        rm -rf "$tmp" "$tmp_view"
     fi
 }
 
@@ -175,6 +174,7 @@ done
 unset opt_short opt_long OPTRET
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
+tmp_view=$(mktemp -dt view.XXXXXXXX)
 trap 'trap_exit' EXIT
 
 if ((rotate)); then
@@ -224,20 +224,12 @@ if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
     exit 13
 fi
 
-# reset state of view directory
-if [[ -d $AUR_VIEWDIR ]]; then
-    find "$AUR_VIEWDIR" \( -type l \
-         -or -name '*.patch' -or -name '*.diff' \) -delete
-else
-    mkdir -p "$AUR_VIEWDIR"
-fi
-
 if ((snapshot)); then
     aur_workdir=$AURDEST_SNAPSHOT
-    fetch_args=(-L "$AUR_VIEWDIR" -t)
+    fetch_args=(-L "$tmp_view" -t)
 else
     aur_workdir=$AURDEST
-    fetch_args=(-L "$AUR_VIEWDIR" -g)
+    fetch_args=(-L "$tmp_view" -g)
 fi
 
 mkdir -p     "$aur_workdir"
@@ -320,15 +312,15 @@ if ((download)); then
 fi
 
 # link build files in the queue (absolute links)
-aur jobs -X ln -s "$(pwd -P)"/{} "$AUR_VIEWDIR" :::: "$tmp"/queue
+aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
-        command -- $AUR_PAGER "$AUR_VIEWDIR"
+        command -- $AUR_PAGER "$tmp_view"
     else
-        cd_safe "$AUR_VIEWDIR"
+        cd_safe "$tmp_view"
         printf '%s\n' *.patch *.diff | cat - "$tmp"/queue \
-            | xargs -I{} find -L "$AUR_VIEWDIR"/{} -maxdepth 1 | viewer
+            | xargs -I{} find -L "$tmp_view"/{} -maxdepth 1 | viewer
 
         cd_safe -
     fi
@@ -338,7 +330,7 @@ if ((build)); then
     build_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
 
     # check if dependency graph is valid
-    aur graph "$AUR_VIEWDIR"/*/.SRCINFO >/dev/null
+    aur graph "$tmp_view"/*/.SRCINFO >/dev/null
 
     if ((chroot)); then
         aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \

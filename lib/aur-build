@@ -161,7 +161,7 @@ while IFS= read -ru "$fd" path; do
         done < <(PKGDEST="$db_root" makepkg --packagelist)
 
         if [[ ${mark[*]} ]]; then
-            warning "$argv0: skipping built package (use -f to overwrite)"
+            warning "skipping built package (use -f to overwrite)"
 
             print_quoted >&2 "${mark[@]}"
             continue
