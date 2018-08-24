@@ -98,7 +98,7 @@ trap_exit() {
 
 viewer() {
     if type -P >/dev/null vifm; then
-        vifm - '+view!'
+        vifm -c 'view!' -c 'tree' -
     else
         command -- ${PAGER:-less -K}
     fi
@@ -226,8 +226,8 @@ fi
 
 # reset state of view directory
 if [[ -d $AUR_VIEWDIR ]]; then
-    find "$AUR_VIEWDIR" -type l -delete
-    find "$AUR_VIEWDIR" \( -name '*.patch' -or -name '*.diff' \) -delete
+    find "$AUR_VIEWDIR" \( -type l \
+         -or -name '*.patch' -or -name '*.diff' \) -delete
 else
     mkdir -p "$AUR_VIEWDIR"
 fi
