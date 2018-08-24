@@ -10,7 +10,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot_args=()
 gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
-makepkg_args=(-rs --noconfirm)
+makepkg_args=(-crs)
 repo_add_args=()
 
 # default options
