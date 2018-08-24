@@ -315,16 +315,15 @@ fi
 aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if ((view)); then
-    cd_safe "$tmp_view"
-
     if [[ -v AUR_PAGER ]]; then
-        command -- $AUR_PAGER
+        command -- $AUR_PAGER "$tmp_view"
     else
+        cd_safe "$tmp_view"
         printf '%s\n' *.patch *.diff | cat - "$tmp"/queue \
             | xargs -I{} find -L "$tmp_view"/{} -maxdepth 1 | viewer
-    fi
 
-    cd_safe -
+        cd_safe -
+    fi
 fi
 
 if ((build)); then
