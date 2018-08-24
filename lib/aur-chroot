@@ -39,8 +39,8 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='BPd:r:C:D:M:'
-opt_long=()
+opt_short='d:r:C:D:M:'
+opt_long=('nobuild' 'noprepare')
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi
@@ -54,8 +54,8 @@ while true; do
         -D) shift; directory=$1 ;;
         -C) shift; pacman_conf=$1 ;;
         -M) shift; makepkg_conf=$1 ;;
-        -B) build=0 ;;
-        -P) prepare=0 ;;
+        --nobuild) build=0 ;;
+        --noprepare) prepare=0 ;;
         --) shift; break ;;
     esac
     shift
