@@ -7,7 +7,7 @@ readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 readonly AURDEST_SNAPSHOT=${AURDEST_SNAPSHOT:-$XDG_CACHE_HOME/aurutils/snapshot}
-readonly AUR_VIEWDIR=${AUR_VIEWDIR:-$XDG_CACHE_HOME/aurutils/last_view}
+readonly AUR_VIEWDIR=${AUR_VIEWDIR:-$XDG_CACHE_HOME/aurutils/view}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
@@ -98,7 +98,7 @@ trap_exit() {
 
 viewer() {
     if type -P >/dev/null vifm; then
-        vifm -c 'view!' -c 'tree' -
+        vifm -c 'view!' -c 'tree' -c '0' -
     else
         command -- ${PAGER:-less -K}
     fi
