@@ -193,8 +193,14 @@ split on white space, allowing \fIAUR_PAGER="program -option"\fR.
 
 .B AUR_REPO
 .RS
-The repository used for building packages. The entry must be a valid
+The repository used for building packages.
+If \fBAUR_DBROOT\fR is not specified, then the entry must be a valid
 \fBfile://\fR repository configured in \fBpacman.conf\fR(5).
+.RE
+
+.B AUR_DBROOT
+.RS
+The absolute path to the database corresponding to \fBAUR_REPO\fR.
 .RE
 
 .SH NOTES
