@@ -1,5 +1,4 @@
 #!/bin/bash
-# shellcheck disable=SC2209
 # aur-vercmp - check packages for AUR updates
 set -o pipefail
 readonly argv0=vercmp
@@ -102,9 +101,9 @@ unset all aux repo upair
 while true; do
     case "$1" in
         -a) all=1 ;;
-        -c) format=equal ;;
+        -c) format='equal' ;;
         -d) shift; repo=$1 ;; # FIXME remove this? (#316)
-        -p) target=file
+        -p) target='file'
             shift; aux=$1 ;;
         -u) shift; upair=$1 ;;
         --) shift; break ;;

@@ -111,9 +111,6 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-# keep track of processed packages (#264)
-exec {fd_done}> "$tmp"/queue_processed
-
 # reset default makechrootpkg arguments
 if (($#)); then
     if ((chroot)); then

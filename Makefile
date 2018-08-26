@@ -10,7 +10,7 @@ aur: aur.in
 	m4 -DAUR_LIB_DIR=$(LIBDIR)/$(PROGNM) $< >$@
 
 shellcheck: aur
-	@shellcheck -x aur lib/*
+	@shellcheck -x -f gcc -e 2035,2086,2094,2016,1117,1083,1071 aur lib/*
 
 install:
 	@install -Dm755 aur       -t $(DESTDIR)$(BINDIR)
