@@ -95,14 +95,6 @@ trap_exit() {
     fi
 }
 
-viewer() {
-    if type -P >/dev/null vifm; then
-        vifm -c 'view!' -c 'tree' -c '0' -
-    else
-        command -- ${PAGER:-less -K}
-    fi
-}
-
 usage() {
     plain "usage: $argv0 [-ABcDfglLprstTu] [long options] [--] pkgname... [-]"
     exit 1
@@ -313,6 +305,12 @@ fi
 
 # link build files in the queue (absolute links)
 aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
+
+if type -P >/dev/null vifm; then
+    viewer() { vifm -c 'view!' -c 'tree' -c '0' -; }
+else
+    viewer() { command -- ${PAGER:-less -K}; }
+fi
 
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
