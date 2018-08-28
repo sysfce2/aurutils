@@ -2,6 +2,7 @@
 # aur-search - search for AUR packages
 set -o pipefail
 readonly argv0=search
+readonly aur_location='https://aur.archlinux.org'
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
@@ -64,6 +65,8 @@ parse_long() {
     local -a info
 
     while IFS=$'\t' read -r -a info; do
+        printf "$BOLD%s:$ALL_OFF\t%s\n" "AUR URL" "$aur_location/packages/${info[0]}"
+
         for i in "${!info[@]}"; do
             printf "$BOLD%s:$ALL_OFF\t%s\n" "${desc[i]}" "${info[i]}"
         done
