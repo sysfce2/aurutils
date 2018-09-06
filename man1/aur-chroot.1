@@ -51,7 +51,7 @@ package.
 
 .TP
 .B \-\-no\-prepare
-Build a package, to not update the container.
+Build a package, do not update the container.
 
 .TP
 .B \-d
@@ -70,17 +70,6 @@ The default local repository, see \fB\-\fR.
 .RE
 
 .SH NOTES
-.SS Building with \fBmakechrootpkg\fR
-Changes to the pacman database are \fInot\fR propagated from the
-container to the local system. Packages must be installed and updated
-separately, typically through \fBpacman \-Syu \fIpackage_name\fR.
-
-Package conflicts inside the container must be solved manually, as
-\fBmakechrootpkg\fR uses \fBmakepkg \-\-confirm \-s\fR internally.
-For example, to replace \fIgcc\fR with \fIgcc\-multilib\fR, run
-\fBarch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib\fR as
-root.
-
 .SS Using \fBccache\fR and \fBdistcc\fR
 As in the example above, install the required packages:
 .EX

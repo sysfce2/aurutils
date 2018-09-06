@@ -4,7 +4,7 @@ aur\-build \- build packages to a local repository
 
 .SH SYNOPSIS
 .SY "aur build"
-.BI "\-d " database
+.OP "\-d" database
 .OP \-cfNRsv
 .OP \-a queue
 .OP \-r root
@@ -75,17 +75,9 @@ Verify the PGP signature of the database before
 updating. (\fBrepo\-add \-v\fR).
 
 .SH ENVIRONMENT
-
-.B AUR_REPO
+.B AUR_DBPATH
 .RS
-The repository used for building packages.
-If \fBAUR_DBROOT\fR is not specified, then the entry must be a valid
-\fBfile://\fR repository configured in \fBpacman.conf\fR(5).
-.RE
-
-.B AUR_DBROOT
-.RS
-The absolute path to the database corresponding to \fBAUR_REPO\fR.
+The absolute path to the repository.
 .RE
 
 .SH NOTES
@@ -104,6 +96,19 @@ Databases are built with \fBLANG=C\fR to avoid libalpm from skipping
 entries if the locale is not set (FS#49342). Packages are signed
 manually with \fBgpg \-\-batch \-\-detach\-sign \-\-no\-armor\fR
 (FS#49946).
+
+.SS Building with \fBmakechrootpkg\fR
+Changes to the pacman database are \fInot\fR propagated from the
+container to the local system. Packages must be installed and updated
+separately, typically through \fBpacman \-Syu \fIpackage_name\fR.
+
+Package conflicts inside the container must be solved manually, as
+\fBmakechrootpkg\fR uses \fBmakepkg \-\-confirm \-s\fR internally.
+For example, to replace \fIgcc\fR with \fIgcc\-multilib\fR, run
+\fBarch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib\fR as
+root.
+
+For further information, see \fBaur\-chroot\fR(1).
 
 .SS Avoiding password prompts
 \fBmakepkg\fR(8) must be run as a regular user as of version 4.2, with
@@ -131,7 +136,7 @@ auto-key-retrieve\fR in \fBgpg.conf\fR. See \fBgpg\fR(1) for details.
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-chroot (1),
-.BR pacconf (1),
+.BR aur\-repo (1),
 .BR pacman (1),
 .BR makepkg.conf (5),
 .BR pacman.conf (5),

@@ -5,16 +5,8 @@ aur\-sync \- download and build aur packages automatically
 .SH SYNOPSIS
 .SY "aur sync"
 .OP \-AcfgLnprstu
-.OP \-\-ignore
-.OP \-\-no\-ver
-.OP \-\-no\-ver\-shallow
-.OP \-\-no\-view
-.OP \-\-provides
-.OP \-\-repo
-.OP \-\-root
 .OP \-\-
 .IR pkgname ...
-.OP \-
 .YS
 
 .SH DESCRIPTION
@@ -33,7 +25,7 @@ Continue the build process if a package with the same name exists
 already. (\fBaur build \-f\fR)
 
 .TP
-.B \-\-ignore=\fIPACKAGE\fR
+.BI \-\-ignore= PACKAGE
 Ignore a package upgrade. Multiple packages can be specified by
 separating them with a comma, or by repeating the \fB\-\-ignore\fR option.
 
@@ -69,18 +61,17 @@ Alias for \-f \-\-nover.
 Build packages with makechrootpkg. (\fBaur build \-c\fR)
 
 .TP
-.BR \-\-pacman\-conf=\fIFILE\fR
+.BI \-\-pacman\-conf= FILE
 Set the \fIpacman.conf\fR file to be used in the container. (\fBaur
 build \-C\fR)
-.RE
 
 .TP
-.BR \-\-makepkg\-conf=\fIFILE\fR
+.BI \-\-makepkg\-conf= FILE
 Set the \fImakepkg.conf\fR file to be used in the container. (\fBaur
 build \-M\fR)
 
 .TP
-.BR "\-D \fIDIR\fR" ", " \-\-directory=\fIDIR\fR
+.BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
 Set the container path to \fIDIR\fR. (\fBaur build \-D\fR)
 
 .SS Download options
@@ -118,13 +109,13 @@ repository into account. Packages specified on the command line or
 available upgrades are considered regardless of this setting.
 
 .TP
-.B \-d \fINAME\fR ", " \-\-database=\fINAME\fR ", " \-\-repo=\fINAME\fR
+.BI \-d " NAME" "\fR,\fP \-\-database=" NAME "\fR,\fP \-\-repo=" NAME
 Use the \fINAME\fR repository. If this option is not specified,
 \fBaur\-sync\fR defaults to the first \fIfile://\fR repository in
 \fBpacman.conf\fR(5), or aborts if multiple are available.
 
 .TP
-.B \-\-root=\fIDIR\fR
+.BI \-\-root= DIR
 The location of the repository root. Defaults to the \fIServer\fR
 value of the configured repository.
 
@@ -158,11 +149,11 @@ The default set of options is \fBmakechrootpkg \-cu\fR. For more information
 about building in containers, see \fBaur\-chroot\fR(1).
 
 .TP
-.B \-\-bind=\fIDIR\fR
+.BI \-\-bind= DIR
 Bind a directory read-only. (\fBmakechrootpkg \-D\fR)
 
 .TP
-.B \-\-bind-rw=\fIDIR\fR
+.BI \-\-bind-rw= DIR
 Bind a directory read-write. (\fBmakechrootpkg \-d\fR)
 
 .TP
@@ -189,18 +180,6 @@ Default: \fI$XDG_CACHE_HOME/aurutils/snapshot\fR
 .RS
 The file manager used to view and edit build files. This variable is
 split on white space, allowing \fIAUR_PAGER="program -option"\fR.
-.RE
-
-.B AUR_REPO
-.RS
-The repository used for building packages.
-If \fBAUR_DBROOT\fR is not specified, then the entry must be a valid
-\fBfile://\fR repository configured in \fBpacman.conf\fR(5).
-.RE
-
-.B AUR_DBROOT
-.RS
-The absolute path to the database corresponding to \fBAUR_REPO\fR.
 .RE
 
 .SH NOTES
@@ -235,16 +214,15 @@ directory, in order to avoid conflicts with \fBgit\fR(1).
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-build (1),
+.BR aur\-depends (1),
 .BR aur\-fetch (1),
-.BR aur\-rpc (1),
+.BR aur\-graph (1),
+.BR aur\-repo (1),
 .BR aur\-repo\-filter (1),
-.BR aur\-deps\-rpc (1),
-.BR aur\-updates (1),
+.BR aur\-vercmp (1),
 .BR jq (1),
 .BR less (1),
-.BR pacconf (1),
 .BR vifm (1),
-.BR pacman.conf (5)
 
 .SH AUTHORS
 .MT https://github.com/AladW

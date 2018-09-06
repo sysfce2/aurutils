@@ -12,6 +12,7 @@ gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
 makepkg_args=(-crs)
 repo_add_args=()
+repo_args=()
 
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0
@@ -28,10 +29,6 @@ db_replaces() {
     bsdcat "$1" | awk '/%REPLACES%/ {
         while(NF != 0) {getline; print}
     }'
-}
-
-print_quoted() {
-    printf '%q\n' "$@"
 }
 
 trap_exit() {
@@ -59,61 +56,41 @@ var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-opt_short='a:d:r:C:D:M:cfNRsv'
-opt_long=()
+## option parsing
+opt_short='a:d:p:r:D:cfNRsv'
+opt_long=('arg-file:' 'chroot' 'database:' 'force' 'path:' 'root:'
+          'sign' 'verify' 'directory:' 'no-sync' 'pacman-conf:'
+          'makepkg-conf:' 'remove')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset db_name db_root queue
+unset queue db_name db_path db_root
 while true; do
     case "$1" in
-        -a) shift; queue=$1 ;;
-        -c) chroot=1 ;;
-        -f) overwrite=1 ;;
-        -N) no_sync=1 ;;
-        -r) shift; db_root=$1 ;;
-        -d) shift; db_name=$1
-            chroot_args+=(-d "$1") ;;
-        -C) shift; chroot_args+=(-C "$1") ;;
-        -D) shift; chroot_args+=(-D "$1") ;;
-        -M) shift; chroot_args+=(-M "$1") ;;
-        -R) repo_add_args+=(-R) ;;
-        -s) sign_pkg=1
-            repo_add_args+=(-s) ;;
-        -v) repo_add_args+=(-v) ;;
+        -a|--arg-file)  shift; queue=$1 ;;
+        -p|--path)      shift; db_path=$1 ;;
+        -d|--database)  shift; db_name=$1
+                        repo_args+=(-d "$1") ;;
+        -r|--root)      shift;
+                        repo_args+=(-r "$1") ;;
+        -c|--chroot)    chroot=1 ;;
+        -f|--force)     overwrite=1 ;;
+        -s|--sign)      sign_pkg=1
+                        repo_add_args+=(-s) ;;
+        -v|--verify)    repo_add_args+=(-v) ;;
+        -D|--directory) shift; chroot_args+=(-D "$1") ;;
+        -N|--no-sync)   no_sync=1 ;;
+        -R|--remove)    repo_add_args+=(-R) ;;
+        --pacman-conf)  shift; chroot_args+=(-C "$1") ;;
+        --makepkg-conf) shift; chroot_args+=(-M "$1") ;;
         --) shift; break ;;
     esac
     shift
 done
 unset opt_short opt_long OPTRET
-
-if [[ -n ${db_name=$AUR_REPO} ]]; then
-    if [[ -z ${db_root=$AUR_DBROOT} ]]; then
-        db_root=$(pacconf --single --repo="$db_name" Server)
-        db_root=${db_root#*//}
-    fi
-
-     # .db symbolic link to archive
-    db_path=$(realpath -e -- "$db_root/$db_name".db)
-    db_root=$(realpath -e -- "$db_root")
-else
-    error "$argv0: database: missing argument"
-    usage
-fi
-
-if ! [[ -r $db_path && -w $db_path ]]; then
-    error "$argv0: $db_path: permission denied"
-    exit 13
-fi
-
-if [[ -v queue ]]; then
-    exec {fd}< "$queue"
-else
-    exec {fd}< <(printf '\n')
-fi
 
 # reset default makechrootpkg arguments
 if (($#)); then
@@ -128,25 +105,46 @@ if type -P xdelta3 >/dev/null; then
     repo_add_args+=(-d)
 fi
 
+if ! [[ ${db_path=$AUR_DBPATH} ]]; then
+    db_path=$(aur repo "${repo_args[@]}")
+fi
+
+if ! [[ -w $db_path ]]; then
+    error "$argv0: $db_path: permission denied"
+    exit 13
+fi
+
+if ! [[ ${db_name=$AUR_REPO} ]]; then
+    db_name=$(basename -- "${db_path%.db*}")
+fi
+
+db_root=$(dirname -- "$db_path")
+
+if [[ -v queue ]]; then
+    exec {fd}< "$queue"
+else
+    exec {fd}< <(printf '\n')
+fi
+
 if ((sign_pkg)); then
     if [[ -v GPGKEY ]]; then
         gpg --list-keys "$GPGKEY"
         gpg_args+=(-u "$GPGKEY")
     fi
 else
-    db_sigs=("$db_root/$db_name"{,.files}.sig)
+    db_sigs=("$db_root/$db_name".sig "$db_root/$db_name".files.sig)
 
     if [[ -f ${db_sigs[0]} ]]; then
         # avoid errors from stale db.sig files
         error "$argv0: database signature found, but signing is disabled"
 
-        print_quoted >&2 "${db_sigs[@]}"
+        printf '%q\n' >&2 "${db_sigs[@]}"
         exit 1
     fi
 fi
 
 if ((chroot)); then
-    aur chroot --no-build "${chroot_args[@]}"
+    aur chroot -d "$db_name" --no-build "${chroot_args[@]}" 
 else
     conf_repo "$db_name" >"$tmp"/custom.conf
 fi
@@ -164,7 +162,7 @@ while IFS= read -ru "$fd" path; do
         if [[ ${mark[*]} ]]; then
             warning "skipping built package (use -f to overwrite)"
 
-            print_quoted >&2 "${mark[@]}"
+            printf '%q\n' >&2 "${mark[@]}"
             continue
         fi
     fi

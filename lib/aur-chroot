@@ -44,7 +44,7 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-CDM <path>] [-d <repo>] [-BP] -- <makechrootpkg args>' "$argv0"
+    printf >&2 "usage: $argv0 [-CDM <path>] [-d <repo>] -- <makechrootpkg args>"
     exit 1
 }
 
@@ -66,8 +66,8 @@ while true; do
         -D) shift; directory=$1 ;;
         -C) shift; pacman_conf=$1 ;;
         -M) shift; makepkg_conf=$1 ;;
-        --nobuild) build=0 ;;
-        --noprepare) prepare=0 ;;
+        --no-build) build=0 ;;
+        --no-prepare) prepare=0 ;;
         --) shift; break ;;
     esac
     shift
