@@ -307,7 +307,7 @@ fi
 aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if type -P >/dev/null vifm; then
-    viewer() { vifm -c 'view!' -c 'tree' -c '0' -; }
+    viewer() { vifm -c 'view!' -c 'tree' -c '0' -c 'set sort=-dir' -; }
 else
     viewer() { command -- ${PAGER:-less -K}; }
 fi
