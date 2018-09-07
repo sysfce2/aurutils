@@ -10,7 +10,7 @@ source=('git+https://github.com/AladW/aurutils')
 sha256sums=('SKIP')
 conflicts=('aurutils')
 provides=('aurutils')
-depends=('ed' 'git' 'jq' 'pacutils' 'parallel' 'wget')
+depends=('git' 'jq' 'pacutils' 'parallel' 'wget')
 makedepends=('git')
 optdepends=('devtools: aur-chroot'
             'diffstat: aur-fetch-snapshot'

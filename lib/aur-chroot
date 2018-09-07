@@ -26,6 +26,17 @@ get_file_server() {
     pacini --section="$1" "$2" Server
 }
 
+# NOTE: CacheDir will be replaced by devtools (#416)
+host_cachedir() {
+    awk '{
+	if ($0 ~ /[options]/) {
+	    print; system("pacconf --verbose CacheDir")
+	} else {
+	    print;
+	};
+    }'
+}
+
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
@@ -76,11 +87,10 @@ readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 for repo in "${host_repo[@]}"; do
     get_conf_repo "$repo"
-done > "$tmp"/custom.conf
+done >"$tmp"/custom.conf
 
 for repo in "${host_repo[@]}"; do
     # FIXME: custom.conf may contain multiple file:// entries per local repo
-    # the '|| true' is to not exit when no file servers are available
     server=$(get_file_server "$repo" "$tmp"/custom.conf | grep -Em1 '^file://' || true)
     server=${server#file://}
 
@@ -92,11 +102,9 @@ for repo in "${host_repo[@]}"; do
 done
 
 if ((prepare)); then
-    # do not print DBPath (#412)
-    pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
-
-    # NOTE: CacheDir specified here will be replaced by devtools (#416)
-    ed -s "$tmp"/pacman.conf <<< $'/[options]/r !pacconf --verbose CacheDir\nw'
+    # Do not print DBPath (#412)
+    pacconf --config="$pacman_conf" --raw | host_cachedir \
+	| cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
