@@ -38,8 +38,9 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='L:'
-opt_long=()
+opt_short='L:h'
+opt_long=('log-dir:' 'help')
+
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi
@@ -47,8 +48,8 @@ set -- "${OPTRET[@]}"
 
 while true; do
     case "$1" in
-        -L) shift; log_dir=$1
-            log=directory ;;
+        -L|--log-dir) shift; log_dir=$1; log=directory ;;
+        -h|--help) usage ;;
         --) shift; break ;;
     esac
     shift

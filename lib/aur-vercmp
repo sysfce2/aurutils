@@ -79,7 +79,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-d repo] [-p file] [-ac]"
+    plain "usage: $argv0 [-ac] [-d repo] [-p file]"
     exit 1
 }
 
@@ -90,8 +90,9 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='acd:p:u:'
+opt_short='d:p:u:ach'
 opt_long=()
+
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi

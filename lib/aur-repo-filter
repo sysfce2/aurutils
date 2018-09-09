@@ -24,7 +24,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 opt_short='ad:h'
-opt_long=('all' 'repo' 'database' 'help')
+opt_long=('all' 'database:' 'help')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
@@ -34,12 +34,9 @@ set -- "${OPTRET[@]}"
 unset argv_repo reposet sync_repo fields
 while true; do
     case "$1" in
-        -a|--all)
-            sync_repo=1 ;;
-        -d|--repo|--database)
-            shift; argv_repo+=("$1") ;;
-        -h|--help)
-            usage ;;
+        -a|--all) sync_repo=1 ;;
+        -d|--database) shift; argv_repo+=("$1") ;;
+        -h|--help) usage ;;
         --) shift; break;;
     esac
     shift

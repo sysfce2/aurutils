@@ -110,9 +110,10 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='aisdmnqvk:'
+opt_short='k:aisdmnqvh'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends'
-          'makedepends' 'optdepends' 'checkdepends' 'key:')
+          'makedepends' 'optdepends' 'checkdepends' 'key:' 'help')
+
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi
@@ -134,6 +135,7 @@ while true; do
         -q|--short)      format=short ;;
         -v|--verbose)    format=long ;;
         -k|--key)        shift; sort_key=$1 ;;
+	-h|--help) usage ;;
         --) shift; break ;;
     esac
     shift

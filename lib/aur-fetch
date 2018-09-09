@@ -28,8 +28,9 @@ EOF
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='rgtL:'
-opt_long=()
+opt_short='L:rgth'
+opt_long=('log-dir:' 'recurse' 'git' 'tar' 'help')
+
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi
@@ -38,10 +39,11 @@ set -- "${OPTRET[@]}"
 unset log_dir
 while true; do
     case "$1" in
-        -L) shift; log_dir=$1 ;;
-        -r) recurse=1 ;;
-        -g) mode=git ;;
-        -t) mode=snapshot ;;
+        -L|--log-dir) shift; log_dir=$1 ;;
+        -r|--recurse) recurse=1 ;;
+        -g|--git)     mode=git ;;
+        -t|--tar)     mode=snapshot ;;
+        -h|--help)    usage;
         --) shift; break ;;
     esac
     shift

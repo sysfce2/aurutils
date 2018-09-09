@@ -95,7 +95,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcDfglLprstTu] [long options] [--] pkgname... [-]"
+    plain "usage: $argv0 [-ABcDfglLprstTu] [--] pkgname... [-]"
     exit 1
 }
 
@@ -107,14 +107,14 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='d:D:AcfgklLpstTu'
+opt_short='d:D:AcfgklLpstTuh'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot' 'continue'
           'force' 'ignore-arch' 'ignorearch' 'log' 'noconfirm' 'no-confirm'
           'no-ver' 'nover' 'nover-shallow' 'noprovides' 'no-provides'
           'no-ver-shallow' 'no-view' 'noview' 'print' 'rm-deps'
           'keep' 'sign' 'temp' 'tar' 'upgrades' 'list' 'git'
-          'repo-list' 'rebuild' 'rebuildtree' 'rebuild-tree')
+          'repo-list' 'rebuild' 'rebuildtree' 'rebuild-tree' 'help')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
@@ -154,11 +154,10 @@ while true; do
         --no?(-)view)         view=0 ;;
         --no?(-)provides)     provides=0 ;;
         --repo-list)          repo_list=1 ;;
-        --rebuild)            build_args+=(-f)
-                              chkver_depth=1 ;;
-        --rebuild?(-)tree)    build_args+=(-f)
-                              chkver_depth=0 ;;
-        --)                   shift; break ;;
+        --rebuild)            build_args+=(-f); chkver_depth=1 ;;
+        --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
+        -h|--help) usage ;;
+        --) shift; break ;;
     esac
     shift
 done

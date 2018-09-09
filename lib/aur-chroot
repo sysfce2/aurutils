@@ -27,7 +27,7 @@ get_file_server() {
 }
 
 # NOTE: CacheDir will be replaced by devtools (#416)
-host_cachedir() {
+insert_host_cachedir() {
     awk '{
 	if ($0 ~ /[options]/) {
 	    print; system("pacconf --verbose CacheDir")
@@ -52,6 +52,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:r:C:D:M:'
 opt_long=('no-build' 'no-prepare')
+
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi
@@ -103,7 +104,7 @@ done
 
 if ((prepare)); then
     # Do not print DBPath (#412)
-    pacconf --config="$pacman_conf" --raw | host_cachedir \
+    pacconf --config="$pacman_conf" --raw | insert_host_cachedir \
 	| cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
