@@ -51,7 +51,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:r:C:D:M:'
-opt_long=('nobuild' 'noprepare')
+opt_long=('no-build' 'no-prepare')
 if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
     usage
 fi

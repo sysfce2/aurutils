@@ -82,8 +82,7 @@ parse_short() {
     while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes Popularity OutOfDate _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
-            *) # FIXME move date command to jq (must only be run if
-               # OutOfDate is set)
+            *) # FIXME move date command to jq (must only be run if OutOfDate is set)
                OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
         esac
 
@@ -122,34 +121,20 @@ set -- "${OPTRET[@]}"
 unset format
 while true; do
     case "$1" in
-        -a|--any)
-            multiple=union ;;
-        -i|--info)
-            query_type=info ;;
-        -s|--search)
-            query_type=search ;;
-        -d|--desc)
-            search_by=name-desc ;;
-        -m|--maintainer)
-            search_by=maintainer ;;
-        -n|--name)
-            search_by=name ;;
-        --depends)
-            search_by=depends ;;
-        --makedepends)
-            search_by=makedepends ;;
-        --optdepends)
-            search_by=optdepends ;;
-        --checkdepends)
-            search_by=checkdepends ;;
-        -q|--short)
-            format=short ;;
-        -v|--verbose)
-            format=long ;;
-        -k|--key)
-            shift; sort_key=$1 ;;
-        --)
-            shift; break ;;
+        -a|--any)        multiple=union ;;
+        -i|--info)       query_type=info ;;
+        -s|--search)     query_type=search ;;
+        -d|--desc)       search_by=name-desc ;;
+        -m|--maintainer) search_by=maintainer ;;
+        -n|--name)       search_by=name ;;
+        --depends)       search_by=depends ;;
+        --makedepends)   search_by=makedepends ;;
+        --optdepends)    search_by=optdepends ;;
+        --checkdepends)  search_by=checkdepends ;;
+        -q|--short)      format=short ;;
+        -v|--verbose)    format=long ;;
+        -k|--key)        shift; sort_key=$1 ;;
+        --) shift; break ;;
     esac
     shift
 done

@@ -145,7 +145,7 @@ else
 fi
 
 if ((chroot)); then
-    aur chroot --nobuild "${chroot_args[@]}"
+    aur chroot --no-build "${chroot_args[@]}"
 else
     conf_repo "$db_name" >"$tmp"/custom.conf
 fi
@@ -170,7 +170,7 @@ while IFS= read -ru "$fd" path; do
 
     if ((chroot)); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
-        PKGDEST="$var_tmp" aur chroot --noprepare "${chroot_args[@]}" \
+        PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" \
             -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"

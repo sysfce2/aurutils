@@ -8,8 +8,8 @@ aur\-chroot \- build packages with systemd-nspawn
 .OP \-D directory
 .OP \-M makepkg_conf
 .OP \-C pacman_conf
-.OP \-\-nobuild
-.OP \-\-noprepare
+.OP \-\-no\-build
+.OP \-\-no\-prepare
 .OP \-\-
 .RI [ "makechrootpkg args" ]
 .YS
@@ -45,12 +45,12 @@ The makepkg.conf file to be used in the container. Defaults to
 \fImakepkg\-<machine>.conf\fR from devtools.
 
 .TP
-.B \-\-nobuild
+.B \-\-no\-build
 Update or create the /root copy of the container; do not build a
 package.
 
 .TP
-.B \-\-noprepare
+.B \-\-no\-prepare
 Build a package, to not update the container.
 
 .TP
