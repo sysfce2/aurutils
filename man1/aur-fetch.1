@@ -11,8 +11,13 @@ aur\-fetch \- fetches packages from a location
 .YS
 
 .SH DESCRIPTION
-\fBaur\-fetch\fR accepts URIs to packages from stdin, and attempts to
-download them. It's capable of handling \fItar\fR archives and \fIgit\fR
+.B aur\-fetch
+accepts URIs to packages from
+.IR stdin ,
+and attempts to download them. It is capable of handling
+.BR tar (1)
+archives and
+.BR git (1)
 repositories.
 
 .SH OPTIONS
@@ -23,20 +28,28 @@ archives.
 
 .TP
 .B \-t
-Downloads the package as a \fItar\fR archive with \fBaur\-fetch\-snapshot\fR.
+Downloads the package as a
+.I tar
+archive with
+.BR aur\-fetch\-snapshot .
 
 .TP
 .B \-g
-Downloads the package as a \fIgit\fR repository with \fBaur\-fetch\-git\fR.
+Downloads the package as a
+.I git
+repository with
+.BR aur\-fetch\-git .
 
 .TP
 .B \-r
-Download both packages and their dependencies with \fBaur-deps-rpc\fR(1).
+Download both packages and their dependencies with
+.BR aur-depends (1).
 
 .SH SEE ALSO
+.BR aur (1),
+.BR aur\-depends (1),
 .BR git (1),
-.BR tar (1),
-.BR aur (1)
+.BR tar (1)
 
 .SH AUTHORS
 .MT https://github.com/AladW

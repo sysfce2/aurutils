@@ -24,30 +24,46 @@ All arguments after \-\- are passed to \fBmakechrootpkg\fR.
 .TP
 .BI "\-D " directory
 The base directory for containers. This directory usually contains a
-\fB/root\fR subdirectory that serves as template for user containers
-(named after \fI$SUDO_USER\fR, or \fB/copy\fR if unset).
+.B /root
+subdirectory that serves as template for user containers (named after
+.I $SUDO_USER
+, or
+.B /copy
+if unset).
 
 .SY Note:
-If the \fB\-T\fR parameter is specified to \fBmakechrootpkg\fR, the
-user container has a random name and is removed on build completion.
+If the
+.B \-T
+parameter is specified to
+.BR makechrootpkg ,
+the user container has a random name and is removed on build
+completion.
 
 .TP
 .BI "\-C " pacman_conf
-The \fIpacman.conf\fR file to be used in the container. Defaults to
-\fIpacman-extra.conf\fR from devtools. This file is processed with
-\fBpacconf\fR(1) to include necessary information from the host, such
-as mirrors. If a local repository name is specified with \fB\-d\fR,
+The
+.BR pacman.conf (5)
+file used inside the container. Defaults to devtools'
+.IR pacman-extra.conf .
+This file is processed with
+.BR pacconf (1)
+to include necessary information from the host, such as mirrors. If a
+local repository name is specified with
+.BR \-d ,
 its configuration is appended to this file.
 
 .TP
 .BI "\-M " makepkg_conf
-The makepkg.conf file to be used in the container. Defaults to
-\fImakepkg\-<machine>.conf\fR from devtools.
+The
+.BR makepkg.conf (5)
+file used inside the container. Defaults to devtools'
+.IR makepkg\-<machine>.conf .
 
 .TP
 .B \-\-no\-build
-Update or create the /root copy of the container; do not build a
-package.
+Update or create the
+.B /root
+copy of the container; do not build a package.
 
 .TP
 .B \-\-no\-prepare
@@ -55,50 +71,73 @@ Build a package, do not update the container.
 
 .TP
 .B \-d
-The used local repository in the container, see \fB\-C\fR. The first
-\fBServer\fR directive starting in \fBfile://\fR is bind mounted
-(read-only) in the container.
+The local repository used inside the container. The first
+.B Server
+directive starting in
+.B file://
+is bind mounted (read-only).
 
 .SH ENVIRONMENT
-Packages are placed in the directory specified in \fBPKGDEST\fR. If
-not set, the current directory (\fI$PWD\fR) is used. See also
-\fBmakepkg.conf\fR(5).
+Packages are placed in the directory specified in
+.BR PKGDEST .
+If unset, the current directory (\fI$PWD\fR) is used. See also
+.BR makepkg.conf (5).
 
 .B AUR_REPO
 .RS
-The default local repository, see \fB\-\fR.
+The default local repository, see
+.BR \-d .
 .RE
 
 .SH NOTES
-.SS Using \fBccache\fR and \fBdistcc\fR
+.SS Using ccache and distcc
 As in the example above, install the required packages:
 .EX
 
   # arch-nspawn /var/lib/aurbuild/root pacman \-S ccache distcc
 
 .EE
-Ensure write access to \fBccache\fR directories on the host:
+
+Ensure write access to
+.B ccache
+directories on the host:
 .EX
 
   # aur chroot -- -d /home/_ccache:/build/.ccache -cu
 
 .EE
-Necessary \fBmakepkg\fR options may be set in a specified (\-M)
-\fImakepkg.conf\fR file. See GitHub issue #334 for details.
+
+Necessary
+.BR makepkg (1)
+options may be set in a specified (\-M)
+.BR makepkg.conf (5)
+file. See GitHub issue #334 for details.
 
 .SS Building for a different architecture
-To build packages for a different architecture, prepend \fBsetarch
-\fIarch\fR to the aurbuild command line. The target architecture must
-both be supported by the current system (run \fBsetarch \-\-list\fR
-for an approximation) and have a respective \fImakepkg.conf\fR file
-available in \fI/usr/share/devtools\fR (such as
-\fI/usr/share/devtools/makepkg\-i686.conf\fR for \fIi686\fR).
+To build packages for a different architecture, prepend
+.BI setarch " arch"
+to the
+.B aur\-build
+command line.
+
+The target architecture must be supported both by the host (run
+.B "setarch \-\-list"
+for an approximation), and have a matching
+.BR makepkg.conf (5)
+file available in
+.B /usr/share/devtools
+(such as
+.I /usr/share/devtools/makepkg\-i686.conf
+for
+.IR i686 ).
 
 .SS Accessing the local repository
 To install packages from the local repository (for example, on
-dependency resolution with \fImakepkg \-s\fR), the container requires
-at least read-only access to the host directory where it is
-located. This is ensured through a \fIbind mount\fR.
+dependency resolution with
+.BR "makepkg \-s" ,
+the container requires read access to the host directory where it is
+located. This is ensured through a
+.IR "bind mount" .
 
 .SH SEE ALSO
 .BR aur (1),

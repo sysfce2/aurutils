@@ -75,12 +75,43 @@ Check packages for AUR updates.
 .SH EXIT STATUS
 Programs follow a subset of errno(3), or preserve command status where
 applicable.
-.P
-See also EXIT STATUS in wget(1).
 
-.SH CREATING A LOCAL REPOSITORY 
-Configure the local repository in a separate pacman configuration,
-for example in \fI/etc/pacman.d/custom\fR:
+.SH CREATING A LOCAL REPOSITORY
+A local repository may be configured directly in
+.BR /etc/pacman.conf ,
+or in a separate file specified with the
+.B Include
+directive. This section documents an example configuration; for
+details, consult the
+.BR pacman.conf (5)
+man page.
+.SY Note:
+Avoid naming the repository
+.IR local ,
+as this name is reserved by
+.BR pacman (1).
+
+.SY Note:
+It is recommended to use a pacman cache directory
+.RB ( CacheDir )
+as the package pool. This avoids checksum mismatches between built
+packages and any cached versions.
+.YS
+
+.SY Tip:
+Consider separate repositories for different purposes, such as
+version control packages.
+.YS
+
+.SS Pacman configuration
+.P
+If the local repository
+.I custom
+is located in
+.IR /var/cache/pacman/custom ,
+create
+.IR /etc/pacman.d/custom
+with the following contents:
 .EX
 
   [options]
@@ -93,10 +124,8 @@ for example in \fI/etc/pacman.d/custom\fR:
   Server = file:///var/cache/pacman/custom
 
 .EE
-Avoid naming the repository \fIlocal\fR, as this name is reserved by
-pacman.
-.P
-Include the configuration in \fI/etc/pacman.conf\fR:
+Include the configuration in
+.IR /etc/pacman.conf :
 .EX
 
   # An example of a custom package repository.  See the pacman manpage for
@@ -104,8 +133,10 @@ Include the configuration in \fI/etc/pacman.conf\fR:
   Include = /etc/pacman.d/custom
 
 .EE
-Add \fBInclude\fR to the \fIend\fR of pacman.conf, where possible.
-.P
+Add
+.B Include\fR to the \fIend\fR of pacman.conf, where possible.
+
+.SS Adding packages
 Create the repository root and database:
 .EX
 
@@ -113,7 +144,7 @@ Create the repository root and database:
   $ repo-add /var/cache/pacman/custom/custom.db.tar
 
 .EE
-If packages are already available, add them to the database:
+If built packages are available, add them to the database:
 .EX
 
   $ cd /var/cache/pacman/custom
@@ -126,39 +157,45 @@ Synchronize pacman:
   $ sudo pacman -Syu
 
 .EE
-.SY Note:
-It is recommended to use a pacman cache directory (\fBCacheDir\fR) as
-the package pool. This avoids checksum mismatches between built
-packages and any cached versions.
-.YS
-
-.SY Tip:
-Consider separate repositories for different purposes, such as
-version control packages.
-.YS
 
 .SH EXAMPLES
-Examples below assume \fBbash\fR as the interactive shell.
+Examples below assume
+.BR bash (1)
+is the interactive shell.
 
+.SS Arch User Repository
 Run actions on the dependency tree of an AUR package:
 .EX
 
   $ echo foo | aur depends | while read -r pkg; do ... done
 
 .EE
-Build all packages in the \fIpkgbuilds\fR github repository: (requires
-\fIpkgbuild-introspection\fR)
+Build
+.I plasma-desktop-git
+and its dependencies with
+.BR systemd\-nspawn (1):
 .EX
 
-  $ git clone https://www.github.com/Earnestly/pkgbuilds
-  $ cd pkgbuilds
-  $ find -maxdepth 2 -name PKGBUILD -execdir mksrcinfo \\;
-  $ aur graph */.SRCINFO | tsort | tac > queue # Remove unwanted targets
-  $ aur build -d custom -a queue
+  $ aur sync -c plasma-desktop-git
 
 .EE
-Print packages from the \fIcustom\fR repository that are not available
-in the AUR:
+Update all AUR packages in a single local repository:
+.EX
+
+  $ aur sync -u
+
+.EE
+Check foreign packages for AUR updates:
+.EX
+
+  $ pacman -Qm | aur vercmp
+
+.EE
+
+.SS Arch User Repository - advanced usage
+Print packages from the
+.I custom
+repository that are unavailable in the AUR:
 .EX
 
   $ grep -Fxvf <(aur pkglist) <(pacman -Slq custom)
@@ -171,6 +208,36 @@ As above, but for orphaned packages:
        jq -r '.[].results[] | select(.Maintainer == null)'
 
 .EE
+Update packages in the
+.I custom
+repository which are installed on the host:
+.EX
+
+  $ grep -Fxf <(pacman -Qq) <(pacman -Slq custom) > installed.txt
+  $ xargs -a installed.txt aur sync --repo=custom
+
+.EE
+Search for AUR packages with both
+.I wm
+and
+.I git
+in the name:
+.EX
+
+  $ aur pkglist -P '(?=.*wm)(?=.*git)' | xargs aur search -i
+
+.EE
+Select an AUR package with name matching
+.IR pony ,
+and build the result:
+.EX
+
+  $ select a in $(aur pkglist -F pony); do aur sync "$a"; break; done
+
+.EE
+
+.SS Official repositories
+.EE
 Print Perl modules that are both in the AUR and official repositories:
 .EX
 
@@ -178,68 +245,62 @@ Print Perl modules that are both in the AUR and official repositories:
   $ grep -Fxf <(aur repo-filter < perl.txt) perl.txt
 
 .EE
-Search for packages with both 'wm' and 'git' in the name:
+Print packages both in AUR and
+.I [community]
+and compare their versions:
 .EX
 
-  $ aur pkglist -P '(?=.*wm)(?=.*git)' | xargs aur search -i
+  $ aur repo -d community --all
 
 .EE
-Build \fIplasma-desktop-git\fR and its dependencies in an nspawn container:
+
+.SS Using PKGBUILDs
+Build packages in the
+.I pkgbuilds
+github repository (generating required
+.B .SRCINFO
+files):
 .EX
 
-  $ aur sync -c plasma-desktop-git
+  $ git clone https://www.github.com/Earnestly/pkgbuilds
+  $ cd pkgbuilds
+  $ find -name PKGBUILD -execdir sh -c 'makepkg --printsrcinfo > .SRCINFO' \\;
 
-.EE
-Update all AUR packages in a single local repository:
-.EX
+  $ aur graph */.SRCINFO | tsort | tac > queue # Remove unwanted targets
+  $ aur build -a queue
 
-  $ aur sync -u
-
-.EE
-Update packages from the \fIcustom\fR repository that are installed on the host:
-.EX
-
-  $ grep -Fxf <(pacman -Qq) <(pacman -Slq custom) | aur sync --repo=custom -
-
-.EE
 Build a package for a different architecture, here \fIi686\fR:
 .EX
 
   $ setarch i686 aur sync -c --repo=custom_i686 tclkit
 
 .EE
-Select a package matching \fIpony\fR and build the result:
-.EX
 
-  $ select a in $(aur pkglist -F pony); do aur sync "$a"; break; done
-
-.EE
-Print packages both in AUR and [community] and compare their versions:
-.EX
-
-  $ aur vercmp -d community -a
-
-.EE
-Check foreign packages for AUR updates:
-.EX
-
-  $ pacman -Qm | aur vercmp
-
-.EE
+.SS Using third-party helpers
 Repository packages can be "made foreign" by temporarily removing the
 repository from the pacman configuration. This can be used with programs
-that only check foreign packages for AUR updates.
+that support the
+.B PACMAN
+environment variable and check foreign packages for AUR updates.
 
-For example, create the following script in
-\fI/usr/local/bin/mypacman\fR:
+For example, create the
+.I mypacman
+script in
+.IR /usr/local/bin/mypacman :
 .EX
 
  #!/bin/sh
  pacman --config=/usr/share/devtools/pacman-extra.conf "$@"
 
 .EE
-This script can then be propagated through the \fBPACMAN\fR variable
-for programs supporting it.
+and point the
+.B PACMAN
+variable towards it:
+.EX
+
+ $ export PACMAN=/usr/local/bin/mypacman
+
+.EE
 
 .SH AUTHORS
 .MT https://github.com/AladW

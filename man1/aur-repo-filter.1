@@ -9,19 +9,26 @@ aur\-repo\-filter \- filter packages in the Arch Linux repositories
 .YS
 
 .SH DESCRIPTION
-\fBaur\-repo\-filter\fR checks if \fIpkgname\fR (provided on
-\fIstdin\fR) is in the official Arch Linux repositories, and print it to
-\fIstdout\fR if found. Virtual packages, when found, are solved and
-printed to stderr.
+.B aur\-repo\-filter
+checks if
+.IR pkgname
+.RI "(as provided on " stdin )
+is in the official Arch Linux repositories. If found, it is printed to
+.IR stdout .
+
+If the package is virtual (that is, provided by a different package),
+it is printed to
+.IR stderr .
 
 .SH OPTIONS
 .TP
-.BI \-a ", " \-\-all
-Query all available repositories. (\fBpacconf \-\-repo\-list\fR)
+.BR \-a ", " \-\-all
+Query all available repositories.
+.RB ( "pacconf " \-\-repo\-list )
 
 .TP
-.B \-d \fINAME\fR ", " \-\-database=\fINAME\fR ", " \-\-repo=\fINAME\fR
-Check a given repository. Multiple repositories can be specified by
+.BI \-d " NAME" "\fR,\fP \-\-database=" NAME "\fR,\fP \-\-repo=" NAME
+Check a given repository. Multiple repositories may be specified by
 repeating this argument.
 
 .SH SEE ALSO

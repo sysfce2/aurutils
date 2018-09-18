@@ -110,7 +110,6 @@ if [[ -t 0 ]]; then
 fi
 sort -k 1b,1 >"$tmp"
 
-
 # set filters (1)
 case $target in
      aur) get() { awk '{print $1}' "$tmp" | parse_aur; } ;;

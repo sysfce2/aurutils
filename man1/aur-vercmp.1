@@ -11,29 +11,47 @@ aur\-vercmp \- check packages for AUR updates
 .SH OPTIONS
 .TP
 .B \-a
-If \fB-c\fR is \fInot\fR specified, this option also shows packages with
-older or the same version in the AUR. If specified twice, packages that
-are not available in AUR are also shown.
+If
+.B \-c
+is
+.I not
+specified, this option also shows packages with older or the same
+version in the AUR. If specified twice, packages that are not
+available in AUR are also shown.
 
 .TP
 .B \-c
-Takes packages and their versions from stdin (\fIpkgname\fR as the first
-field, \fIpkgver\fR as the second, space-separated), printing
-packages with equal or newer versions in a repository specified with
-\fB\-d\fR to stdout. If this argument or \fB\-d\fR is \fInot\fR
+Takes packages and their versions from stdin
+.RI ( pkgname
+as the first field,
+.I pkgver
+as the second, space-separated), printing packages with equal or newer
+versions in a repository specified with
+.B \-d
+to stdout.
+
+If this argument or
+.B \-d
+is
+.I not
 specified, compare packages in the repository with their respective
 versions in the AUR, and print updates to stdout.
 
 .TP
 .B \-d
-The name of a pacman repository. If \fInot\fR specified, packages and their
-versions are taken from stdin (space-separated).
+The name of a pacman repository. If
+.I not
+specified, packages and their versions are taken from stdin
+(space-separated).
 
 .TP
 .B \-p
 Read package versions from a file instead of the AUR. The package list should
-be in the same format as stdin (\fIpkgname\fR as the first
-field, \fIpkgver\fR as the second, space-separated).
+be in the same format as stdin
+.RI ( pkgname
+as the first field,
+.I pkgver
+as the second, space-separated).
 
 .TP
 .B \-q
