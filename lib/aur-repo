@@ -99,7 +99,7 @@ else
            db_root=${conf[1]#*://} ;;
         0) error "$argv0: no file:// repository found"
            exit 2 ;;
-        *) error "$argv0: repository choice is ambiguous (use --repo to specify)"
+        *) error "$argv0: repository choice is ambiguous (use -d to specify)"
            printf '%s\n' "${conf[@]}" | paste - - | column -t >&2
            exit 2 ;;
     esac
