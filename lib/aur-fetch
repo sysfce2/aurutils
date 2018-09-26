@@ -43,7 +43,7 @@ while true; do
         -r|--recurse) recurse=1 ;;
         -g|--git)     mode=git ;;
         -t|--tar)     mode=snapshot ;;
-        -h|--help)    usage;
+        -h|--help)    usage ;;
         --) shift; break ;;
     esac
     shift

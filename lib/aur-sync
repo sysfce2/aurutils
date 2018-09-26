@@ -20,7 +20,7 @@ repo_args=()
 build=1 chkver_depth=2 download=1 view=1 provides=0
 
 # default options (disabled)
-chroot=0 list=0 rotate=0 snapshot=0 update=0 repo_list=0 keep_deps=0
+chroot=0 rotate=0 snapshot=0 update=0 keep_deps=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -125,7 +125,6 @@ while true; do
         --no?(-)ver)          chkver_depth=0 ;;
         --no?(-)ver-shallow)  chkver_depth=1 ;;
         --no?(-)view)         view=0 ;;
-        --repo-list)          repo_list=1 ;;
         --rebuild)            build_args+=(-f); chkver_depth=1 ;;
         --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
         -h|--help) usage ;;
