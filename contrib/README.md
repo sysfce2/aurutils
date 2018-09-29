@@ -50,7 +50,7 @@ repository anew, with all build files and their diffs offered for
 inspection.
 
 ```
-aur sync --list | cut -f2 | grep -E "$AURVCS" | xargs aur sync --no-ver --print
+aur repo --list | cut -f2 | grep -E "$AURVCS" | xargs aur sync --no-ver --print
 ```
 
 [//]: # (The last pipeline will also show any non-VCS dependencies.)
