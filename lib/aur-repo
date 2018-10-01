@@ -12,13 +12,12 @@ conf_file_repo() {
             repo = substr($1, 2, length($1)-2)
         }
         $1 ~ /^Server/ && $2 ~ /^file:/ {
-            printf("%s\0%s\n", repo, $2)
+            printf("%s\n%s\n", repo, $2)
         }'
 }
 
 db_namever() {
-    awk -v '
-    /%NAME%/ {
+    awk '/%NAME%/ {
         getline
         printf("%s\t", $1)
     }
@@ -74,7 +73,7 @@ while true; do
         --status-file) shift; status_file=$1 ;;
         -l|--list)     mode=list_packages ;;
         -S|--pacman)   mode=list_pacman ;;
-        -u|--upgrades) mode=list_pacman_upgrades ;;
+        -u|--upgrades) mode=list_upgrades ;;
         --repo-list)   mode=repo_list ;;
         -h|--help) usage ;;
         --) shift; break ;;
