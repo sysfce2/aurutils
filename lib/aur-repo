@@ -89,7 +89,7 @@ esac
 
 if [[ ${db_name=$AUR_REPO} ]]; then
     if ! [[ ${db_root=$AUR_DBROOT} ]]; then
-        db_root=$(pacconf --single --repo="$db_name" Server)
+        db_root=$(pacconf --single --repo="$db_name" Server) || exit 1
         db_root=${db_root#*://}
     fi
 else
@@ -107,7 +107,7 @@ else
 fi
 
 # resolve .db symbolic link
-db_path=$(realpath -e -- "$db_root/$db_name".db)
+db_path=$(realpath -e -- "$db_root/$db_name".db) || exit 1
 
 if [[ -v status_file ]]; then
     printf '%s\0%s\n' "$db_name" "$db_path" >"$status_file"
