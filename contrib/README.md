@@ -10,7 +10,7 @@ changes.
 For example:
 
 ```
-$ cp -s /usr/share/aurutils/contrib/vercmp-devel/vercmp-devel /usr/local/bin/aur-vercmp-devel
+$ ln -s contrib/vercmp-devel/vercmp-devel /usr/local/bin/aur-vercmp-devel
 $ aur vercmp-devel
 ```
 
