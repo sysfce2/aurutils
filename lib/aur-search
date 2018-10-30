@@ -113,8 +113,9 @@ fi
 opt_short='k:aisdmnqvh'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends'
           'makedepends' 'optdepends' 'checkdepends' 'key:' 'help')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -135,8 +136,11 @@ while true; do
         -q|--short)      format=short ;;
         -v|--verbose)    format=long ;;
         -k|--key)        shift; sort_key=$1 ;;
-	-h|--help) usage ;;
-        --) shift; break ;;
+        -h|--help)       usage ;;
+        --dump-options)  printf -- '--%s\n' ${opt_long[@]} ;
+                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                         exit ;;
+        --)              shift; break ;;
     esac
     shift
 done

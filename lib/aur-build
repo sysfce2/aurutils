@@ -57,8 +57,9 @@ opt_short='a:d:r:D:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
           'makepkg-conf:' 'remove')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -78,6 +79,9 @@ while true; do
         -R|--remove)    repo_add_args+=(-R) ;;
         --pacman-conf)  shift; chroot_args+=(-C "$1") ;;
         --makepkg-conf) shift; chroot_args+=(-M "$1") ;;
+        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                        exit ;;
         --) shift; break ;;
     esac
     shift

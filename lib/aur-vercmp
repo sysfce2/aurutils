@@ -81,8 +81,9 @@ fi
 
 opt_short='d:p:u:ach'
 opt_long=()
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -95,6 +96,9 @@ while true; do
         -p) target='file'
             shift; aux=$1 ;;
         -u) shift; upair=$1 ;;
+        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                        exit ;;
         --) shift; break ;;
     esac
     shift
