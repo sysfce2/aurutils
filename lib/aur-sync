@@ -82,8 +82,8 @@ fi
 
 opt_short='d:D:AcfgkLPstTuh'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
-          'repo:' 'root:' 'makepkg-conf:' 'pacman-conf:' 'allan'
-          'chroot' 'continue' 'force' 'ignore-arch' 'ignorearch' 'log'
+          'root:' 'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot'
+          'continue' 'force' 'ignore-arch' 'ignorearch' 'log'
           'noconfirm' 'no-confirm' 'no-ver' 'nover' 'nover-shallow'
           'no-ver-shallow' 'no-view' 'noview' 'print' 'provides'
           'rm-deps' 'keep' 'sign' 'temp' 'tar' 'upgrades' 'git'
@@ -97,7 +97,7 @@ set -- "${OPTRET[@]}"
 unset pkg pkg_i
 while true; do
     case "$1" in
-        -d|--repo|--database) shift; repo_args+=(-d "$1") ;;
+        -d|--database)        shift; repo_args+=(-d "$1") ;;
         -D|--directory)       shift; build_args+=(-D "$1") ;;
         --bind)               shift; makechrootpkg_args+=(-D "$1") ;;
         --bind-rw)            shift; makechrootpkg_args+=(-d "$1") ;;
