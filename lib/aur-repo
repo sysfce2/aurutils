@@ -125,8 +125,7 @@ else
     esac
 fi
 
-# resolve .db symbolic link
-db_path=$(realpath -e -- "$db_root/$db_name".db) || exit 1
+db_path=$("$db_root/$db_name".db)
 
 if [[ -v status_file ]]; then
     printf '%s\n%s\n' "$db_name" "$db_path" >"$status_file"
