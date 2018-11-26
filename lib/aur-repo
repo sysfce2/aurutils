@@ -12,7 +12,7 @@ conf_file_repo() {
             repo = substr($1, 2, length($1)-2)
         }
         $1 ~ /^Server/ && $2 ~ /^file:/ {
-            printf("%s\t%s\n", repo, $2)
+            printf("%s\n%s\n", repo, $2)
         }'
 }
 
@@ -83,8 +83,9 @@ done
 unset opt_short opt_long OPTRET
 
 case $mode in
-    repo_list) pacconf | conf_file_repo
-               exit ;;
+    repo_list)
+        pacconf | conf_file_repo | paste - -
+        exit ;;
 esac
 
 if [[ ${db_name=$AUR_REPO} ]]; then
