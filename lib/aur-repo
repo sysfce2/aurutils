@@ -125,15 +125,13 @@ else
     esac
 fi
 
-db_path=$("$db_root/$db_name".db)
-
 if [[ -v status_file ]]; then
-    printf '%s\n%s\n' "$db_name" "$db_path" >"$status_file"
+    printf '%s\n%s\n' "$db_name" "$db_root" >"$status_file"
 fi
 
 case $mode in
     list_packages)
-        bsdcat "$db_path" | db_namever
+        bsdcat "$db_root/$db_path".db | db_namever
         ;;
     list_pacman)
         check_sync "$db_name" || exit
@@ -144,7 +142,7 @@ case $mode in
         parse_sync "$db_name" '%n %v' | aur vercmp "${vercmp_args[@]}"
         ;;
     *)
-        printf '%s\n' "$db_path" ;;
+        printf '%s\n' "$db_root/$db_path".db ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

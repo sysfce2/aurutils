@@ -172,13 +172,13 @@ cd_safe "$tmp"
 aur repo "${repo_args[@]}" --list --status-file=db >db_info
 
 { IFS= read -r db_name
-  IFS= read -r db_path
+  IFS= read -r db_root
 } <db
 
-if [[ -w $db_path ]]; then
+if [[ -w $db_root/$db_name.db ]]; then
     msg "Using [$db_name] repository"
 else
-    error "$argv0: $db_path: permission denied"
+    error "$argv0: $db_root/$db_name.db: permission denied"
     exit 13
 fi
 
@@ -267,7 +267,7 @@ if ((view)); then
 fi
 
 if ((build)); then
-    build_args+=(-a "$tmp"/queue -d "$db_name" -p "$db_path")
+    build_args+=(-a "$tmp"/queue -d "$db_name" -r "$db_root")
 
     # check if dependency graph is valid
     aur graph "$tmp_view"/*/.SRCINFO >/dev/null
