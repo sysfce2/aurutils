@@ -14,7 +14,6 @@ shellcheck: aur
 
 install:
 	@install -Dm755 aur       -t $(DESTDIR)$(BINDIR)
-	@install -Dm755 contrib/* -t $(DESTDIR)$(SHRDIR)/$(PROGNM)/contrib
 	@install -Dm755 lib/aur-* -t $(DESTDIR)$(LIBDIR)/$(PROGNM)
 	@install -Dm644 man1/*    -t $(DESTDIR)$(SHRDIR)/man/man1
 	@install -Dm644 man7/*    -t $(DESTDIR)$(SHRDIR)/man/man7
