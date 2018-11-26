@@ -89,8 +89,26 @@ esac
 
 if [[ ${db_name=$AUR_REPO} ]]; then
     if ! [[ ${db_root=$AUR_DBROOT} ]]; then
-        db_root=$(pacconf --single --repo="$db_name" Server) || exit 1
-        db_root=${db_root#*://}
+        db_root=$(pacconf --single --repo="$db_name" Server)
+        db_root=${db_root#file://}
+
+        # check if variable was set correctly
+        if ! [[ $db_root ]]; then
+            error "$argv0: Server directive not found"
+            exit 1
+        fi
+
+        # check if variable points to a local path (file://)
+        if [[ $db_root == *://* ]]; then
+            error "$argv0: Server: not a local path"
+            exit 1
+        fi
+
+        # check if local path is a directory
+        if ! [[ -d $db_root ]]; then
+            error "argv0: Server: not a directory"
+            exit 20
+        fi
     fi
 else
     mapfile -t conf < <(pacconf | conf_file_repo)
