@@ -131,7 +131,7 @@ fi
 
 case $mode in
     list_packages)
-        bsdcat "$db_root/$db_path".db | db_namever
+        bsdcat "$db_root/$db_name".db | db_namever
         ;;
     list_pacman)
         check_sync "$db_name" || exit
@@ -142,7 +142,7 @@ case $mode in
         parse_sync "$db_name" '%n %v' | aur vercmp "${vercmp_args[@]}"
         ;;
     *)
-        printf '%s\n' "$db_root/$db_path".db ;;
+        printf '%s\n' "$db_root/$db_name".db ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
