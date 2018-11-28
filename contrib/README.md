@@ -7,13 +7,6 @@ To use a script with `aur(1)`, copy it to a directory in
 `PATH`. Alternatively, create a symbolic link if you have no local
 changes. 
 
-For example:
-
-```
-$ ln -s contrib/vercmp-devel/vercmp-devel /usr/local/bin/aur-vercmp-devel
-$ aur vercmp-devel
-```
-
 ### Third-party projects
 
 * [aur-out-of-date](https://aur.archlinux.org/packages/aur-out-of-date/)
