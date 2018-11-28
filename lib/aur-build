@@ -103,26 +103,23 @@ if type -P xdelta3 >/dev/null; then
     repo_add_args+=(-d)
 fi
 
-# XXX retrieve db_name and db_root directly via --status-file
-if ! [[ ${db_name=$AUR_REPO} ]]; then
-    if ! [[ $db_root=$AUR_DBROOT ]]; then
-	db_path=$(aur repo)   # absolute path to file:// repository
-        db_root=${db_path%/*} # strip path suffix
-    else
-        # avoid ambiguous input
-	error "$argv0: root specified without database name"
-	exit 1
-    fi
+# assign environment variables
+: ${db_name=$AUR_REPO}
+: ${db_root=$AUR_DBROOT}
 
-    db_name=${db_path##*/} # strip path prefix
-    db_name=${db_name%.db} # strip extension
+# XXX retrieve db_name and db_root directly via --status-file
+if ! [[ $db_name ]] && [[ $db_root ]]; then
+    error "$argv0: root specified without database name"
+    exit 1
+elif ! [[ $db_name ]]; then
+    db_path=$(aur repo) # absolute path to file:// repository
+    db_name=$(basename "$db_path" .db)
+    db_root=$(dirname "$db_path")
+elif ! [[ $db_root ]]; then
+    db_path=$(aur repo -d "$db_name")
+    db_root=$(dirname "$db_path")
 else
-    if ! [[ $db_root=$AUR_DBROOT ]]; then
-	db_path=$(aur repo -d "$db_name")
-        db_root=${db_path%/*} # strip path suffix
-    else
-        db_path=$db_root/$db_name.db
-    fi
+    db_path=$db_root/$db_name.db
 fi
 
 # resolve symbolic link
