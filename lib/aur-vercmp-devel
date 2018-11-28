@@ -11,7 +11,7 @@ filter_vcs() {
 
 # Note that valid PKGBUILDs cannot contain \n in pkgname.
 get_latest_revision() {
-    grep -Fxf - <(ls "$(pwd)" -1q) | xargs -r aur srcver
+    grep -Fxf - <(printf '%s\n' *) | xargs -r aur srcver
 }
 
 db_tmp=$(mktemp)
