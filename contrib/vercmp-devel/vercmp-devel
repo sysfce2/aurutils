@@ -1,31 +1,29 @@
 #!/bin/bash
+readonly argv0=vercmp-devel
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 readonly AURVCS=${AURVCS:-.*-(bzr|git|hg|svn)$}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-source /usr/share/makepkg/util/util.sh
-
 filter_vcs() {
-    cut -f1 "$1" | grep -E "$AURVCS"
+    awk -v "mask=$AURVCS" '$1 ~ mask {print $1}' "$@"
 }
 
+# Note that valid PKGBUILDs cannot contain \n in pkgname.
 get_latest_revision() {
-    xargs -I{} find "$1" -maxdepth 1 -type d -name {} | xargs -r aur srcver
+    grep -Fxf - <(ls "$(pwd)" -1q) | xargs -r aur srcver
 }
 
-# prepare temporary directory
-tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
+db_tmp=$(mktemp)
+trap 'rm -rf "$db_tmp"' EXIT
 
-cd_safe "$tmp"
+# Retrieve a list of the local repository contents. The repository
+# can be specified with the usual aur-repo arguments.
+aur repo --list "$@" >"$db_tmp"
 
-# get repo contents
-aur repo --list "$@" | cut -f2,3 >db_info
-
-# checkout latest revision for existing pkgbuilds
-# this sources the pkgbuilds assuming they have been viewed priorly
-filter_vcs db_info | get_latest_revision "$AURDEST" >vcs_info
-
-# find VCS packages that are outdated according to aur-srcver
-cat db_info | aur vercmp -p vcs_info
+# Find VCS packages that are outdated according to aur-srcver.
+# This checks out the latest revision for existing source directories,
+# assuming the PKGBUILD has been viewed priorly.
+if cd "$AURDEST"; then
+    aur vercmp -p <(filter_vcs "$db_tmp" | get_latest_revision) <"$db_tmp"
+fi
