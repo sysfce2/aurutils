@@ -26,20 +26,26 @@ db_namever() {
         printf("%s\n", $1)
     }
     END {
-        if (!NR)
+        if (!NR) {
             printf("warning: empty database\n") > "/dev/stderr"
+            close("/dev/stderr")
+        }
     }'
 }
 
-check_sync() {
+sync_exists() {
     # https://github.com/andrewgregory/pacutils/issues/22
-    pacconf --repo="$1" >/dev/null || return 1
+    pacconf --repo="$1" >/dev/null
 }
 
-parse_sync() {
+sync_pkgspec() {
+    # https://github.com/andrewgregory/pacutils/issues/3
+    pacsift --exact --null --repo "$1" <&-
+}
+
+sync_format() {
     # https://git.archlinux.org/pacman.git/commit/?id=ab3d8478
-    pacsift --exact --null --repo "$1" <&- \
-        | xargs -0r pacman -Sddp --print-format "$2"
+    xargs -0r pacman -Sddp --print-format "$2"
 }
 
 usage() {
@@ -67,7 +73,7 @@ set -- "${OPTRET[@]}"
 unset mode db_name db_root status_file
 while true; do
     case $1 in
-        -a|--all)      vercmp_args+=(--all) ;;
+        -a|--all)      vercmp_args+=(-a) ;;
         -d|--database) shift; db_name=$1 ;;
         -r|--root)     shift; db_root=$1 ;;
         --status-file) shift; status_file=$1 ;;
@@ -134,12 +140,12 @@ case $mode in
         bsdcat "$db_root/$db_name".db | db_namever
         ;;
     list_pacman)
-        check_sync "$db_name" || exit
-        parse_sync "$db_name" '%r %n %v'
+        sync_exists "$db_name" || exit
+        sync_pkgspec "$db_name" | sync_format '%r %n %v'
         ;;
     list_upgrades)
-        check_sync "$db_name" || exit
-        parse_sync "$db_name" '%n %v' | aur vercmp "${vercmp_args[@]}"
+        sync_exists "$db_name" || exit
+        sync_pkgspec "$db_name" | sync_format '%n %v' | aur vercmp "${vercmp_args[@]}"
         ;;
     *)
         printf '%s\n' "$db_root/$db_name".db ;;
