@@ -258,13 +258,14 @@ if ((view)); then
     if [[ -v AUR_PAGER ]]; then
         command -- $AUR_PAGER "$tmp_view"
     else
-        { # print patch files
+        ( cd "$tmp_view" #452
+
+          # print patch files
           find "$tmp_view" -maxdepth 1 -type f
 
           # print build directories in dependency order
-          xargs -a "$tmp"/queue -I{} \
-                find -L "$tmp_view"/{} -mindepth 1 -maxdepth 1
-        } | viewer
+          xargs -I{} -a "$tmp"/queue find -L "$tmp_view"/{} -maxdepth 1
+        ) | viewer
     fi
 fi
 
