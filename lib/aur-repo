@@ -18,14 +18,10 @@ conf_file_repo() {
 
 db_namever() {
     awk '/%NAME%/ {
-        getline
-        printf("%s\t", $1)
-    }
-    /%VERSION%/ {
-        getline
-        printf("%s\n", $1)
-    }
-    END {
+        getline; printf("%s\t", $1)
+    } /%VERSION%/ {
+        getline; printf("%s\n", $1)
+    } END {
         if (!NR) {
             printf("warning: empty database\n") > "/dev/stderr"
             close("/dev/stderr")
