@@ -1,0 +1,58 @@
+.TH AUR-REPO 1 2018-09-09 AURUTILS
+.SH NAME
+aur\-repo \- manage local repositories
+
+.SH SYNOPSIS
+.SY "aur repo"
+.OP \-d database
+.OP \-r root
+.OP \-Slu
+.OP \-\-repo\-list
+.YS
+
+.SH DESCRIPTION
+
+.SH OPTIONS
+.TP
+.BI \-d " NAME" "\fR,\fP \-\-database=" NAME
+
+.TP
+.BI \-r " PATH" "\fR,\fP \-\-root=" PATH
+
+.TP
+.BR \-l ", " \-\-list
+
+.TP
+.BR \-S ", " \-\-pacman
+
+.TP
+.BR \-u ", " \-\-updates
+
+.TP
+.BI \-\-status\-file= PATH
+
+.TP
+.BR \-\-repo\-list
+
+.SH ENVIRONMENT
+
+.B AUR_REPO
+.RS
+The repository used for building packages.  If
+.B AUR_DBROOT
+is not specified, then the entry must be a valid
+.B file://
+repository configured in
+.BR pacman.conf (5).
+.RE
+
+.B AUR_DBROOT
+.RS
+.RE
+
+.SH SEE ALSO
+.BR aur (1),
+.BR aur\-build (1),
+.BR pacconf (1),
+.BR pacsift (1),
+.BR pacman.conf (5)

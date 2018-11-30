@@ -29,17 +29,22 @@ trap_exit() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='L:'
-opt_long=()
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+opt_short='L:h'
+opt_long=('log-dir:' 'help')
+opt_hidden=('dump-options')
+
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
 while true; do
     case "$1" in
-        -L) shift; log_dir=$1
-            log=directory ;;
+        -L|--log-dir) shift; log_dir=$1; log=directory ;;
+        -h|--help) usage ;;
+        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                        exit ;;
         --) shift; break ;;
     esac
     shift
@@ -65,10 +70,10 @@ for a in ./*.tar.gz; do
         continue
     fi
 
-    x=${a%%.tar.gz}
+    x=${a%%.tar.gz} # strip extension
 
     if tar_no_mode_diff "$a" "$startdir"; then
-        # FIXME show diff to PKGBUILD first, '-S' is weird (skips files), see #400
+        # FIXME show diff to PKGBUILD first, '-S' skips files (#400)
         diff -ur "$startdir/$x" "$x" | diff_log "$x"
     fi
 

@@ -7,9 +7,11 @@ aur\-depends \- retrieve dependencies using AurJson
 .YS
 
 .SH DESCRIPTION
-\fBaur-depends\fR takes package names from \fIstdin\fR, and solves
-the dependencies for those packages using AurJson. The output is in
-the following format:
+.B aur\-depends
+takes package names from
+.IR stdin ,
+and solves the dependencies for those packages using AurJson. The
+output is in the following format:
 
 \fIpkgname\\tdepends\\tpkgbase\\tpkgver\fR
 
@@ -23,10 +25,14 @@ package:
 .EE
 
 .SH NOTES
-Version information is ignored for dependencies. See \fIFS#54096\fR.
+Version information is ignored for dependencies. See
+.IR FS#54096 .
 
-Unlike \fBaur-graph(1)\fR, dependencies are kept in \fBpkgname\fR
-form.
+Unlike
+.BR aur-graph (1),
+dependencies are kept in
+.B pkgname
+format.
 
 .SH SEE ALSO
 .BR aur (1),

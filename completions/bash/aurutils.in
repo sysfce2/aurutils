@@ -1,0 +1,32 @@
+_aur_completion()
+{
+    local cur prev words cword
+    _get_comp_words_by_ref cur prev words cword
+
+    SUBCOMMANDS
+
+    # complete subcommands
+    if [[ $cword -eq 1 ]]; then
+        COMPREPLY=( $(compgen -W "${subcommands[*]}" -- "$cur") )
+        return
+    fi
+
+    # If there's an override for subcommand, use it
+    if declare -F "_aurutils_${words[1]}" >/dev/null ; then
+        "_aurutils_${words[1]}"
+        return
+    fi
+
+    # Complete with the generated opts stored above, unless the previous option
+    # is stored with an : suffix, because the option requires an argument.
+    # Fallback to default (files) completion in such cases.
+
+    opts=($(_get_default_opts ${words[1]} ))
+    if [[ ${opts[*]} != *$prev:* ]]; then
+        COMPREPLY=($(compgen -W "${opts[*]%:}" -- "$cur"));
+    fi
+}
+
+DEFAULT_OPTS
+
+complete -o bashdefault -o default -F _aur_completion aur

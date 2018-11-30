@@ -1,7 +1,6 @@
 #!/bin/bash
 # aur-sync - download and build AUR packages automatically
 set -o errexit -o pipefail
-shopt -s nullglob
 shopt -s extglob
 readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
@@ -15,12 +14,13 @@ fetch_args=()
 makechrootpkg_args=(-cu)
 makechrootpkg_makepkg_args=()
 makepkg_args=(-cs)
+repo_args=()
 
 # default options (enabled)
-build=1 chkver_depth=2 download=1 view=1 provides=1
+build=1 chkver_depth=2 download=1 view=1 provides=0
 
 # default options (disabled)
-chroot=0 list=0 rotate=0 snapshot=0 update=0 repo_list=0 keep_deps=0
+chroot=0 rotate=0 snapshot=0 update=0 keep_deps=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -28,34 +28,6 @@ lib32() {
             gsub(/^lib32-/,"")
             gsub(/^gcc-multilib$/,"")
         }; print
-    }'
-}
-
-conf_file_repo() {
-    awk -F'= ' '
-        $1 ~ /^\[.+\]$/ {
-            repo = substr($1, 2, length($1)-2)
-        }
-        $1 ~ /^Server/ && $2 ~ /^file:/ {
-            printf("%s\n%s\n", repo, $2)
-        }'
-}
-
-db_namever() {
-    awk '/%NAME%/ {
-        getline
-        printf("%s\t", $1)
-    }
-    /%VERSION%/ {
-        getline
-        printf("%s\n", $1)
-    }'
-}
-
-db_fill_empty() {
-    awk '{print} END {
-        if (!NR)
-            printf("%s\t%s\n", "(none)", "(none)")
     }'
 }
 
@@ -96,7 +68,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcDfglLprstTu] [long options] [--] pkgname... [-]"
+    plain "usage: $argv0 [-ABcDfglLnrstTu] [--] pkgname... [-]"
     exit 1
 }
 
@@ -108,58 +80,59 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='d:D:AcfgklLpstTu'
-opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'repo:' 'root:'
-          'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot' 'continue'
-          'force' 'ignore-arch' 'ignorearch' 'log' 'noconfirm' 'no-confirm'
-          'no-ver' 'nover' 'nover-shallow' 'noprovides' 'no-provides'
-          'no-ver-shallow' 'no-view' 'noview' 'print' 'rm-deps'
-          'keep' 'sign' 'temp' 'tar' 'upgrades' 'list' 'git'
-          'repo-list' 'rebuild' 'rebuildtree' 'rebuild-tree')
+opt_short='d:D:AcfgkLPstTuh'
+opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
+          'root:' 'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot'
+          'continue' 'force' 'ignore-arch' 'ignorearch' 'log'
+          'noconfirm' 'no-confirm' 'no-ver' 'nover' 'nover-shallow'
+          'no-ver-shallow' 'no-view' 'noview' 'print' 'provides'
+          'rm-deps' 'keep' 'sign' 'temp' 'tar' 'upgrades' 'git'
+          'rebuild' 'rebuildtree' 'rebuild-tree' 'help')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset pkg pkg_i root repo
+unset pkg pkg_i
 while true; do
     case "$1" in
-        -d|--repo|--database) shift; repo=$1 ;;
+        -d|--database)        shift; repo_args+=(-d "$1") ;;
         -D|--directory)       shift; build_args+=(-D "$1") ;;
         --bind)               shift; makechrootpkg_args+=(-D "$1") ;;
         --bind-rw)            shift; makechrootpkg_args+=(-d "$1") ;;
         --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
                               pkg_i+=("${pkg[@]}") ;;
-        --makepkg-conf)       shift; build_args+=(-M "$1") ;;
-        --pacman-conf)        shift; build_args+=(-C "$1") ;;
-        --root)               shift; root=$1 ;;
+        --makepkg-conf)       shift; build_args+=(--makepkg-conf "$1") ;;
+        --pacman-conf)        shift; build_args+=(--pacman-conf "$1") ;;
+        --root)               shift; repo_args+=(-r "$1") ;;
         -A|--ignore?(-)arch)  makepkg_args+=(-A)
                               makechrootpkg_makepkg_args+=(-A) ;;
         -c|--chroot)          chroot=1; build_args+=(-c) ;;
         -f|--force)           build_args+=(-f) ;;
         -g|--git)             snapshot=0 ;;
-        -l|--list)            list=1 ;;
         -L|--log)             makepkg_args+=(-L) ;;
-        -p|--print)           build=0 ;;
+        -P|--provides)        provides=1 ;;
         -k|--keep)            keep_deps=1 ;;
+        -n|--no?(-)confirm)   makepkg_args+=(--noconfirm) ;;
         -t|--tar)             snapshot=1 ;;
         -s|--sign)            build_args+=(-sv) ;;
         -T|--temp)            makechrootpkg_args+=(-T) ;;
         -u|--upgrades)        update=1 ;;
         --allan)              rotate=1 ;;
         --continue)           download=0 ;;
-        --no?(-)confirm)      makepkg_args+=(--noconfirm) ;;
+        --print)              build=0 ;;
         --no?(-)ver)          chkver_depth=0 ;;
         --no?(-)ver-shallow)  chkver_depth=1 ;;
         --no?(-)view)         view=0 ;;
-        --no?(-)provides)     provides=0 ;;
-        --repo-list)          repo_list=1 ;;
-        --rebuild)            build_args+=(-f)
-                              chkver_depth=1 ;;
-        --rebuild?(-)tree)    build_args+=(-f)
-                              chkver_depth=0 ;;
-        --)                   shift; break ;;
+        --rebuild)            build_args+=(-f); chkver_depth=1 ;;
+        --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
+        -h|--help) usage ;;
+        --dump-options)       printf -- '--%s\n' ${opt_long[@]} ;
+                              printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                              exit ;;
+        --) shift; break ;;
     esac
     shift
 done
@@ -177,43 +150,13 @@ if ((rotate)); then
     fi
 fi
 
-if ((repo_list)); then
-    pacconf | conf_file_repo
-    exit
-fi
-
-if ((!keep_deps)); then
+if ! ((keep_deps)); then
     makepkg_args+=(-r)
 fi
 
-if [[ ${repo=$AUR_REPO} ]]; then
-    server=$(pacconf --single --repo="$repo" Server)
-    server=${server#*://}
-else
-    mapfile -t conf < <(pacconf | conf_file_repo)
-
-    case ${#conf[@]} in
-        2) repo=${conf[0]}
-           root=${conf[1]#*://} ;;
-        0) error "$argv0: no file:// repository found"
-           exit 2 ;;
-        *) error "$argv0: repository choice is ambiguous (use --repo to specify)"
-           printf '%s\n' "${conf[@]}" | paste - - | column -t >&2
-           exit 2 ;;
-    esac
-fi
-
-if ! (($# + update + list)); then
+if ! (($# + update)); then
     error "$argv0: no targets specified"
     exit 1
-fi
-
-msg "Using [$repo] repository"
-root=$(realpath -- "${root-${AUR_DBROOT-$server}}")
-
-if ! [[ -w $root/$repo.db && -r $root/$repo.db ]]; then
-    error "$argv0: $repo: permission denied (read-write)"
-    exit 13
 fi
 
 if ((snapshot)); then
@@ -229,15 +172,18 @@ chmod -c 700 "$aur_workdir"
 
 cd_safe "$tmp"
 
-# parse repo contents
-bsdcat "$root/$repo".db | db_namever | db_fill_empty >db_info
+# retrieve path to local repo (#448)
+aur repo "${repo_args[@]}" --list --status-file=db >db_info
 
-if ((list)); then
-    while read -r pkgname pkgver; do
-        printf '%q\t%s\t%s\n' "$repo" "$pkgname" "$pkgver"
-    done <db_info
+{ IFS= read -r db_name
+  IFS= read -r db_root
+} <db
 
-    exit
+if [[ -w $db_root/$db_name.db ]]; then
+    msg "Using [$db_name] repository"
+else
+    error "$argv0: $db_root/$db_name.db: permission denied"
+    exit 13
 fi
 
 { if (($#)); then
@@ -279,7 +225,7 @@ cut -f2 --complement depends | sort -u >pkginfo
 
   if ((provides)); then
       # note: this uses pacman's copy of the repo (as used by makepkg -s)
-      cut -f1 pkginfo | complement argv | aur repo-filter -d "$repo"
+      cut -f1 pkginfo | complement argv | aur repo-filter -d "$db_name"
   fi
 } >filter
 
@@ -298,7 +244,7 @@ fi
 
 if ((download)); then
     msg "Retrieving package files"
-    
+
     aur jobs -Xj +3 --nice 10 --halt soon,fail=1 \
         aur fetch "${fetch_args[@]}" :::: "$tmp"/queue
 fi
@@ -307,7 +253,7 @@ fi
 aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if type -P >/dev/null vifm; then
-    viewer() { vifm -c 'view!' -c 'tree' -c '0' -c 'set sort=-dir' -; }
+    viewer() { vifm -c 'view!' -c '0' -c 'set sort=-dir' -; }
 else
     viewer() { command -- ${PAGER:-less -K}; }
 fi
@@ -316,16 +262,19 @@ if ((view)); then
     if [[ -v AUR_PAGER ]]; then
         command -- $AUR_PAGER "$tmp_view"
     else
-        cd_safe "$tmp_view"
-        printf '%s\n' *.patch *.diff | cat - "$tmp"/queue \
-            | xargs -I{} find -L "$tmp_view"/{} -maxdepth 1 | viewer
+        ( cd "$tmp_view" #452
 
-        cd_safe -
+          # print patch files
+          find "$tmp_view" -maxdepth 1 -type f
+
+          # print build directories in dependency order
+          xargs -I{} -a "$tmp"/queue find -L "$tmp_view"/{} -maxdepth 1
+        ) | viewer
     fi
 fi
 
 if ((build)); then
-    build_args+=(-d "$repo" -r "$root" -a "$tmp"/queue)
+    build_args+=(-a "$tmp"/queue -d "$db_name" -r "$db_root")
 
     # check if dependency graph is valid
     aur graph "$tmp_view"/*/.SRCINFO >/dev/null

@@ -1,16 +1,31 @@
 Andrew Gregory <https://github.com/andrewgregory>
 Assaf Gordon <http://savannah.gnu.org/users/agn>
+Damien Robert <https://github.com/DamienRobert>
 Dave Reisner <https://github.com/falconindy>
+e36freak <https://github.com/e36freak>
 Earnestly <https://github.com/Earnestly>
+FichteFoll <https://github.com/FichteFoll>
 Jack Frost <https://gitlab.com/u/fbt>
 Levente Polyak <https://github.com/anthraxx>
+Maxim Baz <https://github.com/maximbaz>
 Michael <https://github.com/halfwit>
 Patrick Burroughs <https://github.com/Celti>
 Peter van den Hurk <https://github.com/runical>
+rafasc <https://github.com/rafasc>
 Remy Marquis <https://github.com/rmarquis>
+Sam Stuewe <https://github.com/halosghost>
 Simon Gomizelj <https://github.com/vodik>
 Tatsuhiro Tsujikawa <https://github.com/tatsuhiro-t>
 vorph1 <https://github.com/vorph1>
 
 All GitHub contributors:
 <https://github.com/AladW/aurutils/graphs/contributors>
+
+Project influences:
+bauerbill (file view, dependency resolution)
+cower (search)
+packer (mktemp, tsort)
+pacaur (aursync)
+git (general design)
+pacutils (general design)
+repose (local repository)

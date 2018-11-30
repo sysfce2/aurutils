@@ -10,13 +10,15 @@ aur\-search \- search for AUR package
 .YS
 
 .SH DESCRIPTION
-\fBaur\-search\fR searches the AUR by multiple strings of packages. The
-union of all results is returned. By default, searches are performed
-by name and description using the \fIsearchby\fR interface, and
-displayed in a brief format.
+.B aur\-search
+searches the AUR by multiple strings of packages. The union of all
+results is returned.
+
+By default, searches are performed by name and description using the
+.I searchby
+interface, and displayed in a brief format.
 
 .SH OPTIONS
-
 .TP
 .B \-q ", " \-\-short
 Only display package name, version and description.
@@ -27,7 +29,10 @@ Display more package information.
 
 .TP
 .B \-i ", " \-\-info
-Use the \fIinfo\fR interface instead of \fIsearchby\fR.
+Use the
+.I info
+interface instead of
+.IR searchby .
 
 .TP
 .B \-d ", " \-\-desc
@@ -43,29 +48,35 @@ Search by package name.
 
 .TP
 .B \-\-depends
-Search for packages with keywords in \fBdepends\fR.
+Search for packages with keywords in
+.BR depends .
 
 .TP
 .B \-\-makedepends
-Search for packages with keywords in \fBmakedepends\fR.
+Search for packages with keywords in
+.BR makedepends .
 
 .TP
 .B \-\-optdepends
-Search for packages with keywords in \fBoptdepends\fR.
+Search for packages with keywords in
+.BR optdepends .
 
 .TP
 .B \-\-checkdepends
-Search for packages with keywords in \fBcheckdepends\fR.
+Search for packages with keywords in
+.BR checkdepends .
 
 .TP
 .BI "\-k " key
-Sort results via a key, defaulting to \fIName\fR.
+Sort results via a key, defaulting to
+.IR Name .
 
-Possible choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
+Valid choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
 \fIDescription\fR (for brief output) or \fIName\fR, \fIPackageBase\fR,
 \fIVersion\fR, \fIDescription\fR, \fIURL\fR, \fINumVotes\fR,
 \fIPopularity\fR, \fIOutOfDate\fR, \fIMaintainer\fR,
-\fIFirstSubmitted\fR, \fILastModified\fR (for \fB-v\fR verbose output).
+\fIFirstSubmitted\fR, \fILastModified\fR (for \fB\-v\fR verbose
+output).
 
 .SH SEE ALSO
 .BR aur (1),

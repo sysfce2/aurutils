@@ -24,9 +24,10 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 opt_short='ad:h'
-opt_long=('all' 'repo' 'database' 'help')
+opt_long=('all' 'database:' 'help')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -34,12 +35,12 @@ set -- "${OPTRET[@]}"
 unset argv_repo reposet sync_repo fields
 while true; do
     case "$1" in
-        -a|--all)
-            sync_repo=1 ;;
-        -d|--repo|--database)
-            shift; argv_repo+=("$1") ;;
-        -h|--help)
-            usage ;;
+        -a|--all) sync_repo=1 ;;
+        -d|--database) shift; argv_repo+=("$1") ;;
+        -h|--help) usage ;;
+        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                        exit ;;
         --) shift; break;;
     esac
     shift

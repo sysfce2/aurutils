@@ -26,6 +26,17 @@ get_file_server() {
     pacini --section="$1" "$2" Server
 }
 
+# NOTE: CacheDir will be replaced by devtools (#416)
+insert_host_cachedir() {
+    awk '{
+	if ($0 ~ /[options]/) {
+	    print; system("pacconf --verbose CacheDir")
+	} else {
+	    print;
+	};
+    }'
+}
+
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
@@ -33,15 +44,17 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-CDM <path>] [-d <repo>] [-BP] -- <makechrootpkg args>' "$argv0"
+    printf >&2 "usage: %s [-CDM <path>] [-d <repo>] -- <makechrootpkg args>" "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:r:C:D:M:'
-opt_long=('nobuild' 'noprepare')
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+opt_long=('no-build' 'no-prepare')
+opt_hidden=('dump-options')
+
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -54,8 +67,11 @@ while true; do
         -D) shift; directory=$1 ;;
         -C) shift; pacman_conf=$1 ;;
         -M) shift; makepkg_conf=$1 ;;
-        --nobuild) build=0 ;;
-        --noprepare) prepare=0 ;;
+        --no-build) build=0 ;;
+        --no-prepare) prepare=0 ;;
+        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                        exit ;;
         --) shift; break ;;
     esac
     shift
@@ -76,11 +92,10 @@ readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 for repo in "${host_repo[@]}"; do
     get_conf_repo "$repo"
-done > "$tmp"/custom.conf
+done >"$tmp"/custom.conf
 
 for repo in "${host_repo[@]}"; do
     # FIXME: custom.conf may contain multiple file:// entries per local repo
-    # the '|| true' is to not exit when no file servers are available
     server=$(get_file_server "$repo" "$tmp"/custom.conf | grep -Em1 '^file://' || true)
     server=${server#file://}
 
@@ -92,11 +107,9 @@ for repo in "${host_repo[@]}"; do
 done
 
 if ((prepare)); then
-    # do not print DBPath (#412)
-    pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf > "$tmp"/pacman.conf
-
-    # NOTE: CacheDir specified here will be replaced by devtools (#416)
-    ed -s "$tmp"/pacman.conf <<< $'/[options]/r !pacconf --verbose CacheDir\nw'
+    # Do not print DBPath (#412)
+    pacconf --config="$pacman_conf" --raw | insert_host_cachedir \
+	| cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
