@@ -125,7 +125,7 @@ if ((chroot)); then
 
     if [[ -f $container/root/.arch-chroot ]]; then
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-            "$container"/root pacman -Syu --noconfirm
+            "$container"/root --bind-ro="$root" pacman -Syu --noconfirm
     else
         sudo install -d "$container" -m 755 -v
         sudo mkarchroot  -C "$tmp"/pacman.conf -M "$makepkg_conf" \
