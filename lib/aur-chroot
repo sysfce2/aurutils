@@ -52,8 +52,9 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:r:C:D:M:'
 opt_long=('no-build' 'no-prepare')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -68,6 +69,9 @@ while true; do
         -M) shift; makepkg_conf=$1 ;;
         --no-build) build=0 ;;
         --no-prepare) prepare=0 ;;
+        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                        exit ;;
         --) shift; break ;;
     esac
     shift

@@ -88,8 +88,9 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'no-ver-shallow' 'no-view' 'noview' 'print' 'provides'
           'rm-deps' 'keep' 'sign' 'temp' 'tar' 'upgrades' 'git'
           'rebuild' 'rebuildtree' 'rebuild-tree' 'help')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -128,6 +129,9 @@ while true; do
         --rebuild)            build_args+=(-f); chkver_depth=1 ;;
         --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
         -h|--help) usage ;;
+        --dump-options)       printf -- '--%s\n' ${opt_long[@]} ;
+                              printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                              exit ;;
         --) shift; break ;;
     esac
     shift
