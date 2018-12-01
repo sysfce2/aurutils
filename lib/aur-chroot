@@ -43,16 +43,17 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
+
 # FIXME: add --sysroot to set pacconf host, see pacutils-sysroot(7)
 unset pacman_conf makepkg_conf host_repo server
 while true; do
     case "$1" in
-        -d) shift; host_repo+=("$1") ;;
-        -D) shift; directory=$1 ;;
-        -C) shift; pacman_conf=$1 ;;
-        -M) shift; makepkg_conf=$1 ;;
-        --no-build) build=0 ;;
-        --no-prepare) prepare=0 ;;
+        -d|--database)     shift; host_repo+=("$1") ;;
+        -D|--directory)    shift; directory=$1 ;;
+        -C|--pacman-conf)  shift; pacman_conf=$1 ;;
+        -M|--makepkg-conf) shift; makepkg_conf=$1 ;;
+        --no-build)     build=0 ;;
+        --no-prepare)   prepare=0 ;;
         --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
