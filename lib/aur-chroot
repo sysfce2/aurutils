@@ -22,21 +22,6 @@ get_conf_repo() {
     pacconf --repo "$1"
 }
 
-get_file_server() {
-    pacini --section="$1" "$2" Server
-}
-
-# NOTE: CacheDir will be replaced by devtools (#416)
-insert_host_cachedir() {
-    awk '{
-	if ($0 ~ /[options]/) {
-	    print; system("pacconf --verbose CacheDir")
-	} else {
-	    print;
-	};
-    }'
-}
-
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
@@ -51,14 +36,13 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:r:C:D:M:'
-opt_long=('no-build' 'no-prepare')
+opt_long=('database' 'directory' 'pacman-conf' 'makepkg-conf' 'no-build' 'no-prepare')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
-
 # FIXME: add --sysroot to set pacconf host, see pacutils-sysroot(7)
 unset pacman_conf makepkg_conf host_repo server
 while true; do
@@ -87,29 +71,26 @@ if (($#)); then
 fi
 
 # baseline configuration
-readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
-readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
+pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
+makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
+# FIXME: local repos may contain multiple file:// entries
 for repo in "${host_repo[@]}"; do
-    get_conf_repo "$repo"
-done >"$tmp"/custom.conf
-
-for repo in "${host_repo[@]}"; do
-    # FIXME: custom.conf may contain multiple file:// entries per local repo
-    server=$(get_file_server "$repo" "$tmp"/custom.conf | grep -Em1 '^file://' || true)
+    server=$(get_conf_repo "$repo" | tee "$tmp"/custom.conf | grep -Em1 '^file://' || true)
     server=${server#file://}
 
-    # arch-nspawn only supports specifying a single CacheDir via -c
-    if [[ -n $server ]]; then
+    if [[ $server ]]; then
         bindmounts_ro+=("--bind-ro=$server")
         makechrootpkg_bindmounts_ro+=(-D "$server")
     fi
 done
 
+# NOTE: CacheDir will be replaced by devtools (#416)
+{ printf '[options]\n'; pacconf --verbose CacheDir; } | tee -a "$tmp"/custom.conf
+
 if ((prepare)); then
     # Do not print DBPath (#412)
-    pacconf --config="$pacman_conf" --raw | insert_host_cachedir \
-	| cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
+    pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
