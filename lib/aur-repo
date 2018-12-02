@@ -41,7 +41,7 @@ sync_pkgspec() {
 
 sync_format() {
     # https://git.archlinux.org/pacman.git/commit/?id=ab3d8478
-    xargs -0r pacman -Sddp --print-format "$2"
+    xargs -0r pacman -Sddp --print-format "$1"
 }
 
 usage() {
