@@ -254,7 +254,7 @@ aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if type -P >/dev/null vifm; then
     # avoid directory prefix in printed paths (#452)
-    viewer() ( cd "$1"; vifm -c 'view!' -c '0' -c 'set sort=-dir' - )
+    viewer() ( cd "$1"; vifm -c 'view!' -c '0' - )
 else
     viewer() { command -- ${PAGER:-less -K}; }
 fi
