@@ -62,8 +62,8 @@ unset opt_short opt_long OPTRET
 
 # set filters
 case $log in
-    directory) merge() { merge_across_fs "$1" "$log_dir/$1".patch; } ;;
-       stdout) merge() { merge_across_fs "$1"; } ;;
+    directory) merge_log() { merge_across_fs "$1" "$log_dir/$1".patch; } ;;
+       stdout) merge_log() { merge_across_fs "$1"; } ;;
 esac
 
 while IFS= read -r uri; do
@@ -71,7 +71,7 @@ while IFS= read -r uri; do
     pkg=${pkg%%.git} # strip .git suffix
 
     if [[ -d $pkg/.git ]]; then
-        merge "$pkg"
+        merge_log "$pkg"
     else
         git clone "$uri"
     fi
