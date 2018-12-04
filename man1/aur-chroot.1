@@ -80,7 +80,9 @@ is bind mounted (read-only).
 .SH ENVIRONMENT
 Packages are placed in the directory specified in
 .BR PKGDEST .
-If unset, the current directory (\fI$PWD\fR) is used. See also
+If unset, the current directory
+.RB ( $PWD )
+is used. See also
 .BR makepkg.conf (5).
 
 .B AUR_REPO
@@ -90,6 +92,61 @@ The default local repository, see
 .RE
 
 .SH NOTES
+.SS Building with makechrootpkg
+Changes to the pacman database are
+.I not
+propagated from the container to the local system. Packages must be
+installed and updated separately, typically through
+.BI "pacman \-Syu " package_name\fR.
+
+Package conflicts inside the container must be solved manually, as
+.B makechrootpkg
+uses
+.B "makepkg \-\-noconfirm \-s"
+internally. For example, to replace
+.I gcc
+with
+.I gcc\-multilib
+, run
+.B "arch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib"
+as root.
+
+.SS Accessing the local repository
+To install packages from the local repository (for example, on
+dependency resolution with
+.BR "makepkg \-s" ,
+the container requires read access to the host directory where it is
+located. This is ensured through a
+.IR "bind mount" .
+
+.SS Avoiding password prompts
+.BR makepkg (8)
+must be run as a regular user as of version 4.2, with privileged
+operations done via
+.BR sudo (8).
+It follows that
+.BR aur\-chroot (1)
+and
+.BR aur\-build (1)
+can not run directly as root. To avoid password prompts,
+.BR sudoers (5) can
+be used instead. For example, if
+.BR aur\-chroot (1)
+is run as the
+.I archie
+user, create the following sudoers policy:
+.EX
+
+  archie ALL = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
+  archie ALL = (root) NOPASSWD: /usr/bin/mkarchroot, /usr/bin/arch-nspawn
+
+.EE
+.SY Note:
+Should the rule only apply to specific hosts, replace
+.B ALL
+with the respective
+.IR hostname .
+
 .SS Using ccache and distcc
 As in the example above, install the required packages:
 .EX
@@ -97,7 +154,6 @@ As in the example above, install the required packages:
   # arch-nspawn /var/lib/aurbuild/root pacman \-S ccache distcc
 
 .EE
-
 Ensure write access to
 .B ccache
 directories on the host:
@@ -106,7 +162,6 @@ directories on the host:
   # aur chroot -- -d /home/_ccache:/build/.ccache -cu
 
 .EE
-
 Necessary
 .BR makepkg (1)
 options may be set in a specified (\-M)
@@ -130,14 +185,6 @@ file available in
 .I /usr/share/devtools/makepkg\-i686.conf
 for
 .IR i686 ).
-
-.SS Accessing the local repository
-To install packages from the local repository (for example, on
-dependency resolution with
-.BR "makepkg \-s" ,
-the container requires read access to the host directory where it is
-located. This is ensured through a
-.IR "bind mount" .
 
 .SH SEE ALSO
 .BR aur (1),
