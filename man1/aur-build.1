@@ -1,4 +1,4 @@
-.TH AUR\-BUILD 1 2018-04-12 AURUTILS
+.TH AUR\-BUILD 1 2018-12-04 AURUTILS
 .SH NAME
 aur\-build \- build packages to a local repository
 
@@ -29,49 +29,54 @@ when
 is specified.
 
 .TP
-.BI "\-a " queue
+.BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A text file describing directories that contain a PKGBUILD, relative to
 the current directory. If unspecified, the current directory is assumed.
 
 .TP
-.B \-c
-Build packages with
-.BR aur\-chroot (1).
+.BR \-c ", " \-\-chroot
+Build packages inside a
+.BR systemd\-nspawn (1)
+container with
+.BR makechrootpkg .
+See
+.BR aur\-chroot (1)
+for more information.
 
 .TP
-.BI "\-d " database
+.BI \-d " NAME" "\fR,\fP \-\-database=" NAME
 The name of the pacman database.
 
 .TP
-.B \-f
+.BR \-f ", " \-\-force
 Continue the build process if a package with the same name is found
 (ignoring the extension). Existing packages will be moved with a
 .I ~
 suffix.
 
 .TP
-.B \-N
+.BR \-N ", " \-\-no-sync
 Do not sync the local repository after building.
 
 .TP
-.BI "\-r " root
-The root for the repository. The
+.BI \-r " DIR" "\fR,\fP \-\-root=" DIR
+The root directory for the repository. The
 .I root
 is the location for the pacman database
-.RI ( foo.db )
-, built packages, and secondary files such as the files database
+.RI ( foo.db ),
+built packages, and secondary files such as the files database
 .RI ( foo.files ).
-This defaults to the
-.I Server
-value of the configured repository.
+This defaults to the value of the
+.B Server
+directive for the configured repository.
 
 .SY Note:
 The
 .I Server
-value configured in
-.B pacman.conf
+directive configured in
+.BR pacman.conf (5)
 is used for
-.B pacman
+.BR pacman (8)
 sync operations regardless of this setting. See also
 .BR \-N .
 
@@ -82,7 +87,7 @@ database
 .RB ( "repo\-add \-R" ).
 
 .TP
-.B \-s
+.BR \-s ", " \-\-sign
 Sign built packages and the database
 .RB ( "repo\-add \-s" )
 with
@@ -92,7 +97,7 @@ To use another key than the default, the
 environment variable can be set to the appopriate key identifier.
 
 .TP
-.B \-v
+.BR \-v ", " \-\-verify
 Verify the PGP signature of the database before
 updating.
 .RB ( "repo\-add \-v" ).
@@ -103,6 +108,14 @@ updating.
 The repository used for building packages. If unspecified, the name is
 selected with
 .BR aur\-repo (1).
+.RE
+
+.B AUR_DBROOT
+.RS
+.RE
+
+.B GPGKEY
+.RS
 .RE
 
 .SH NOTES
@@ -126,52 +139,61 @@ to avoid libalpm from skipping entries if the locale is not set
 .B "gpg \-\-batch \-\-detach\-sign \-\-no\-armor"
 (FS#49946).
 
-.SS Building with makechrootpkg
-Changes to the pacman database are
-.I not
-propagated from the container to the local system. Packages must be
-installed and updated separately, typically through
-.BI "pacman \-Syu " package_name\fR.
-
-Package conflicts inside the container must be solved manually, as
-.B makechrootpkg
-uses
-.B "makepkg \-\-noconfirm \-s"
-internally. For example, to replace
-.I gcc
-with
-.I gcc\-multilib
-, run
-.B "arch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib"
-as root.
-
-For further information, see
-.BR aur\-chroot (1).
-
-.SS Avoiding password prompts
+.SS Using a dedicated build user
+While using a dedicated user for the build process does not increase
+security (beyond protecting against packaging errors that write to
+.IR $HOME ),
+it may be useful when the local repository will be accessible to
+multiple users or as a way to avoid password prompts. (Note that such
+a user must be unprivileged; as of pacman 4.2,
 .BR makepkg (8)
-must be run as a regular user as of version 4.2, with privileged
-operations done via
-.BR sudo (8).
-As such,
-.BR aur\-build (1)
-can not be run directly as root. To avoid password prompts,
-.BR sudoers (5) can
-be used instead.
+may not run directly as root.)
 
-For example:
+New users may be created with
+.BR useradd (8)
+as follows:
 .EX
 
-  %build ALL = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
-  %build ALL = (root) NOPASSWD: /usr/bin/mkarchroot, /usr/bin/arch-nspawn
+  # useradd build --system --shell /sbin/nologin --home-dir /var/cache/build --create-home
 
 .EE
 
-.SY Note:
-If the rule should only apply to certain hosts, replace
-.B ALL
-with the respective
-.IR hostname .
+Because dependency resolution is not replicated and left to
+.BR makepkg (8)
+(see
+.B handle_deps()
+in
+.BR /usr/bin/makepkg )
+the
+.I build
+user should be allowed to run
+.BR pacman (8)
+with elevated privileges. For example, create the
+.I /etc/sudoers.d/10_build
+file with following contents:
+.EX
+
+  build ALL = (root) NOPASSWD: /usr/bin/pacman
+
+.EE
+.BR aur-build (1)
+(and related programs such as
+.BR aur-sync (1))
+may now be run as the new
+.I build
+user. For example:
+.EX
+
+  # cd /var/cache/build
+  # sudo -u build git clone https://aur.archlinux.org/mypackage.git
+  # cd mypackage
+  # sudo -u build aur build -d custom
+
+.EE
+Any created files in the local repository (such as packages,
+signatures and database files) will be owned by the
+.I build
+user.
 
 .SS PKGBUILD signatures
 GPG signatures defined in the
