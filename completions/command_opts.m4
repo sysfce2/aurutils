@@ -4,7 +4,7 @@ dnl
 define(`CORECOMMANDS',
 HAVE_OPTDUMP(build,fetch-snapshot,search,fetch,repo-filter,
              repo,chroot,pkglist,fetch-git,vercmp,sync,rpc)dnl
-NO_OPTDUMP(depends,jobs,graph,srcver))
+NO_OPTDUMP(depends,jobs,graph,srcver,vercmp-devel))
 
 dnl recursively print all elements
 dnl How the element is ultimately printed depends on the
