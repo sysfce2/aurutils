@@ -77,7 +77,7 @@ makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 # FIXME: local repos may contain multiple file:// entries
 for repo in "${host_repo[@]}"; do
-    server=$(get_conf_repo "$repo" | tee "$tmp"/custom.conf | grep -Em1 '^file://' || true)
+    server=$(get_conf_repo "$repo" | tee "$tmp"/custom.conf | grep -Eom1 'file://.*$' || true)
     server=${server#file://}
 
     if [[ $server ]]; then
