@@ -36,6 +36,6 @@ define(DEFAULT_OPTS,
 
 dnl Helper macro to retrieves options from subcommand --dump-options
 dnl
-define(GET_OPTS,'`translit(esyscmd(aur $1 --dump-options),`
+define(GET_OPTS,'`translit(esyscmd(../lib/aur-$1 --dump-options),`
 ',` ')'')
 divert(0)dnl

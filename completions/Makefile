@@ -1,8 +1,11 @@
 PREFIX ?= /usr
 SHRDIR ?= $(PREFIX)/share
+.PHONY = bash install-bash
 
-bash/aur: command_opts.m4 bash/aurutils.in
-	m4 $^ >$@
+bash: bash/aur
 
-install: bash/aur
-	@install -Dm644 bash/aur $(DESTDIR)$(SHRDIR)/bash-completion/completions
+bash/aur: command_opts.m4 bash/aurutils.in ../lib/*
+	m4 $(wordlist 1,2,$^) >$@
+
+install-bash: bash/aur
+	@install -Dm644 bash/aur -t $(DESTDIR)$(SHRDIR)/bash-completion/completions
