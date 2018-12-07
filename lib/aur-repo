@@ -62,7 +62,7 @@ opt_long=('all' 'database:' 'list' 'root:' 'pacman' 'upgrades'
           'repo-list' 'status-file:' 'help')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -78,7 +78,7 @@ while true; do
         -S|--pacman)   mode=list_pacman ;;
         -u|--upgrades) mode=list_upgrades ;;
         --repo-list)   mode=repo_list ;;
-        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
         -h|--help) usage ;;

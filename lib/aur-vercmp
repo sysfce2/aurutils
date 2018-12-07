@@ -83,7 +83,7 @@ opt_short='p:u:ach'
 opt_long=('all' 'path:' 'upair:' 'help')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"

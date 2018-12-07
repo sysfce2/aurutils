@@ -32,7 +32,7 @@ opt_short='L:rgth'
 opt_long=('log-dir:' 'recurse' 'git' 'tar' 'help')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -45,7 +45,7 @@ while true; do
         -g|--git)     mode=git ;;
         -t|--tar)     mode=snapshot ;;
         -h|--help)    usage ;;
-        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
         --) shift; break ;;

@@ -40,7 +40,7 @@ opt_short='b:t:h'
 opt_long=('by:' 'type:' 'help')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -51,7 +51,7 @@ while true; do
         -b|--by)   shift; by=$1 ;;
         -t|--type) shift; type=$1 ;;
         -h|--help) usage ;;
-        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
         --) shift; break ;;

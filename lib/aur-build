@@ -59,7 +59,7 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'makepkg-conf:' 'remove')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"

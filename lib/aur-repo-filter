@@ -27,7 +27,7 @@ opt_short='ad:h'
 opt_long=('all' 'database:' 'help')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -38,7 +38,7 @@ while true; do
         -a|--all) sync_repo=1 ;;
         -d|--database) shift; argv_repo+=("$1") ;;
         -h|--help) usage ;;
-        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
         --) shift; break;;
