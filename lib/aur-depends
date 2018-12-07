@@ -68,7 +68,7 @@ trap_exit() {
 }
 
 usage() {
-    printf 'usage: %s pkgname...\n' "$argv0" >&2
+    printf >&2 'usage: %s\n' "$argv0"
     exit 1
 }
 

@@ -22,7 +22,7 @@ usage() {
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAsXyAg
 ICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 EOF
-    printf >&2 'usage: %s [-grt] [-L log_dir] pkgname [pkgname...]\n' "$argv0"
+    printf >&2 'usage: %s [-grt] [-L log_dir] pkgname...\n' "$argv0"
     exit 1
 }
 

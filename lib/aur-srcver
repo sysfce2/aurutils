@@ -23,7 +23,7 @@ find_pkgbuild_path() {
 }
 
 usage() {
-    printf 'usage: %s path [path...]\n' "$argv0" >&2
+    printf >&2 'usage: %s path...\n' "$argv0"
     exit 1
 }
 

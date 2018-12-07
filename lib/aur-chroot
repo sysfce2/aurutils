@@ -24,7 +24,7 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 "usage: %s [-CDM <path>] [-d <repo>] -- <makechrootpkg args>" "$argv0"
+    printf >&2 'usage: %s [-CDM <path>] [-d <repo>] -- <makechrootpkg args>\n' "$argv0"
     exit 1
 }
 
