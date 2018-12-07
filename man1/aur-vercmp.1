@@ -4,52 +4,55 @@ aur\-vercmp \- check packages for AUR updates
 
 .SH SYNOPSIS
 .SY "aur vercmp"
-.OP \-acq
+.OP \-ac
 .OP \-p path
+.OP \-u filename
+
+.SH DESCRIPTION
+.B aur\-vercmp
+compares packages from
+.B stdin
+.RI ( pkgname
+and
+.IR pkgver ,
+space-separated) with their respective versions in the AUR, and prints
+any updated versions to
+.BR stdout .
 
 .SH OPTIONS
 .TP
-.B \-a
-If
-.B \-c
-is
-.I not
-specified, this option also shows packages with older or the same
-version in the AUR. If specified twice, packages that are not
-available in AUR are also shown.
+.BR \-a ", " \-\-all
+Show packages with an older or equal version in the AUR. (Not
+applicable to
+.BR \-c .)
 
 .TP
 .B \-c
-Takes packages and their versions from stdin
-.RI ( pkgname
-as the first field,
-.I pkgver
-as the second, space-separated), printing packages with equal or newer
-versions in a repository specified with
-.B \-d
-to stdout.
-
-If this argument is
-.I not
-specified, compare packages in the repository with their respective
-versions in the AUR, and print updates to stdout.
+Changes format to print packages with an equal or newer version to
+.BR stdout .\&
+A human\-readable version of the comparison will be printed to
+.BR stderr .\&
+E.g.: aurutils-git: 2.0.0 is newer than 1.5.3
 
 .TP
-.B \-p
-Read package versions from a file instead of the AUR. The package list should
-be in the same format as stdin
+.BI \-p " FILE" "\fR,\fP \-\-path=" FILE
+Read package versions from FILE instead of the AUR. FILE should be in
+the same format as stdin
 .RI ( pkgname
-as the first field,
-.I pkgver
-as the second, space-separated).
+and
+.IR pkgver ,
+space-separated).
 
 .TP
-.B \-q
-For all comparisons, show only package names.
+.BI \-u " FILENUM" "\fR,\fP \-\-upair=" FILENUM
+Print unpairable lines from file FILENUM, where FILENUM is 1 or 2
+(\fBjoin -a\fR). See commit dd4c302997c5eaee752a54c974c237a2b952d5c8
+for details.
 
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-rpc (1),
+.BR join (1),
 .BR jq (1),
 .BR pacman (1),
 .BR vercmp (1)
