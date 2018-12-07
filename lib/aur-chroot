@@ -17,11 +17,6 @@ bindmounts_ro=()
 # default options
 prepare=1 build=1
 
-get_conf_repo() {
-    printf '[%s]\n' "$1"
-    pacconf --repo "$1"
-}
-
 trap_exit() {
     if ! [[ -o xtrace ]]; then
         rm -rf "$tmp"
@@ -74,20 +69,23 @@ fi
 # baseline configuration
 pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
+     
+{ # NOTE: CacheDir will be replaced by devtools (#416)
+  printf '[options]\n'; pacconf --verbose CacheDir
 
-# FIXME: local repos may contain multiple file:// entries
-for repo in "${host_repo[@]}"; do
-    server=$(get_conf_repo "$repo" | tee "$tmp"/custom.conf | grep -Eom1 'file://.*$' || true)
-    server=${server#file://}
+  for repo in "${host_repo[@]}"; do
+      printf '[%s]\n' "$repo"; pacconf --repo="$repo"
+  done
+} > "$tmp"/custom.conf
 
-    if [[ $server ]]; then
-        bindmounts_ro+=("--bind-ro=$server")
-        makechrootpkg_bindmounts_ro+=(-D "$server")
-    fi
-done
-
-# NOTE: CacheDir will be replaced by devtools (#416)
-{ printf '[options]\n'; pacconf --verbose CacheDir; } | tee -a "$tmp"/custom.conf
+# bind mount all file:// paths
+while read -r key _ value; do
+    case $key=$value in
+        Server=file://*)
+            bindmounts_ro+=("--bind-ro=${value#file://}")
+            makechrootpkg_bindmounts_ro+=(-D "${value#file://}") ;;
+    esac
+done < "$tmp"/custom.conf
 
 if ((prepare)); then
     # Do not print DBPath (#412)

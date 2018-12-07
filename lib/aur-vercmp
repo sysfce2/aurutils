@@ -5,7 +5,7 @@ readonly argv0=vercmp
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-format=all
+format=check
 target=aur
 
 cmp_equal_or_newer() {
@@ -92,9 +92,8 @@ unset all aux repo upair
 while true; do
     case "$1" in
         -a) all=1 ;;
-        -c) format='equal' ;;
-        -p) target='file'
-            shift; aux=$1 ;;
+        -c) format=equal ;;
+        -p) shift; target=file; aux=$1 ;;
         -u) shift; upair=$1 ;;
         --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
@@ -109,20 +108,17 @@ tmp=$(mktemp) || exit
 trap 'trap_exit' EXIT
 
 # set input file
-if [[ -t 0 ]]; then
-    plain 'repository not specified, assuming stdin'
-fi
 sort -k 1b,1 >"$tmp"
 
 # set filters (1)
 case $target in
      aur) get() { awk '{print $1}' "$tmp" | parse_aur; } ;;
-    file) get() { awk '{print}' "$aux"; } ;;
+    file) get() { awk '{print $0}' "$aux"; } ;;
 esac
 
 # set filters (2)
 case $format in
-      all) cmp() { cmp_checkupdates "${all-0}"; }
+    check) cmp() { cmp_checkupdates "${all-0}"; }
            upair=${upair-1} ;; # join unpaired of target
     equal) cmp() { cmp_equal_or_newer; }
            upair=${upair-2} ;; # join unpaired of input
