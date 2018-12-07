@@ -80,7 +80,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 opt_short='p:u:ach'
-opt_long=()
+opt_long=('all' 'path:' 'upair:' 'help')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
@@ -91,12 +91,12 @@ set -- "${OPTRET[@]}"
 unset all aux repo upair
 while true; do
     case "$1" in
-        -a) all=1 ;;
-        -c) format=equal ;;
-        -p) shift; target=file; aux=$1 ;;
-        -u) shift; upair=$1 ;;
-        -h|--help) usage ;;
-        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+        -a|--all)   all=1 ;;
+        -c)         format=equal ;;
+        -p|--path)  shift; target=file; aux=$1 ;;
+        -u|--upair) shift; upair=$1 ;;
+        -h|--help)  usage ;;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
         --) shift; break ;;
