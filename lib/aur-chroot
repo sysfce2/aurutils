@@ -74,7 +74,7 @@ makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
   printf '[options]\n'; pacconf --verbose CacheDir
 
   for repo in "${host_repo[@]}"; do
-      printf '[%s]n' "$repo"; pacconf --repo="$repo"
+      printf '[%s]\n' "$repo"; pacconf --repo="$repo"
   done
 } > "$tmp"/custom.conf
 
