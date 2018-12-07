@@ -70,12 +70,13 @@ fi
 pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
      
-for repo in "${host_repo[@]}"; do
-    printf '[%s]n' "$repo"; pacconf --repo="$repo"
-done > "$tmp"/custom.conf
+{ # NOTE: CacheDir will be replaced by devtools (#416)
+  printf '[options]\n'; pacconf --verbose CacheDir
 
-# NOTE: CacheDir will be replaced by devtools (#416)
-{ printf '[options]\n'; pacconf --verbose CacheDir; } >> "$tmp"/custom.conf
+  for repo in "${host_repo[@]}"; do
+      printf '[%s]n' "$repo"; pacconf --repo="$repo"
+  done
+} > "$tmp"/custom.conf
 
 # bind mount all file:// paths
 while read -r key _ value; do
