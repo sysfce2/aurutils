@@ -18,11 +18,11 @@ cmp_equal_or_newer() {
         esac
 
         case $op in
-           -1) plain "$pkg: $v_cmp is newer than $v_in"
+           -1) plain "$pkg: $v_cmp is newer than $v_in" >&2
                printf '%s\n' "$pkg" ;;
             0) printf '%s\n' "$pkg" ;;
-            1) msg2 "$pkg: $v_cmp -> $v_in" ;;
-            2) msg2 "$pkg: (none) -> $v_in" ;;
+            1) msg2 "$pkg: $v_cmp -> $v_in" >&2 ;;
+            2) msg2 "$pkg: (none) -> $v_in" >&2 ;;
         esac
     done
 }
@@ -68,7 +68,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ac] [-p file]"
+    plain "usage: $argv0 [-ac] [-p file]" >&2
     exit 1
 }
 

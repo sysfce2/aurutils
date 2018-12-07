@@ -40,7 +40,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 -d database [-afNRsv] [--] <makepkg args>"
+    plain "usage: $argv0 -d database [-afNRsv] [--] <makepkg args>" >&2
     exit 1
 }
 

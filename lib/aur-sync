@@ -68,7 +68,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ABcDfglLnrstTu] [--] pkgname... [-]"
+    plain "usage: $argv0 [-ABcDfglLnrstTu] [--] pkgname... [-]" >&2
     exit 1
 }
 
@@ -180,7 +180,7 @@ aur repo "${repo_args[@]}" --list --status-file=db >db_info
 } <db
 
 if [[ -w $db_root/$db_name.db ]]; then
-    msg "Using [$db_name] repository"
+    msg "Using [$db_name] repository" >&2
 else
     error "$argv0: $db_root/$db_name.db: permission denied"
     exit 13
@@ -199,7 +199,7 @@ if [[ -s argv ]]; then
     # $1 pkgname $2 depends $3 pkgbase $4 pkgver
     aur depends <argv >depends
 else
-    plain "there is nothing to do"
+    plain "there is nothing to do" >&2
     exit
 fi
 
@@ -238,12 +238,12 @@ cut -f1,2 pkginfo | select_pkgbase - queue_0 >queue
 if [[ -s queue ]]; then
     cd_safe "$aur_workdir"
 else
-    plain "there is nothing to do"
+    plain "there is nothing to do" >&2
     exit
 fi
 
 if ((download)); then
-    msg "Retrieving package files"
+    msg "Retrieving package files" >&2
 
     aur jobs -Xj +3 --nice 10 --halt soon,fail=1 \
         aur fetch "${fetch_args[@]}" :::: "$tmp"/queue

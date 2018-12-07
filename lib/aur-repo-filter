@@ -80,7 +80,7 @@ if [[ -n ${pkgset[*]} ]]; then
         fi
 
         if [[ ${pkgset[$vrt]} ]]; then
-            plain "virtual dependency $vrt by $pkg"
+            plain "virtual dependency $vrt by $pkg" >&2
             printf '%s\n' "$vrt"
         fi
     done
