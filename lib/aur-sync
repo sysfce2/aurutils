@@ -80,7 +80,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='d:D:AcfgkLPstTuh'
+opt_short='C:d:D:M:AcfgkLpPstTuh'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot'
           'continue' 'force' 'ignore-arch' 'ignorearch' 'log'
@@ -90,7 +90,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'rebuild' 'rebuildtree' 'rebuild-tree' 'help')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -100,12 +100,12 @@ while true; do
     case "$1" in
         -d|--database)        shift; repo_args+=(-d "$1") ;;
         -D|--directory)       shift; build_args+=(-D "$1") ;;
+        -M|--makepkg-conf)    shift; build_args+=(--makepkg-conf "$1") ;;
+        -C|--pacman-conf)     shift; build_args+=(--pacman-conf "$1") ;;
         --bind)               shift; makechrootpkg_args+=(-D "$1") ;;
         --bind-rw)            shift; makechrootpkg_args+=(-d "$1") ;;
         --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
                               pkg_i+=("${pkg[@]}") ;;
-        --makepkg-conf)       shift; build_args+=(--makepkg-conf "$1") ;;
-        --pacman-conf)        shift; build_args+=(--pacman-conf "$1") ;;
         --root)               shift; repo_args+=(-r "$1") ;;
         -A|--ignore?(-)arch)  makepkg_args+=(-A)
                               makechrootpkg_makepkg_args+=(-A) ;;
@@ -116,20 +116,20 @@ while true; do
         -P|--provides)        provides=1 ;;
         -k|--keep)            keep_deps=1 ;;
         -n|--no?(-)confirm)   makepkg_args+=(--noconfirm) ;;
+        -p|--print)           build=0 ;;
         -t|--tar)             snapshot=1 ;;
         -s|--sign)            build_args+=(-sv) ;;
         -T|--temp)            makechrootpkg_args+=(-T) ;;
         -u|--upgrades)        update=1 ;;
         --allan)              rotate=1 ;;
         --continue)           download=0 ;;
-        --print)              build=0 ;;
         --no?(-)ver)          chkver_depth=0 ;;
         --no?(-)ver-shallow)  chkver_depth=1 ;;
         --no?(-)view)         view=0 ;;
         --rebuild)            build_args+=(-f); chkver_depth=1 ;;
         --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
         -h|--help) usage ;;
-        --dump-options)       printf -- '--%s\n' ${opt_long[@]} ;
+        --dump-options)       printf -- '--%s\n' "${opt_long[@]}" ;
                               printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                               exit ;;
         --) shift; break ;;

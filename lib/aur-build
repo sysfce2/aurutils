@@ -53,7 +53,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 ## option parsing
-opt_short='a:d:r:D:cfNRsv'
+opt_short='a:d:r:C:D:M:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
           'makepkg-conf:' 'remove')
@@ -75,11 +75,11 @@ while true; do
         -s|--sign)      sign_pkg=1; repo_add_args+=(-s) ;;
         -v|--verify)    repo_add_args+=(-v) ;;
         -D|--directory) shift; chroot_args+=(-D "$1") ;;
+        -C|--pacman-conf)  shift; chroot_args+=(-C "$1") ;;
+        -M|--makepkg-conf) shift; chroot_args+=(-M "$1") ;;
         -N|--no-sync)   no_sync=1 ;;
         -R|--remove)    repo_add_args+=(-R) ;;
-        --pacman-conf)  shift; chroot_args+=(-C "$1") ;;
-        --makepkg-conf) shift; chroot_args+=(-M "$1") ;;
-        --dump-options) printf -- '--%s\n' ${opt_long[@]} ;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
         --) shift; break ;;
