@@ -32,8 +32,8 @@ while true; do
         -d|--database)  shift; argv_repo+=("$1") ;;
         -h|--help)      usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-			printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-			exit ;;
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+            exit ;;
         --) shift; break;;
     esac
     shift
@@ -63,22 +63,22 @@ printf -- '--satisfies=%s\0' "${!pkgset[@]}" >"$tmp"
 
 if [[ -n ${pkgset[*]} ]]; then
     xargs -0a "$tmp" pacsift "${reposet[@]}" <&- | expac '%n %R %S' -Sv - |
-	while read -ra line
+        while read -ra line
     do
-	package=${line[0]#*/}
+        package=${line[0]#*/}
 
-	if [[ ${pkgset[$package]} ]]; then
-	    printf '%s\n' "$package"
-	fi
+        if [[ ${pkgset[$package]} ]]; then
+            printf '%s\n' "$package"
+        fi
 
-	for ((i = 1; i < ${#line[@]}; i++)); do
-	    virtual=${line[$i]}
+        for ((i = 1; i < ${#line[@]}; i++)); do
+            virtual=${line[$i]}
 
             if [[ ${pkgset[$virtual]} ]]; then
-		plain "virtual dependency $virtual satisfied by $package" >&2
-		printf '%s\n' "$virtual"
+                plain "virtual dependency $virtual satisfied by $package" >&2
+                printf '%s\n' "$virtual"
             fi
-	done
+        done
     done
 fi
 
