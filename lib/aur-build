@@ -17,16 +17,15 @@ repo_add_args=()
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
 conf_single() {
-    awk -v "rname=[$1]" 'BEGIN {
-        mark=0
-    }
+    awk -v "rname=[$1]" '
     $1 ~ /^\[.+\]$/ {
-        if ($1 == "[options]" || $1 == rname)
-            mark=1
-        else
-            mark=0
-    } {
-        if (mark) print
+        needle = 0
+    }
+    $1 == "[options]" || $1 == rname {
+        needle = 1
+    }
+    needle {
+        print $0
     }'
 }
 
