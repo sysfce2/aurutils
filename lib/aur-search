@@ -99,7 +99,7 @@ parse_short() {
 }
 
 usage() {
-    printf >&2 'usage: %s: [-aisdmnqv] [-k key] pkgname...\n' "$argv0"
+    printf >&2 'usage: %s: [-aisdmnqv] [-k key] [pkgname...]\n' "$argv0"
     exit 1
 }
 
