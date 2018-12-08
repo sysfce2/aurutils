@@ -7,12 +7,6 @@ aur \- helper tool for the arch user repository
 The below gives a short overview; see the respective documentation for
 details.
 .P
-.BR aur\-graph (1)
-.RS 4
-Print package/dependency pairs.
-.RE
-
-.P
 .BR aur\-build (1)
 .RS 4
 Build packages to a local repository.
@@ -21,25 +15,37 @@ Build packages to a local repository.
 .P
 .BR aur\-chroot (1)
 .RS 4
-Build packages inside a chroot.
+Build packages with systemd-nspawn.
 .RE
 
 .P
 .BR aur\-depends (1)
 .RS 4
-Order package dependencies using AurJson.
+Retrieve dependencies using aurweb.
 .RE
 
 .P
 .BR aur\-fetch (1)
 .RS 4
-Retrieve build files from the AUR.
+Fetch packages from a location.
+.RE
+
+.P
+.BR aur\-graph (1)
+.RS 4
+Print package/dependency directed graph.
 .RE
 
 .P
 .BR aur\-pkglist (1)
 .RS 4
 Print the AUR package list.
+.RE
+
+.P
+.BR aur\-repo (1)
+.RS 4
+Manage local repositories.
 .RE
 
 .P
@@ -57,19 +63,25 @@ Search for AUR packages.
 .P
 .BR aur\-srcver (1)
 .RS 4
-Update and print package revisions.
+List version of VCS packages.
 .RE
 
 .P
 .BR aur\-sync (1)
 .RS 4
-Download and build AUR packages automatically
+Download and build AUR packages automatically.
 .RE
 
 .P
 .BR aur\-vercmp (1)
 .RS 4
 Check packages for AUR updates.
+.RE
+
+.P
+.BR aur\-vercmp\-devel (1)
+.RS 4
+Retrieve latest revision for VCS packages.
 .RE
 
 .SH EXIT STATUS
