@@ -6,16 +6,6 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default arguments
 vercmp_args=()
 
-conf_file_repo() {
-    awk -F'= ' '
-        $1 ~ /^\[.+\]$/ {
-            repo = substr($1, 2, length($1)-2)
-        }
-        $1 ~ /^Server/ && $2 ~ /^file:/ {
-            printf("%s\n%s\n", repo, $2)
-        }'
-}
-
 db_namever() {
     awk '/%NAME%/ {
         getline; printf("%s\t", $1)
@@ -31,7 +21,7 @@ db_namever() {
 
 sync_exists() {
     # https://github.com/andrewgregory/pacutils/issues/22
-    pacconf --repo="$1" >/dev/null
+    pacman-conf -r "$1" >/dev/null
 }
 
 sync_pkgspec() {
@@ -88,46 +78,53 @@ while true; do
 done
 unset opt_short opt_long OPTRET
 
-case $mode in
-    repo_list)
-        pacconf | conf_file_repo | paste - -
-        exit ;;
-esac
+# assign environment variables
+: ${db_name=$AUR_REPO}
+: ${db_root=$AUR_DBROOT}
 
-if [[ ${db_name=$AUR_REPO} ]]; then
-    if ! [[ ${db_root=$AUR_DBROOT} ]]; then
-        db_root=$(pacconf --single --repo="$db_name" Server)
-        db_root=${db_root#file://}
+unset conf_repo server
 
-        # check if variable was set correctly
-        if ! [[ $db_root ]]; then
-            error "$argv0: Server directive not found"
-            exit 1
-        fi
+while read -r key _ value; do
+    case $key=$value in
+        \[*\]*)
+            section=${key:1:-1}
+            ;;
+        Server=file://*)
+            server=${value#file://}
+            conf_repo+=("$section" "$server")
 
-        # check if variable points to a local path (file://)
-        if [[ $db_root == *://* ]]; then
-            error "$argv0: Server: not a local path"
-            exit 1
-        fi
+            case $section in
+                $db_name)
+                    if ! [[ $db_root ]]; then
+                        db_root=$server
+                    elif [[ $db_root != "$server" ]]; then
+                        warning "$argv0: --root and pacman.conf mismatch"
+                    fi ;;
+            esac
+            ;;
+        Server=*://*)
+            case $section in
+                $db_name)
+                    if ! [[ $db_root ]]; then
+                        db_root=$value
+                    fi ;;
+            esac
+            ;;
+    esac
+done < <(pacman-conf)
 
-        # check if local path is a directory
-        if ! [[ -d $db_root ]]; then
-            error "argv0: Server: not a directory"
-            exit 20
-        fi
-    fi
-else
-    mapfile -t conf < <(pacconf | conf_file_repo)
-
-    case ${#conf[@]} in
-        2) db_name=${conf[0]}
-           db_root=${conf[1]#*://} ;;
+if ! [[ $db_name ]]; then
+    case ${#conf_repo[@]} in
+        2) db_name=${conf_repo[0]}
+           db_root=${conf_repo[1]}
+           ;;
         0) error "$argv0: no file:// repository found"
-           exit 2 ;;
+           exit 2
+           ;;
         *) error "$argv0: repository choice is ambiguous (use -d to specify)"
-           printf '%s\n' "${conf[@]}" | paste - - | column -t >&2
-           exit 2 ;;
+           printf '%s\n' "${conf_repo[@]}" | paste - - | column -t >&2
+           exit 1
+           ;;
     esac
 fi
 
@@ -136,19 +133,57 @@ if [[ -v status_file ]]; then
 fi
 
 case $mode in
+    #requires
+    # - $db_root/$db_name (path) OR
+    # - [$db_name], Server=file:// (pacman.conf)
     list_packages)
+        if ! [[ $db_root ]]; then
+            error "$argv0: $db_name: repository path not found"
+            exit 2
+        fi
+
+        if [[ $db_root == *://* ]]; then
+            error "$argv0: $db_root: object is remote"
+            exit 66
+        fi
+
+        if ! [[ -d $db_root ]]; then
+            error "argv0: $db_root: not a directory"
+            exit 20
+        fi
+
         bsdcat "$db_root/$db_name".db | db_namever
         ;;
+    #requires
+    # - [$db_name] (pacman.conf)
     list_pacman)
-        sync_exists "$db_name" || exit
-        sync_pkgspec "$db_name" | sync_format '%r %n %v'
+        if sync_exists "$db_name"; then
+            sync_pkgspec "$db_name" | sync_format '%r %n %v'
+        else
+            exit 1
+        fi
         ;;
+    #requires
+    # - [$db_name] (pacman.conf)
     list_upgrades)
-        sync_exists "$db_name" || exit
-        sync_pkgspec "$db_name" | sync_format '%n %v' | aur vercmp "${vercmp_args[@]}"
+        if sync_exists "$db_name"; then
+            sync_pkgspec "$db_name" | \
+                sync_format '%n %v' | aur vercmp "${vercmp_args[@]}"
+        else
+            exit 1
+        fi
+        ;;
+    #requires (none)
+    repo_list)
+        if [[ ${conf_repo[*]} ]]; then
+            printf '%s\n' "${conf_repo[@]}" | paste - - | column -t >&2
+        else
+            plain "no file:// repository configured"
+        fi
         ;;
     *)
-        printf '%s\n' "$db_root/$db_name".db ;;
+        printf '%s\n' "$db_root/$db_name".db
+        ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

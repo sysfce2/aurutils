@@ -69,12 +69,13 @@ fi
 # baseline configuration
 pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
-     
-{ # NOTE: CacheDir will be replaced by devtools (#416)
-  printf '[options]\n'; pacconf --verbose CacheDir
 
+{ # NOTE: CacheDir will be replaced by devtools (#416)
+  printf '[options]\n'; pacman-conf --verbose CacheDir
+
+  # XXX: Use one pass of pacman-conf (awk, while/read)
   for repo in "${host_repo[@]}"; do
-      printf '[%s]\n' "$repo"; pacconf --repo="$repo"
+      printf '[%s]\n' "$repo"; pacman-conf --repo="$repo"
   done
 } > "$tmp"/custom.conf
 
@@ -88,8 +89,13 @@ while read -r key _ value; do
 done < "$tmp"/custom.conf
 
 if ((prepare)); then
-    # Do not print DBPath (#412)
-    pacconf --config="$pacman_conf" --raw | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
+    pacman-conf -c "$pacman_conf" | while read -r; do
+        # Do not print DBPath (#412)
+        case $REPLY in
+            RootDir*|DBPath*|HookDir*|GPGDir*|LogFile*) ;;
+            *) printf '%s\n' "$REPLY" ;;
+        esac
+    done | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
