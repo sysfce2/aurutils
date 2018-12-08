@@ -7,11 +7,10 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 vercmp_args=()
 
 db_namever() {
-    awk -v "repo=$1" '
-    /%NAME%/ {
-        getline; printf("%s %s", repo, $1)
+    awk '/%NAME%/ {
+        getline; printf("%s\t", $1)
     } /%VERSION%/ {
-        getline; printf(" %s\n", $1)
+        getline; printf("%s\n", $1)
     } END {
         if (!NR) {
             printf("warning: empty database\n") > "/dev/stderr"
@@ -153,7 +152,7 @@ case $mode in
             exit 20
         fi
 
-        bsdcat "$db_root/$db_name".db | db_namever "$db_name"
+        bsdcat "$db_root/$db_name".db | db_namever
         ;;
     #requires
     # - [$db_name] (pacman.conf)
