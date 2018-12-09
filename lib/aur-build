@@ -18,7 +18,7 @@ chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
 conf_single() {
     awk -v "rname=[$1]" '
-    $1 ~ /^\[.+\]$/ {
+    /^\[.+\]$/ {
         needle = 0
     }
     $1 == "[options]" || $1 == rname {
@@ -115,22 +115,26 @@ fi
 : ${db_name=$AUR_REPO}
 : ${db_root=$AUR_DBROOT}
 
-# XXX retrieve db_name and db_root directly via --status-file
-if ! [[ $db_name ]] && [[ $db_root ]]; then
-    error "$argv0: root specified without database name"
-    exit 1
-elif ! [[ $db_name ]]; then
-    # absolute path to file:// repository
-    db_path=$(aur repo)
-    db_name=$(basename "$db_path" .db)
-    db_root=$(dirname "$db_path")
-elif ! [[ $db_root ]]; then
-    # absolute path to file:// repository
-    db_path=$(aur repo -d "$db_name")
-    db_root=$(dirname "$db_path")
-else
-    db_path=$db_root/$db_name.db
-fi
+case $db_name in
+    "")
+        case $db_root in
+            "") db_path=$(aur repo)
+                db_name=$(basename "$db_path" .db)
+                db_root=$(dirname "$db_path")
+                ;;
+             *) error "$argv0: root specified without database name"
+                exit 1 ;;
+        esac ;;
+    *)
+        case $db_root in
+            "") db_path=$(aur repo -d "$db_name")
+                db_name=$(basename "$db_path" .db)
+                db_root=$(dirname "$db_path")
+                ;;
+             *) db_path=$db_root/$db_name.db
+                ;;
+        esac ;;
+esac
 
 # resolve symbolic link
 db_path=$(readlink -f -- "$db_path")
