@@ -71,6 +71,6 @@ case $type in
 esac
 
 # pipeline
-jq -R -r '@uri' | query | wget -q -i - -O -
+jq -R -r '@uri' | query | wget -nv -i - -O -
 
 # vim: set et sw=4 sts=4 ft=sh:
