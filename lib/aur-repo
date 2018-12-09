@@ -140,14 +140,10 @@ case $mode in
         if ! [[ $db_root ]]; then
             error "$argv0: $db_name: repository path not found"
             exit 2
-        fi
-
-        if [[ $db_root == *://* ]]; then
+        elif [[ $db_root == *://* ]]; then
             error "$argv0: $db_root: object is remote"
             exit 66
-        fi
-
-        if ! [[ -d $db_root ]]; then
+        elif ! [[ -d $db_root ]]; then
             error "argv0: $db_root: not a directory"
             exit 20
         fi
