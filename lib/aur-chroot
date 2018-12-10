@@ -17,15 +17,20 @@ bindmounts_ro=()
 # default options
 prepare=1 build=1
 
+ignore_defaults() {
+    awk '/^RootDir/ || /^DBPath/ || /^HookDir/ || /^GPGDir/ || /^LogFile/ {
+        next
+    } { print }'
+}
+
 host_with_cache() {
     awk 'BEGIN {
         for (i = 0; i < ARGC; i++)
             section["[" i "]"] = 1
         ARGC=0
     }
-
-    $1 ~ /^\[.+]$/ { p = 0; }
-    $1 in section  { p = 1; }
+    $1 ~ /^\[.+]$/ { p = 0 }
+    $1 in section  { p = 1 }
 
     p == 1 || $1 == "[options]" || $1 == "CacheDir" {
         print $0
@@ -85,10 +90,10 @@ fi
 pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
 makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
-# NOTE: CacheDir will be replaced by devtools (#416)
+# CacheDir will be replaced by devtools (#416)
 pacman-conf | host_with_cachedir "${host_repo[@]}" >"$tmp"/custom.conf
 
-# bind mount all file:// paths to container
+# bind mount all file:// paths to container (#461)
 while read -r key _ value; do
     case $key=$value in
         Server=file://*)
@@ -98,13 +103,9 @@ while read -r key _ value; do
 done < "$tmp"/custom.conf
 
 if ((prepare)); then
-    pacman-conf -c "$pacman_conf" | while read -r; do
-        case $REPLY in
-            # Do not print DBPath (#412)
-            RootDir*|DBPath*|HookDir*|GPGDir*|LogFile*) continue ;;
-            *) printf '%s\n' "$REPLY" ;;
-        esac
-    done | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
+    # do not print DBPath (#412)
+    pacman-conf -c "$pacman_conf" | ignore_defaults \
+        | cat - "$tmp"/custom.conf >"$tmp"/pacman.conf
 
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
