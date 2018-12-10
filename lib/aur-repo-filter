@@ -58,28 +58,31 @@ while IFS= read -r package; do
     pkgset[$package]=1
 done
 
+# nothing to do
+if ! [[ ${pkgset[*]} ]]; then
+    exit 0
+fi
+
 # use xargs -a to bypass isatty() check
 printf -- '--satisfies=%s\0' "${!pkgset[@]}" >"$tmp"
 
-if [[ -n ${pkgset[*]} ]]; then
-    xargs -0a "$tmp" pacsift "${reposet[@]}" <&- | expac '%n %R %S' -Sv - |
-        while read -ra line
-    do
-        package=${line[0]#*/}
+xargs -0a "$tmp" pacsift "${reposet[@]}" <&- | expac '%n %R %S' -Sv - |
+    while read -ra line
+do
+    package=${line[0]#*/}
 
-        if [[ ${pkgset[$package]} ]]; then
-            printf '%s\n' "$package"
+    if [[ ${pkgset[$package]} ]]; then
+        printf '%s\n' "$package"
+    fi
+
+    for ((i = 1; i < ${#line[@]}; i++)); do
+        virtual=${line[$i]}
+
+        if [[ ${pkgset[$virtual]} ]]; then
+            plain "virtual dependency $virtual satisfied by $package" >&2
+            printf '%s\n' "$virtual"
         fi
-
-        for ((i = 1; i < ${#line[@]}; i++)); do
-            virtual=${line[$i]}
-
-            if [[ ${pkgset[$virtual]} ]]; then
-                plain "virtual dependency $virtual satisfied by $package" >&2
-                printf '%s\n' "$virtual"
-            fi
-        done
     done
-fi
+done
 
 # vim: set et sw=4 sts=4 ft=sh:
