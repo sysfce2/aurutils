@@ -27,7 +27,7 @@ lib32() {
         if(arch == "i686") {
             gsub(/^lib32-/,"")
             gsub(/^gcc-multilib$/,"")
-        }; print
+        }
     }'
 }
 
@@ -36,18 +36,17 @@ select_pkgbase() {
     awk 'NR == FNR {
         map[$1] = $2
         next
-    } {
-        if ($1 in map) {
-            base = map[$1]
-
-            # only print pkgbase on first occurence
-            if (base in seen) {
-                next
-            } else {
-                print base
-                seen[base]
-            }
-        }
+    }
+    $1 in map {
+	base = map[$1]
+	
+	# only print pkgbase on first occurence
+	if (base in seen) {
+	    next
+	} else {
+	    print base
+	    seen[base]
+	}
     }' "$@"
 }
 
