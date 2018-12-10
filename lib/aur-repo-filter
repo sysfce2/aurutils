@@ -48,9 +48,6 @@ else
     reposet=(--exact "${arch_repo[@]/#/--repo=}")
 fi
 
-# temporary file for constructing pacsift arguments
-tmp=$(mktemp -t "$argv0".XXXXXXX) || exit
-
 # associative array for input package names
 declare -A pkgset
 
@@ -64,10 +61,8 @@ if ! [[ ${pkgset[*]} ]]; then
 fi
 
 # use xargs -a to bypass isatty() check
-printf -- '--satisfies=%s\0' "${!pkgset[@]}" >"$tmp"
-
-xargs -0a "$tmp" pacsift "${reposet[@]}" <&- | expac '%n %R %S' -Sv - |
-    while read -ra line
+xargs -0a <(printf -- '--satisfies=%s\0' "${!pkgset[@]}") pacsift "${reposet[@]}" <&- |
+    expac '%n %R %S' -Sv - | while read -ra line
 do
     package=${line[0]#*/}
 
