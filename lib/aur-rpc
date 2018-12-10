@@ -42,7 +42,7 @@ set -- "${OPTRET[@]}"
 unset by type
 while true; do
     case "$1" in
-        -b|--by)   shift; by=$1 ;;
+        -b|--by) shift; by=$1 ;;
         -t|--type) shift; type=$1 ;;
         -h|--help) usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
@@ -56,12 +56,20 @@ unset opt_short opt_long OPTRET
 
 # set filters
 case $type in
-      info) query() { query_info; }                      ;;
+      info) query() { query_info; } ;;
     search) query() { query_search "${by:-name-desc}"; } ;;
          *) usage ;;
 esac
 
+# store output on error
+wget_log=$(mktemp -t wget.XXXXXXXX)
+trap 'rm -rf "$wget_log"' EXIT
+
 # pipeline
-jq -R -r '@uri' | query | wget -nv -i - -O -
+jq -R -r '@uri' | query | wget -o "$wget_log" -i - -O - -nv
+
+if ((PIPESTATUS[2])); then
+    cat "$wget_log" >&2
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
