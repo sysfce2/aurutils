@@ -87,7 +87,7 @@ if (($#)); then
 fi
 
 # baseline configuration
-pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
+pacman_conf=${pacman_conf-/usr/share/devtools/pacman-multilib.conf}
 makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 # CacheDir will be replaced by devtools (#416)
