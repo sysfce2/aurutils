@@ -25,11 +25,13 @@ ignore_defaults() {
 
 host_with_cache() {
     awk 'BEGIN {
-        ARGC=0
+        ARGC = 0
     }
     /^\[.+]$/ {
-        for (a in ARGV)
-            needle = (ARGV[a] == $1)
+        for (a in ARGV) {
+            if (needle = (ARGV[a] == $1))
+                break
+        }
     }
     needle || $1 == "[options]" || $1 == "CacheDir" {
         print $0
