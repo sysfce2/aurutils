@@ -28,6 +28,7 @@ lib32() {
             gsub(/^lib32-/,"")
             gsub(/^gcc-multilib$/,"")
         }
+        print
     }'
 }
 
