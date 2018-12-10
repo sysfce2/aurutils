@@ -35,7 +35,7 @@ sync_format() {
 }
 
 usage() {
-    plain "usage: $argv0 [-aSlu] [-d repo] [-r root]" >&2
+    plain "usage: $argv0 [-alu] [-d repo] [-r root]" >&2
     exit 1
 }
 
@@ -47,9 +47,9 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 ## option parsing
-opt_short='d:o:r:ahlSu'
-opt_long=('all' 'database:' 'list' 'root:' 'pacman' 'upgrades'
-          'repo-list' 'status-file:' 'help')
+opt_short='d:o:r:ahlu'
+opt_long=('all' 'database:' 'list' 'root:' 'upgrades' 'repo-list'
+          'status-file:' 'help')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -63,11 +63,10 @@ while true; do
         -a|--all)      vercmp_args+=(-a) ;;
         -d|--database) shift; db_name=$1 ;;
         -r|--root)     shift; db_root=$1 ;;
-        --status-file) shift; status_file=$1 ;;
         -l|--list)     mode=list_packages ;;
-        -S|--pacman)   mode=list_pacman ;;
         -u|--upgrades) mode=list_upgrades ;;
         --repo-list)   mode=repo_list ;;
+        --status-file) shift; status_file=$1 ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -149,15 +148,6 @@ case $mode in
         fi
 
         bsdcat "$db_root/$db_name".db | db_namever
-        ;;
-    #requires
-    # - [$db_name] (pacman.conf)
-    list_pacman)
-        if sync_exists "$db_name"; then
-            sync_pkgspec "$db_name" | sync_format '%r %n %v'
-        else
-            exit 1
-        fi
         ;;
     #requires
     # - [$db_name] (pacman.conf)
