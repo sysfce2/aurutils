@@ -99,7 +99,7 @@ parse_short() {
 }
 
 usage() {
-    printf >&2 'usage: %s: [-aisdmnqv] [-k key] [pkgname...]\n' "$argv0"
+    printf >&2 'usage: %s: [-adimnqsv] [-k key] pkgname...\n' "$argv0"
     exit 1
 }
 
@@ -110,7 +110,7 @@ if [[ -t 1 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='k:aisdmnqvh'
+opt_short='k:adimnqsvh'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends'
           'makedepends' 'optdepends' 'checkdepends' 'key:' 'help')
 opt_hidden=('dump-options')

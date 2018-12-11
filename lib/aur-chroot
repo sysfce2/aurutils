@@ -40,14 +40,14 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-CDM <path>] [-d <repo>] -- <makechrootpkg args>\n' "$argv0"
+    printf >&2 'usage: %s [-d repo] [-CDM path] -- <makechrootpkg args>\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='d:r:C:D:M:'
-opt_long=('database' 'directory' 'pacman-conf' 'makepkg-conf' 'no-build' 'no-prepare')
+opt_short='d:C:D:M:h'
+opt_long=('database' 'directory' 'pacman-conf' 'makepkg-conf' 'no-build' 'no-prepare' 'help')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -65,6 +65,7 @@ while true; do
         -M|--makepkg-conf) shift; makepkg_conf=$1 ;;
         --no-build)     build=0 ;;
         --no-prepare)   prepare=0 ;;
+        -h|--help) usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;

@@ -22,14 +22,14 @@ usage() {
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAsXyAg
 ICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 EOF
-    printf >&2 'usage: %s [-grt] [-L log_dir] pkgname...\n' "$argv0"
+    printf >&2 'usage: %s [-L path] [-grt] pkgname...\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='L:rgth'
-opt_long=('log-dir:' 'recurse' 'git' 'tar' 'help')
+opt_short='L:grth'
+opt_long=('log-dir:' 'git' 'recurse' 'tar' 'help')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then

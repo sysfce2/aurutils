@@ -32,7 +32,7 @@ merge_across_fs() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-L log_dir]\n' "$argv0"
+    printf >&2 'usage: %s [-L path]\n' "$argv0"
     exit 1
 }
 

@@ -5,7 +5,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
 usage() {
-    printf >&2 'usage: %s [-a] [-d repo]\n' "$argv0"
+    printf >&2 'usage: %s [-d repo] [-a]\n' "$argv0"
     exit 1
 }
 
@@ -16,7 +16,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='ad:h'
+opt_short='d:ah'
 opt_long=('all' 'database:' 'help')
 opt_hidden=('dump-options')
 

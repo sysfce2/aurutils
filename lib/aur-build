@@ -44,7 +44,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 -d database [-afNRsv] [--] <makepkg args>" >&2
+    plain "usage: $argv0 [-d repo] [-aCDMr path] [-cfNRsv] [--] <makepkg args>" >&2
     exit 1
 }
 
@@ -57,10 +57,10 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 ## option parsing
-opt_short='a:d:r:C:D:M:cfNRsv'
+opt_short='a:C:d:D:M:r:cfNRsvh'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
-          'makepkg-conf:' 'remove')
+          'makepkg-conf:' 'remove' 'help')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -83,6 +83,7 @@ while true; do
         -M|--makepkg-conf) shift; chroot_args+=(-M "$1") ;;
         -N|--no-sync)   no_sync=1 ;;
         -R|--remove)    repo_add_args+=(-R) ;;
+        -h|--help) usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
