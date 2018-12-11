@@ -80,7 +80,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='C:d:D:M:AcfgkLpPstTuh'
+opt_short='C:d:D:M:AcfgkLnpPstTuh'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot'
           'continue' 'force' 'ignore-arch' 'ignorearch' 'log'
