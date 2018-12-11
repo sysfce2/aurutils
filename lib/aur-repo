@@ -116,7 +116,7 @@ case $mode in
     #requires (none)
     repo_list)
         if [[ ${conf_repo[*]} ]]; then
-            printf '%s\n' "${conf_repo[@]}" | paste - - | column -t >&2
+            printf '%s\n' "${conf_repo[@]}" | paste - - | column -t
         else
             plain "no file:// repository configured"
         fi
