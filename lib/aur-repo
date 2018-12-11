@@ -112,6 +112,17 @@ while read -r key _ value; do
     esac
 done < <(pacman-conf)
 
+case $mode in
+    #requires (none)
+    repo_list)
+        if [[ ${conf_repo[*]} ]]; then
+            printf '%s\n' "${conf_repo[@]}" | paste - - | column -t >&2
+        else
+            plain "no file:// repository configured"
+        fi
+        ;;
+esac
+              
 if ! [[ $db_name ]]; then
     case ${#conf_repo[@]} in
         2) db_name=${conf_repo[0]}
@@ -157,14 +168,6 @@ case $mode in
                 sync_format '%n %v' | aur vercmp "${vercmp_args[@]}"
         else
             exit 1
-        fi
-        ;;
-    #requires (none)
-    repo_list)
-        if [[ ${conf_repo[*]} ]]; then
-            printf '%s\n' "${conf_repo[@]}" | paste - - | column -t >&2
-        else
-            plain "no file:// repository configured"
         fi
         ;;
     *)
