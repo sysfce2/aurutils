@@ -167,9 +167,7 @@ else
     fetch_args=(-L "$tmp_view" -g)
 fi
 
-mkdir -p     "$aur_workdir"
-chmod -c 700 "$aur_workdir"
-
+mkdir -p "$aur_workdir"
 cd_safe "$tmp"
 
 # retrieve path to local repo (#448)
