@@ -24,17 +24,13 @@ ignore_defaults() {
 }
 
 host_with_cache() {
-    awk 'BEGIN {
-        for (a in ARGV)
-            rname[ARGV[a]] = 1
-        ARGC = 0
-    }
-    /^\[.+]$/ {
-        needle = ($1 in rname)
-    }
-    needle || $1 == "[options]" || $1 == "CacheDir" {
-        print
-    }' "$@"
+    printf '[%s]\n' options
+    pacman-conf --verbose CacheDir
+
+    for r in "$@"; do
+	printf '[%s]\n' "$r"
+	pacman-conf --repo "$r"
+    done
 }
 
 trap_exit() {
@@ -63,7 +59,7 @@ set -- "${OPTRET[@]}"
 unset pacman_conf makepkg_conf host_repo server
 while true; do
     case "$1" in
-        -d|--database) shift; host_repo+=("[$1]") ;;
+        -d|--database) shift; host_repo+=("$1") ;;
         -D|--directory) shift; directory=$1 ;;
         -C|--pacman-conf) shift; pacman_conf=$1 ;;
         -M|--makepkg-conf) shift; makepkg_conf=$1 ;;
