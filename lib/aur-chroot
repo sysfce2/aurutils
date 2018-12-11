@@ -87,7 +87,7 @@ pacman_conf=${pacman_conf-/usr/share/devtools/pacman-multilib.conf}
 makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 # CacheDir will be replaced by devtools (#416)
-pacman-conf | host_with_cache "${host_repo[@]}" >"$tmp"/custom.conf
+host_with_cache "${host_repo[@]}" >"$tmp"/custom.conf
 
 # bind mount all file:// paths to container (#461)
 while read -r key _ value; do
