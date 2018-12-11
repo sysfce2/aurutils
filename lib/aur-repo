@@ -120,9 +120,9 @@ case $mode in
         else
             plain "no file:// repository configured"
         fi
-        ;;
+        exit 0 ;;
 esac
-              
+
 if ! [[ $db_name ]]; then
     case ${#conf_repo[@]} in
         2) db_name=${conf_repo[0]}
