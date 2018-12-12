@@ -68,7 +68,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-ac] [-p file]" >&2
+    plain "usage: $argv0 [-p path] [-ac]" >&2
     exit 1
 }
 
@@ -79,8 +79,8 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='p:u:ach'
-opt_long=('all' 'path:' 'upair:' 'help')
+opt_short='p:u:ac'
+opt_long=('all' 'path:' 'upair:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -95,7 +95,6 @@ while true; do
         -c)         format=equal ;;
         -p|--path)  shift; target=file; aux=$1 ;;
         -u|--upair) shift; upair=$1 ;;
-        -h|--help)  usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;

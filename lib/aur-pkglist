@@ -42,8 +42,8 @@ pcre_opt=('.*')
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='F:P:bth'
-opt_long=('pkgbase' 'fixed-strings' 'perl-regexp' 'help')
+opt_short='F:P:bt'
+opt_long=('pkgbase' 'fixed-strings' 'perl-regexp')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -57,7 +57,6 @@ while true; do
         -t) shift; delay=$1 ;;
         -F|--fixed-strings) shift; pcre_opt=('-e' "$1" '-F') ;;
         -P|--perl-regexp) shift; pcre_opt=('-e' "$1") ;;
-        -h|--help) usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
