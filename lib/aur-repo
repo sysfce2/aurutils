@@ -47,9 +47,9 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 ## option parsing
-opt_short='d:r:aluh'
+opt_short='d:r:alu'
 opt_long=('all' 'database:' 'list' 'root:' 'upgrades' 'repo-list'
-          'status-file:' 'help')
+          'status-file:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -70,7 +70,6 @@ while true; do
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
-        -h|--help) usage ;;
         --) shift; break ;;
     esac
     shift

@@ -30,8 +30,8 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='b:t:h'
-opt_long=('by:' 'type:' 'help')
+opt_short='b:t:'
+opt_long=('by:' 'type:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -44,7 +44,6 @@ while true; do
     case "$1" in
         -b|--by) shift; by=$1 ;;
         -t|--type) shift; type=$1 ;;
-        -h|--help) usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;

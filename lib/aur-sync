@@ -80,14 +80,14 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='C:d:D:M:AcfgkLnpPstTuh'
+opt_short='C:d:D:M:AcfgkLnpPstTu'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot'
           'continue' 'force' 'ignore-arch' 'ignorearch' 'log'
           'noconfirm' 'no-confirm' 'no-ver' 'nover' 'nover-shallow'
           'no-ver-shallow' 'no-view' 'noview' 'print' 'provides'
           'rm-deps' 'keep' 'sign' 'temp' 'tar' 'upgrades' 'git'
-          'rebuild' 'rebuildtree' 'rebuild-tree' 'help')
+          'rebuild' 'rebuildtree' 'rebuild-tree')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -128,7 +128,6 @@ while true; do
         --no?(-)view)         view=0 ;;
         --rebuild)            build_args+=(-f); chkver_depth=1 ;;
         --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
-        -h|--help) usage ;;
         --dump-options)       printf -- '--%s\n' "${opt_long[@]}" ;
                               printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                               exit ;;
