@@ -1,4 +1,4 @@
-.TH AUR-REPO 1 2018-12-10 AURUTILS
+.TH AUR-REPO 1 2018-12-13 AURUTILS
 .SH NAME
 aur\-repo \- manage local repositories
 
@@ -6,12 +6,10 @@ aur\-repo \- manage local repositories
 .SY "aur repo"
 .OP \-d database
 .OP \-r root
-.OP \-lu
+.OP \-lSu
 .OP \-\-repo\-list
 .OP \-\-status\-file
 .YS
-
-.SH DESCRIPTION
 
 .SH OPTIONS
 .TP
@@ -25,6 +23,9 @@ aur\-repo \- manage local repositories
 
 .TP
 .BR \-u ", " \-\-updates
+
+.TP
+.BR \-S ", " \-\-sync
 
 .TP
 .BI \-\-status\-file= PATH
@@ -44,12 +45,8 @@ repository configured in
 .BR pacman.conf (5).
 .RE
 
-.B AUR_DBROOT
-.RS
-.RE
-
 .SH SEE ALSO
 .BR aur (1),
+.BR expac (1),
 .BR pacman (1),
-.BR pacsift (1),
 .BR pacman.conf (5)
