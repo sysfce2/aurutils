@@ -17,24 +17,18 @@ repo_add_args=()
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
 conf_single() {
-    awk -v "rname=[$1]" '
-    /^\[.+\]$/ {
-        needle = 0
+    awk -v "repo=[$1]" '
+    /^\[.*\]$/ {
+        do_print = ($1 == "[options]" || $1 == repo)
     }
-    $1 == "[options]" || $1 == rname {
-        needle = 1
-    }
-    needle {
-        print $0
-    }'
+    do_print'
 }
 
 db_replaces() {
-    bsdcat "$1" | awk '/%REPLACES%/ {
-    while(NF != 0) {
-        getline; print
-    }
-}'
+    bsdcat "$1" | awk '
+    /%REPLACES%/ {
+        while(NF != 0) { getline; print; }
+    }'
 }
 
 trap_exit() {
