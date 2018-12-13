@@ -44,7 +44,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 -d database [-afNRsv] [--] <makepkg args>" >&2
+    plain "usage: $argv0 [-d repo] [-aCDMr path] [-cfNRsv] [--] <makepkg args>" >&2
     exit 1
 }
 
@@ -57,7 +57,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 ## option parsing
-opt_short='a:d:r:C:D:M:cfNRsv'
+opt_short='a:C:d:D:M:r:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
           'makepkg-conf:' 'remove')

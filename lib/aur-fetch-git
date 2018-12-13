@@ -32,14 +32,14 @@ merge_across_fs() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-L log_dir]\n' "$argv0"
+    printf >&2 'usage: %s [-L path]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='L:h'
-opt_long=('log-dir:' 'help')
+opt_short='L:'
+opt_long=('log-dir:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -50,7 +50,6 @@ set -- "${OPTRET[@]}"
 while true; do
     case "$1" in
         -L|--log-dir) shift; log_dir=$1; log=directory ;;
-        -h|--help) usage ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
