@@ -139,6 +139,9 @@ esac
 # resolve symbolic link
 db_path=$(readlink -f -- "$db_path")
 
+# local repository access for aur-chroot (#485)
+chroot_args+=(-d "$db_name")
+
 if ! [[ -w $db_path ]]; then
     error "$argv0: $db_path: permission denied"
     exit 13
@@ -168,7 +171,7 @@ else
 fi
 
 if ((chroot)); then
-    aur chroot -d "$db_name" --no-build "${chroot_args[@]}" 
+    aur chroot --no-build "${chroot_args[@]}"
 else
     pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
 fi
