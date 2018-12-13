@@ -39,15 +39,15 @@ select_pkgbase() {
         next
     }
     $1 in map {
-	base = map[$1]
-	
-	# only print pkgbase on first occurence
-	if (base in seen) {
-	    next
-	} else {
-	    print base
-	    seen[base]
-	}
+        base = map[$1]
+
+        # only print pkgbase on first occurence
+        if (base in seen) {
+            next
+        } else {
+            print base
+            seen[base]
+        }
     }' "$@"
 }
 

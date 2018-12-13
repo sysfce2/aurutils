@@ -27,9 +27,9 @@ host_with_cache() {
     printf '[%s]\n' options
     pacman-conf --verbose CacheDir
 
-    for r in "$@"; do
-	printf '[%s]\n' "$r"
-	pacman-conf --repo "$r"
+    for a in "$@"; do
+        printf '[%s]\n' "$a"
+        pacman-conf --repo "$a"
     done
 }
 
