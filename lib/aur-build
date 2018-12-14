@@ -66,7 +66,7 @@ unset queue db_name db_path db_root
 while true; do
     case "$1" in
         -a|--arg-file)  shift; queue=$1 ;;
-        -d|--database)  shift; db_name=$1 ;;
+        -d|--database)  shift; db_name=$1; chroot_args+=(-d "$1") ;;
         -r|--root)      shift; db_root=$1 ;;
         -c|--chroot)    chroot=1 ;;
         -f|--force)     overwrite=1 ;;
@@ -132,9 +132,6 @@ esac
 
 # resolve symbolic link
 db_path=$(readlink -f -- "$db_path")
-
-# local repository access for aur-chroot (#485)
-chroot_args+=(-d "$db_name")
 
 if ! [[ -w $db_path ]]; then
     error "$argv0: $db_path: permission denied"
