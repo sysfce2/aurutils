@@ -18,9 +18,7 @@ db_namever() {
 }
 
 ex_namever() {
-    awk -F"/" -v rname="^$1/" '{
-        $0 ~ rname { print $NF }
-    }'
+    awk -F"/" -v rname="^$1/" '$0 ~ rname { print $NF }'
 }
 
 usage() {
@@ -157,7 +155,7 @@ case $modifier in
 esac
 
 case $mode in
-    list_updates)
+    list_upgrades)
         contents | aur vercmp "${vercmp_args[@]}"
         ;;
     list_packages)
