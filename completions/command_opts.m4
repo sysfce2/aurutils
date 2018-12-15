@@ -13,26 +13,17 @@ dnl
 define(`HAVE_OPTDUMP',`ifelse(`$#',`0', ,`$#',`1',`wrap_has_dump(`$1') ',`wrap_has_dump($1)' `HAVE_OPTDUMP(shift($@))')')
 define(`NO_OPTDUMP',`ifelse(`$#',`0', ,`$#',`1',`wrap_no_dump(`$1') ',`wrap_no_dump($1)' `NO_OPTDUMP(shift($@))')')
 
-dnl override how elements are printed for SUBCOMMANDS macro
-dnl which defines an array with all avaliable subcommands
-dnl
-pushdef(`wrap_has_dump','$1')
-pushdef(`wrap_no_dump','$1')
-define(SUBCOMMANDS,subcommands=(CORECOMMANDS))
-
 dnl override how elements are printed for the DEFAULT_OPTS
 dnl which is a simple function that returns the options available for a
 dnl subcommand using case statement construct.
 dnl
 pushdef(`wrap_has_dump',`
-	$1) printf -- GET_OPTS($1) ;;')
+    default_cmds[$1]=GET_OPTS($1)')
 pushdef(`wrap_no_dump',`
-	$1) : nothing to print ;;')
+    default_cmds[$1]=""')
 define(DEFAULT_OPTS,
-`_get_default_opts() {
-    case "`$'1" in CORECOMMANDS
-    esac
-}')
+`typeset -A default_cmds
+CORECOMMANDS')
 
 dnl Helper macro to retrieves options from subcommand --dump-options
 dnl
