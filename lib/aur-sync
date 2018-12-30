@@ -13,7 +13,7 @@ build_args=()
 fetch_args=()
 makechrootpkg_args=(-cu)
 makechrootpkg_makepkg_args=()
-makepkg_args=(-cs)
+makepkg_args=(--clean --sync)
 repo_args=()
 
 # default options (enabled)
@@ -107,12 +107,12 @@ while true; do
         --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
                               pkg_i+=("${pkg[@]}") ;;
         --root)               shift; repo_args+=(-r "$1") ;;
-        -A|--ignore?(-)arch)  makepkg_args+=(-A)
+        -A|--ignore?(-)arch)  makepkg_args+=(--ignorearch)
                               makechrootpkg_makepkg_args+=(-A) ;;
         -c|--chroot)          chroot=1; build_args+=(-c) ;;
         -f|--force)           build_args+=(-f) ;;
         -g|--git)             snapshot=0 ;;
-        -L|--log)             makepkg_args+=(-L) ;;
+        -L|--log)             makepkg_args+=(--log) ;;
         -P|--provides)        provides=1 ;;
         -k|--keep)            keep_deps=1 ;;
         -n|--no?(-)confirm)   makepkg_args+=(--noconfirm) ;;
@@ -150,7 +150,7 @@ if ((rotate)); then
 fi
 
 if ! ((keep_deps)); then
-    makepkg_args+=(-r)
+    makepkg_args+=(--rmdeps)
 fi
 
 if ! (($# + update)); then
