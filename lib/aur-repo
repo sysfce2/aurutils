@@ -35,9 +35,8 @@ fi
 
 ## option parsing
 opt_short='d:r:alSu'
-opt_long=('all' 'database:' 'list' 'root:' 'upgrades' 'repo-list'
-          'status-file:' 'sync')
-opt_hidden=('dump-options')
+opt_long=('all' 'database:' 'list' 'root:' 'upgrades' 'repo-list' 'sync')
+opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage

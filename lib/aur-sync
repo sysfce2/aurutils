@@ -82,13 +82,13 @@ fi
 
 opt_short='C:d:D:M:AcfgkLnpPstTu'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
-          'root:' 'makepkg-conf:' 'pacman-conf:' 'allan' 'chroot'
-          'continue' 'force' 'ignore-arch' 'ignorearch' 'log'
-          'noconfirm' 'no-confirm' 'no-ver' 'nover' 'nover-shallow'
-          'no-ver-shallow' 'no-view' 'noview' 'print' 'provides'
-          'rm-deps' 'keep' 'sign' 'temp' 'tar' 'upgrades' 'git'
-          'rebuild' 'rebuildtree' 'rebuild-tree')
-opt_hidden=('dump-options')
+          'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
+          'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver'
+          'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
+          'keep' 'sign' 'temp' 'tar' 'upgrades' 'git' 'rebuild'
+          'rebuild-tree')
+opt_hidden=('dump-options' 'allan' 'ignorearch' 'noconfirm' 'nover'
+            'nover-shallow' 'noview' 'rebuildtree')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage

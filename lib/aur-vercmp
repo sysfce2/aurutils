@@ -80,8 +80,8 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 opt_short='p:u:ac'
-opt_long=('all' 'path:' 'upair:')
-opt_hidden=('dump-options')
+opt_long=('all' 'path:')
+opt_hidden=('dump-options' 'upair:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
