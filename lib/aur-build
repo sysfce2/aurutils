@@ -10,7 +10,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot_args=()
 gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
-makepkg_args=(-crs)
+makepkg_args=(--clean --sync --rmdeps)
 repo_add_args=()
 
 # default options
@@ -106,8 +106,8 @@ if type -P xdelta3 >/dev/null; then
 fi
 
 # assign environment variables
-: ${db_name=$AUR_REPO}
-: ${db_root=$AUR_DBROOT}
+: "${db_name=$AUR_REPO}"
+: "${db_root=$AUR_DBROOT}"
 
 case $db_name in
     "")
