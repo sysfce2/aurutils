@@ -8,45 +8,55 @@ aur\-repo \- manage local repositories
 .OP \-r root
 .OP \-lSu
 .OP \-\-repo\-list
-.OP \-\-status\-file
 .YS
 
 .SH OPTIONS
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
+The name of the pacman repository. May also be specified through the
+.B AUR_REPO
+environment variable.
 
 .TP
 .BI \-r " PATH" "\fR,\fP \-\-root=" PATH
+The path to the root of the pacman repository. May also be specified
+through the
+.B AUR_DBROOT
+environment variable.
 
 .TP
 .BR \-l ", " \-\-list
+List the contents of the repository in
+.BI pkgname\tpkgver
+format. If the
+.B \-S
+option is not enabled, the repository is queried directly through the
+.BI .db
+file on-disk.
 
 .TP
 .BR \-u ", " \-\-upgrades
+Use
+.BR aur\-vercmp (1)
+to check a pacman repository for updates.
 
 .TP
 .BR \-S ", " \-\-sync
-
-.TP
-.BI \-\-status\-file= PATH
+Query repositories through
+.BR pacman (8),
+instead of directly.
 
 .TP
 .BR \-\-repo\-list
-
-.SH ENVIRONMENT
-
-.B AUR_REPO
-.RS
-The repository used for building packages.  If
-.B AUR_DBROOT
-is not specified, the entry must be a valid
+List all local (with a
 .B file://
-repository configured in
-.BR pacman.conf (5).
-.RE
+prefix) pacman repositories, in
+.BI name\tServer
+format.
 
 .SH SEE ALSO
 .BR aur (1),
+.BR aur\-vercmp (1),
 .BR expac (1),
-.BR pacman (1),
+.BR pacman (8),
 .BR pacman.conf (5)
