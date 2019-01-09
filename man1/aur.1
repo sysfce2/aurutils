@@ -97,17 +97,23 @@ directive. This section documents an example configuration; for
 details, consult the
 .BR pacman.conf (5)
 man page.
+
 .SY Note:
 Avoid naming the repository
 .IR local ,
 as this name is reserved by
-.BR pacman (1).
+.BR pacman (8).
 
 .SY Note:
 It is recommended to use a pacman cache directory
 .RB ( CacheDir )
 as the package pool. This avoids checksum mismatches between built
-packages and any cached versions.
+packages and any cached versions. The
+.BR "CleanMethod = KeepCurrent"
+option ensures that
+.B pacman \-Sc
+does not remove packages which are not installed to the system (but
+present in a pacman database).
 .YS
 
 .SY Tip:
@@ -117,13 +123,15 @@ version control packages.
 
 .SS Pacman configuration
 .P
-If the local repository
+For the purposes of this example, we assume the local repository
 .I custom
 is located in
-.IR /var/cache/pacman/custom ,
-create
-.IR /etc/pacman.d/custom
-with the following contents:
+.IR /var/cache/pacman/custom .
+
+As explained above, edit the
+.IR /etc/pacman.conf
+file to include the repository path as
+.BR CacheDir :
 .EX
 
   [options]
@@ -131,24 +139,15 @@ with the following contents:
   CacheDir = /var/cache/pacman/custom
   CleanMethod = KeepCurrent
 
+.EE
+Append a section for the local repository:
+.EX
+
   [custom]
   SigLevel = Optional TrustAll
   Server = file:///var/cache/pacman/custom
 
 .EE
-Include the configuration in
-.IR /etc/pacman.conf :
-.EX
-
-  # An example of a custom package repository.  See the pacman manpage for
-  # tips on creating your own repositories.
-  Include = /etc/pacman.d/custom
-
-.EE
-Add
-.B Include\fR to the \fIend\fR of pacman.conf, where possible.
-
-.SS Adding packages
 Create the repository root and database:
 .EX
 
@@ -171,7 +170,7 @@ Synchronize pacman:
 .EE
 
 .SH EXAMPLES
-Examples below assume
+In this section, we assume that
 .BR bash (1)
 is the interactive shell.
 
