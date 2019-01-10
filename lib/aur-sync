@@ -80,13 +80,13 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='C:d:D:M:AcfgkLnpPstTu'
+opt_short='B:C:d:D:M:AcfgkLnpPstTu'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
           'keep' 'sign' 'temp' 'tar' 'upgrades' 'git' 'rebuild'
-          'rebuild-tree')
+          'rebuild-tree' 'build-command:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'noconfirm' 'nover'
             'nover-shallow' 'noview' 'rebuildtree')
 
@@ -99,6 +99,7 @@ unset pkg pkg_i
 while true; do
     case "$1" in
         -d|--database)        shift; repo_args+=(-d "$1") ;;
+        -B|--build-command)   shift; build_args+=(-B "$1") ;;
         -D|--directory)       shift; build_args+=(-D "$1") ;;
         -M|--makepkg-conf)    shift; build_args+=(--makepkg-conf "$1") ;;
         -C|--pacman-conf)     shift; build_args+=(--pacman-conf "$1") ;;

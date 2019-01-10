@@ -51,10 +51,10 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 ## option parsing
-opt_short='a:C:d:D:M:r:cfNRsv'
+opt_short='a:B:C:d:D:M:r:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
-          'makepkg-conf:' 'remove')
+          'makepkg-conf:' 'remove' 'build-command:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -62,7 +62,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset queue db_name db_path db_root
+unset queue db_name db_path db_root build_cmd
 while true; do
     case "$1" in
         -a|--arg-file)  shift; queue=$1 ;;
@@ -77,6 +77,7 @@ while true; do
         -M|--makepkg-conf) shift; chroot_args+=(-M "$1") ;;
         -N|--no-sync)   no_sync=1 ;;
         -R|--remove)    repo_add_args+=(-R) ;;
+        -B|--build-command) shift; build_cmd+=("$1") ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -163,9 +164,9 @@ fi
 
 if ((chroot)); then
     aur chroot --no-build "${chroot_args[@]}"
-else
-    pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
 fi
+
+pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
 
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
@@ -185,13 +186,17 @@ while IFS= read -ru "$fd" path; do
         fi
     fi
 
-    if ((chroot)); then
+    if [[ -v build_cmd ]]; then
+        printf '%s\n' >&2 "Running custom command: ${build_cmd[*]}"
+        env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" \
+            -- "${build_cmd[@]}"
+    elif ((chroot)); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
-        PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" \
+        env PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" \
             -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
-        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
+        env PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
