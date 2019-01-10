@@ -242,7 +242,7 @@ fi
 if ((download)); then
     msg "Retrieving package files" >&2
 
-    aur jobs -Xj +3 --nice 10 --halt soon,fail=1 \
+    aur jobs -Xj +3 --nice 10 --halt soon,fail=1 --keep-order \
         aur fetch "${fetch_args[@]}" :::: "$tmp"/queue
 fi
 
