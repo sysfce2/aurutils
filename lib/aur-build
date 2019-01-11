@@ -179,6 +179,7 @@ pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
       cat -s "$HOME"/.makepkg.conf
   fi
 
+  # PKGDEST defined here is NOT exported to the build environment (#498)
   printf 'PKGDEST=%s\n' "$var_tmp"
 } >"$tmp"/makepkg.conf
 
