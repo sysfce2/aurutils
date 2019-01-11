@@ -4,6 +4,7 @@ set -o errexit
 shopt -s extglob
 readonly argv0=build
 readonly startdir=$PWD
+readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
@@ -51,10 +52,10 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 ## option parsing
-opt_short='a:C:d:D:M:r:cfNRsv'
+opt_short='a:B:C:d:D:M:r:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
-          'makepkg-conf:' 'remove')
+          'makepkg-conf:' 'remove' 'build-command:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -62,7 +63,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset queue db_name db_path db_root
+unset queue db_name db_path db_root build_cmd mpkg_conf
 while true; do
     case "$1" in
         -a|--arg-file)  shift; queue=$1 ;;
@@ -74,9 +75,10 @@ while true; do
         -v|--verify)    repo_add_args+=(-v) ;;
         -D|--directory) shift; chroot_args+=(-D "$1") ;;
         -C|--pacman-conf)  shift; chroot_args+=(-C "$1") ;;
-        -M|--makepkg-conf) shift; chroot_args+=(-M "$1") ;;
+        -M|--makepkg-conf) shift; chroot_args+=(-M "$1"); mpkg_conf=$1 ;;
         -N|--no-sync)   no_sync=1 ;;
         -R|--remove)    repo_add_args+=(-R) ;;
+        -B|--build-command) shift; build_cmd+=("$1") ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -161,11 +163,24 @@ else
     fi
 fi
 
+# configuration for container builds
 if ((chroot)); then
     aur chroot --no-build "${chroot_args[@]}"
-else
-    pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
 fi
+
+# configuration for host builds
+pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
+
+{ cat -s "${mpkg_conf:-/etc/makepkg.conf}"
+
+  if [[ -r $XDG_CONFIG_HOME/pacman/makepkg.conf ]]; then
+      cat -s "$XDG_CONFIG_HOME"/pacman/makepkg.conf
+  elif [[ -r $HOME/.makepkg.conf ]]; then
+      cat -s "$HOME"/.makepkg.conf
+  fi
+
+  printf 'PKGDEST=%s\n' "$var_tmp"
+} >"$tmp"/makepkg.conf
 
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
@@ -185,13 +200,17 @@ while IFS= read -ru "$fd" path; do
         fi
     fi
 
-    if ((chroot)); then
+    if [[ -v build_cmd ]]; then
+        printf '%s\n' >&2 "Running custom command: ${build_cmd[*]}"
+        env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" \
+            -- "${build_cmd[@]}"
+    elif ((chroot)); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
-        PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" \
+        env PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" \
             -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
-        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
+        makepkg --config "$tmp"/makepkg.conf "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
