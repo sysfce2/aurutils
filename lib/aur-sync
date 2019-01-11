@@ -86,7 +86,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
           'keep' 'sign' 'temp' 'tar' 'upgrades' 'git' 'rebuild'
-          'rebuild-tree' 'build-command:')
+          'rebuild-tree' 'build-command:' 'ignore-file:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'noconfirm' 'nover'
             'nover-shallow' 'noview' 'rebuildtree')
 
@@ -107,6 +107,7 @@ while true; do
         --bind-rw)            shift; makechrootpkg_args+=(-d "$1") ;;
         --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
                               pkg_i+=("${pkg[@]}") ;;
+        --ignore-file)        shift; mapfile -t pkg_i < "$1" ;;
         --root)               shift; repo_args+=(-r "$1") ;;
         -A|--ignore?(-)arch)  makepkg_args+=(--ignorearch)
                               makechrootpkg_makepkg_args+=(-A) ;;
