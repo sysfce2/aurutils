@@ -15,7 +15,7 @@ makepkg_args=(--clean --sync --rmdeps)
 repo_add_args=()
 
 # default options
-chroot=0 no_sync=0 overwrite=0 sign_pkg=0
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 conf_single() {
     awk -v "repo=[$1]" '
@@ -55,7 +55,7 @@ fi
 opt_short='a:B:C:d:D:M:r:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
-          'makepkg-conf:' 'remove' 'build-command:')
+          'makepkg-conf:' 'remove' 'build-command:' 'run-pkgver')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -79,6 +79,7 @@ while true; do
         -N|--no-sync)   no_sync=1 ;;
         -R|--remove)    repo_add_args+=(-R) ;;
         -B|--build-command) shift; build_cmd+=("$1") ;;
+        --run-pkgver)   run_pkgver=1 ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -187,6 +188,14 @@ pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
 
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
+
+    # run pkgver before --packagelist (#500)
+    if ((run_pkgver)) && ! LANG=C makepkg --noprepare -od >"$tmp"/log 2>&1; then
+        error "$argv0: run_pkgver: makepkg exit code $?"
+
+        cat >&2 "$tmp"/log
+        exit 1
+    fi
 
     if ((!overwrite)); then
         unset mark

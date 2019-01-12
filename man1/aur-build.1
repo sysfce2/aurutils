@@ -30,7 +30,7 @@ when
 is specified. The default options are
 .B \-\-clean \-\-sync \-\-rmdeps
 and
-.BR \-c \-u ,
+.BR "\-c \-u" ,
 respectively.
 
 .TP
@@ -131,6 +131,12 @@ environment variable can be set to the appopriate key identifier.
 Verify the PGP signature of the database before
 updating.
 .RB ( "repo\-add \-v" ).
+
+.TP
+.BR \-\-run\-pkgver
+Run
+.B "makepkg --noprepare -od"
+before checking existing packages.
 
 .SH ENVIRONMENT
 .B AUR_REPO
