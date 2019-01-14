@@ -15,8 +15,8 @@ git_stat_patch() {
 }
 
 merge_upstream() {
+    # set destination of patch file
     local pkg=$1 log_dir=$2 output
-    local orderfile=${GIT_DIR:-$PWD/.git}/orderfile
 
     if [[ -d $log_dir ]]; then
         output=$log_dir/$pkg.patch
@@ -24,12 +24,14 @@ merge_upstream() {
         output=/dev/stdout
     fi
 
-    git fetch -v >&2
-
     # default to showing PKGBUILD diffs first (#399)
+    local orderfile=${GIT_DIR:-$PWD/.git}/orderfile
+
     if [[ ! -s $orderfile ]]; then
         echo PKGBUILD >"$orderfile"
     fi
+
+    git fetch -v >&2
 
     # only print log on upstream changes
     if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
