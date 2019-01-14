@@ -111,7 +111,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 if cd "$tmp" && mkdir json tsv; then
-    chain # tsv/n: pkgname\tdepends\tpkgbase\pkgver
+    printf '%s\n' "$@" | chain # tsv/n: pkgname\tdepends\tpkgbase\pkgver
 
     # check iteration number
     case $? in
