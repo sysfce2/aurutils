@@ -27,7 +27,7 @@ tr_ver() {
 chain() {
     local a num sub
 
-    aur rpc -t info > json/0 || exit
+    printf '%s\n' "$@" | aur rpc -t info > json/0 || exit
     num=$(count json/0)
 
     if ((num < 1)); then
@@ -41,8 +41,8 @@ chain() {
 
         # Avoid querying duplicates (#4)
         cut -f1 tsv/$sub >> seen # pkgname
-        cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen \
-            | aur rpc -t info > json/$a || exit # rpc error
+        cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen | \
+            aur rpc -t info > json/$a || exit # rpc error
 
         if [[ -s json/$a ]]; then
             num=$(count json/$a)
@@ -111,7 +111,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 if cd "$tmp" && mkdir json tsv; then
-    printf '%s\n' "$@" | chain # tsv/n: pkgname\tdepends\tpkgbase\pkgver
+    chain "$@" # tsv/n: pkgname\tdepends\tpkgbase\pkgver
 
     # check iteration number
     case $? in
