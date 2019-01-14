@@ -4,17 +4,106 @@ readonly argv0=fetch
 readonly aur_location='https://aur.archlinux.org'
 readonly fmt_git_clone=$aur_location/%s.git
 readonly fmt_snapshot=$aur_location/cgit/aur.git/snapshot/%s.tar.gz
+readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default arguments
-fetch_args=()
-
 # default options
-recurse=0
-mode=git
+mode=git recurse=0
+
+git_stat_patch() {
+    git --no-pager log -O "$1" --patch --stat '..@{upstream}'
+}
+
+merge_upstream() {
+    local pkg=$1 log_dir=$2 output
+    local orderfile=${GIT_DIR:-$PWD/.git}/orderfile
+
+    if [[ -d $log_dir ]]; then
+        output=$log_dir/$pkg.patch
+    else
+        output=/dev/stdout
+    fi
+
+    git fetch -v >&2
+
+    # default to showing PKGBUILD diffs first (#399)
+    if [[ ! -s $orderfile ]]; then
+        echo PKGBUILD >"$orderfile"
+    fi
+
+    # only print log on upstream changes
+    if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
+        git_stat_patch "$orderfile" >> "$output"
+
+        # discard any local changes (#349)
+        git reset --hard "HEAD@{upstream}" >&2
+    fi
+}
+
+fetch_git() {
+    local log_dir=$1 pkg uri
+
+    while IFS= read -r uri; do
+        pkg=${uri##*/}   # strip path
+        pkg=${pkg%%.git} # strip .git suffix
+
+        if [[ -d $pkg/.git ]]; then
+            # avoid issues with filesystem boundaries (#274)
+            GIT_DIR="$PWD/$pkg"/.git GIT_WORK_TREE="$PWD/$pkg" \
+                   merge_upstream "$pkg" "$log_dir"
+        else
+            git clone "$uri"
+        fi
+    done
+}
+
+diff_log() {
+    local base=$1 log_dir=$2
+
+    if [[ -d $log_dir ]]; then
+        tee -a "$log_dir/$base".diff | diffstat -Ckq -f3
+    else
+        tee
+    fi
+}
+
+tar_no_mode_diff() {
+    local archive=$1 base=$2 dir=$3
+
+    if [[ -d $dir/$base ]]; then
+        LC_MESSAGES=C tar -df "$archive" -C "$dir" | grep -Evq '(Mode|Uid|Gid)'
+    else
+        return 1
+    fi
+}
+
+fetch_tar() {
+    #global tmp
+    local log_dir=$1 archive base
+
+    wget -i /dev/stdin --directory-prefix "$tmp" || return 1
+
+    for archive in "$tmp"/*.tar.gz; do
+        base=$(basename "$archive" .tar.gz)
+        tar -kxf "$archive" --directory "$tmp"
+
+        if tar_no_mode_diff "$archive" "$base" "$startdir"; then
+            diff -ur "$startdir/$base" "$tmp/$base" | \
+                diff_log "$base" "$log_dir"
+        fi
+
+        cp -af "$tmp/$base" "$startdir"
+    done
+}
 
 linef() {
-    awk -v "f=$1" '{printf(f, $0);}'
+    awk -v "fmt=$1" '{ printf(fmt, $0) }'
+}
+
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp" "$tmp_view"
+    fi
 }
 
 usage() {
@@ -26,6 +115,7 @@ EOF
     exit 1
 }
 
+source /usr/share/makepkg/util/util.sh
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='L:grt'
@@ -40,10 +130,10 @@ set -- "${OPTRET[@]}"
 unset log_dir
 while true; do
     case "$1" in
-        -L|--log-dir) shift; log_dir=$1 ;;
+        -L|--log-dir) shift; log_dir=$(canonicalize_path "$1") ;;
         -r|--recurse) recurse=1 ;;
-        -g|--git)     mode=git ;;
-        -t|--tar)     mode=snapshot ;;
+        -g|--git) mode=git ;;
+        -t|--tar) mode=tar ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -53,17 +143,16 @@ while true; do
 done
 unset opt_short opt_long OPTRET
 
+tmp=$(mktemp -dt "$argv0".XXXXXXXX)
+trap trap_exit EXIT
+
 if ((!$#)); then
     usage
 fi
 
-if [[ -v log_dir ]]; then
-    fetch_args+=(-L "$log_dir")
-
-    if ! [[ -d $log_dir ]]; then
-        printf >&2 '%s: %q: not a directory' "$argv0" "$log_dir"
-        exit 21
-    fi
+if [[ -v log_dir ]] && [[ ! -d $log_dir ]]; then
+    printf >&2 '%s: %q: not a directory' "$argv0" "$log_dir"
+    exit 21
 fi
 
 # set filters (1)
@@ -75,11 +164,11 @@ esac
 
 # set filters (2)
 case $mode in
-         git) uri() { linef "$fmt_git_clone\n"; } ;;
-    snapshot) uri() { linef "$fmt_snapshot\n" ; } ;;
+    git) uri() { linef "$fmt_git_clone\n"; } ;;
+    tar) uri() { linef "$fmt_snapshot\n" ; } ;;
 esac
 
 # pipeline
-printf '%s\n' "$@" | deps | uri | aur "fetch-$mode" "${fetch_args[@]}"
+printf '%s\n' "$@" | deps | uri | fetch_$mode "$log_dir"
 
 # vim: set et sw=4 sts=4 ft=sh:
