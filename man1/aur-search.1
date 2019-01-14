@@ -4,7 +4,7 @@ aur\-search \- search for AUR packages
 
 .SH SYNOPSIS
 .SY "aur search"
-.OP \-aisdmnqv
+.OP \-adimnqrsv
 .OP \-k key
 .IR keyword ...
 .YS
@@ -22,6 +22,10 @@ interface, and displayed in a brief format.
 .TP
 .B \-q ", " \-\-short
 Only display package name, version and description.
+
+.TP
+.B \-r ", " \-\-raw
+Display the unprocessed JSON output.
 
 .TP
 .B \-v ", " \-\-verbose
