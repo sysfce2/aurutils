@@ -104,7 +104,7 @@ linef() {
 
 trap_exit() {
     if [[ ! -o xtrace ]]; then
-        rm -rf "$tmp" "$tmp_view"
+        rm -rf "$tmp"
     fi
 }
 
