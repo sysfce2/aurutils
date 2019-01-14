@@ -134,7 +134,10 @@ if cd "$tmp" && mkdir json tsv; then
             # pkgbase is ignored for repo packages (as unknown)
             while read -r pkgname; do
                 if [[ ${map[$pkgname]} ]]; then
-                    printf '%s\n' "$pkgname"
+                    printf '%s\n' "${map[$pkgname]}"
+
+                    # only print pkgbase once (#503)
+                    unset -v "map[$pkgname]"
                 fi
             done < <(order tsv/n)
             ;;
