@@ -66,9 +66,11 @@ trap 'rm -rf "$wget_log"' EXIT
 
 # pipeline
 jq -R -r '@uri' | query | wget -o "$wget_log" -i - -O - -nv
+wget_err=${PIPESTATUS[2]}
 
-if ((PIPESTATUS[2])); then
+if ((wget_err)); then
     cat "$wget_log" >&2
+    exit $wget_err
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
