@@ -196,7 +196,7 @@ fi
 
 if [[ -s argv ]]; then
     # $1 pkgname $2 depends $3 pkgbase $4 pkgver
-    aur depends <argv >depends
+    aur depends --table <argv >depends
 else
     plain "there is nothing to do" >&2
     exit

@@ -10,6 +10,7 @@ multiple=section
 query_type=search
 search_by=name-desc
 sort_key=Name
+output=hrm
 
 tabulate() {
     # It is important to have a default value for every field, or
@@ -43,7 +44,7 @@ tabulate() {
 }
 
 
-parse_long() {
+info_long() {
     local -a desc=(
         'Name'
         'Base'
@@ -76,7 +77,7 @@ parse_long() {
     done
 }
 
-parse_short() {
+info_short() {
     local Name Version NumVotes Popularity Maintainer OutOfDate Description
 
     while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes Popularity OutOfDate _; do
@@ -134,8 +135,8 @@ while true; do
         --optdepends)    search_by=optdepends ;;
         --checkdepends)  search_by=checkdepends ;;
         -q|--short)      format=short ;;
-        -r|--raw)        format=raw ;;
         -v|--verbose)    format=long ;;
+        -r|--raw)        output=raw ;;
         -k|--key)        shift; sort_key=$1 ;;
         --dump-options)  printf -- '--%s\n' "${opt_long[@]}" ;
                          printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
@@ -163,19 +164,24 @@ esac
 
 # set filters (1)
 case $format in
-     long) parse() { parse_long | column -ts $'\t' | sed -E 's/^-//; $d'; } ;;
-    short) parse() { parse_short; } ;;
-      raw) parse() { tee; } ;;
+     long) info() { info_long | column -ts $'\t' | sed -E 's/^-//; $d'; } ;;
+    short) info() { info_short; } ;;
 esac
 
 # set filters (2)
 case $multiple in
+       none) combine() { tee; } ;;
     section) combine() { sort | uniq -d; } ;;
       union) combine() { sort | uniq -u; } ;;
-       none) combine() { tee; } ;;
+esac
+
+# set filters (3)
+case $output in
+    hrm) parse() { tabulate "$sort_key" | combine | info; } ;;
+    raw) parse() { tee; } ;;
 esac
 
 # pipeline
-printf '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | tabulate "$sort_key" | combine | parse
+printf '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | parse
 
 # vim: set et sw=4 sts=4 ft=sh:

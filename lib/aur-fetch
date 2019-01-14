@@ -159,8 +159,7 @@ fi
 
 # set filters (1)
 case $recurse in
-    # total order is not required, though output must be unique.
-    1) deps() { aur depends | cut -f3 | sort -u; } ;;
+    1) deps() { aur depends --pkgbase; } ;;
     0) deps() { tee; } ;;
 esac
 
