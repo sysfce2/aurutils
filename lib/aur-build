@@ -215,11 +215,11 @@ while IFS= read -ru "$fd" path; do
     if [[ -v build_cmd ]]; then
         printf '%s\n' >&2 "Running custom command: ${build_cmd[*]}"
         env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" \
-            -- "${build_cmd[@]}"
+            "${build_cmd[@]}"
     elif ((chroot)); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
-        env PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" \
-            -- "${makechrootpkg_args[@]}"
+        env PKGDEST="$var_tmp" aur chroot --no-prepare \
+            "${chroot_args[@]}" "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
         makepkg --config "$tmp"/makepkg.conf "${makepkg_args[@]}"
