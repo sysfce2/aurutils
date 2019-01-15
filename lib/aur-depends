@@ -138,8 +138,6 @@ if cd "$tmp" && mkdir json tsv; then
 
                 if [[ $pkgbase ]] && [[ ! ${map_seen[$pkgbase]} ]]; then
                     printf '%s\n' "${map[$pkgname]}"
-
-                    # only print pkgbase once (#503)
                     map_seen[$pkgbase]=1
                 fi
             done < <(order tsv/n)
