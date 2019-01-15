@@ -5,7 +5,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly max_request=30
 
 # default options
-mode=pkgname aur_only=1
+mode=pkgname
 
 count() {
     jq -r '.resultcount' "$1" | awk '{s += $1} END {print s}'
@@ -72,7 +72,7 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-abnt]\n' "$argv0"
+    printf >&2 'usage: %s [-abntT]\n' "$argv0"
     exit 1
 }
 
@@ -83,8 +83,8 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='abnt'
-opt_long=('table' 'pkgbase' 'pkgname' 'all')
+opt_short='abntT'
+opt_long=('table' 'table-ordered' 'pkgbase' 'pkgname' 'pkgname-all')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -94,10 +94,11 @@ set -- "${OPTRET[@]}"
 
 while true; do
     case "$1" in
-        -a|--all)     aur_only=0 ;;
-        -b|--pkgbase) mode=pkgbase ;;
-        -n|--pkgname) mode=pkgname ;;
-        -t|--table)   mode=table ;;
+        -a|--pkgname-all)   mode=pkgname_all ;;
+        -b|--pkgbase)       mode=pkgbase ;;
+        -n|--pkgname)       mode=pkgname ;;
+        -t|--table)         mode=table ;;
+        -T|--table-ordered) mode=table_ordered ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -123,6 +124,7 @@ if cd "$tmp" && mkdir json tsv; then
     esac
 
     case $mode in
+        # pkgbase (AUR, total order)
         pkgbase)
             # associate pkgname to pkgbase
             declare -A map map_seen
@@ -143,15 +145,39 @@ if cd "$tmp" && mkdir json tsv; then
                 fi
             done < <(order tsv/n)
             ;;
+        # pkgname (AUR, total order)
         pkgname)
-            if ((aur_only)); then
-                grep -Fxf <(cut -f1 tsv/n) <(order tsv/n)
-            else
-                order tsv/n
-            fi ;;
+            grep -Fxf <(cut -f1 tsv/n) <(order tsv/n)
+            ;;
+        # pkgname (all, total order)
+        pkgname_all)
+            order tsv/n
+            ;;
+        # pkgname\tdepends\tpkgbase\tpkgver (AUR)
         table)
             cat tsv/n
             ;;
+        # pkgname\tpkgbase\tpkgver (AUR, total order)
+        table_ordered)
+            declare -A map_b map_v
+
+            while read -r pkgname pkgbase pkgver; do
+                map_b[$pkgname]=$pkgbase
+                map_v[$pkgname]=$pkgver
+            done < <(cut -f2 --complement tsv/n)
+
+            while read -r pkgname; do
+                pkgbase=${map_b[$pkgname]}
+                pkgver=${map_v[$pkgname]}
+
+                if [[ $pkgbase ]]; then
+                    printf '%s\t%s\t%s\n' "$pkgname" "$pkgbase" "$pkgver"
+                fi
+            done < <(order tsv/n)
+            ;;
+        *)
+            error "$argv0: invalid argument"
+            exit 22 ;;
     esac
 else
     exit      
