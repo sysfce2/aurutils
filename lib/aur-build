@@ -219,7 +219,7 @@ while IFS= read -ru "$fd" path; do
     elif ((chroot)); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
         env PKGDEST="$var_tmp" aur chroot --no-prepare \
-            "${chroot_args[@]}" "${makechrootpkg_args[@]}"
+            "${chroot_args[@]}" -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
         makepkg --config "$tmp"/makepkg.conf "${makepkg_args[@]}"
