@@ -115,7 +115,7 @@ if cd "$tmp" && mkdir json tsv; then
 
     # check iteration number
     case $? in
-        1) warning "$argv0: no dependencies found"
+        1) true # no dependencies
            ;;
         $max_request)
             error "$argv0: total requests: $((max_request+1)) (out of range)"
