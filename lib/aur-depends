@@ -94,11 +94,10 @@ set -- "${OPTRET[@]}"
 
 while true; do
     case "$1" in
-        -a|--pkgname-all)   mode=pkgname_all ;;
-        -b|--pkgbase)       mode=pkgbase ;;
-        -n|--pkgname)       mode=pkgname ;;
-        -t|--table)         mode=table ;;
-        --filter) shift; filter=$1 ;;
+        -a|--pkgname-all) mode=pkgname_all ;;
+        -b|--pkgbase)     mode=pkgbase ;;
+        -n|--pkgname)     mode=pkgname ;;
+        -t|--table)       mode=table ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
