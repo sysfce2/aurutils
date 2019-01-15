@@ -159,8 +159,8 @@ fi
 
 # set filters (1)
 case $recurse in
-    1) deps() { aur depends --pkgbase; } ;;
-    0) deps() { tee; } ;;
+    1) deps() { aur depends --pkgbase "$@"; } ;;
+    0) deps() { printf '%s\n' "$@"; } ;;
 esac
 
 # set filters (2)
@@ -170,6 +170,6 @@ case $mode in
 esac
 
 # pipeline
-printf '%s\n' "$@" | deps | uri | fetch_$mode "$log_dir"
+deps "$@" | uri | fetch_$mode "$log_dir"
 
 # vim: set et sw=4 sts=4 ft=sh:
