@@ -125,7 +125,7 @@ if cd "$tmp" && mkdir json tsv; then
     case $mode in
         pkgbase)
             # associate pkgname to pkgbase
-            declare -A map
+            declare -A map map_seen
 
             while read -r pkgname pkgbase; do
                 map[$pkgname]=$pkgbase
@@ -133,11 +133,13 @@ if cd "$tmp" && mkdir json tsv; then
 
             # pkgbase is ignored for repo packages (as unknown)
             while read -r pkgname; do
-                if [[ ${map[$pkgname]} ]]; then
+                pkgbase=${map[$pkgname]}
+
+                if [[ $pkgbase ]] && [[ ! ${map_seen[$pkgbase]} ]]; then
                     printf '%s\n' "${map[$pkgname]}"
 
                     # only print pkgbase once (#503)
-                    unset -v "map[$pkgname]"
+                    map_seen[$pkgbase]=1
                 fi
             done < <(order tsv/n)
             ;;
