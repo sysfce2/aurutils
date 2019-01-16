@@ -262,6 +262,9 @@ else
     viewer() { command -- ${PAGER:-less -K}; }
 fi
 
+# check if dependency graph is valid
+aur graph "$tmp_view"/*/.SRCINFO >/dev/null
+
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
         command -- $AUR_PAGER "$tmp_view"
@@ -277,12 +280,6 @@ fi
 
 if ((build)); then
     build_args+=(-a "$tmp"/queue -d "$db_name" -r "$db_root")
-
-    # check if dependency graph is valid
-    if ! aur graph "$tmp_view"/*/.SRCINFO >/dev/null; then
-        error "$argv0: invalid dependency graph"
-        exit 22
-    fi
 
     if ((chroot)); then
         aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
