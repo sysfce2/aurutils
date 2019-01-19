@@ -55,7 +55,7 @@ fi
 opt_short='a:B:C:d:D:M:r:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:'
-          'makepkg-conf:' 'remove' 'build-command:' 'run-pkgver')
+          'makepkg-conf:' 'remove' 'build-command:' 'pkgver')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -79,7 +79,7 @@ while true; do
         -N|--no-sync)   no_sync=1 ;;
         -R|--remove)    repo_add_args+=(-R) ;;
         -B|--build-command) shift; build_cmd+=("$1") ;;
-        --run-pkgver)   run_pkgver=1 ;;
+        --pkgver)       run_pkgver=1 ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;

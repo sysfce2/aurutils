@@ -133,10 +133,12 @@ updating.
 .RB ( "repo\-add \-v" ).
 
 .TP
-.BR \-\-run\-pkgver
+.BR \-\-pkgver
 Run
 .B "makepkg --noprepare -od"
-before checking existing packages.
+before checking existing packages (effectively running an existing
+.B pkgver()
+function).
 
 .SH ENVIRONMENT
 .B AUR_REPO
