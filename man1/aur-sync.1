@@ -156,7 +156,7 @@ Update all AUR packages in a local repository that are obsolete.
 
 .SS makepkg
 The default build command is
-.BR "makepkg \-crs" .
+.BR "makepkg --clean --syncdeps --rmdeps" .
 
 .TP
 .BR \-A ", " \-\-ignorearch ", " \-\-ignore\-arch
@@ -175,7 +175,8 @@ Do not wait for user input. (\fBmakepkg \-\-noconfirm\fR)
 
 .TP
 .BR \-k ", " \-\-keep
-Do not remove dependencies installed by makepkg.
+Do not remove dependencies installed by makepkg. (negates \fBmakepkg
+\-\-rmdeps\fR)
 
 .SS makechrootpkg
 The default build command is

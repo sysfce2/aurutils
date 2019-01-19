@@ -13,7 +13,7 @@ build_args=()
 fetch_args=()
 makechrootpkg_args=(-cu)
 makechrootpkg_makepkg_args=()
-makepkg_args=(--clean --sync)
+makepkg_args=(--clean --syncdeps)
 repo_args=()
 
 # default options (enabled)
