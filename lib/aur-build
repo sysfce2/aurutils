@@ -15,7 +15,7 @@ makepkg_args=(--clean --syncdeps)
 repo_add_args=()
 
 # default options
-chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 trap_sigusr=0
 
 conf_single() {
     awk -v "repo=[$1]" '
@@ -54,7 +54,7 @@ fi
 ## option parsing
 opt_short='a:B:C:d:D:M:r:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'pacman-conf:'
+          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'trap-sigusr'
           'makepkg-conf:' 'remove' 'build-command:' 'pkgver')
 opt_hidden=('dump-options')
 
@@ -80,6 +80,7 @@ while true; do
         -R|--remove)    repo_add_args+=(-R) ;;
         -B|--build-command) shift; build_cmd+=("$1") ;;
         --pkgver)       run_pkgver=1 ;;
+        --trap-sigusr)  trap_sigusr=1 ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -94,6 +95,11 @@ var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)
 
 trap 'trap_exit' EXIT
 trap 'exit' INT
+
+# ignore SIGUSR1 on makepkg "unknown error" (#508)
+if ((trap_sigusr)); then
+    trap 'warning "$argv0: ignoring SIGUSR1"' USR1
+fi
 
 # reset default makechrootpkg arguments
 if (($#)); then
