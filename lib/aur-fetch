@@ -51,8 +51,7 @@ fetch_git() {
 
         if [[ -d $pkg/.git ]]; then
             # avoid issues with filesystem boundaries (#274)
-            GIT_DIR="$PWD/$pkg"/.git GIT_WORK_TREE="$PWD/$pkg" \
-                   merge_upstream "$pkg" "$log_dir"
+            GIT_DIR="$PWD/$pkg"/.git GIT_WORK_TREE="$PWD/$pkg" merge_upstream "$pkg" "$log_dir"
         else
             git clone "$uri"
         fi
@@ -90,8 +89,7 @@ fetch_tar() {
         tar -kxf "$archive" --directory "$tmp"
 
         if tar_no_mode_diff "$archive" "$base" "$startdir"; then
-            diff -ur "$startdir/$base" "$tmp/$base" | \
-                diff_log "$base" "$log_dir"
+            diff -ur "$startdir/$base" "$tmp/$base" | diff_log "$base" "$log_dir"
         fi
 
         cp -af "$tmp/$base" "$startdir"
