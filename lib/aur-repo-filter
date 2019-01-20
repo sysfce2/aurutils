@@ -4,6 +4,11 @@ readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
+satisfies() {
+    #global reposet
+    xargs -0a <(printf -- '--satisfies=%s\0' "$@") pacsift "${reposet[@]}" <&-
+}
+
 usage() {
     printf >&2 'usage: %s [-d repo] [-a]\n' "$argv0"
     exit 1
@@ -31,8 +36,8 @@ while true; do
         -a|--all)       sync_repo=1 ;;
         -d|--database)  shift; argv_repo+=("$1") ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-            exit ;;
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+                        exit ;;
         --) shift; break;;
     esac
     shift
@@ -54,29 +59,24 @@ while IFS= read -r package; do
     pkgset[$package]=1
 done
 
-# nothing to do
-if ! [[ ${pkgset[*]} ]]; then
-    exit 0
-fi
-
 # use xargs -a to bypass isatty() check
-xargs -0a <(printf -- '--satisfies=%s\0' "${!pkgset[@]}") pacsift "${reposet[@]}" <&- |
-    expac '%n %R %S' -Sv - | while read -ra line
-do
-    package=${line[0]#*/}
+if [[ ${pkgset[*]} ]]; then
+    satisfies "${!pkgset[@]}" | expac '%n %R %S' -Sv - | while read -ra line; do
+        package=${line[0]#*/}
 
-    if [[ ${pkgset[$package]} ]]; then
-        printf '%s\n' "$package"
-    fi
-
-    for ((i = 1; i < ${#line[@]}; i++)); do
-        virtual=${line[$i]}
-
-        if [[ ${pkgset[$virtual]} ]]; then
-            plain "virtual dependency $virtual satisfied by $package" >&2
-            printf '%s\n' "$virtual"
+        if [[ ${pkgset[$package]} ]]; then
+            printf '%s\n' "$package"
         fi
+
+        for ((i = 1; i < ${#line[@]}; i++)); do
+            virtual=${line[$i]}
+
+            if [[ ${pkgset[$virtual]} ]]; then
+                plain "virtual dependency $virtual satisfied by $package" >&2
+                printf '%s\n' "$virtual"
+            fi
+        done
     done
-done
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
