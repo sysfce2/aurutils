@@ -89,7 +89,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
-          'sign' 'temp' 'tar' 'upgrades' 'git' 'rebuild'
+          'sign' 'temp' 'tar' 'upgrades' 'git' 'pkgver' 'rebuild'
           'rebuild-tree' 'build-command:' 'ignore-file:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'noconfirm' 'nover'
             'nover-shallow' 'noview' 'rebuildtree' 'rmdeps')
@@ -132,6 +132,7 @@ while true; do
         --no?(-)ver)          chkver_depth=0 ;;
         --no?(-)ver-shallow)  chkver_depth=1 ;;
         --no?(-)view)         view=0 ;;
+        --pkgver)             build_args+=(--pkgver) ;;
         --rebuild)            build_args+=(-f); chkver_depth=1 ;;
         --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
         --dump-options)       printf -- '--%s\n' "${opt_long[@]}" ;

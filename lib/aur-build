@@ -79,9 +79,9 @@ while true; do
         -M|--makepkg-conf)  shift; chroot_args+=(-M "$1"); mpkg_conf=$1 ;;
         -N|--no-sync)       no_sync=1 ;;
         -R|--remove)        repo_add_args+=(-R) ;;
-        --pkgver)       run_pkgver=1 ;;
-        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+        --pkgver)           run_pkgver=1 ;;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}"
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
                         exit ;;
         --) shift; break ;;
     esac
