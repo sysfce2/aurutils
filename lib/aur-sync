@@ -20,7 +20,7 @@ repo_args=()
 build=1 chkver_depth=2 download=1 view=1 provides=0
 
 # default options (disabled)
-chroot=0 rotate=0 snapshot=0 update=0 keep_deps=0
+chroot=0 rotate=0 snapshot=0 update=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -89,10 +89,10 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
-          'keep' 'sign' 'temp' 'tar' 'upgrades' 'git' 'rebuild'
+          'sign' 'temp' 'tar' 'upgrades' 'git' 'rebuild'
           'rebuild-tree' 'build-command:' 'ignore-file:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'noconfirm' 'nover'
-            'nover-shallow' 'noview' 'rebuildtree')
+            'nover-shallow' 'noview' 'rebuildtree' 'rmdeps')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -120,11 +120,11 @@ while true; do
         -g|--git)             snapshot=0 ;;
         -L|--log)             makepkg_args+=(--log) ;;
         -P|--provides)        provides=1 ;;
-        -k|--keep)            keep_deps=1 ;;
         -n|--no?(-)confirm)   makepkg_args+=(--noconfirm) ;;
         -p|--print)           build=0 ;;
-        -t|--tar)             snapshot=1 ;;
+        -r|--rm?(-)deps)      makepkg_args+=(--rmdeps) ;;
         -s|--sign)            build_args+=(-sv) ;;
+        -t|--tar)             snapshot=1 ;;
         -T|--temp)            makechrootpkg_args+=(-T) ;;
         -u|--upgrades)        update=1 ;;
         --allan)              rotate=1 ;;
@@ -153,10 +153,6 @@ if ((rotate)); then
     else
         echo '?'; exit 16 # EBUSY
     fi
-fi
-
-if ! ((keep_deps)); then
-    makepkg_args+=(--rmdeps)
 fi
 
 if ! (($# + update)); then
