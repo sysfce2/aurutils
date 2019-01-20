@@ -232,7 +232,7 @@ while IFS= read -ru "$fd" path; do
     fi
 
     cd_safe "$var_tmp"
-    pkglist=(./!(*.sig)) # discard makepkg --sign from package list (#410)
+    pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
     siglist=()
 
     for p in "${pkglist[@]}"; do
