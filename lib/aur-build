@@ -17,6 +17,10 @@ repo_add_args=()
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 trap_sigusr=0
 
+# backup control (#444)
+mv_backup=simple
+mv_suffix='~'
+
 conf_single() {
     awk -v "repo=[$1]" '
     /^\[.*\]$/ {
@@ -54,8 +58,8 @@ fi
 ## option parsing
 opt_short='a:B:C:d:D:M:r:cfNRsv'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'trap-sigusr'
-          'makepkg-conf:' 'remove' 'build-command:' 'pkgver')
+          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'makepkg-conf:'
+          'remove' 'build-command:' 'pkgver' 'backup:' 'suffix:' 'trap-sigusr')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -66,20 +70,22 @@ set -- "${OPTRET[@]}"
 unset queue db_name db_path db_root build_cmd mpkg_conf
 while true; do
     case "$1" in
-        -a|--arg-file)  shift; queue=$1 ;;
-        -d|--database)  shift; db_name=$1; chroot_args+=(-d "$1") ;;
-        -r|--root)      shift; db_root=$1 ;;
-        -c|--chroot)    chroot=1 ;;
-        -f|--force)     overwrite=1 ;;
-        -s|--sign)      sign_pkg=1; repo_add_args+=(-s) ;;
-        -v|--verify)    repo_add_args+=(-v) ;;
-        -D|--directory) shift; chroot_args+=(-D "$1") ;;
-        -C|--pacman-conf)  shift; chroot_args+=(-C "$1") ;;
-        -M|--makepkg-conf) shift; chroot_args+=(-M "$1"); mpkg_conf=$1 ;;
-        -N|--no-sync)   no_sync=1 ;;
-        -R|--remove)    repo_add_args+=(-R) ;;
+        -a|--arg-file)      shift; queue=$1 ;;
+        -d|--database)      shift; db_name=$1; chroot_args+=(-d "$1") ;;
+        -r|--root)          shift; db_root=$1 ;;
+        -c|--chroot)        chroot=1 ;;
+        -f|--force)         overwrite=1 ;;
+        -s|--sign)          sign_pkg=1; repo_add_args+=(-s) ;;
+        -v|--verify)        repo_add_args+=(-v) ;;
         -B|--build-command) shift; build_cmd+=("$1") ;;
-        --pkgver)       run_pkgver=1 ;;
+        -D|--directory)     shift; chroot_args+=(-D "$1") ;;
+        -C|--pacman-conf)   shift; chroot_args+=(-C "$1") ;;
+        -M|--makepkg-conf)  shift; chroot_args+=(-M "$1"); mpkg_conf=$1 ;;
+        -N|--no-sync)       no_sync=1 ;;
+        -R|--remove)        repo_add_args+=(-R) ;;
+        --backup) mv_backup=$1 ;;
+        --suffix) mv_suffix=$1 ;;
+        --pkgver) run_pkgver=1 ;;
         --trap-sigusr)  trap_sigusr=1 ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
@@ -247,7 +253,8 @@ while IFS= read -ru "$fd" path; do
     done
 
     # move build products (relative paths)
-    mv -bf "${pkglist[@]}" "${siglist[@]}" "$db_root"
+    mv --backup="$mv_backup" --suffix="$mv_suffix" --force \
+       "${pkglist[@]}" "${siglist[@]}" "$db_root"
 
     cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
