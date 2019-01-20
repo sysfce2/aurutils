@@ -8,6 +8,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
 delay=300
+mode=plain
 pkglist=packages
 update=0
 
@@ -37,13 +38,10 @@ usage() {
     exit 1
 }
 
-# default to any match
-pcre_opt=('.*')
-
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='F:P:bt'
-opt_long=('pkgbase' 'fixed-strings' 'perl-regexp')
+opt_short='t:bFP'
+opt_long=('pkgbase' 'fixed-strings' 'perl-regexp' 'time:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -54,9 +52,9 @@ set -- "${OPTRET[@]}"
 while true; do
     case "$1" in
         -b|--pkgbase) pkglist=pkgbase ;;
-        -t) shift; delay=$1 ;;
-        -F|--fixed-strings) shift; pcre_opt=('-e' "$1" '-F') ;;
-        -P|--perl-regexp) shift; pcre_opt=('-e' "$1") ;;
+        -t|--time)    shift; delay=$1 ;;
+        -F|--fixed-strings) mode=fixed ;;
+        -P|--perl-regexp)   mode=regex ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -66,8 +64,14 @@ while true; do
 done
 unset opt_short opt_long OPTRET
 
-mkdir -p     "$cache"
-chmod -c 700 "$cache"
+# default to regex if >0 arguments specified
+case $# in
+    0) [[ $mode != 'plain' ]] && usage ;;
+    *) [[ $mode == 'plain' ]] && mode=regex ;;
+esac
+
+# packages.gz cache
+install -dm700 "$cache"
 cd "$cache" || exit
 
 if [[ -s $pkglist && -s timestamp ]]; then
@@ -85,6 +89,11 @@ if ((update)); then
     list_update "$aur_location/$pkglist.gz" "$pkglist" > timestamp
 fi
 
-pcregrep "${pcre_opt[@]}" < "$pkglist"
+# pattern match
+case $mode in
+    plain) cat "$pkglist" ;;
+    fixed) cat "$pkglist" | grep -F "$1" ;;
+    regex) cat "$pkglist" | grep -P "$1" ;;
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:
