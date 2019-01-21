@@ -171,6 +171,9 @@ fi
 # configuration for host builds
 pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
 
+# PKGDEST is defined later through makepkg.conf (#513)
+unset PKGDEST
+
 { cat -s "${mpkg_conf:-/etc/makepkg.conf}"
 
   if [[ -r $XDG_CONFIG_HOME/pacman/makepkg.conf ]]; then
@@ -251,9 +254,16 @@ while IFS= read -ru "$fd" path; do
         esac
     done
 
+    # pkglist should not be empty (#513)
+    if ! [[ ${pkglist[*]} ]]; then
+        error "$argv0: invalid argument (no packages found)"
+        exit 22
+    fi
+
     # move build products (relative paths)
     mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
 
+    # update database
     cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
