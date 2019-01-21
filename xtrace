@@ -1,11 +1,10 @@
 #!/bin/bash
 # create directory for log files
 log=$(mktemp -d) || exit
-exec {fd}> "$log"/xtrace
+exec {fd}> "$log"/x
 
 # run program with redirected input/output
-env SHELLOPTS=xtrace BASH_XTRACEFD=$fd "$@" \
-    >"$log"/stdout 2>"$log"/stderr
+env SHELLOPTS=xtrace BASH_XTRACEFD="$fd" "$@" >"$log"/1 2>"$log"/2
 
 # the resulting files should be uploaded
-printf '%s\n' "$log"/{xtrace,stdout,stderr}
+printf '%s\n' "$log"/*

@@ -18,4 +18,4 @@ wget https://raw.githubusercontent.com/AladW/aurutils/master/xtrace
 bash xtrace aur <name> <arguments>
 ```
 
-and attach the resulting files (xtrace, stderr, stdout) to this issue.
+and attach the resulting files to this issue.
