@@ -238,16 +238,19 @@ while IFS= read -ru "$fd" path; do
 
     for p in *; do
         case $p in
-            *.sig) # discard makepkg --sign from package list (#410)
-                continue ;;            
-            *)
-                pkglist+=("$p")
-
+            *.sig)
+                # discard makepkg --sign from package list (#410)
                 if [[ -f $p.sig ]]; then
                     warning "$argv0: existing package signature found"
                     siglist+=("$p".sig)
+                fi ;;
+            *)
+                if [[ -f $p ]]; then
+                    pkglist+=("$p")
+                fi
 
-                elif ((sign_pkg)); then
+                # complete missing signature, if required
+                if [[ ! -f $p.sig ]] && ((sign_pkg)); then
                     gpg "${gpg_args[@]}" --output "$p".sig "$p"
                     siglist+=("$p".sig)
                 fi ;;
