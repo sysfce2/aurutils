@@ -148,7 +148,7 @@ while true; do
 done
 unset opt_short opt_long OPTRET
 
-if ((!$#)); then
+if ! (($#)); then
     usage
 fi
 

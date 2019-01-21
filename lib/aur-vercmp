@@ -28,7 +28,7 @@ cmp_equal_or_newer() {
 }
 
 cmp_checkupdates() {
-    local pkg v_cmp v_in op
+    local all=$1 pkg v_cmp v_in op
 
     while read -r pkg v_cmp v_in; do
         case $v_in in
@@ -36,7 +36,7 @@ cmp_checkupdates() {
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
 
-        if ((!$1)) && ((op > -1)); then
+        if ! ((all)) && ((op > -1)); then
             continue
         fi
 

@@ -197,7 +197,7 @@ while IFS= read -ru "$fd" path; do
         exit 1
     fi
 
-    if ((!overwrite)); then
+    if ! ((overwrite)); then
         unset mark
 
         while IFS= read -r; do

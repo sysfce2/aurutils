@@ -33,7 +33,7 @@ trap_exit() {
     fi
 }
 
-if ((!$#)); then
+if ! (($#)); then
     usage
 fi
 

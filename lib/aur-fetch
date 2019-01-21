@@ -146,7 +146,7 @@ unset opt_short opt_long OPTRET
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 trap trap_exit EXIT
 
-if ((!$#)); then
+if ! (($#)); then
     usage
 fi
 
