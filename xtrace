@@ -1,0 +1,11 @@
+#!/bin/bash
+tmp=$(mktemp) || exit
+
+exec 6> "$tmp"
+export BASH_XTRACEFD=6
+
+set -o xtrace
+export SHELLOPTS
+
+"$@"
+printf 'DEBUG: %s\n' "$tmp"
