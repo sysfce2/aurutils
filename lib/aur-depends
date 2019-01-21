@@ -110,7 +110,7 @@ unset opt_short opt_long OPTRET
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-unset rings
+rings=0
 if cd "$tmp" && mkdir json tsv; then
     chain "$@" || rings=$? # tsv/n: pkgname\tdepends\tpkgbase\pkgver
 
