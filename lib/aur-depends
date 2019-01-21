@@ -110,11 +110,12 @@ unset opt_short opt_long OPTRET
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
+unset rings
 if cd "$tmp" && mkdir json tsv; then
-    chain "$@" # tsv/n: pkgname\tdepends\tpkgbase\pkgver
+    chain "$@" || rings=$? # tsv/n: pkgname\tdepends\tpkgbase\pkgver
 
     # check iteration number
-    case $? in
+    case $rings in
         1) true # no dependencies
            ;;
         $max_request)
