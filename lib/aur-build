@@ -62,7 +62,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset queue db_name db_path db_root build_cmd mpkg_conf
+unset queue db_name db_path db_root build_cmd mpkg_conf pman_conf
 while true; do
     case "$1" in
         -a|--arg-file)      shift; queue=$1 ;;
@@ -74,7 +74,7 @@ while true; do
         -v|--verify)        repo_add_args+=(-v) ;;
         -B|--build-command) shift; build_cmd+=("$1") ;;
         -D|--directory)     shift; chroot_args+=(-D "$1") ;;
-        -C|--pacman-conf)   shift; chroot_args+=(-C "$1") ;;
+        -C|--pacman-conf)   shift; chroot_args+=(-C "$1"); pman_conf=$1 ;;
         -M|--makepkg-conf)  shift; chroot_args+=(-M "$1"); mpkg_conf=$1 ;;
         -N|--no-sync)       no_sync=1 ;;
         -R|--remove)        repo_add_args+=(-R) ;;
@@ -169,7 +169,8 @@ if ((chroot)); then
 fi
 
 # configuration for host builds
-pacman-conf | conf_single "$db_name" >"$tmp"/custom.conf
+pacman-conf --config "${pman_conf:-/etc/pacman.conf}" | \
+    conf_single "$db_name" >"$tmp"/custom.conf
 
 # PKGDEST is defined later through makepkg.conf (#513)
 unset PKGDEST
@@ -238,8 +239,7 @@ while IFS= read -ru "$fd" path; do
 
     for p in *; do
         case $p in
-            *.sig)
-                # discard makepkg --sign from package list (#410)
+            *.sig) # discard makepkg --sign from package list (#410)
                 if [[ -f $p.sig ]]; then
                     warning "$argv0: existing package signature found"
                     siglist+=("$p".sig)
