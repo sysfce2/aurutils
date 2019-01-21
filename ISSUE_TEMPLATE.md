@@ -19,3 +19,7 @@ bash xtrace aur <name> <arguments>
 ```
 
 and attach the resulting files to this issue.
+
+<!-- Note that ./xtrace exports SHELLOPTS, which "set -e" appends to. In -->
+<!-- particular, any aur-* scripts ran by aur-sync will have "set -e" -->
+<!-- enabled. -->
