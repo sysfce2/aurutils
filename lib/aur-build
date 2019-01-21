@@ -240,6 +240,12 @@ while IFS= read -ru "$fd" path; do
     pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
     siglist=()
 
+    # pkglist should not be empty (#513)
+    if [[ ${pkglist[*]} == '!(*.sig)' ]]; then
+        error "$argv0: invalid argument (no packages found)"
+        exit 22
+    fi
+
     for p in "${pkglist[@]}"; do
         if [[ -f $p.sig ]]; then
             warning "$argv0: existing package signature found"
@@ -250,12 +256,6 @@ while IFS= read -ru "$fd" path; do
             siglist+=("$p".sig)
         fi
     done
-
-    # pkglist should not be empty (#513)
-    if ! [[ ${pkglist[*]} ]]; then
-        error "$argv0: invalid argument (no packages found)"
-        exit 22
-    fi
 
     # move build products (relative paths)
     mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
