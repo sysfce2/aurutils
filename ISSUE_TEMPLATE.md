@@ -14,7 +14,12 @@ is the issue reproducible from the master branch?
 __If yes to all, create a debug log:__
 
 ```
-$ bash -x scriptname |& tee error.log
+exec 6> error.log
+export BASH_XTRACEFD=6
+set -o xtrace
+export SHELLOPTS
+
+scriptname
 ```
 
 and attach it to this issue.
