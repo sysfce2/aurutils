@@ -1,9 +1,9 @@
 #!/bin/bash
 # aur-fetch - retrieve build files from the AUR
 readonly argv0=fetch
-readonly aur_location='https://aur.archlinux.org'
-readonly fmt_git_clone=$aur_location/%s.git
-readonly fmt_snapshot=$aur_location/cgit/aur.git/snapshot/%s.tar.gz
+readonly AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
+readonly fmt_git_clone=$AUR_LOCATION/%s.git
+readonly fmt_snapshot=$AUR_LOCATION/cgit/aur.git/snapshot/%s.tar.gz
 readonly startdir=$PWD
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
