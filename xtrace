@@ -1,11 +1,15 @@
 #!/bin/bash
-tmp=$(mktemp) || exit
+# create directory for log files
+log=$(mktemp -d) || exit
 
-exec 6> "$tmp"
-export BASH_XTRACEFD=6
+exec {fd}> "$log"/xtrace
+export BASH_XTRACEFD=$fd
 
 set -o xtrace
 export SHELLOPTS
 
-"$@"
-printf 'DEBUG: %s\n' "$tmp"
+# run program with redirected input/output
+"$@" >"$log"/stdout 2>"$log"/stderr
+
+# the resulting files should be uploaded
+printf '%s\n' "$log"/{xtrace,stdout,stderr}

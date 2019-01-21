@@ -14,12 +14,8 @@ is the issue reproducible from the master branch?
 __If yes to all, create a debug log:__
 
 ```
-exec 6> error.log
-export BASH_XTRACEFD=6
-set -o xtrace
-export SHELLOPTS
-
-scriptname
+wget https://raw.githubusercontent.com/AladW/aurutils/master/xtrace
+bash xtrace aur <name> <arguments>
 ```
 
-and attach it to this issue.
+and attach the resulting files (xtrace, stderr, stdout) to this issue.
