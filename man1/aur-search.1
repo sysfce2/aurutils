@@ -82,6 +82,10 @@ Valid choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
 \fIFirstSubmitted\fR, \fILastModified\fR (for \fB\-v\fR verbose
 output).
 
+.SH EXIT STATUS
+The exit status is 0 on valid results, 1 if no results were found, or
+2 if an AUR error occured (such as "Too many results").
+
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-rpc (1),
