@@ -80,7 +80,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 opt_short='p:u:ac'
-opt_long=('all' 'path:')
+opt_long=('all' 'equal' 'path:')
 opt_hidden=('dump-options' 'upair:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -92,8 +92,9 @@ unset all aux repo upair
 while true; do
     case "$1" in
         -a|--all)   all=1 ;;
-        -c)         format=equal ;;
-        -p|--path)  shift; target='file'; aux=$1 ;;
+        -c|--equal) format=equal ;;
+        -p|--path)  shift; target='file'
+                    aux=$1 ;;
         -u|--upair) shift; upair=$1 ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
@@ -107,7 +108,14 @@ unset opt_short opt_long OPTRET
 tmp=$(mktemp) || exit
 trap 'trap_exit' EXIT
 
-# set input file
+# check for interactive terminal
+if [[ -t 0 ]]; then
+    cat >&2 <<EOF
+Warning: Input is read from the terminal. You either know what you
+Warning: are doing, or you forgot to pipe data into $argv0.
+Warning: Press CTRL-D to exit.
+EOF
+fi
 sort -k 1b,1 >"$tmp"
 
 # set filters (1)

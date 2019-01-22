@@ -72,6 +72,15 @@ esac
 wget_log=$(mktemp -t wget.XXXXXXXX)
 trap 'rm -rf "$wget_log"' EXIT
 
+# check for interactive terminal
+if [[ -t 0 ]]; then
+    cat >&2 <<EOF
+Warning: Input is read from the terminal. You either know what you
+Warning: are doing, or you forgot to pipe data into $argv0.
+Warning: Press CTRL-D to exit.
+EOF
+fi
+
 # pipeline
 jq -R -r '@uri' | uri | wget -o "$wget_log" -i - -O - -nv
 wget_err=${PIPESTATUS[2]}
