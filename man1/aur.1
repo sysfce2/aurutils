@@ -78,12 +78,6 @@ Download and build AUR packages automatically.
 Check packages for AUR updates.
 .RE
 
-.P
-.BR aur\-vercmp\-devel (1)
-.RS 4
-Retrieve latest revision for VCS packages.
-.RE
-
 .SH EXIT STATUS
 Programs follow a subset of errno(3), or preserve command status where
 applicable.
@@ -235,7 +229,15 @@ Check the
 repository for AUR updates:
 .EX
 
-  $ aur repo -d custom -u
+  $ aur repo -d custom --list | aur vercmp
+
+.EE
+If
+.B pacman.conf
+only contains one local repository, the above may be shortened to:
+.EX
+
+  $ aur repo --upgrades
 
 .EE
 
