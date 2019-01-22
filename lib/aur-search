@@ -100,6 +100,12 @@ info_short() {
     done
 }
 
+trap_exit() {
+    if [[ ! -o xtrace ]]; then
+        rm -rf "$tmp"
+    fi
+}
+
 usage() {
     printf >&2 'usage: %s: [-adimnqrsv] [-k key] pkgname...\n' "$argv0"
     exit 1
@@ -152,6 +158,9 @@ if ! (($#)); then
     usage
 fi
 
+tmp=$(mktemp -t "$argv0".XXXXXXXX)
+trap 'trap_exit' EXIT
+
 # XXX union is done by the AUR for info type, but not search
 if (($# < 2)) || [[ $query_type == info ]]; then
     multiple=none
@@ -176,13 +185,30 @@ case $multiple in
       union) combine() { sort | uniq -u; } ;;
 esac
 
-# set filters (3)
+# check results
+printf '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" > "$tmp"
+
+# exit early on raw output (#187)
 case $output in
-    hrm) parse() { tabulate "$sort_key" | combine | info; } ;;
-    raw) parse() { tee; } ;;
+    hrm) parser() { tabulate "$sort_key" | combine | info; } ;;
+    raw) cat "$tmp"
+         exit ;;
 esac
 
-# pipeline
-printf '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" | parse
+# check results (#257)
+count=$(jq -r '.resultcount' "$tmp" | awk '{s += $1} END {print s}')
+error=$(jq -r '.error' "$tmp")
+
+case $count in
+    0) if [[ $error != 'null' ]]; then
+           error "$error"
+           exit 2
+       else
+           # no results found
+           exit 1
+       fi ;;
+    *) cat "$tmp" | parser
+       ;;
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:
