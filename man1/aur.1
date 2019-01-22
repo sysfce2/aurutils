@@ -235,7 +235,15 @@ Check the
 repository for AUR updates:
 .EX
 
-  $ aur repo -d custom -u
+  $ aur repo -d custom --list | aur vercmp
+
+.EE
+If
+.B pacman.conf
+only contains one local repository, the above may be shortened to:
+.EX
+
+  $ aur repo --upgrades
 
 .EE
 
