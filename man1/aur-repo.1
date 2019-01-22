@@ -6,20 +6,28 @@ aur\-repo \- manage local repositories
 .SY "aur repo"
 .OP \-d database
 .OP \-r root
-.OP \-lSu
+.OP \-alSu
 .OP \-\-repo\-list
 .YS
+
+.SH DESCRIPTION
+When run without arguments,
+.BR aur\-repo
+prints the path of a selected repository to standard output. For other
+modes, see the
+.B OPTIONS
+section.
 
 .SH OPTIONS
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
-The name of the pacman repository. May also be specified through the
+The name of the pacman repository. May be specified through the
 .B AUR_REPO
 environment variable.
 
 .TP
 .BI \-r " PATH" "\fR,\fP \-\-root=" PATH
-The path to the root of the pacman repository. May also be specified
+ The path to the root of the pacman repository. May be specified
 through the
 .B AUR_DBROOT
 environment variable.
@@ -41,10 +49,16 @@ Use
 to check a pacman repository for updates.
 
 .TP
+.BR \-a ", " \-\-all
+Use
+.B "aur\-vercmp --all"
+when checking for updates. Implies
+.BR \-\-upgrades .
+
+.TP
 .BR \-S ", " \-\-sync
 Query repositories through
-.BR pacman (8),
-instead of directly.
+.BR pacman (8).
 
 .TP
 .BR \-\-repo\-list
