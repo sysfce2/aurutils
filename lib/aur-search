@@ -6,10 +6,10 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
 multiple=section
-query_type=search
+output=hrm
 search_by=name-desc
 sort_key=Name
-output=hrm
+type=search
 
 tabulate() {
     # It is important to have a default value for every field, or
@@ -131,8 +131,8 @@ unset format
 while true; do
     case "$1" in
         -a|--any)        multiple=union ;;
-        -i|--info)       query_type=info ;;
-        -s|--search)     query_type=search ;;
+        -i|--info)       type=info ;;
+        -s|--search)     type=search ;;
         -d|--desc)       search_by=name-desc ;;
         -m|--maintainer) search_by=maintainer ;;
         -n|--name)       search_by=name ;;
@@ -160,13 +160,13 @@ fi
 tmp=$(mktemp -t "$argv0".XXXXXXXX)
 trap 'trap_exit' EXIT
 
-# XXX union is done by the AUR for info type, but not search
-if (($# < 2)) || [[ $query_type == info ]]; then
+# XXX union is done by the AUR for info, but not search
+if (($# < 2)) || [[ $type == 'info' ]]; then
     multiple=none
 fi
 
 # set format depending on query type (#319)
-case $query_type in
+case $type in
       info) format=${format-long}  ;;
     search) format=${format-short} ;;
 esac
@@ -185,7 +185,7 @@ case $multiple in
 esac
 
 # check results
-printf '%s\n' "$@" | aur rpc -t "$query_type" -b "$search_by" > "$tmp"
+printf '%s\n' "$@" | aur rpc -t "$type" -b "$search_by" > "$tmp" || exit
 
 # exit early on raw output (#187)
 case $output in
