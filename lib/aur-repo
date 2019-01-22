@@ -83,7 +83,7 @@ while read -r key _ value; do
                     if ! [[ $db_root ]]; then
                         db_root=$server
                     elif [[ $db_root != "$server" ]]; then
-                        warning "$argv0: --root and pacman.conf mismatch"
+                        warning "$db_name: --root and pacman.conf mismatch"
                     fi ;;
             esac
             ;;
@@ -115,10 +115,10 @@ if ! [[ $db_name ]]; then
         2) db_name=${conf_repo[0]}
            db_root=${conf_repo[1]}
            ;;
-        0) error "$argv0: no file:// repository found"
+        0) error "$no file:// repository found"
            exit 2
            ;;
-        *) error "$argv0: repository choice is ambiguous (use -d to specify)"
+        *) error "$repository choice is ambiguous (use -d to specify)"
            printf '%s\n' "${conf_repo[@]}" | paste - - | column -t >&2
            exit 1
            ;;
@@ -134,13 +134,13 @@ case $modifier in
     # - $db_root/$db_name (path)
     local)
         if ! [[ $db_root ]]; then
-            error "$argv0: $db_name: repository path not found"
+            error "$db_name: repository path not found"
             exit 2
         elif [[ $db_root == *://* ]]; then
-            error "$argv0: $db_root: object is remote (use -S to query)"
+            error "$db_root: object is remote (use -S to query)"
             exit 66
         elif ! [[ -d $db_root ]]; then
-            error "argv0: $db_root: not a directory"
+            error "$db_root: not a directory"
             exit 20
         else
             contents() { bsdcat "$db_root/$db_name".db | db_namever; }
