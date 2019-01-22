@@ -6,10 +6,11 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
 declare -i rpc_ver=5
+declare    rpc_url="$AUR_LOCATION/rpc/?v=$rpc_ver"
 
-query_info() {
-    #global AUR_LOCATION rpc_ver
-    awk -v rpc="$AUR_LOCATION/rpc/?v=$rpc_ver&type=info" '{
+uri_info() {
+    #global rpc_url
+    awk -v rpc="$rpc_url&type=info" '{
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
         else if (NR % 150 == 0)
@@ -21,9 +22,9 @@ query_info() {
     }'
 }
 
-query_search() {
-    #global AUR_LOCATION rpc_ver
-    awk -v rpc="$AUR_LOCATION/rpc/?v=$rpc_ver&type=search&by=$1&arg" '{
+uri_search() {
+    #global rpc_url
+    awk -v rpc="$rpc_url&type=search&by=$1&arg" '{
         printf "%s=%s\n", rpc, $0
     }'
 }
@@ -36,7 +37,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='b:t:'
-opt_long=('by:' 'type:' 'aur-url:' 'rpc-ver:')
+opt_long=('by:' 'type:' 'aur-url:' 'rpc-ver:' 'rpc-url:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -50,6 +51,7 @@ while true; do
         -b|--by)   shift; by=$1 ;;
         -t|--type) shift; type=$1 ;;
         --rpc-ver) shift; rpc_ver=$1 ;;
+        --rpc-url) shift; rpc_url=$1 ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -61,8 +63,8 @@ unset opt_short opt_long OPTRET
 
 # set filters
 case $type in
-      info) query() { query_info; } ;;
-    search) query() { query_search "${by:-name-desc}"; } ;;
+      info) uri() { uri_info; } ;;
+    search) uri() { uri_search "${by:-name-desc}"; } ;;
          *) usage ;;
 esac
 
@@ -71,7 +73,7 @@ wget_log=$(mktemp -t wget.XXXXXXXX)
 trap 'rm -rf "$wget_log"' EXIT
 
 # pipeline
-jq -R -r '@uri' | query | wget -o "$wget_log" -i - -O - -nv
+jq -R -r '@uri' | uri | wget -o "$wget_log" -i - -O - -nv
 wget_err=${PIPESTATUS[2]}
 
 if ((wget_err)); then
