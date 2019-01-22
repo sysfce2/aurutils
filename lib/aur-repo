@@ -46,7 +46,8 @@ set -- "${OPTRET[@]}"
 unset mode db_name db_root status_file
 while true; do
     case $1 in
-        -a|--all)      vercmp_args+=(-a) ;;
+        -a|--all)      mode=list_upgrades
+                       vercmp_args+=(-a) ;;
         -d|--database) shift; db_name=$1 ;;
         -r|--root)     shift; db_root=$1 ;;
         -l|--list)     mode=list_packages ;;
