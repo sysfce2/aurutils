@@ -52,6 +52,15 @@ else
     reposet=(--exact "${arch_repo[@]/#/--repo=}")
 fi
 
+# check for interactive terminal
+if [[ -t 0 ]]; then
+    cat >&2 <<EOF
+Warning: Input is read from the terminal. You either know what you
+Warning: are doing, or you forgot to pipe data into $argv0.
+Warning: Press CTRL-D to exit.
+EOF
+fi
+
 # associative array for input package names
 declare -A pkgset
 
