@@ -4,9 +4,10 @@ readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
-satisfies() {
-    #global reposet
-    xargs -0a <(printf -- '--satisfies=%s\0' "$@") pacsift "${reposet[@]}" <&-
+nover_provides() {
+    if (($#)); then
+        pacsift "$@" <&- | expac '%n %R %S' -Sv -
+    fi
 }
 
 usage() {
@@ -30,11 +31,11 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset argv_repo reposet sync_repo fields
+unset argv_repo sync_repo pacsift_args
 while true; do
     case "$1" in
-        -a|--all)       sync_repo=1 ;;
-        -d|--database)  shift; argv_repo+=("$1") ;;
+        -a|--all) sync_repo=1 ;;
+        -d|--database) shift; argv_repo+=("$1") ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -45,11 +46,11 @@ done
 unset opt_short opt_long OPTRET
 
 if ((sync_repo)); then
-    reposet=(--sync)
+    sift_args+=(--sync)
 elif [[ -v argv_repo ]]; then
-    reposet=(--exact "${argv_repo[@]/#/--repo=}")
+    sift_args+=(--exact "${argv_repo[@]/#/--repo=}")
 else
-    reposet=(--exact "${arch_repo[@]/#/--repo=}")
+    sift_args+=(--exact "${arch_repo[@]/#/--repo=}")
 fi
 
 # check for interactive terminal
@@ -64,28 +65,39 @@ fi
 # associative array for input package names
 declare -A pkgset
 
-while IFS= read -r package; do
-    pkgset[$package]=1
+while IFS= read -r str; do
+    # store unversioned string as key
+    name=${str%%[<>=]*}
+
+    # store version + operator as value (1 if unavailable)
+    if ((${#str} - ${#name})); then
+        pkgset[$name]=${str:${#name}}
+    else
+        pkgset[$name]=1
+    fi
+
+    # XXX: This will hit ARG_MAX on approximately 70k packages. Neither
+    # xargs nor parallel appear to work with (correctly quoted)
+    # foo>1.23 package strings, regardless of delimitation.
+    sift_args+=("--satisfies=$str")
 done
 
-# use xargs -a to bypass isatty() check
-if [[ ${pkgset[*]} ]]; then
-    satisfies "${!pkgset[@]}" | expac '%n %R %S' -Sv - | while read -ra line; do
-        package=${line[0]#*/}
+nover_provides "${sift_args[@]}" | while read -ra array; do
+    package=${array[0]}
 
-        if [[ ${pkgset[$package]} ]]; then
-            printf '%s\n' "$package"
+    if [[ ${pkgset[$package]} ]]; then
+        printf '%s\n' "$package"
+    fi
+
+    for ((i = 1; i < ${#array[@]}; i++)); do
+        virtual=${array[$i]}
+
+        # XXX: check if replaces matches the required version
+        if [[ $virtual != 'None' ]] && [[ ${pkgset[$virtual]} ]]; then
+            plain "virtual dependency $virtual satisfied by $package" >&2
+            printf '%s\n' "$virtual"
         fi
-
-        for ((i = 1; i < ${#line[@]}; i++)); do
-            virtual=${line[$i]}
-
-            if [[ ${pkgset[$virtual]} ]]; then
-                plain "virtual dependency $virtual satisfied by $package" >&2
-                printf '%s\n' "$virtual"
-            fi
-        done
     done
-fi
+done
 
 # vim: set et sw=4 sts=4 ft=sh:
