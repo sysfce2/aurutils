@@ -163,8 +163,8 @@ esac
 
 # set filters (2)
 case $mode in
-    git) uri() { linef "$fmt_git_clone\n"; } ;;
-    tar) uri() { linef "$fmt_snapshot\n" ; } ;;
+    git) uri() { linef "$fmt_git_clone\\n"; } ;;
+    tar) uri() { linef "$fmt_snapshot\\n" ; } ;;
 esac
 
 # pipeline
