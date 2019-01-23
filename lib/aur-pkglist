@@ -92,8 +92,8 @@ fi
 # pattern match
 case $mode in
     plain) cat "$pkglist" ;;
-    fixed) cat "$pkglist" | grep -F "$1" ;;
-    regex) cat "$pkglist" | grep -P "$1" ;;
+    fixed) grep -F "$1" "$pkglist" ;;
+    regex) grep -P "$1" "$pkglist" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

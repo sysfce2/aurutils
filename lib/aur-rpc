@@ -87,7 +87,7 @@ wget_err=${PIPESTATUS[2]}
 
 if ((wget_err)); then
     cat "$wget_log" >&2
-    exit $wget_err
+    exit "$wget_err"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

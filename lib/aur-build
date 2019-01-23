@@ -186,7 +186,7 @@ unset PKGDEST
   # PKGDEST defined here is NOT exported to the build environment.
   # This is not a concern for container builds, as makechrootpkg
   # already has a similar mechanism. (#498)
-  printf "PKGDEST='%s'\n" "$var_tmp"
+  printf "PKGDEST='%s'\\n" "$var_tmp"
 } >"$tmp"/makepkg.conf
 
 while IFS= read -ru "$fd" path; do

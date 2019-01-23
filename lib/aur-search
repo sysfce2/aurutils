@@ -66,10 +66,10 @@ info_long() {
 
     while IFS=$'\t' read -r -a info; do
         # XXX: AUR_LOCATION only used here
-        printf "$BOLD%s:$ALL_OFF\t%s\n" "AUR URL" "$AUR_LOCATION/packages/${info[0]}"
+        printf "$BOLD%s:$ALL_OFF\\t%s\\n" "AUR URL" "$AUR_LOCATION/packages/${info[0]}"
 
         for i in "${!info[@]}"; do
-            printf "$BOLD%s:$ALL_OFF\t%s\n" "${desc[i]}" "${info[i]}"
+            printf "$BOLD%s:$ALL_OFF\\t%s\\n" "${desc[i]}" "${info[i]}"
         done
 
         # column(1) ignores empty lines (package delimitation)
@@ -206,7 +206,7 @@ case $count in
            # no results found
            exit 1
        fi ;;
-    *) cat "$tmp" | parser
+    *) parser < "$tmp"
        ;;
 esac
 
