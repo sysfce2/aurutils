@@ -63,7 +63,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset queue db_name db_path db_root build_cmd mpkg_conf pman_conf
+unset queue db_name db_path db_root build_cmd m_conf p_conf
 while true; do
     case "$1" in
         -a|--arg-file)      shift; queue=$1 ;;
@@ -75,8 +75,8 @@ while true; do
         -v|--verify)        repo_add_args+=(-v) ;;
         -B|--build-command) shift; build_cmd+=("$1") ;;
         -D|--directory)     shift; chroot_args+=(-D "$1") ;;
-        -C|--pacman-conf)   shift; chroot_args+=(-C "$1"); pman_conf=$1 ;;
-        -M|--makepkg-conf)  shift; chroot_args+=(-M "$1"); mpkg_conf=$1 ;;
+        -C|--pacman-conf)   shift; chroot_args+=(-C "$1"); p_conf=$1 ;;
+        -M|--makepkg-conf)  shift; chroot_args+=(-M "$1"); m_conf=$1 ;;
         -N|--no-sync)       no_sync=1 ;;
         -R|--remove)        repo_add_args+=(-R) ;;
         --pkgver)           run_pkgver=1 ;;
@@ -170,13 +170,12 @@ if ((chroot)); then
 fi
 
 # configuration for host builds
-pacman-conf --config "${pman_conf:-/etc/pacman.conf}" | \
-    conf_single "$db_name" >"$tmp"/custom.conf
+pacman-conf --config "${p_conf:-/etc/pacman.conf}" | conf_single "$db_name" >"$tmp"/custom.conf
 
 # PKGDEST is defined later through makepkg.conf (#513)
 unset PKGDEST
 
-{ cat -s "${mpkg_conf:-/etc/makepkg.conf}"
+{ cat -s "${m_conf:-/etc/makepkg.conf}"
 
   if [[ -r $XDG_CONFIG_HOME/pacman/makepkg.conf ]]; then
       cat -s "$XDG_CONFIG_HOME"/pacman/makepkg.conf
@@ -218,22 +217,17 @@ while IFS= read -ru "$fd" path; do
 
     if [[ -v build_cmd ]]; then
         printf '%s\n' >&2 "Running custom command: ${build_cmd[*]}"
-
-        env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" \
-            "${build_cmd[@]}"
+        env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" "${build_cmd[@]}"
     elif ((chroot)); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
-
-        env PKGDEST="$var_tmp" aur chroot --no-prepare \
-            "${chroot_args[@]}" -- "${makechrootpkg_args[@]}"
+        env PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
 
         # unset SHELLOPTS due to odd behavior with fakeroot (a /bin/sh
         # script) when it is set in the environment. see:
         # https://lists.gnu.org/archive/html/bug-bash/2011-10/msg00052.html
-        env --unset=SHELLOPTS makepkg --config "$tmp"/makepkg.conf \
-            "${makepkg_args[@]}"
+        env -u SHELLOPTS makepkg --config "$tmp"/makepkg.conf "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
