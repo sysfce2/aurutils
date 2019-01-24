@@ -4,7 +4,7 @@ readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
-nover_provides() {
+provides() {
     if (($#)); then
         pacsift "$@" <&- | expac '%n %R %S' -Sv -
     fi
@@ -34,11 +34,14 @@ set -- "${OPTRET[@]}"
 unset argv_repo sync_repo pacsift_args
 while true; do
     case "$1" in
-        -a|--all) sync_repo=1 ;;
-        -d|--database) shift; argv_repo+=("$1") ;;
-        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                        exit ;;
+        -a|--all)
+            sync_repo=1 ;;
+        -d|--database)
+            shift; argv_repo+=("$1") ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}" ;
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
+            exit ;;
         --) shift; break;;
     esac
     shift
@@ -82,7 +85,7 @@ while IFS= read -r str; do
     sift_args+=("--satisfies=$str")
 done
 
-nover_provides "${sift_args[@]}" | while read -ra array; do
+provides "${sift_args[@]}" | while read -ra array; do
     package=${array[0]}
 
     if [[ ${pkgset[$package]} ]]; then
@@ -92,7 +95,6 @@ nover_provides "${sift_args[@]}" | while read -ra array; do
     for ((i = 1; i < ${#array[@]}; i++)); do
         virtual=${array[$i]}
 
-        # XXX: check if replaces matches the required version
         if [[ $virtual != 'None' ]] && [[ ${pkgset[$virtual]} ]]; then
             plain "virtual dependency $virtual satisfied by $package" >&2
             printf '%s\n' "$virtual"
