@@ -4,14 +4,16 @@ readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
+# Standard input is taken as "provides[<cmp><version>]", where pacsift
+# checks for a package satisfying this condition. Results are printed
+# as "repository/package", and piped to expac to relate the names of
+# the original provides to its corresponding package(s).
 provides() {
-    if (($#)); then
-        pacsift "$@" <&- | expac '%n %R %S' -Sv -
-    fi
+    pacsift "$@" <&- | expac '%n %R %S' -Sv -
 }
 
 usage() {
-    printf >&2 'usage: %s [-d repo] [-a]\n' "$argv0"
+    printf >&2 'usage: %s [-d repo] [-S]\n' "$argv0"
     exit 1
 }
 
@@ -22,8 +24,8 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='d:a'
-opt_long=('all' 'database:')
+opt_short='d:S'
+opt_long=('sync' 'database:' 'repo:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -31,13 +33,13 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset argv_repo sync_repo pacsift_args
+unset argv_repo sync_repo sift_args
 while true; do
     case "$1" in
-        -a|--all)
-            sync_repo=1 ;;
-        -d|--database)
+        -d|--database|--repo)
             shift; argv_repo+=("$1") ;;
+        -S|--sync)
+            sync_repo=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ;
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
@@ -85,6 +87,12 @@ while IFS= read -r str; do
     sift_args+=("--satisfies=$str")
 done
 
+# exit on empty stdin
+if [[ ! ${pkgset[*]} ]]; then
+    exit 1
+fi
+
+# main loop
 provides "${sift_args[@]}" | while read -ra array; do
     package=${array[0]}
 
@@ -94,9 +102,10 @@ provides "${sift_args[@]}" | while read -ra array; do
 
     for ((i = 1; i < ${#array[@]}; i++)); do
         virtual=${array[$i]}
+        version=${pkgset[$virtual]}
 
-        if [[ $virtual != 'None' ]] && [[ ${pkgset[$virtual]} ]]; then
-            plain "virtual dependency $virtual satisfied by $package" >&2
+        if [[ $virtual != 'None' ]] && [[ $version ]]; then
+            plain "dependency $virtual$version satisfied by $package" >&2
             printf '%s\n' "$virtual"
         fi
     done
