@@ -193,11 +193,8 @@ while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
 
     # run pkgver before --packagelist (#500)
-    if ((run_pkgver)) && ! makepkg --noprepare -od >"$tmp"/log 2>&1; then
-        error "$argv0: run_pkgver: makepkg exit code $?"
-
-        cat >&2 "$tmp"/log
-        exit 1
+    if ((run_pkgver)); then
+        makepkg --noprepare -od
     fi
 
     if ! ((overwrite)); then
