@@ -67,11 +67,13 @@ unset queue db_name db_path db_root build_cmd m_conf p_conf
 while true; do
     case "$1" in
         -a|--arg-file)      shift; queue=$1 ;;
-        -d|--database)      shift; db_name=$1; chroot_args+=(-d "$1") ;;
+        -d|--database)      shift; db_name=$1
+                            chroot_args+=(-d "$1") ;;
         -r|--root)          shift; db_root=$1 ;;
         -c|--chroot)        chroot=1 ;;
         -f|--force)         overwrite=1 ;;
-        -s|--sign)          sign_pkg=1; repo_add_args+=(-s) ;;
+        -s|--sign)          sign_pkg=1
+                            repo_add_args+=(-s) ;;
         -v|--verify)        repo_add_args+=(-v) ;;
         -B|--build-command) shift; build_cmd+=("$1") ;;
         -D|--directory)     shift; chroot_args+=(-D "$1") ;;
@@ -79,7 +81,8 @@ while true; do
         -M|--makepkg-conf)  shift; chroot_args+=(-M "$1"); m_conf=$1 ;;
         -N|--no-sync)       no_sync=1 ;;
         -R|--remove)        repo_add_args+=(-R) ;;
-        --pkgver)           run_pkgver=1 ;;
+        --pkgver)           run_pkgver=1
+                            makepkg_args+=(--holdver) ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}"
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
                         exit ;;
