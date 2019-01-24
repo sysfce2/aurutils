@@ -9,7 +9,7 @@ readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 # as "repository/package", and piped to expac to relate the names of
 # the original provides to its corresponding package(s).
 provides() {
-    pacsift "$@" <&- | expac '%n %R %S' -Sv -
+    pacsift --null "$@" <&- | xargs -0r expac '%n %R %S' -Sv
 }
 
 usage() {
@@ -90,7 +90,7 @@ done
 
 # exit on empty stdin
 if ! (( ${#pkgset[@]} )); then
-    exit 1
+    exit 0
 fi
 
 # main loop
