@@ -81,9 +81,10 @@ while IFS= read -r str; do
         pkgset[$name]=1
     fi
 
-    # XXX: This will hit ARG_MAX on approximately 70k packages. Neither
-    # xargs nor parallel appear to work with (correctly quoted)
-    # foo>1.23 package strings, regardless of delimitation.
+    # XXX: This command line will hit ARG_MAX on approximately 70k
+    # packages. xargs results in empty output (regardless of -a or
+    # '<&-'), parallel -X is significantly slower (~6s vs. ~3s on
+    # "pacman -Slq" input and 4 threads) and xe simply hangs.
     sift_args+=("--satisfies=$str")
 done
 
