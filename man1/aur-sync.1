@@ -1,4 +1,4 @@
-.TH AUR-SYNC 1 2018-03-20 AURUTILS
+.TH AUR-SYNC 1 2019-01-24 AURUTILS
 .SH Name
 aur\-sync \- download and build AUR packages automatically
 
@@ -68,6 +68,13 @@ Version checks for package dependencies remain enabled.
 .TP
 .BR \-p ", " \-\-print
 Print target packages and their paths instead of building them.
+
+.TP
+.BR \-\-pkgver
+Run
+.B "makepkg -od --noprepare"
+before the build process.
+.RB ( "aur-build --pkgver" )
 
 .TP
 .BR \-s ", " \-\-sign
