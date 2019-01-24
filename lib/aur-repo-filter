@@ -103,12 +103,17 @@ provides "${sift_args[@]}" | while read -ra array; do
 
     for ((i = 1; i < ${#array[@]}; i++)); do
         virtual=${array[$i]}
-        version=${pkgset[$virtual]}
+        case $virtual in
+            None) continue ;;
+        esac
 
-        if [[ $virtual != 'None' ]] && [[ $version ]]; then
-            plain "dependency $virtual$version satisfied by $package" >&2
-            printf '%s\n' "$virtual"
-        fi
+        version=${pkgset[$virtual]}
+        case $version in
+            1) plain "dependency $virtual satisfied by $package" >&2
+               printf '%s\n' "$virtual" ;;
+            *) plain "$dependency $virtual$version satisfied by $package" >&2
+               printf '%s\n' "$virtual" ;;
+        esac
     done
 done
 
