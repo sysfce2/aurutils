@@ -89,7 +89,7 @@ while IFS= read -r str; do
 done
 
 # exit on empty stdin
-if [[ ! ${pkgset[*]} ]]; then
+if ! (( ${#pkgset[@]} )); then
     exit 1
 fi
 
