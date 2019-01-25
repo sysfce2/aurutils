@@ -4,12 +4,18 @@ readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
-# Standard input is taken as "provides[<cmp><version>]", where pacsift
-# checks for a package satisfying this condition. Results are printed
-# as "repository/package", and piped to expac to relate the names of
-# the original provides to its corresponding package(s).
+print_args() {
+    printf -- '--satisfies=%s\n' "$@"
+}
+
+# Use null delimimitation as repository names may contain (apart from
+# newlines) arbitrary characters.
+satisfies() {
+    xargs -a <(print_args "$@") pacsift --null "${sift_args[@]}" <&-
+}
+
 provides() {
-    pacsift --null "$@" <&- | xargs -0r expac '%n %R %S' -Sv
+    xargs -0r expac '%n %R %S' -Sv
 }
 
 usage() {
@@ -69,6 +75,7 @@ fi
 
 # associative array for input package names
 declare -A pkgset
+unset strset
 
 while IFS= read -r str; do
     # store unversioned string as key
@@ -81,11 +88,9 @@ while IFS= read -r str; do
         pkgset[$name]=1
     fi
 
-    # XXX: This command line will hit ARG_MAX on approximately 70k
-    # packages. xargs results in empty output (regardless of -a or
-    # '<&-'), parallel -X is significantly slower (~6s vs. ~3s on
-    # "pacman -Slq" input and 4 threads) and xe simply hangs.
-    sift_args+=("--satisfies=$str")
+    # The command line will hit ARG_MAX on approximately 70k packages;
+    # spread arguments with xargs (and printf, as a shell built-in).
+    strset+=("$str")
 done
 
 # exit on empty stdin
@@ -93,8 +98,11 @@ if ! (( ${#pkgset[@]} )); then
     exit 0
 fi
 
-# main loop
-provides "${sift_args[@]}" | while read -ra array; do
+# Standard input is taken as "provides[<cmp><version>]", where pacsift
+# checks for a package satisfying this condition. Results are printed
+# as "repository/package", and piped to expac to relate the names of
+# the original provides to its corresponding package(s).
+satisfies "${strset[@]}" | provides | while read -ra array; do
     package=${array[0]}
 
     if [[ ${pkgset[$package]} ]]; then
