@@ -11,6 +11,7 @@ print_args() {
 }
 
 satisfies() {
+    #global sift_args
     xargs -a <(print_args "$@") pacsift --null "${sift_args[@]}" <&-
 }
 
@@ -32,8 +33,8 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='d:S'
-opt_long=('sync' 'database:' 'repo:')
+opt_short='d:a'
+opt_long=('all' 'sync' 'database:' 'repo:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -46,7 +47,7 @@ while true; do
     case "$1" in
         -d|--database|--repo)
             shift; argv_repo+=("$1") ;;
-        -S|--sync)
+        -a|--all|--sync)
             sync_repo=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ;
