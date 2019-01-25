@@ -137,7 +137,7 @@ case $db_name in
 esac
 
 # resolve symbolic link
-db_path=$(readlink -f -- "$db_path")
+db_path=$(readlink -ev -- "$db_path")
 
 if ! [[ -w $db_path ]]; then
     error "$argv0: $db_path: permission denied"
