@@ -256,7 +256,7 @@ if type -P >/dev/null vifm; then
     # avoid directory prefix in printed paths (#452)
     viewer() ( cd "$1"; vifm -c 'view!' -c '0' - )
 else
-    viewer() { command -- ${PAGER:-less -K}; }
+    viewer() ( cd "$1"; command -- ${PAGER:-less -K}; )
 fi
 
 # check if dependency graph is valid
