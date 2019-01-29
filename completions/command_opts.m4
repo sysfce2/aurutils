@@ -27,6 +27,6 @@ CORECOMMANDS')
 
 dnl Helper macro to retrieves options from subcommand --dump-options
 dnl
-define(GET_OPTS,'`translit(esyscmd(../lib/aur-$1 --dump-options),`
+define(GET_OPTS,'`translit(esyscmd(bash -c "../lib/aur-$1 --dump-options | LC_ALL=C sort"),`
 ',` ')'')
 divert(0)dnl
