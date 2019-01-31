@@ -4,8 +4,8 @@ readonly argv0=srcver
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly startdir=$PWD
 
-get_pkgbuild_info() {
-    env -C "$1" -i bash -c '
+srcver_pkgbuild_info() {
+    env -i bash -c '
         PATH= source PKGBUILD
 
         if [[ -v epoch ]]; then
@@ -17,15 +17,16 @@ get_pkgbuild_info() {
         printf %s\\t%s\\n "${pkgbase:-$pkgname}" "$fullver"
     '
 }
+export -f srcver_pkgbuild_info
 
-find_pkgbuild_path() {
-    find "$@" -maxdepth 1 -type f -name PKGBUILD -printf '%h\0'
+srcver_pkgbuild_path() {
+    if cd -- "$1" && makepkg --skipinteg --noprepare -od; then
+        srcver_pkgbuild_info | tee -a -- "$OLDPWD"/processed
+    else
+        return
+    fi
 }
-
-usage() {
-    printf >&2 'usage: %s path...\n' "$argv0"
-    exit 1
-}
+export -f srcver_pkgbuild_path
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
@@ -34,19 +35,20 @@ trap_exit() {
 }
 
 if ! (($#)); then
-    usage
+    printf >&2 'usage: %s path...\n' "$argv0"
+    exit 1
 fi
-
-# FIXME trickery for hyphen and absolute path arguments
-mapfile -t arg_path < <(readlink -ev -- "$@")
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-cd "$tmp" || exit
-aur jobs --nice 10 -j +2 --joblog makepkg_log --results '{#}_makepkg' \
-  'cd {}; makepkg --skipinteg --noprepare -od' >/dev/null 2>&1 ::: "${arg_path[@]}"
-jobs_exit=$?
+if cd "$tmp"; then
+    aur jobs --nice 10 -j +2 --joblog makepkg_log --results '{#}_makepkg' \
+        'srcver_pkgbuild_path' >/dev/null 2>&1 ::: "$@"
+    jobs_exit=$?
+else
+    exit 1
+fi
 
 if ((jobs_exit > 101)); then
     printf >&2 '%s: error running "parallel", exit code %d\n' "$argv0" "$jobs_exit"
@@ -69,10 +71,8 @@ if ((jobs_exit > 0)); then
     done < makepkg_log
 
     exit "$jobs_exit"
+else
+    cat "$tmp"/processed
 fi
-
-find_pkgbuild_path "${arg_path[@]}" | while IFS= read -d $'\0' -r; do
-    get_pkgbuild_info "$REPLY"
-done
 
 # vim: set et sw=4 sts=4 ft=sh:
