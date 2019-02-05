@@ -84,7 +84,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='B:C:d:D:M:AcfgkLnpPstTu'
+opt_short='B:C:d:D:M:AcfgkLnpPrRstTu'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver'
@@ -123,6 +123,7 @@ while true; do
         -n|--no?(-)confirm)   makepkg_args+=(--noconfirm) ;;
         -p|--print)           build=0 ;;
         -r|--rm?(-)deps)      makepkg_args+=(--rmdeps) ;;
+        -R)                   build_args+=(-R) ;;
         -s|--sign)            build_args+=(-sv) ;;
         -t|--tar)             snapshot=1 ;;
         -T|--temp)            makechrootpkg_args+=(-T) ;;
