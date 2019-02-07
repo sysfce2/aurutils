@@ -192,7 +192,7 @@ fi
   fi
 
   if ((update)); then
-      aur vercmp <db_info | cut -d: -f1
+      aur vercmp --quiet <db_info
   fi
 } >argv
 
