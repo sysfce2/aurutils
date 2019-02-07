@@ -5,7 +5,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly startdir=$PWD
 
 srcver_pkgbuild_info() {
-    env -i bash -c '
+    env -C "$1" -i bash -c '
         PATH= source PKGBUILD
 
         if [[ -v epoch ]]; then
@@ -20,8 +20,8 @@ srcver_pkgbuild_info() {
 export -f srcver_pkgbuild_info
 
 srcver_pkgbuild_path() {
-    if cd -- "$1" && makepkg --skipinteg --noprepare -od; then
-        srcver_pkgbuild_info | tee -a -- "$OLDPWD"/processed
+    if env -C "$1" makepkg --skipinteg -od; then
+        srcver_pkgbuild_info "$1" >> "$2"
     else
         return
     fi
@@ -42,13 +42,9 @@ fi
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-if cd "$tmp"; then
-    aur jobs --nice 10 -j +2 --joblog makepkg_log --results '{#}_makepkg' \
-        'srcver_pkgbuild_path' >/dev/null 2>&1 ::: "$@"
-    jobs_exit=$?
-else
-    exit 1
-fi
+aur jobs --nice 10 -j +2 --joblog "$tmp"/makepkg_log --results "$tmp/{#}_makepkg" \
+    srcver_pkgbuild_path '{}' "$tmp"/results ::: "$@" >/dev/null 2>&1
+jobs_exit=$?
 
 if ((jobs_exit > 101)); then
     printf >&2 '%s: error running "parallel", exit code %d\n' "$argv0" "$jobs_exit"
@@ -63,16 +59,16 @@ if ((jobs_exit > 0)); then
             printf >&2 '8<----\n'
             printf >&2 '%s\n' "$command"
 
-            cat "${seq}_makepkg" >&2
-            cat "${seq}_makepkg.err" >&2
+            cat "$tmp/${seq}_makepkg" >&2
+            cat "$tmp/${seq}_makepkg.err" >&2
         else
             continue
         fi
-    done < makepkg_log
+    done < "$tmp"/makepkg_log
 
     exit "$jobs_exit"
 else
-    cat "$tmp"/processed
+    cat "$tmp"/results
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
