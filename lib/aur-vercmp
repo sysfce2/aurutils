@@ -68,7 +68,7 @@ trap_exit() {
 }
 
 usage() {
-    plain "usage: $argv0 [-p path] [-ac]" >&2
+    plain "usage: $argv0 [-p path] [-acq]" >&2
     exit 1
 }
 
@@ -79,8 +79,8 @@ if [[ -t 2 && ! -o xtrace ]]; then
     colorize
 fi
 
-opt_short='p:u:ac'
-opt_long=('all' 'equal' 'path:')
+opt_short='p:u:acq'
+opt_long=('all' 'equal' 'path:' 'quiet')
 opt_hidden=('dump-options' 'upair:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -93,6 +93,7 @@ while true; do
     case "$1" in
         -a|--all)   all=1 ;;
         -c|--equal) format=equal ;;
+        -q|--quiet) format=quiet ;;
         -p|--path)  shift; target='file'
                     aux=$1 ;;
         -u|--upair) shift; upair=$1 ;;
@@ -128,6 +129,8 @@ esac
 case $format in
     check) cmp() { cmp_checkupdates "${all-0}"; }
            upair=${upair-1} ;; # join unpaired of target
+    quiet) cmp() { cmp_checkupdates "${all-0}" | cut -d: -f1; }
+           upair=${upair-1} ;;
     equal) cmp() { cmp_equal_or_newer; }
            upair=${upair-2} ;; # join unpaired of input
 esac
