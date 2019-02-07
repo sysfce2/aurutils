@@ -17,7 +17,7 @@ makepkg_args=(--clean --syncdeps)
 repo_args=()
 
 # default options (enabled)
-build=1 chkver_depth=2 download=1 view=1 provides=0
+build=1 chkver_depth=2 download=1 view=1 provides=0 graph=1
 
 # default options (disabled)
 chroot=0 rotate=0 snapshot=0 update=0
@@ -87,12 +87,12 @@ fi
 opt_short='B:C:d:D:M:AcfgkLnpPrRstTu'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
-          'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver'
+          'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
           'sign' 'temp' 'tar' 'upgrades' 'git' 'pkgver' 'rebuild'
           'rebuild-tree' 'build-command:' 'ignore-file:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'noconfirm' 'nover'
-            'nover-shallow' 'noview' 'rebuildtree' 'rmdeps')
+            'nograph' 'nover-shallow' 'noview' 'rebuildtree' 'rmdeps')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -130,6 +130,7 @@ while true; do
         -u|--upgrades)        update=1 ;;
         --allan)              rotate=1 ;;
         --continue)           download=0 ;;
+        --no?(-)graph)        graph=0 ;;
         --no?(-)ver)          chkver_depth=0 ;;
         --no?(-)ver-shallow)  chkver_depth=1 ;;
         --no?(-)view)         view=0 ;;
@@ -267,7 +268,9 @@ else
 fi
 
 # check if dependency graph is valid
-aur graph "$tmp_view"/*/.SRCINFO >/dev/null
+if ((graph)); then
+    aur graph "$tmp_view"/*/.SRCINFO >/dev/null
+fi
 
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
