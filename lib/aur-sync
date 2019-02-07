@@ -62,7 +62,7 @@ complement() {
 }
 
 order() {
-    cut -f1,2 depends | tr_ver | tsort | tac
+    cut -f1,2 depends | tr_ver | tsort
 }
 
 trap_exit() {
@@ -232,10 +232,16 @@ cut -f2 --complement depends | sort -u >pkginfo
 } >filter
 
 # pkgname queue (AUR + repos)
-order depends | lib32 | complement filter >queue_0
+if order depends >queue_0; then
+    tac queue_0 | lib32 | complement filter >queue_1
+else
+    # input contains a loop
+    error "$argv0: invalid argument"
+    exit 22
+fi
 
 # pkgbase queue (AUR)
-cut -f1,2 pkginfo | select_pkgbase - queue_0 >queue
+cut -f1,2 pkginfo | select_pkgbase - queue_1 >queue
 
 if [[ -s queue ]]; then
     cd_safe "$aur_workdir"
