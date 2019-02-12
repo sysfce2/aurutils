@@ -3,6 +3,29 @@
 readonly argv0=srcver
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly startdir=$PWD
+makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
+
+source /usr/share/makepkg/util/parseopts.sh
+opt_short=
+opt_long=('noprepare')
+opt_hidden=('dump-options')
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+    echo "usage: $argv0 [--noprepare] <pkgbase> [<pkgbase> ...]" >&2
+    exit 1
+fi
+set -- "${OPTRET[@]}"
+unset opt_short opt_long opt_hidden OPTRET
+
+while true; do
+    case "$1" in
+        --noprepare)    makepkg_args+=("$1") ;;
+        --dump-options) printf -- '--%s\n' "${opt_long[@]}"
+                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+                        exit ;;
+        --) shift; break ;;
+    esac
+    shift
+done
 
 srcver_pkgbuild_info() {
     env -C "$1" -i bash -c '
@@ -20,7 +43,7 @@ srcver_pkgbuild_info() {
 export -f srcver_pkgbuild_info
 
 srcver_pkgbuild_path() {
-    if env -C "$1" makepkg --skipinteg -od; then
+    if env -C "$1" makepkg "${@:3}" ; then
         srcver_pkgbuild_info "$1" >> "$2"
     else
         return
@@ -43,7 +66,7 @@ tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
 aur jobs --nice 10 -j +2 --joblog "$tmp"/makepkg_log --results "$tmp/{#}_makepkg" \
-    srcver_pkgbuild_path '{}' "$tmp"/results ::: "$@" >/dev/null 2>&1
+    srcver_pkgbuild_path '{}' "$tmp"/results "${makepkg_args[@]}" ::: "$@" >/dev/null 2>&1
 jobs_exit=$?
 
 if ((jobs_exit > 101)); then

@@ -3,8 +3,9 @@ dnl List of commands to be completed
 dnl
 define(`CORECOMMANDS',
 HAVE_OPTDUMP(build,search,fetch,repo-filter,
-             repo,chroot,pkglist,vercmp,sync,rpc)dnl
-NO_OPTDUMP(depends,jobs,graph,srcver,vercmp-devel))
+             repo,chroot,pkglist,vercmp,sync,rpc,
+             srcver)dnl
+NO_OPTDUMP(depends,jobs,graph,vercmp-devel))
 
 dnl recursively print all elements
 dnl How the element is ultimately printed depends on the
