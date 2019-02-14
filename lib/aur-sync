@@ -1,6 +1,6 @@
 #!/bin/bash
 # aur-sync - download and build AUR packages automatically
-set -o errexit -o pipefail
+set -o errexit
 shopt -s extglob
 readonly argv0=sync
 readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
@@ -217,13 +217,13 @@ cut -f2 --complement depends | sort -u >pkginfo
   # for the queue. if chkver_shallow is enabled, packages on the
   # command-line are excluded from this complement
   if ((chkver_depth)); then
-      case $chkver_depth in
-          1) chkver_i() { complement argv; } ;;
-          2) chkver_i() { tee; } ;;
-      esac
-
       # note: AUR cannot be queried by pkgbase (FS#57230)
-      cut -f1,3 pkginfo | aur vercmp -p db_info -c | chkver_i
+      cut -f1,3 pkginfo | aur vercmp -p db_info -c >satisfied
+
+      case $chkver_depth in
+          1) cat satisfied | complement argv ;;
+          2) cat satisfied ;;
+      esac
   fi
 
   if ((provides)); then
@@ -264,7 +264,8 @@ if type -P >/dev/null vifm; then
     # avoid directory prefix in printed paths (#452)
     viewer() ( cd "$1"; vifm -c 'view!' -c '0' - )
 else
-    viewer() ( cd "$1"; command -- ${PAGER:-less -K}; )
+    # shellcheck disable=SC2086
+    viewer() ( cd "$1"; command -- ${PAGER:-less -K} )
 fi
 
 # check if dependency graph is valid
@@ -274,6 +275,7 @@ fi
 
 if ((view)); then
     if [[ -v AUR_PAGER ]]; then
+        # shellcheck disable=SC2086
         command -- $AUR_PAGER "$tmp_view"
     else
         { # print patch files
