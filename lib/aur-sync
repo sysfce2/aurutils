@@ -218,11 +218,11 @@ cut -f2 --complement depends | sort -u >pkginfo
   # command-line are excluded from this complement
   if ((chkver_depth)); then
       # note: AUR cannot be queried by pkgbase (FS#57230)
-      cut -f1,3 pkginfo | aur vercmp -p db_info -c >satisfied
+      cut -f1,3 pkginfo | aur vercmp -p db_info -c >current
 
       case $chkver_depth in
-          1) cat satisfied | complement argv ;;
-          2) cat satisfied ;;
+          1) cat current | complement argv ;;
+          2) cat current ;;
       esac
   fi
 
