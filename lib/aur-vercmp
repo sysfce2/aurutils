@@ -80,7 +80,7 @@ if [[ -t 2 && ! -o xtrace ]]; then
 fi
 
 opt_short='p:u:acq'
-opt_long=('all' 'equal' 'path:' 'quiet')
+opt_long=('all' 'current' 'path:' 'quiet')
 opt_hidden=('dump-options' 'upair:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -92,7 +92,7 @@ unset all aux repo upair
 while true; do
     case "$1" in
         -a|--all)   all=1 ;;
-        -c|--equal) format=equal ;;
+        -c|--current) format=equal ;;
         -q|--quiet) format=quiet ;;
         -p|--path)  shift; target='file'
                     aux=$1 ;;
