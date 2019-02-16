@@ -55,7 +55,6 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
-unset opt_short opt_long opt_hidden OPTRET
 
 while true; do
     case "$1" in
@@ -67,6 +66,7 @@ while true; do
     esac
     shift
 done
+unset opt_short opt_long opt_hidden OPTRET
 
 if ! (($#)); then
     usage
