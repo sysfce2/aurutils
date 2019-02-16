@@ -90,7 +90,6 @@ while true; do
     esac
     shift
 done
-unset opt_short opt_long OPTRET
 
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/$argv0".XXXXXXXX)
 var_tmp=$(mktemp -d "${TMPDIR:-/var/tmp}/$argv0".XXXXXXXX)

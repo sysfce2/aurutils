@@ -144,7 +144,6 @@ while true; do
     esac
     shift
 done
-unset opt_short opt_long OPTRET
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX)
 tmp_view=$(mktemp -dt view.XXXXXXXX)

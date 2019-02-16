@@ -54,7 +54,6 @@ while true; do
     esac
     shift
 done
-unset opt_short opt_long OPTRET
 
 if ((sync_repo)); then
     sift_args+=(--sync)

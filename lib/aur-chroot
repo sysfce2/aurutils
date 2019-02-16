@@ -72,7 +72,6 @@ while true; do
     esac
     shift
 done
-unset opt_short opt_long OPTRET
 
 tmp=$(mktemp -d)
 trap 'trap_exit' EXIT
