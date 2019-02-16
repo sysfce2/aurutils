@@ -1,8 +1,8 @@
 ## 2.3.0
 
 * `aur-build`
-  + add --holdver to makepkg with --pkgver
-  + exit 2 if db_path is not found
+  + add `--holdver` to makepkg with `--pkgver`
+  + exit 2 if `db_path` is not found
 * `aur-repo-filter`
   + support versioned packages (#404)
   + remove `--repo` alias to `--database`
@@ -10,7 +10,7 @@
   + remove `--noprepare` from default makepkg options
   + add `--noprepare` option (#523)
 * `aur-sync`
-  + wrap repo-add -R (#521)
+  + wrap repo-add `-R` (#521)
   + add `--no-graph` (workaround for #516)
 * `aur-vercmp`
   + add `-q`/`--quiet`
