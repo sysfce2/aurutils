@@ -17,6 +17,7 @@
   + rename `--equal` to `--current`
 * `completions`
   + group options by type (#520)
+  + complete `aur-depends` options (#526)
   
 ## 2.2.1
 
