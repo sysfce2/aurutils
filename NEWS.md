@@ -63,8 +63,6 @@
 * `completion`
   + allow `zsh run-help` to display the correct man page (#506)
 
-**Note:** `aur-vercmp-devel` will be removed on the next point-release, see issue #511.
-
 ## 2.1.0
 
 * `aur-build` 
