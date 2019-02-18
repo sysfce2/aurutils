@@ -31,8 +31,8 @@ Releases are versioned as follows:
 ||Description|
 |----|----|
 |*Major changes*|Result in a bump of major version (`x.0.0`). Upgrades to a new major version may require a rewrite of interfacing software, or significant changes in workflow.|
-|*Minor changes* (incompatible)|Result in a bump of minor version (`x.y.0`).|
-|*Minor changes* (compatible)|Result in a bump of maintenance version (`x.y.z`).|
+|*Minor changes* (incompatible)|Result in a bump of minor version (`x.y.0`). Typically used for new command-line options, or other minor changes in behavior.|
+|*Minor changes* (compatible)|Result in a bump of maintenance version (`x.y.z`). Typically used for bug fixes or new, compatible features.|
 
 ## USAGE
 
