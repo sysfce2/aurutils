@@ -26,11 +26,11 @@ Upgrade notices are posted to the
 
 **Note:** Releases are versioned as follows:
 
-* *Major changes* result in a bump of major version (`x.0.0`). Upgrades to a new 
-major version may require a rewrite of interfacing software, or significant 
-changes in workflow.
-* *Minor but incompatible changes* result in a bump of minor version (`x.y.0`).
-* *Compatible changes* (bug fixes) result in a bump of maintenance version (`x.y.z`).
+||Description|
+|----|----|
+|*Major changes*|Result in a bump of major version (`x.0.0`). Upgrades to a new major version may require a rewrite of nterfacing software, or significant changes in workflow.|
+|*Minor changes* (incompatible)|Result in a bump of minor version (`x.y.0`).|
+|*Minor changes* (compatible)|Result in a bump of maintenance version (`x.y.z`).|
 
 ## USAGE
 
