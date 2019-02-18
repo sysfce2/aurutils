@@ -97,16 +97,20 @@ This release restores some of the behavior from the 1.5 branch.
   + wrapper for the new `git(1)` based design
 * `aur-build`
   + remove `repose` support, see https://bbs.archlinux.org/viewtopic.php?pid=1707649#p1707649
+  + abort if updating a signed database without `-s` (#246)
   + add `AUR_REPO`, `AUR_DBROOT` environment variables (#302)
   + add `--makepkg-conf`, `--pacman-conf` (#242)
-  + abort if updating a signed database without `-s` (#246)
+  + use `pacman-conf` instead of `pacconf`
 * `aur-chroot` *(new)*
   + new tool containing the functionality of `aur-build -c`
   + support container builds without using a local repository
+  + support multiple repositories
+  + preserve `GNUPGHOME` (#427)
+  + use `pacman-conf` instead of `pacconf`
 * `aur-fetch`
   + use `HEAD@{upstream}` instead of `HEAD` for `git reset` (#349)
   + use `wget` instead of `aria2c` or `curl`
-  + support diffs for `tar` snapshots
+  + support diffs for `tar` snapshots (requires: `diffstat`)
 * `aur-graph`
   + rewrite in awk (#361)
   + add support for virtual and versioned dependencies (#10)
@@ -116,16 +120,20 @@ This release restores some of the behavior from the 1.5 branch.
   + send `GET` requests to `aurweb`
   + use `wget` instead of `aria2c` or `curl`
 * `aur-search` 
-  + add `License`, `Keyword`, `Depends`, `MakeDepends` and `CheckDepends`
+  + add `License`, `Keyword`, `Depends`, `MakeDepends` and `CheckDepends` fields
+  + add `depends`, `makedepends` search (#432)
   + add popularity to `brief` output (#420)
+  + colorize if `stdout` is a terminal (#473)
   + use intersection of results for multiple terms (#328)
   + use `aur-rpc` to query `aurweb`
 * `aur-sync`
   + add `AUR_PAGER` environment variable (file review, #51)
-  + add `--ignore-arch` (`makepkg -A`, #309)
   + add `--bind-rw` (#428)
+  + add `--ignore-arch` (`makepkg -A`, #309)
   + add `--nover-shallow` (only check versions for depends, #374)
+  + add `--provides` (virtual dependencies, #452)
   + add `--rebuild`, `--rebuildtree` aliases (#424)
+  + rename `--repo` to `--database` (#353)
   + the `--ignore` option now takes a comma-separated list of packages
   + fetch sources in parallel
   + set the default value for `AURDEST` to `$XDG_CACHE_HOME/aurutils/sync`
