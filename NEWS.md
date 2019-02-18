@@ -93,26 +93,49 @@ This release restores some of the behavior from the 1.5 branch.
 
 ## 2.0.0
 
-Major changes:
-
-* A new design based on `git(1)`. Programs are now run with the `aur` wrapper. For example, instead of `/usr/bin/aursync` you would run `/usr/bin/aur sync`, which calls `/usr/lib/aurutils/aur-sync`.
-* Support for `repose` was removed. See https://bbs.archlinux.org/viewtopic.php?pid=1707649#p1707649 for migration instructions.
-* VCS packages are now supported through the `aur-vercmp-devel` program.
-* Packages can now be built in a container without using a local repository. The relevant functionality was moved to `aur-chroot`.
-* Support for `bash` completion. `zsh` completions are not yet supported; see #458.
-* `aurcheck` was replaced by `aur-repo`, a general tool to handle local repositories. 
-* `aurqueue` was expanded to support virtual and versioned dependencies, and moved to `aur-graph`.
-* Support for `aria2` and `curl` was removed, using `wget` as replacement.
-* The `officer` program was removed; see `aur(1)` for a replacement.
-
-Other changes:
-
-* `aur-sync`
-  + set the default value for `AURDEST` to `$XDG_CACHE_HOME/aurutils/sync`
-  + fetch sources in parallel
-  + support any file manager for file review through the `AUR_PAGER` environment variable
-  + support `makepkg -A`
+* `aur` *(new)*
+  + wrapper for the new `git(1)` based design
+* `aur-build`
+  + remove `repose` support, see https://bbs.archlinux.org/viewtopic.php?pid=1707649#p1707649
+  + add `AUR_REPO`, `AUR_DBROOT` environment variables (#302)
+  + add `--makepkg-conf`, `--pacman-conf` (#242)
+  + abort if updating a signed database without `-s` (#246)
+* `aur-chroot` *(new)*
+  + new tool containing the functionality of `aur-build -c`
+  + support container builds without using a local repository
+* `aur-fetch`
+  + use `HEAD@{upstream}` instead of `HEAD` for `git reset` (#349)
+  + use `wget` instead of `aria2c` or `curl`
   + support diffs for `tar` snapshots
+* `aur-graph`
+  + rewrite in awk (#361)
+  + add support for virtual and versioned dependencies (#10)
+* `aur-repo` *(new)*
+  + manage local repositories
+* `aur-rpc` *(new)*
+  + send `GET` requests to `aurweb`
+  + use `wget` instead of `aria2c` or `curl`
 * `aur-search` 
-  + more colorful output in the "brief" format
+  + add `License`, `Keyword`, `Depends`, `MakeDepends` and `CheckDepends`
+  + add popularity to `brief` output (#420)
+  + use intersection of results for multiple terms (#328)
+  + use `aur-rpc` to query `aurweb`
+* `aur-sync`
+  + add `AUR_PAGER` environment variable (file review, #51)
+  + add `--ignore-arch` (`makepkg -A`, #309)
+  + add `--bind-rw` (#428)
+  + add `--nover-shallow` (only check versions for depends, #374)
+  + add `--rebuild`, `--rebuildtree` aliases (#424)
+  + the `--ignore` option now takes a comma-separated list of packages
+  + fetch sources in parallel
+  + set the default value for `AURDEST` to `$XDG_CACHE_HOME/aurutils/sync`
+* `aur-srcver` *(new)*
+  + print latest revision of VCS packages
+* `aur-vercmp-devel` *(new)*
+  + compare latest revision of VCS packages to a local repository
+* `officer` *(removed)*
+  + removed in favor of `pacman --config`
+* `completion`
+  + add `bash` completion (requires: `bash-completion`)
+  + add `zsh` completion in a later release (#458)
 * Fixes for known issues in `1.5.3`.
