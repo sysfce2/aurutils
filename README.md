@@ -26,8 +26,6 @@ Upgrade notices are posted to the
 
 ### Versioning
 
-Releases are versioned as follows:
-
 ||Description|
 |----|----|
 |*Major changes*|Result in a bump of major version (`x.0.0`). Upgrades to a new major version may require a rewrite of interfacing software, or significant changes in workflow.|
