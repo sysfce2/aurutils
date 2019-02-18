@@ -24,7 +24,9 @@ Upgrade notices are posted to the
 [Arch forums](https://bbs.archlinux.org/viewtopic.php?id=210621).
 [(RSS)](https://bbs.archlinux.org/extern.php?action=feed&tid=210621&type=atom)
 
-**Note:** Releases are versioned as follows:
+### Versioning
+
+Releases are versioned as follows:
 
 ||Description|
 |----|----|
