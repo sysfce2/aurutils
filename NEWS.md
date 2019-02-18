@@ -47,9 +47,6 @@
   + remove `--rmdeps` from default options (#508)
 * `aur-fetch`
   + expose AUR URL through `AUR_LOCATION` environment variable
-* `aur-sync`
-  + add `--pkgver` (`aur-build --pkgver`)
-  + remove `--rmdeps` from default options (#508)
 * `aur-pkglist`
   + do not require `-P` for regex match
   + Expose AUR URL through `AUR_LOCATION` environment variable
@@ -60,6 +57,9 @@
   + exit 1 on no results
   + exit 2 on AUR error (e.g. "too many results")
   + Expose AUR URL through `AUR_LOCATION` environment variable
+* `aur-sync`
+  + add `--pkgver` (`aur-build --pkgver`)
+  + remove `--rmdeps` from default options (#508)
 * `completion`
   + allow `zsh run-help` to display the correct man page (#506)
 
@@ -69,27 +69,27 @@
 
 This release restores some of the behavior from the 1.5 branch.
 
-* `aur-sync`
-  + add `--ignore-file` (same as `aursync --ignore`)
-  + check the (`.SRCINFO`) dependency graph before file inspection
-* `aur-depends`
-  + now takes input as arguments, instead from `stdin`
-  + add `--table`, `--pkgbase`, `--pkgname` and `--pkgname-all` (defaults to `--pkgname`)
 * `aur-build` 
   + `--build-command` now works correctly
   + add `--run-pkgver` to run `makepkg -od` before `makepkg --pkglist` (relevant to VCS packages)
+* `aur-depends`
+  + now takes input as arguments, instead from `stdin`
+  + add `--table`, `--pkgbase`, `--pkgname` and `--pkgname-all` (defaults to `--pkgname`)
 * `aur-search`
   + add `--raw` to display JSON output
+* `aur-sync`
+  + add `--ignore-file` (same as `aursync --ignore`)
+  + check the (`.SRCINFO`) dependency graph before file inspection
 * `aur-fetch-git` and `aur-fetch-snapshot` were removed and merged to `aur-fetch`
 
 ## 2.0.1
 
-* `aur-sync`
-  + add --keep-order for parallel aur-fetch
 * `aur-build`
   + do not export PKGDEST for non-chroot builds (#498)                               
   + add --build-command (#498)
   + man page updates (#217)
+* `aur-sync`
+  + add --keep-order for parallel aur-fetch
 
 ## 2.0.0
 
