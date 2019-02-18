@@ -67,8 +67,6 @@
 
 ## 2.1.0
 
-This release restores some of the behavior from the 1.5 branch.
-
 * `aur-build` 
   + `--build-command` now works correctly
   + add `--run-pkgver` to run `makepkg -od` before `makepkg --pkglist` (relevant to VCS packages)
