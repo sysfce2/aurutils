@@ -24,7 +24,9 @@ Upgrade notices are posted to the
 [Arch forums](https://bbs.archlinux.org/viewtopic.php?id=210621).
 [(RSS)](https://bbs.archlinux.org/extern.php?action=feed&tid=210621&type=atom)
 
-|Code changes|Versioning|
+### Versioning
+
+|Code changes||
 |----|----|
 |*Major changes*|Result in a bump of major version (`x.0.0`). Upgrades to a new major version may require a rewrite of interfacing software, or significant changes in workflow.|
 |*Minor changes* (incompatible)|Result in a bump of minor version (`x.y.0`). Typically used when application names or command-line options change in a minor way.|
