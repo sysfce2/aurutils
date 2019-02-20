@@ -143,6 +143,13 @@ Take virtual dependencies
 in the local repository into account. Version information is not
 considered. Packages specified on the command line or available
 upgrades are taken as target regardless of this setting.
+.RE
+.B Note:
+This option does not take other repositories than the local repository 
+into account. Furthermore, the version output from
+.BR aur\-vercmp (1)
+is unaffected by this option.
+.RS
 
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
