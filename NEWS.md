@@ -1,3 +1,10 @@
+## 2.3.1
+
+* `aur-build`
+  + add `--results`
+* `aur-sync`
+  + documentation updates (#350, #507)
+
 ## 2.3.0
 
 * `aur-build`
