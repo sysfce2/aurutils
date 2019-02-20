@@ -24,19 +24,19 @@ Upgrade notices are posted to the
 [Arch forums](https://bbs.archlinux.org/viewtopic.php?id=210621).
 [(RSS)](https://bbs.archlinux.org/extern.php?action=feed&tid=210621&type=atom)
 
-### Versioning
+## USAGE
+
+Documentation is included as groff manuals. [`aur(1)`](man1/aur.1) contains a
+general overview, instructions on creating a local repository, and
+several examples.
+
+## VERSIONING
 
 |Code changes||
 |----|----|
 |*Major changes*|Result in a bump of major version (`x.0.0`). Upgrades to a new major version may require a rewrite of interfacing software, or significant changes in workflow.|
 |*Minor changes* (incompatible)|Result in a bump of minor version (`x.y.0`). Typically used when application names or command-line options change in a minor way.|
 |*Minor changes* (compatible)|Result in a bump of maintenance version (`x.y.z`). Typically used for bug fixes or new, compatible features.|
-
-## USAGE
-
-Documentation is included as groff manuals. [`aur(1)`](man1/aur.1) contains a
-general overview, instructions on creating a local repository, and
-several examples.
 
 ## TROUBLESHOOTING
 
