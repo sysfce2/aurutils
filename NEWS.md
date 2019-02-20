@@ -4,6 +4,8 @@
   + add `--results`
 * `aur-sync`
   + documentation updates (#350, #507)
+* `aur-repo-filter`
+  + documentation updates (#438)
 
 ## 2.3.0
 
