@@ -42,3 +42,12 @@ several examples.
 
 See [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md). For informal discussion, see the 
 `#aurutils` channel on [freenode](https://freenode.net/kb/answer/chat).
+
+## SEE ALSO
+
+The following (third-party) projects may be used together with `aurutils`:
+
+* [aur-talk](https://aur.archlinux.org/packages/aur-talk-git/) - fetch and display AUR package comments (requires: `hq`)
+* [aur-out-of-date](https://aur.archlinux.org/packages/aur-out-of-date/) - compare AUR to upstream version
+* [aurto](https://aur.archlinux.org/packages/aurto/) - automatically update a local repository with trust management
+* [hq](https://www.archlinux.org/packages/community/x86_64/hq/) - HTML processor inspired by jq
