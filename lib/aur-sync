@@ -264,7 +264,7 @@ if type -P >/dev/null vifm; then
     viewer() ( cd "$1"; vifm -c 'view!' -c '0' - )
 else
     # shellcheck disable=SC2086
-    viewer() ( cd "$1"; command -- ${PAGER:-less -K} )
+    viewer() ( cd "$1"; command -- ${PAGER:-less -K -+F} )
 fi
 
 # check if dependency graph is valid
@@ -283,6 +283,11 @@ if ((view)); then
           # print build directories in dependency order
           xargs -I{} -a "$tmp"/queue find -L "$tmp_view"/{} -maxdepth 1
         } | viewer "$tmp_view"
+
+        # Fix for #530
+        if [[ -v PAGER ]]; then
+            read -p $'Press any key to continue or ctrl+d to abort\n'
+        fi
     fi
 fi
 
