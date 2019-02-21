@@ -4,6 +4,7 @@
   + add `--results`
 * `aur-sync`
   + documentation updates (#350, #507)
+  + ask for confirmation if `PAGER` is set (#530)
 * `aur-repo-filter`
   + documentation updates (#438)
 
