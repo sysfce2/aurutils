@@ -284,7 +284,7 @@ if ((view)); then
           xargs -I{} -a "$tmp"/queue find -L "$tmp_view"/{} -maxdepth 1
         } | viewer "$tmp_view"
 
-        # Fix for #530
+        # ask for confirmation when using PAGER (#530)
         if [[ -v PAGER ]]; then
             read -p $'Press any key to continue or ctrl+d to abort\n'
         fi
