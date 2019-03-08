@@ -15,7 +15,7 @@ makepkg_args=(--clean --syncdeps)
 repo_add_args=()
 
 # default options
-chroot=0 delta=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0
 
 conf_single() {
     awk -v "repo=[$1]" '
@@ -53,7 +53,7 @@ fi
 
 ## option parsing
 opt_short='a:B:C:d:D:M:r:cfNRXsv'
-opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'delta' 'sign'
+opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
           'makepkg-conf:' 'remove' 'build-command:' 'pkgver')
 opt_hidden=('dump-options')
@@ -72,7 +72,6 @@ while true; do
         -r|--root)          shift; db_root=$1 ;;
         -c|--chroot)        chroot=1 ;;
         -f|--force)         overwrite=1 ;;
-        -X|--delta)         delta=1 ;;
         -s|--sign)          sign_pkg=1
                             repo_add_args+=(-s) ;;
         -v|--verify)        repo_add_args+=(-v) ;;
@@ -106,10 +105,6 @@ if (($#)); then
     else
         makepkg_args=("$@")
     fi
-fi
-
-if ((delta)); then
-    repo_add_args+=(-d)
 fi
 
 # assign environment variables
@@ -181,12 +176,14 @@ else
     fi
 fi
 
-# configuration for container builds
+# Configuration for container builds. This step is run before the
+# build to save time when the (root) container has not been updated
+# for a longer period of time.
 if ((chroot)); then
     aur chroot --no-build "${chroot_args[@]}"
 fi
 
-# configuration for host builds
+# Configuration for host builds.
 pacman-conf --config "${p_conf:-/etc/pacman.conf}" | conf_single "$db_name" >"$tmp"/custom.conf
 
 # PKGDEST is defined later through makepkg.conf (#513)
