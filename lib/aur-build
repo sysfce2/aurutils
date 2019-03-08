@@ -107,10 +107,6 @@ if (($#)); then
     fi
 fi
 
-if type -P xdelta3 >/dev/null; then
-    repo_add_args+=(-d)
-fi
-
 # assign environment variables
 : "${db_name=$AUR_REPO}"
 : "${db_root=$AUR_DBROOT}"
@@ -180,12 +176,14 @@ else
     fi
 fi
 
-# configuration for container builds
+# Configuration for container builds. This step is run before the
+# build to save time when the (root) container has not been updated
+# for a longer period of time.
 if ((chroot)); then
     aur chroot --no-build "${chroot_args[@]}"
 fi
 
-# configuration for host builds
+# Configuration for host builds.
 pacman-conf --config "${p_conf:-/etc/pacman.conf}" | conf_single "$db_name" >"$tmp"/custom.conf
 
 # PKGDEST is defined later through makepkg.conf (#513)
