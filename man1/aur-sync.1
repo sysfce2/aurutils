@@ -239,22 +239,25 @@ split on white space, allowing
 .RE
 
 .SH NOTES
+.SS File inspection
 .BR aur\-sync (1)
 aborts on build failure, or other errors such as an interrupted file 
-review process by the user
-.RB ( :cq
+review process by the user, in particular
+.B :cq
 in
 .BR vifm (1),
 or
 .B "Ctrl+C"
 in
-.BR less (1)).
+.BR less (1).
+
 To avoid downloading files again, the
 .B \-\-continue
 option may be used. This may be combined with
 .BR aur\-depends (1)
 to build dependency trees independently; see GitHub issue #350.
 
+.SS Standard input
 Targets may be taken from stdin using
 .BR xargs (1).
 For example:
@@ -275,15 +278,17 @@ file:
 
 .EE
 
+.SS File retrieval
 When version checks are enabled (\fB\-\-no\-ver\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
-than a version in the pacman database. Checks assume there are no
+than the version in a pacman database. Checks assume there are no
 mismatches between
 .B .SRCINFO
 and
 .B PKGBUILD
 files.
 
+.SS lib32
 Architecture-specific depends (as introduced with pacman 4.2) are
 merged with regular depends in RPC queries.
 .B aur\-sync
