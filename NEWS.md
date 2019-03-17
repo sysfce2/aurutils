@@ -1,4 +1,25 @@
-## 2.3.1
+## 2.4.0
+
+* `aur-build`
+  + add `--ignorearch` to `makepkg --noprepare -od` (`--pkgver`)
+  + remove `--delta`
+* `aur-chroot`
+  + add `--host-conf` (experimental)
+* `aur-fetch`
+  + do not print diffs to `stdout` unless `--verbose` is specified
+  + remove support for `tar` archives
+  + rename `--log-dir` to `--write-log`
+* `aur-repo-filter`
+  + remove `expac` dependency
+* `aur-repo`
+  + add `--pacman-conf`
+  + remove `expac` dependency
+* `aur.1`
+  + add example `aur-gc`, `aur-remove` scripts
+* `Makefile`
+  + allow overriding `AUR_LIB_DIR` at build time
+
+## 2.3.1 - 2019-02-21
 
 * `aur-build`
   + add `--results`
@@ -8,7 +29,7 @@
 * `aur-repo-filter`
   + documentation updates (#438)
 
-## 2.3.0
+## 2.3.0 - 2019-02-18
 
 * `aur-build`
   + add `--holdver` to makepkg with `--pkgver`
@@ -29,7 +50,7 @@
   + group options by type (#520)
   + complete `aur-depends` options (#526)
   
-## 2.2.1
+## 2.2.1 - 2019-01-25
 
 * `aur-build`
   + add `--holdver` to `makepkg` options if `--pkgver` is enabled
@@ -45,7 +66,7 @@
 * `aur-vercmp`
   + if `stdin` is connected to a terminal, mention this on `stderr`
 
-## 2.2.0
+## 2.2.0 - 2019-01-22
 
 * `aur`
   + update `CacheDir` instructions in `aur(1)`
@@ -73,7 +94,7 @@
 * `completion`
   + allow `zsh run-help` to display the correct man page (#506)
 
-## 2.1.0
+## 2.1.0 - 2019-01-16
 
 * `aur-build` 
   + `--build-command` now works correctly
@@ -88,7 +109,7 @@
   + check the (`.SRCINFO`) dependency graph before file inspection
 * `aur-fetch-git` and `aur-fetch-snapshot` were removed and merged to `aur-fetch`
 
-## 2.0.1
+## 2.0.1 - 2019-01-11
 
 * `aur-build`
   + do not export PKGDEST for non-chroot builds (#498)                               
@@ -97,7 +118,7 @@
 * `aur-sync`
   + add --keep-order for parallel aur-fetch
 
-## 2.0.0
+## 2.0.0 - 2019-01-10
 
 * `aur` *(new)*
   + wrapper for the new `git(1)` based design
