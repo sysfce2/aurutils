@@ -6,7 +6,7 @@ readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # default options
-verbose=0 recurse=0
+verbose=0 recurse=0 fetch_args=('--verbose')
 
 usage() {
     cat <<! | base64 -d
@@ -19,7 +19,7 @@ XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='rvL:'
-opt_long=('recurse' 'verbose' 'write-log:')
+opt_long=('recurse' 'verbose' 'write-log:' 'force')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -33,6 +33,7 @@ while true; do
         -L|--write-log) shift; log_dir=$1 ;;
         -r|--recurse)   recurse=1 ;;
         -v|--verbose)   verbose=1 ;;
+        --force)        fetch_args+=('--force') ;;
         --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                         exit ;;
@@ -69,7 +70,8 @@ fi | while read -r pkg; do
     if [[ -d $pkg/.git ]]; then
         # Avoid issues with filesystem boundaries. (#274)
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
-        git fetch --verbose
+
+        git fetch "${fetch_args[@]}" || exit 1
 
         if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
             # Only print log on upstream changes.
@@ -89,6 +91,8 @@ fi | while read -r pkg; do
         if git clone "$AUR_LOCATION"/"$pkg".git; then
             # show PKGBUILDS first (#399)
             git -C "$pkg" config diff.orderFile "$orderfile"
+            # only allow fast-forward fetches. (#)
+            git -C "$pkg" config remote.origin.fetch 'refs/heads/*:refs/remotes/origin/*'
         else
             printf 'fetch: %s: Failed to clone repository\n' "$pkg" >&2
             exit 1
