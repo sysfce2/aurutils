@@ -86,7 +86,10 @@ fi | while read -r pkg; do
             git reset --hard 'HEAD@{upstream}' >&2
         fi
     else
-        if ! git clone -c diff.orderFile="$orderfile" "$AUR_LOCATION"/"$pkg".git; then
+        if git clone "$AUR_LOCATION"/"$pkg".git; then
+            # show PKGBUILDS first (#399)
+            git -C "$pkg" config diff.orderFile "$orderfile"
+        else
             printf 'fetch: %s: Failed to clone repository\n' "$pkg" >&2
             exit 1
         fi
