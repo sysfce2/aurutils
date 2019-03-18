@@ -51,6 +51,19 @@ will refuse to fetch unless
 .B \-\-force
 is passed.
 
+
+.SS LOCAL MODIFICATIONS (EXPERIMENTAL)
+While
+.B aur-fetch
+will try to preserve changes committed locally, by trying to reapply
+them on top of the incoming new changes, it will discard any uncommitted
+changes present in the repository.
+
+If the changes cannot be applied cleanly,
+.B aur-fetch
+will exit with error, leaving the repository files with conflict
+markers for the user to resolve.
+
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-depends (1),

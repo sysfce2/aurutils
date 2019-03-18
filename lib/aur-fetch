@@ -78,21 +78,25 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries. (#274)
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
 
-        git fetch "${fetch_args[@]}" || exit 1
+        # Discard any local uncommited changes. (#552)
+        git reset --hard HEAD >&2
+        git pull --rebase "${fetch_args[@]}" || exit 1
 
-        if [[ $(git rev-parse HEAD) != $(git rev-parse '@{upstream}') ]]; then
+        if ! git diff-files --diff-filter=U --quiet; then
+            warning '%s: Local commits conflict with upstream. Fix the conflicts and commit them.' "$pkg"
+            exit 1
+        fi
+
+        if [[ $(git rev-parse ORIG_HEAD) != $(git rev-parse HEAD) ]]; then
             # Only print log on upstream changes.
             if (( verbose )); then
-                git --no-pager log --patch --stat '..@{upstream}'
+                git --no-pager log --patch --stat 'ORIG_HEAD..HEAD'
             fi
 
             if [[ $log_dir ]]; then
-                git --no-pager log --patch --stat '..@{upstream}' > "$log_dir/$pkg".patch
+                git --no-pager log --patch --stat 'ORIG_HEAD..HEAD' > "$log_dir/$pkg".patch
                 printf '%s/%s.patch\n' "$log_dir" "$GIT_DIR"
             fi
-
-            # Discard any local changes. (#349)
-            git reset --hard 'HEAD@{upstream}' >&2
         fi
     else
         if git clone "$AUR_LOCATION"/"$pkg".git; then
