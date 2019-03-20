@@ -7,7 +7,11 @@ aur\-fetch \- download packages from the AUR
 .OP \-L log_dir
 .OP \-r
 .OP \-v
-.IR "package [package...]"
+.IR package " [" package... ]
+.YS
+.SY "aur fetch"
+.OP \-\-confirm\-seen
+.IR package " [" package... ]
 .YS
 
 .SH DESCRIPTION
@@ -36,6 +40,11 @@ Print logs to
 will refuse to fetch if history was rewritten. This option allows
 overriding that check. (see \fIHISTORY REWRITES\fR under \fINOTES\fR)
 
+.TP
+.B \-\-confirm\-seen
+Marks the pacakge's checked out commit as seen.
+
+
 .SH NOTES
 
 .SS HISTORY REWRITES
@@ -50,6 +59,29 @@ To raise awareness to these events,
 will refuse to fetch unless
 .B \-\-force
 is passed.
+
+
+.SS LOGS
+The logs shown by
+.B aur-fetch
+show changes that happened since the commit referenced by the
+special reference
+.B AURUTILS_SEEN
+stored inside the repository.
+
+This reference can be created with with:
+
+.EX
+    \fB$ aur fetch --confirm-seen \fI<package> \fR[\fP<pacakge>...\fR]\fR
+.EE
+
+which will mark the current commit as seen, signaling
+.B aur-fetch
+that current changes should not be shown in future logs.
+
+When this reference is missing,
+.B aur-fetch
+will consider the entire history as changes.
 
 
 .SS LOCAL MODIFICATIONS (EXPERIMENTAL)
@@ -74,6 +106,7 @@ markers for the user to resolve.
 .BR git\-log (1),
 .BR git\-rev\-parse (1),
 .BR git\-reset (1),
+.BR git\-update\-ref (1)
 
 .SH AUTHORS
 .MT https://github.com/AladW
