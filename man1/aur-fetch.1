@@ -1,54 +1,45 @@
-.TH AUR-FETCH 1 2018-02-14 AURUTILS
+.TH AUR-FETCH 1 2018-03-17 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 
 .SH SYNOPSIS
 .SY "aur fetch"
 .OP \-L log_dir
-.OP \-t
-.OP \-g
 .OP \-r
+.OP \-v
 .IR "package [package...]"
 .YS
 
 .SH DESCRIPTION
 .B aur\-fetch
-downloads packages, specified on the command-line, from the AUR. It is
-capable of handling
-.BR tar (1)
-archives and
-.BR git (1)
-repositories.
+downloads packages, specified on the command-line, from the AUR.
 
 .SH OPTIONS
 .TP
-.BI \-M " FILE" "\fR,\fP \-\-makepkg\-conf=" FILE
 .BI \-L " DIRECTORY" "\fR,\fP \-\-write\-log=" DIRECTORY
 The location of where to store the diffs of previously unpacked
 archives.
 
 .TP
-.B \-t
-Download packages as
-.I tar
-archives.
-
-.TP
-.B \-g
-Download packages as
-.I git
-repositories.
-
-.TP
-.B \-r
+.BR \-r ", " \-\-recurse
 Download packages and their dependencies with
 .BR aur-depends (1).
+
+.TP
+.BR \-v ", " \-\-verbose
+Print logs to
+.BR stdout .
 
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-depends (1),
 .BR git (1),
-.BR tar (1)
+.BR git\-clone (1),
+.BR git\-fetch (1),
+.BR git\-pull (1),
+.BR git\-log (1),
+.BR git\-rev\-parse (1),
+.BR git\-reset (1),
 
 .SH AUTHORS
 .MT https://github.com/AladW
