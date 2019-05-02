@@ -109,7 +109,7 @@ fi | while read -r pkg; do
 
             if [[ $log_dir ]]; then
                 logfile="$log_dir/$pkg".patch
-                gen_patchfile "${log_range[@]}" >"$logfile"
+                git --no-pager log --patch --stat "${log_range}" >"$logfile"
                 plain '%s' "$logfile"
             fi
         fi
