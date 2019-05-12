@@ -91,10 +91,8 @@ fi | while read -r pkg; do
 
         # Discard any local uncommited changes. (#552)
         git reset --hard HEAD >&2
-        git pull --rebase "${fetch_args[@]}" || exit 1
-
-        if ! git diff-files --diff-filter=U --quiet; then
-            warning '%s: Local commits conflict with upstream. Fix the conflicts and commit them.' "$pkg"
+        if ! git pull --rebase "${fetch_args[@]}"; then
+            error '%s: Failed to integrate changes.' "$pkg"
             exit 1
         fi
 
