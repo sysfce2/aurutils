@@ -9,6 +9,10 @@ readonly AUR_COLOR=${AUR_COLOR-auto}
 # default options
 verbose=0 recurse=0 fetch_args=('--verbose') confirm_seen=0
 
+gen_patchfile() {
+    git diff-tree --patch --stat "${2:-$(git hash-object -t tree /dev/null)}" "$1";
+}
+
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
@@ -99,15 +103,15 @@ fi | while read -r pkg; do
         seen=$(git rev-parse --quiet --verify AURUTILS_SEEN);
 
         if [[ "$seen" != $(git rev-parse HEAD) ]]; then
-            log_range="${seen:+$seen..}HEAD"
+            log_range=(HEAD ${seen:+^$seen})
 
             if (( verbose )); then
-                git --no-pager log --patch --stat "${log_range}"
+                gen_patchfile "${log_range[@]}"
             fi
 
             if [[ $log_dir ]]; then
                 logfile="$log_dir/$pkg".patch
-                git --no-pager log --patch --stat "${log_range}" >"$logfile"
+                gen_patchfile "${log_range[@]}" >"$logfile"
                 plain '%s' "$logfile"
             fi
         fi
