@@ -51,12 +51,12 @@ while true; do
 done
 
 if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
-    printf 'fetch: %s: Not a directory\n' "$log_dir" >&2
-    exit 1
+    error '%s: %s: Not a directory' "$argv0" "$log_dir"
+    exit 20
 fi
 
 if ! (( $# )); then
-    printf 'fetch: No pkgname given\n' >&2
+    error '%s: No pkgname given' "$argv0"
     exit 1
 fi
 
@@ -123,7 +123,7 @@ fi | while read -r pkg; do
             # only allow fast-forward fetches. (#)
             git -C "$pkg" config remote.origin.fetch 'refs/heads/*:refs/remotes/origin/*'
         else
-            printf 'fetch: %s: Failed to clone repository\n' "$pkg" >&2
+            error '%s: %s: Failed to clone repository' "$argv0" "$pkg"
             exit 1
         fi
     fi
