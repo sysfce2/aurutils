@@ -9,6 +9,10 @@ readonly AUR_COLOR=${AUR_COLOR-auto}
 # default options
 verbose=0 recurse=0 fetch_args=('--verbose') confirm_seen=0
 
+gen_patchfile() {
+    git diff-tree --patch --stat "${2:-$(git hash-object -t tree /dev/null)}" "$1"
+}
+
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
@@ -51,12 +55,12 @@ while true; do
 done
 
 if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
-    printf 'fetch: %s: Not a directory\n' "$log_dir" >&2
-    exit 1
+    error '%s: %s: Not a directory' "$argv0" "$log_dir"
+    exit 20
 fi
 
 if ! (( $# )); then
-    printf 'fetch: No pkgname given\n' >&2
+    error '%s: No pkgname given' "$argv0"
     exit 1
 fi
 
@@ -91,25 +95,23 @@ fi | while read -r pkg; do
 
         # Discard any local uncommited changes. (#552)
         git reset --hard HEAD >&2
-        git pull --rebase "${fetch_args[@]}" || exit 1
-
-        if ! git diff-files --diff-filter=U --quiet; then
-            warning '%s: Local commits conflict with upstream. Fix the conflicts and commit them.' "$pkg"
+        if ! git pull --rebase "${fetch_args[@]}"; then
+            error '%s: Failed to integrate changes.' "$pkg"
             exit 1
         fi
 
-        seen=$(git rev-parse --quiet --verify AURUTILS_SEEN);
+        seen=$(git rev-parse --quiet --verify AURUTILS_SEEN)
 
         if [[ "$seen" != $(git rev-parse HEAD) ]]; then
-            log_range="${seen:+$seen..}HEAD"
+            log_range=(HEAD ${seen:+^$seen})
 
             if (( verbose )); then
-                git --no-pager log --patch --stat "${log_range}"
+                gen_patchfile "${log_range[@]}"
             fi
 
             if [[ $log_dir ]]; then
                 logfile="$log_dir/$pkg".patch
-                git --no-pager log --patch --stat "${log_range}" >"$logfile"
+                gen_patchfile "${log_range[@]}" >"$logfile"
                 plain '%s' "$logfile"
             fi
         fi
@@ -123,7 +125,7 @@ fi | while read -r pkg; do
             # only allow fast-forward fetches. (#)
             git -C "$pkg" config remote.origin.fetch 'refs/heads/*:refs/remotes/origin/*'
         else
-            printf 'fetch: %s: Failed to clone repository\n' "$pkg" >&2
+            error '%s: %s: Failed to clone repository' "$argv0" "$pkg"
             exit 1
         fi
     fi
