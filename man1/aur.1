@@ -380,22 +380,20 @@ in $PATH, for example
 .BR aur\-remove
 
 .EX
-  #!/bin/bash
-  # alternative to 'repoctl remove' which loops over all local repositories
-  package=$1
+  #!/bin/sh --
+  # aur-remove - remove listed packages from all local repositories
+
+  if [ "$#" -eq 0 ]; then
+    printf 'usage: aur remove package [package ...]\en' >&2
+    exit 1
+  fi
 
   aur repo --repo-list | while read -r repo_path; do
-    # remove package from database
-    repo-remove "$(readlink -e "$repo_path")" "$package"
-
-    # remove all versions of package
-    find "$(dirname "$repo_path")" -name "$package*" -delete
+    if repo_path=$(readlink -e "$repo_path"); then
+      repo-remove "$repo_path" "$@"
+      paccache -c "${repo_path%/*}" -rvk0 "$@"
+    fi
   done
-
-  # remove package from system
-  if expac -Q '%n' "$package" >/dev/null; then
-    sudo pacman -R "$package"
-  fi
 .EE
 
 .SS Using third-party helpers
