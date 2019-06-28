@@ -1,6 +1,6 @@
 ## SYNOPSIS
   
-![logo](https://ptpb.pw/1Qal.png)
+![logo](06Nitori1.png)
 
 __aurutils__ is a collection of scripts to automate usage of the [Arch
 User Repository](https://wiki.archlinux.org/index.php/Arch_User_Repository), 
