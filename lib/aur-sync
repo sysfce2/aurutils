@@ -249,12 +249,12 @@ fi
 
 if ((download)); then
     msg "Retrieving package files" >&2
-    aur jobs -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
+    parallel -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
         aur fetch -L "$tmp_view" :::: "$tmp"/queue
 fi
 
 # link build files in the queue (absolute links)
-aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
+parallel -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 # Explicitly define if exit success is to be trusted (#561)
 trust_exit_success=0
