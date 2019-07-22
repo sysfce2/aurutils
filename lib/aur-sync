@@ -252,12 +252,12 @@ fi
 
 if ((download)); then
     msg "Retrieving package files" >&2
-    aur jobs -Xj +3 --nice 10 --halt soon,fail=1 --keep-order \
+    parallel -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
         aur fetch "${fetch_args[@]}" :::: "$tmp"/queue
 fi
 
 # link build files in the queue (absolute links)
-aur jobs -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
+parallel -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if type -P >/dev/null vifm; then
     # avoid directory prefix in printed paths (#452)
