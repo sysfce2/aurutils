@@ -75,7 +75,7 @@ fi
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-aur jobs --nice 10 -j +2 --joblog "$tmp"/makepkg_log --results "$tmp/{#}_makepkg" \
+parallel --nice 10 -j +2 --joblog "$tmp"/makepkg_log --results "$tmp/{#}_makepkg" \
     srcver_pkgbuild_path '{}' "$tmp"/results "${makepkg_args[@]}" ::: "$@" >/dev/null 2>&1
 jobs_exit=$?
 
