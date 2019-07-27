@@ -28,7 +28,7 @@ tr_ver() {
 chain() {
     local a num sub
 
-    printf '%s\n' "$@" | aur rpc -t info > json/0 || exit
+    printf '%s\n' "$@" | aur query -t info > json/0 || exit
     num=$(count json/0)
 
     if ((num < 1)); then
@@ -43,7 +43,7 @@ chain() {
         # Avoid querying duplicates (#4)
         cut -f1 tsv/$sub >> seen # pkgname
         cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen | \
-            aur rpc -t info > json/$a || exit # rpc error
+            aur query -t info > json/$a || exit # rpc error
 
         if [[ -s json/$a ]]; then
             num=$(count json/$a)

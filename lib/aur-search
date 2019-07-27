@@ -185,7 +185,7 @@ case $multiple in
 esac
 
 # check results
-printf '%s\n' "$@" | aur rpc -t "$type" -b "$search_by" > "$tmp" || exit
+printf '%s\n' "$@" | aur query -t "$type" -b "$search_by" > "$tmp" || exit
 
 # exit early on raw output (#187)
 case $output in
