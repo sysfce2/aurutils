@@ -59,7 +59,7 @@ my_vercmp() {
 }
 
 parse_aur() {
-    aur rpc -t info | jq -r '.results[] | [.Name, .Version] | @tsv'
+    aur query -t info | jq -r '.results[] | [.Name, .Version] | @tsv'
 }
 
 trap_exit() {

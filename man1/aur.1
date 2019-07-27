@@ -283,7 +283,7 @@ repository that are unavailable in the AUR:
 As above, but for orphaned packages:
 .EX
 
-  $ pacman -Slq custom | aur rpc -t info | \\
+  $ pacman -Slq custom | aur query -t info | \\
        jq -r '.[].results[] | select(.Maintainer == null)'
 
 .EE
