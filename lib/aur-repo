@@ -70,8 +70,8 @@ while read -r key _ value; do
         \[*\]*)
             section=${key:1:-1}
             ;;
-        DBPath=)
-            pacman_dbpath=$key
+        DBPath=*)
+            pacman_dbpath=$value
             ;;
         Server=file://*)
             server=${value#file://}
