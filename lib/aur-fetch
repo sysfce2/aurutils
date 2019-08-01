@@ -94,8 +94,10 @@ fi | while read -r pkg; do
             exit 1
         fi
     fi
-    # Avoid issues with filesystem boundaries. (#274)
-    export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+    # Avoid issues with filesystem boundaries, (#274)
+    # and make sure we have a valid git repository.
+    GIT_DIR=$(git rev-parse --resolve-git-dir "$pkg"/.git) || exit
+    export GIT_DIR GIT_WORK_TREE=$pkg
 
     if (( confirm_seen )); then
         git update-ref AURUTILS_SEEN HEAD
