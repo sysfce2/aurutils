@@ -189,7 +189,6 @@ printf '%s\n' "$@" | aur query -t "$type" -b "$search_by" > "$tmp" || exit
 
 # exit early on raw output (#187)
 case $output in
-    hrm) parser() { tabulate "$sort_key" | combine | info; } ;;
     raw) cat "$tmp"
          exit ;;
 esac
@@ -206,7 +205,7 @@ case $count in
            # no results found
            exit 1
        fi ;;
-    *) parser < "$tmp"
+    *) tabulate "$sort_key" < "$tmp" | combine | info
        ;;
 esac
 
