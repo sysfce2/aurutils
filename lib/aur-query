@@ -85,7 +85,7 @@ fi
 jq -R -r '@uri' | uri | wget -o "$wget_log" -i - -O - -nv
 wget_err=${PIPESTATUS[2]}
 
-if ((wget_err)); then
+if (( wget_err )); then
     cat "$wget_log" >&2
     exit "$wget_err"
 fi

@@ -6,11 +6,7 @@ AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-multiple=section
-output=hrm
-search_by=name-desc
-sort_key=Name
-type=search
+multiple=section output=hrm search_by=name-desc sort_key=Name type=search
 
 tabulate() {
     # It is important to have a default value for every field, or
@@ -158,14 +154,14 @@ while true; do
     shift
 done
 
-if ! (($#)); then
+if ! (( $# )); then
     usage
 fi
 tmp=$(mktemp --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 # XXX union is done by the AUR for info, but not search
-if (($# < 2)) || [[ $type == 'info' ]]; then
+if (( $# < 2 )) || [[ $type == 'info' ]]; then
     multiple=none
 fi
 

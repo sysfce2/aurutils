@@ -131,15 +131,15 @@ trap 'exit' INT
 # makechrootpkg arguments can only be appended to the defaults
 # specified in archbuild (-cn), unlike makepkg where we override our
 # own set of defaults (-cs).
-if (($#)); then
-    if ((chroot)); then
+if (( $# )); then
+    if (( chroot )); then
         makechrootpkg_args=("$@")
     else
         makepkg_args=("$@")
     fi
 fi
 
-# assign environment variables
+# Assign environment variables (#443)
 : "${db_name=$AUR_REPO}"
 : "${db_root=$AUR_DBROOT}"
 
@@ -164,7 +164,7 @@ case $db_name in
         esac ;;
 esac
 
-# resolve symbolic link
+# Resolve symbolic link to database
 if ! db_path=$(readlink -e -- "$db_path"); then
     error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
@@ -203,7 +203,7 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-# write successfully built packages to file (#437)
+# Write successfully built packages to file (#437)
 if [[ -v results_file ]]; then
     if [[ -w $results_file ]]; then
         results=1
@@ -213,13 +213,14 @@ if [[ -v results_file ]]; then
     fi
 fi
 
-if ((sign_pkg)); then
+if (( sign_pkg )); then
     if [[ -v GPGKEY ]]; then
         gpg --list-keys "$GPGKEY"
         gpg_args+=(-u "$GPGKEY")
     fi
 else
-    db_sigs=("$db_root/$db_name".sig "$db_root/$db_name".files.sig)
+    db_sigs=("$db_root/$db_name".sig
+             "$db_root/$db_name".files.sig)
 
     if [[ -f ${db_sigs[0]} ]]; then
         error '%s: database signature found, but signing is disabled' "$argv0"
@@ -232,7 +233,7 @@ fi
 # Configuration for host builds.
 conf_single "${pacman_conf:-/etc/pacman.conf}" "$db_name" >"$tmp"/custom.conf
 
-# PKGDEST is defined later through makepkg.conf (#513)
+# PKGDEST is defined below through makepkg.conf (#513)
 unset PKGDEST
 
 { if [[ -v makepkg_conf ]]; then
@@ -250,20 +251,20 @@ unset PKGDEST
 
   # PKGDEST defined here is NOT exported to the build environment.
   # This is not a concern for container builds, as makechrootpkg
-  # already has a similar mechanism. (#498)
+  # already has a similar mechanism for defining PKGDEST. (#498)
   printf "PKGDEST='%s'\\n" "$var_tmp"
 } >"$tmp"/makepkg.conf
 
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
 
-    # run pkgver before --packagelist (#500)
-    if ((run_pkgver)); then
-        # ignore architecture in pkgver() function (#536)
+    # Run pkgver before --packagelist (#500)
+    if (( run_pkgver )); then
+        # Ignore architecture in pkgver() function (#536)
         makepkg --noprepare -od --ignorearch
     fi
 
-    if ! ((overwrite)); then
+    if (( ! overwrite )); then
         unset mark
 
         while IFS= read -r; do
@@ -281,7 +282,7 @@ while IFS= read -ru "$fd" path; do
     if [[ -v build_cmd ]]; then
         printf '%s\n' >&2 "Running custom command: ${build_cmd[*]}"
         env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" "${build_cmd[@]}"
-    elif ((chroot)); then
+    elif (( chroot )); then
         printf '%s\n' >&2 "Running $chroot_prefix-$machine-build"
         env PKGDEST="$var_tmp" "$chroot_prefix"-"$machine"-build \
             "${archbuild_args[@]}" -- -d "$db_root" "${makechrootpkg_args[@]}"
@@ -305,24 +306,24 @@ while IFS= read -ru "$fd" path; do
             warning '%s: existing package signature found' "$argv0"
             siglist+=("$p".sig)
 
-        elif ((sign_pkg)); then
+        elif (( sign_pkg )); then
             gpg "${gpg_args[@]}" --output "$p".sig "$p"
             siglist+=("$p".sig)
         fi
     done
 
-    # move build products (relative paths)
+    # Move build products (relative paths)
     mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
 
-    # update database
+    # Update database
     cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
-    if ((results)); then
+    if (( results )); then
         printf '%s\n' "${pkglist[@]}" | tee -a "$results_file"
     fi
 
-    if ((chroot)) || ((no_sync)); then
+    if (( chroot )) || (( no_sync )); then
         continue
     else
         replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)

@@ -31,13 +31,13 @@ chain() {
     printf '%s\n' "$@" | aur query -t info > json/0 || exit
     num=$(count json/0)
 
-    if ((num < 1)); then
+    if (( num < 1 )); then
         printf >&2 '%s: no packages found\n' "$argv0"
         exit 1
     fi
 
-    for ((a = 1; a <= max_request; ++a)); do
-        sub=$((a-1))
+    for (( a = 1; a <= max_request; ++a )); do
+        sub=$(( a - 1 ))
         tabulate json/$sub | tee -a tsv/n > tsv/$sub
 
         # Avoid querying duplicates (#4)
@@ -51,7 +51,7 @@ chain() {
             return $a # no unique results (seen \ tsv == [empty])
         fi
 
-        if ((num >= 1)); then
+        if (( num >= 1 )); then
             cut -f2 tsv/$sub >> seen # depends
         else
             return $a # no results, recursion complete
@@ -116,7 +116,7 @@ if cd "$tmp" && mkdir json tsv; then
         1) true # no dependencies
            ;;
         $max_request)
-            printf >&2 '%s: total requests: %d (out of range)\n' "$argv0" $((max_request+1))
+            printf >&2 '%s: total requests: %d (out of range)\n' "$argv0" $(( max_request + 1 ))
             exit 34 ;;
     esac
 
