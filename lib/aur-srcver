@@ -1,5 +1,6 @@
 #!/bin/bash
 # aur-srcver - update and print package revisions
+[[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=srcver
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -19,7 +20,7 @@ srcver_pkgbuild_info() {
 }
 
 trap_exit() {
-    if ! [[ -o xtrace ]]; then
+    if [[ ! -v AUR_DEBUG ]]; then
         rm -rf "$tmp"
     fi
 }

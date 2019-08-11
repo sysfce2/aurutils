@@ -14,12 +14,7 @@ is the issue reproducible from the master branch?
 __If yes to all, create a debug log:__
 
 ```
-wget https://raw.githubusercontent.com/AladW/aurutils/master/xtrace
-bash xtrace aur <name> <arguments>
+AUR_DEBUG=1 aur <name> <arguments> >aurutils.log
 ```
 
-and attach the resulting files to this issue.
-
-<!-- Note that ./xtrace exports SHELLOPTS, which "set -e" appends to. In -->
-<!-- particular, any aur-* scripts ran by aur-sync will have "set -e" -->
-<!-- enabled. -->
+and attach aurutils.log to this issue.
