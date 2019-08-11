@@ -3,7 +3,6 @@
 readonly argv0=repo-filter
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # The command line will hit ARG_MAX on approximately 70k packages;
 # spread arguments with xargs (and printf, as a shell built-in).
@@ -25,12 +24,7 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
-fi
 
 opt_short='d:a'
 opt_long=('all' 'sync' 'database:' 'repo:')
@@ -111,9 +105,9 @@ satisfies "${strset[@]}" | provides | while read -r package virtual; do
     fi
 
     case $version in
-        1) plain "dependency $virtual satisfied by $package" >&2
+        1) printf >&2 'dependency %s satisfied by %s\n' "$virtual" "$package"
            printf '%s\n' "$virtual" ;;
-        *) plain "dependency $virtual$version satisfied by $package" >&2
+        *) printf >&2 'dependency %s%s satisfied by %s\n' "$virtual" "$version" "$package"
            printf '%s\n' "$virtual" ;;
     esac
 done

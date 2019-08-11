@@ -2,7 +2,6 @@
 # aur-srcver - update and print package revisions
 readonly argv0=srcver
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 srcver_pkgbuild_info() {
     env -C "$1" -i bash -c '
@@ -25,16 +24,11 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [--noprepare] <pkgbase> [<pkgbase> ...]' "$argv0" >&2
+    printf >&2 'usage: %s [--noprepare] <pkgbase> [<pkgbase> ...]\n' "$argv0"
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
-fi
 
 opt_short=j:
 opt_long=('no-prepare' 'jobs:')
@@ -96,10 +90,10 @@ for n in "$@"; do
 done
 
 for f in "${failed[@]}"; do
-    warning 'makepkg %s failed for package %s' "${makepkg_args[*]}" "$f"
+    printf >&2 '%s: makepkg %s failed for package %s\n' "$argv0" "${makepkg_args[*]}" "$f"
 
     cat "$tmp/$f"/log >&2
-    plain '8<----'  >&2
+    printf >&2 '8<----\n'
 done
 
 # vim: set et sw=4 sts=4 ft=sh:

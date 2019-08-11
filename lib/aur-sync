@@ -7,7 +7,6 @@ readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default arguments
 build_args=()
@@ -80,8 +79,8 @@ source /usr/share/makepkg/util/util.sh
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
+if [[ ! -v NO_COLOR ]] && [[ ! -o xtrace ]]; then
+    [[ -t 2 ]] && colorize
 fi
 
 opt_short='B:C:d:D:M:AcfkLnpPrRsTu'
@@ -162,7 +161,7 @@ if ((rotate)); then
 fi
 
 if ! (($# + update)); then
-    error "$argv0: no targets specified"
+    error '%s: no targets specified' "$argv0"
     exit 1
 fi
 
@@ -177,9 +176,9 @@ aur repo "${repo_args[@]}" --list --status-file=db >db_info
 } <db
 
 if [[ -w $db_root/$db_name.db ]]; then
-    msg "Using [$db_name] repository" >&2
+    msg 'Using [%s] repository' "$db_name" >&2
 else
-    error "$argv0: $db_root/$db_name.db: permission denied"
+    error '%s: %s: permission denied' "$argv0" "$db_root/$db_name.db"
     exit 13
 fi
 
@@ -233,7 +232,7 @@ if order depends >queue_0; then
     tac queue_0 | lib32 | complement filter >queue_1
 else
     # input contains a loop
-    error "$argv0: invalid argument"
+    error '%s: invalid argument' "$argv0"
     exit 22
 fi
 

@@ -4,7 +4,6 @@ readonly argv0=fetch
 readonly AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
 readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default options
 verbose=0 recurse=0 fetch_args=('--verbose') confirm_seen=0
@@ -25,8 +24,8 @@ XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
+if [[ ! -v NO_COLOR ]] && [[ ! -o xtrace ]]; then
+    [[ -t 2 ]] && colorize
 fi
 
 opt_short='rvL:'

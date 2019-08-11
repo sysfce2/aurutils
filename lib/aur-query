@@ -3,7 +3,6 @@
 readonly argv0=query
 readonly AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default options
 declare -i rpc_ver=5
@@ -31,16 +30,11 @@ uri_search() {
 }
 
 usage() {
-    plain 'usage: %s [-t [info|search] ] [-b by]' "$argv0" >&2
+    printf 'usage: %s [-t [info|search] ] [-b by]' "$argv0" >&2
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
-fi
 
 opt_short='b:t:'
 opt_long=('by:' 'type:' 'aur-url:' 'rpc-ver:' 'rpc-url:')

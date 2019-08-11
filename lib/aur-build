@@ -6,7 +6,6 @@ readonly argv0=build
 readonly startdir=$PWD
 readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default arguments
 chroot_args=()
@@ -48,8 +47,8 @@ source /usr/share/makepkg/util/util.sh
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
+if [[ ! -v NO_COLOR ]] && [[ ! -o xtrace ]]; then
+    [[ -t 2 ]] && colorize
 fi
 
 ## option parsing
@@ -119,7 +118,7 @@ case $db_name in
                 db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
                 ;;
-             *) error "$argv0: root specified without database name"
+             *) error '%s: root specified without database name' "$argv0"
                 exit 1 ;;
         esac ;;
     *)
@@ -135,12 +134,12 @@ esac
 
 # resolve symbolic link
 if ! db_path=$(readlink -e -- "$db_path"); then
-    error "$argv0: $db_path: no such file or directory"
+    error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
 fi
 
 if ! [[ -w $db_path ]]; then
-    error "$argv0: $db_path: permission denied"
+    error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
 fi
 
@@ -155,7 +154,7 @@ if [[ -v results_file ]]; then
     if [[ -w $results_file ]]; then
         results=1
     else
-        error "$argv0: $results_file: permission denied"
+        error '%s: %s: permission denied' "$argv0" "$results_file"
         exit 13
     fi
 fi
@@ -169,8 +168,7 @@ else
     db_sigs=("$db_root/$db_name".sig "$db_root/$db_name".files.sig)
 
     if [[ -f ${db_sigs[0]} ]]; then
-        # avoid errors from stale db.sig files
-        error "$argv0: database signature found, but signing is disabled"
+        error '%s: database signature found, but signing is disabled' "$argv0"
 
         printf '%q\n' >&2 "${db_sigs[@]}"
         exit 1
@@ -221,7 +219,7 @@ while IFS= read -ru "$fd" path; do
         done < <(PKGDEST="$db_root" makepkg --packagelist)
 
         if [[ ${mark[*]} ]]; then
-            warning "skipping built package (use -f to overwrite)"
+            warning '%s: skipping built package (use -f to overwrite)' "$argv0"
 
             printf '%q\n' >&2 "${mark[@]}"
             continue
@@ -249,13 +247,13 @@ while IFS= read -ru "$fd" path; do
 
     # pkglist should not be empty (#513)
     if [[ ${pkglist[*]} == '!(*.sig)' ]]; then
-        error "$argv0: invalid argument (no packages found)"
+        error '%s: invalid argument (no packages found)' "$argv0"
         exit 22
     fi
 
     for p in "${pkglist[@]}"; do
         if [[ -f $p.sig ]]; then
-            warning "$argv0: existing package signature found"
+            warning '%s: existing package signature found' "$argv0"
             siglist+=("$p".sig)
 
         elif ((sign_pkg)); then
