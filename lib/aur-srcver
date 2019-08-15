@@ -2,8 +2,6 @@
 # aur-srcver - update and print package revisions
 readonly argv0=srcver
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly startdir=$PWD
-makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
 readonly AUR_COLOR=${AUR_COLOR-auto}
 
 srcver_pkgbuild_info() {
@@ -19,16 +17,6 @@ srcver_pkgbuild_info() {
         printf %s\\t%s\\n "${pkgbase:-$pkgname}" "$fullver"
     '
 }
-export -f srcver_pkgbuild_info
-
-srcver_pkgbuild_path() {
-    if env -C "$1" makepkg "${@:3}" ; then
-        srcver_pkgbuild_info "$1" >> "$2"
-    else
-        return
-    fi
-}
-export -f srcver_pkgbuild_path
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
@@ -48,8 +36,8 @@ if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == alw
     colorize
 fi
 
-opt_short=
-opt_long=('no-prepare')
+opt_short=j:
+opt_long=('no-prepare' 'jobs:')
 opt_hidden=('dump-options' 'noprepare')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -57,51 +45,61 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
+makepkg_args=('--nobuild' '--nodeps' '--skipinteg' '--log')
+num_procs=$(("$(nproc)" + 2))
+
 while true; do
     case "$1" in
-        --noprepare|--no-prepare) makepkg_args+=(--noprepare) ;;
-        --dump-options) printf -- '--%s\n' "${opt_long[@]}"
-			printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
-			exit ;;
-        --) shift; break ;;
+        --noprepare|--no-prepare)
+            makepkg_args+=(--noprepare) ;;
+        -j|--jobs)
+            shift; num_procs=$1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
+        --)
+            shift; break ;;
     esac
     shift
 done
 
-if ! (($#)); then
+if ! (( $# )); then
     usage
 fi
 
 tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
 trap 'trap_exit' EXIT
 
-parallel --nice 10 -j +2 --joblog "$tmp"/makepkg_log --results "$tmp/{#}_makepkg" \
-    srcver_pkgbuild_path '{}' "$tmp"/results "${makepkg_args[@]}" ::: "$@" >/dev/null 2>&1
-jobs_exit=$?
+i=0
+for n in "$@"; do
+    if (( i++ >= num_procs )); then
+        wait -n
+    fi
 
-if ((jobs_exit > 101)); then
-    error "$argv0: error running 'parallel', exit code $jobs_exit"
-    exit "$jobs_exit"
-fi
+    { mkdir -p "$tmp/$n"
 
-if ((jobs_exit > 0)); then
-    error "$argv0: failed to update $jobs_exit packages"
+      if ! env -C "$n" nice -n 20 makepkg "${makepkg_args[@]}" >"$tmp/$n"/log 2>&1; then
+          echo $? >"$tmp/$n"/failed
+      fi
+    } &
+done
+wait
 
-    while IFS=$'\t' read -r seq _ _ _ _ _ makepkg_exit _ command; do
-        if ((makepkg_exit)); then
-            printf >&2 '8<----\n'
-            printf >&2 '%s\n' "$command"
+failed=()
+for n in "$@"; do
+    if [[ -e $tmp/$n/failed ]]; then
+        failed+=("$n")
+    else
+        srcver_pkgbuild_info "$n"
+    fi
+done
 
-            cat "$tmp/${seq}_makepkg" >&2
-            cat "$tmp/${seq}_makepkg.err" >&2
-        else
-            continue
-        fi
-    done < "$tmp"/makepkg_log
+for f in "${failed[@]}"; do
+    warning 'makepkg %s failed for package %s' "${makepkg_args[*]}" "$f"
 
-    exit "$jobs_exit"
-else
-    cat "$tmp"/results
-fi
+    cat "$tmp/$f"/log >&2
+    plain '8<----'  >&2
+done
 
 # vim: set et sw=4 sts=4 ft=sh:

@@ -5,6 +5,7 @@ aur\-srcver \- list version of VCS packages
 .SH SYNOPSIS
 .SY "aur srcver"
 .OP \-\-noprepare
+.OP \-\-jobs
 .IR pkgbase ...
 .YS
 
@@ -14,7 +15,9 @@ takes the names of packages and lists the current
 .I pkgver
 of VCS packages. This is achieved by running
 .B "makepkg \-\-skipinteg \-od"
-and parsing the output.
+and parsing the output. If
+.B makepkg
+fails on a given package, the resulting output is shown on standard error.
 
 It is assumed that source directories are already available, and that
 .B aur\-srcver
@@ -25,9 +28,15 @@ is used in the same directory as those source directories.
 .B \-\-noprepare
 Do not run the prepare() function in the PKGBUILD.
 
+.TP
+.BI \-j " NUM" "\fR,\fP \-\-jobs=" NUM
+Set the amount of
+.B makepkg
+processes run in parallel. Defaults to 2 plus the amount of processing units.
+
 .SH SEE ALSO
-.BR makepkg (1),
-.BR aur (1)
+.BR aur (1),
+.BR makepkg (1)
 
 .SH AUTHORS
 .MT https://github.com/AladW
