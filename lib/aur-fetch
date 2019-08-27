@@ -10,7 +10,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 pull_args=('--verbose')
 
 # default options
-verbose=0 recurse=0 confirm_seen=0 rebase=-1
+verbose=0 recurse=0 confirm_seen=0 rebase=-1 log_format=diff log_cmd=diff
 
 # empty tree object
 git_empty_tree=$(git hash-object -t tree /dev/null)
@@ -33,7 +33,7 @@ fi
 
 opt_short='frRvL:'
 opt_long=('recurse' 'verbose' 'write-log:' 'force' 'confirm-seen'
-          'rebase' 'reset')
+          'rebase' 'reset' 'format:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -50,6 +50,9 @@ while true; do
             recurse=1 ;;
         -v|--verbose)
             verbose=1 ;;
+        --format)
+            shift
+            log_format=$1 ;;
         -R|--rebase)
             rebase=1 ;;
         --reset)
@@ -66,6 +69,12 @@ while true; do
     esac
     shift
 done
+
+case "$log_format" in
+    log)  log_cmd=log ;;
+    diff) log_cmd=diff ;;
+    *)    error '%s format is not supported' "$log_format" && exit 1
+esac
 
 if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
     error '%s: %s: Not a directory' "$argv0" "$log_dir"
@@ -150,22 +159,19 @@ fi | while read -r pkg; do
         fi
     fi
 
-    seen=$(git rev-parse --quiet --verify AURUTILS_SEEN)
-
-    if [[ -z $seen ]]; then
-        #seen=$git_empty_tree
+    if ! seen=$(git rev-parse --quiet --verify AURUTILS_SEEN); then
+        seen=$git_empty_tree
         warning '%s: AURUTILS_SEEN object not found, assuming empty tree' "$argv0"
     fi
 
-    # Directory was inspected (--confirm-seen) at a previous time.
     if [[ $seen != "$(git rev-parse HEAD)" ]]; then
         # Contents have changed since last inspection; print differences.
         if (( verbose )); then
-            git --no-pager log --patch --stat "${seen:+$seen..}HEAD"
+            git --no-pager "$log_cmd" --patch --stat "${seen:+$seen..}HEAD"
         fi
 
         if [[ $log_dir ]]; then
-            git --no-pager log --patch --stat "${seen:+$seen..}HEAD" >"$log_dir/$pkg".diff
+            git --no-pager "$log_cmd" --patch --stat "${seen:+$seen..}HEAD" >"$log_dir/$pkg.${log_format}"
         fi
     fi
 done
