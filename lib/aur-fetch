@@ -11,9 +11,17 @@ pull_args=('--verbose')
 
 # default options
 verbose=0 recurse=0 confirm_seen=0 rebase=-1 log_format=diff log_cmd=diff
+n_procs=$(nproc)
 
 # empty tree object
 git_empty_tree=$(git hash-object -t tree /dev/null)
+
+trap_exit() {
+    # Do not remove error files if an error occured (#593)
+    if [[ ! -v AUR_DEBUG ]]; then
+        rm -rf "$tmp"
+    fi
+}
 
 usage() {
     cat <<! | base64 -d
@@ -34,7 +42,7 @@ fi
 
 opt_short='frRvL:'
 opt_long=('recurse' 'verbose' 'write-log:' 'force' 'confirm-seen'
-          'rebase' 'reset' 'format:')
+          'rebase' 'reset' 'format:' 'jobs:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -54,6 +62,9 @@ while true; do
         --format)
             shift
             log_format=$1 ;;
+        --jobs)
+            shift
+            n_procs=$1 ;;
         -R|--rebase)
             rebase=1 ;;
         --reset)
@@ -99,11 +110,11 @@ if ! [[ -s $orderfile ]]; then
     printf 'PKGBUILD\n' >"$orderfile"
 fi
 
-if (( recurse )); then
-    aur depends --pkgbase "$@"
-else
-    printf '%s\n' "$@"
-fi | while read -r pkg; do
+tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
+trap 'trap_exit' EXIT
+
+aur_fetch() {
+    pkg=$1
     # Avoid issues with filesystem boundaries. (#274)
     export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
 
@@ -120,7 +131,7 @@ fi | while read -r pkg; do
             git update-ref AURUTILS_SEEN HEAD
 
             warning 'Marked new repository %s as seen' "$pkg"
-            continue # skip diff logic
+            exit 0 # skip diff logic
         else
             # Set marker to empty tree object.
             git update-ref AURUTILS_SEEN "$git_empty_tree"
@@ -142,7 +153,7 @@ fi | while read -r pkg; do
             git update-ref AURUTILS_SEEN HEAD
 
             msg2 'Marked %s as seen' "$pkg" >&2
-            continue
+            exit 0
         fi
 
         if (( rebase > 0 )) || {
@@ -175,6 +186,35 @@ fi | while read -r pkg; do
             git --no-pager "$log_cmd" --patch --stat "${seen:+$seen..}HEAD" >"$log_dir/$pkg.${log_format}"
         fi
     fi
-done
+}
 
+
+if (( recurse )); then
+    aur depends --pkgbase "$@"
+else
+    printf '%s\n' "$@"
+fi >"$tmp/queue"
+
+i=0 # "allocate" slots
+while (( i++ < n_procs )); do true & done
+
+# run jobs. We need to go through the loop n_proc more times to
+# to ensure we read exit codes from processes that are still running
+# when the queue finishes.
+while { read -r pkg || (( --i > 0 )); } ; do
+    wait -n || { ret=$?; break; }               #simulate fail=1 from now,fail=1
+    if [[ $pkg ]]; then
+        aur_fetch "$pkg" >"$tmp/$pkg.out" 2>"$tmp/$pkg.err" &
+    fi
+done < <(sort -u "$tmp/queue" | sed '/^$/d')
+
+if (( ret )); then # simulate now from now,fail=1
+    # shellcheck disable=SC2046
+    kill $(jobs -np)
+fi
+
+wait # wait for process to terminate
+cat "$tmp/"*.out
+cat "$tmp/"*.err >&2
+exit $ret
 # vim: set et sw=4 sts=4 ft=sh:
