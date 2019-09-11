@@ -29,6 +29,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
+    git_color='--color'
 fi
 
 opt_short='frRvL:'
@@ -167,7 +168,7 @@ fi | while read -r pkg; do
     if [[ $seen != "$(git rev-parse HEAD)" ]]; then
         # Contents have changed since last inspection; print differences.
         if (( verbose )); then
-            git --no-pager "$log_cmd" --patch --stat "${seen:+$seen..}HEAD"
+            git --no-pager "$log_cmd" ${git_color} --patch --stat "${seen:+$seen..}HEAD"
         fi
 
         if [[ $log_dir ]]; then
