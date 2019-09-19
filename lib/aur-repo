@@ -2,7 +2,6 @@
 # aur-repo - manage local repositories
 readonly argv0=repo
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default arguments
 modifier=local
@@ -17,16 +16,11 @@ db_namever() {
 }
 
 usage() {
-    plain 'usage: %s [-d repo] [-r path] [-alSu]' "$argv0" >&2
+    printf >&2 'usage: %s [-d repo] [-r path] [-alSu]\n' "$argv0"
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
-fi
 
 ## option parsing
 opt_short='c:d:r:aluS'
@@ -82,7 +76,7 @@ while read -r key _ value; do
                     if ! [[ $db_root ]]; then
                         db_root=$server
                     elif [[ $db_root != "$server" ]]; then
-                        warning "$db_name: --root and pacman.conf mismatch"
+                        printf >&2 '%s: warning: --root and pacman.conf mismatch (%s)\n' "$argv0" "$db_name"
                     fi ;;
             esac
             ;;
@@ -104,7 +98,7 @@ case $mode in
         if [[ ${conf_repo[*]} ]]; then
             printf '%q/%q.db\n' "${conf_repo[@]}"
         else
-            plain "no file:// repository configured"
+            printf >&2 '%s: no file:// repository configured\n' "$argv0"
         fi
         exit 0 ;;
 esac
@@ -114,10 +108,10 @@ if ! [[ $db_name ]]; then
         2) db_root=${conf_repo[0]}
            db_name=${conf_repo[1]}
            ;;
-        0) error "no file:// repository found"
+        0) printf >&2 '%s: no file:// repository found\n' "$argv0"
            exit 2
            ;;
-        *) error "repository choice is ambiguous (use -d to specify)"
+        *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
            printf '%q\n' "${conf_repo[@]}" | paste - - | column -t >&2
            exit 1
            ;;
@@ -133,13 +127,13 @@ case $modifier in
     # - $db_root/$db_name (path)
     local)
         if ! [[ $db_root ]]; then
-            error "$db_name: repository path not found"
+            printf >&2 '%s: %s: repository path not found\n' "$argv0" "$db_name"
             exit 2
         elif [[ $db_root == *://* ]]; then
-            error "$db_root: object is remote (use -S to query)"
+            printf >&2 '%s: %s: object is remote (use -S to query)\n' "$argv0" "$db_root"
             exit 66
         elif ! [[ -d $db_root ]]; then
-            error "$db_root: not a directory"
+            printf >&2 '%s: %s: not a directory\n' "$argv0" "$db_root"
             exit 20
         else
             contents() { bsdcat "$db_root/$db_name".db | db_namever; }

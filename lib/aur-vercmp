@@ -3,7 +3,6 @@
 set -o pipefail
 readonly argv0=vercmp
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default options
 format=check
@@ -19,11 +18,11 @@ cmp_equal_or_newer() {
         esac
 
         case $op in
-           -1) plain "$pkg: $v_cmp is newer than $v_in" >&2
+           -1) plain '%s: %s is newer than %s' "$pkg" "$v_cmp" "$v_in" >&2
                printf '%s\n' "$pkg" ;;
             0) printf '%s\n' "$pkg" ;;
-            1) msg2 "$pkg: $v_cmp -> $v_in" >&2 ;;
-            2) msg2 "$pkg: (none) -> $v_in" >&2 ;;
+            1) msg2 '%s: %s -> %s' "$pkg" "$v_cmp" "$v_in" ;;
+            2) msg2 '%s: (none) -> %s' "$pkg" "$v_in" ;;
         esac
     done
 }
@@ -69,15 +68,15 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-p path] [-acq]' "$argv0" >&2
+    plain >&2 'usage: %s [-p path] [-acq]' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
+if [[ ! -v NO_COLOR ]] && [[ ! -o xtrace ]]; then
+    [[ -t 2 ]] && colorize
 fi
 
 opt_short='p:u:acq'

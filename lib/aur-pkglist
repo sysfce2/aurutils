@@ -5,7 +5,6 @@ readonly argv0=pkglist
 readonly cache=${XDG_CACHE_HOME:-$HOME/.cache}/aurutils/$argv0
 readonly AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default options
 delay=300
@@ -22,7 +21,7 @@ list_update() {
     if wget -O - -o last_transfer "$1" | gzip -d - > "$2"; then
         extract_date "$2"
     else
-        printf >&2 'warning: failed to retrieve package list\n'
+        printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
     fi
 }
 
@@ -30,21 +29,16 @@ list_http_date() {
     if wget -S --spider -o last_transfer "$1"; then
         awk -F', ' '/Date:/ {print $2}' last_transfer
     else
-        printf >&2 'warning: failed to retrieve HTTP date\n'
+        printf >&2 '%s: warning: failed to retrieve HTTP date\n' "$argv0"
     fi
 }
 
 usage() {
-    plain 'usage: %s [-bt] [-FP pattern]' "$argv0" >&2
+    printf >&2 'usage: %s [-bt] [-FP pattern]\n' "$argv0"
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
-fi
 
 opt_short='t:bFP'
 opt_long=('pkgbase' 'fixed-strings' 'perl-regexp' 'time:')

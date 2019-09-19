@@ -3,7 +3,6 @@
 readonly argv0=depends
 readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 readonly max_request=30
-readonly AUR_COLOR=${AUR_COLOR-auto}
 
 # default options
 mode=pkgname
@@ -32,7 +31,7 @@ chain() {
     num=$(count json/0)
 
     if ((num < 1)); then
-        printf '%s: no packages found\n' "$argv0" >&2
+        printf >&2 '%s: no packages found\n' "$argv0"
         exit 1
     fi
 
@@ -73,16 +72,11 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-abnt]' "$argv0" >&2
+    printf >&2 'usage: %s [-abnt]\n' "$argv0"
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ( -t 1 && -t 2 && ! -o xtrace && $AUR_COLOR == auto ) || $AUR_COLOR == always ]] ; then
-    colorize
-fi
 
 opt_short='abnt'
 opt_long=('table' 'pkgbase' 'pkgname' 'pkgname-all')
@@ -119,7 +113,7 @@ if cd "$tmp" && mkdir json tsv; then
         1) true # no dependencies
            ;;
         $max_request)
-            error "$argv0: total requests: $((max_request+1)) (out of range)"
+            printf >&2 '%s: total requests: %d (out of range)\n' "$argv0" $((max_request+1))
             exit 34 ;;
     esac
 
@@ -156,7 +150,7 @@ if cd "$tmp" && mkdir json tsv; then
             cat tsv/n
             ;;
         *)
-            error "$argv0: invalid argument"
+            printf >&2 '%s: invalid argument' "$argv0"
             exit 22 ;;
     esac
 else
