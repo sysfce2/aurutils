@@ -65,6 +65,8 @@ parse_aur() {
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf "$tmp"
+    else
+        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
     fi
 }
 
