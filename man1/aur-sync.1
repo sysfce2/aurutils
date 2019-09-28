@@ -99,25 +99,6 @@ Alias for
 Alias for
 .BR "\-f \-\-nover" .
 
-.SS Container options
-.TP
-.BR \-c ", " \-\-chroot
-Build packages with makechrootpkg. (\fBaur build \-c\fR)
-
-.TP
-.BI \-C " FILE" "\fR,\fP \-\-pacman\-conf=" FILE
-.BR pacman.conf (5)
-used inside the container. (\fBaur build \-C\fR)
-
-.TP
-.BI \-M " FILE" "\fR,\fP \-\-makepkg\-conf=" FILE
-.BR makepkg.conf (5)
-used inside the container. (\fBaur build \-M\fR)
-
-.TP
-.BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
-The path pointing to the container. (\fBaur build \-D\fR)
-
 .SS Download options
 .TP
 .B \-\-continue
@@ -197,10 +178,18 @@ Remove dependencies installed by makepkg. (\fBmakepkg \-\-rmdeps\fR)
 
 .SS makechrootpkg options
 The default build command is
-.BR "makechrootpkg \-cu" .
+.BR "makechrootpkg \-c \-n \-C" .
 See
-.BR aur\-chroot (1)
+.BR aur\-build (1)
 for details.
+
+.TP
+.BR \-c ", " \-\-chroot
+Build packages in a systemd\-nspawn container. (\fBaur build \-c\fR)
+
+.TP
+.BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
+The path pointing to the container. (\fBaur build \-D\fR)
 
 .TP
 .BI \-\-bind= DIR

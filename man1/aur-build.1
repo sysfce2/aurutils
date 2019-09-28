@@ -21,18 +21,6 @@ prefix in
 .BR pacman.conf (5).
 
 .SH OPTIONS
-All arguments after \-\- are passed to
-.BR makepkg (8),
-or
-.BR makechrootpkg
-when
-.B \-c
-is specified. The default options are
-.B \-\-clean \-\-syncdeps
-and
-.BR "\-c \-u" ,
-respectively.
-
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A text file describing directories that contain a PKGBUILD, relative to
@@ -50,27 +38,14 @@ The command has
 .BR AUR_REPO ", and"
 .BR AUR_DBROOT
 set in the user environment. (These variables should be unset where
-appropriate.) To split the command on whitespace, repeat the
+appropriate.)
+
+To split the command on whitespace, repeat the
 .B \-B
 option for each substring. For example,
 .BI "\-B " "makepkg " "\-B " \-sri
 would set the build command to
 .BR "makepkg \-sri" .
-
-.TP
-.BR \-c ", " \-\-chroot
-Build packages inside a
-.BR systemd\-nspawn (1)
-container with
-.BR makechrootpkg .
-See
-.BR aur\-chroot (1)
-for more information. The
-.BR \-D ( \-\-directory ),
-.BR \-C ( \-\-pacman\-conf "), and"
-.BR \-M ( \-\-makepkg\-conf )
-option arguments are forwarded to
-.BR aur\-chroot (1).
 
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
@@ -96,6 +71,7 @@ This defaults to the value of the
 .B Server
 directive for the configured repository.
 .RS
+
 .SY Note:
 The
 .I Server
@@ -106,6 +82,11 @@ is used for
 sync operations regardless of this setting. See also
 .BR \-N .
 .RE
+
+.TP
+.BI \-\-results= file
+Write absolute paths of successfully built packages to
+.IR file .
 
 .TP
 .BR \-\-pkgver
@@ -119,32 +100,113 @@ to the default
 .BR makepkg (8)
 options.
 
+.SS archbuild options
+.TP
+.BR \-c ", " \-\-chroot
+Build packages inside a
+.BR systemd\-nspawn (1)
+container with
+.BR archbuild .
+
+The default build command is
+.BR "makechrootpkg \-c \-n \-C" .
+All arguments specified after
+.B \-\-
+are appended to this set of options. Run
+.B "makechrootpkg \-h"
+for a list of available
+.B makechrootpkg
+options.
+
+The pre-requisites for this option are as follows:
+.RS
+.IP \(bu 2
+Ensure the optional dependency
+.BR devtools
+installed.
+.IP \(bu 2
+Make a symbolic link to
+.B /usr/bin/archbuild
+named
+.IR <chroot\-prefix> \- <arch> \-build
+available somwehere in your
+.BR PATH .
+.br
+E.g.,
+.B /usr/local/bin/aur\-x86\_64\-build -> /usr/bin/archbuild
+.IP \(bu 2
+Place the pacman configuration in
+.BI /usr/share/devtools/pacman\- <chroot\-prefix> .conf \fR.
+.br
+E.g.,
+.BR /usr/share/devtools/pacman\-aur.conf .
+.RE
+
+.TP
+.BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
+The base directory for containers. Defaults to
+.BI /var/lib/archbuild/ <chroot\-prefix> \- <arch> \fR.
+
+This directory usually contains a
+.B /root
+subdirectory that serves as template for user containers (named after
+.IR $SUDO_USER ,
+or
+.B /copy
+if unset).
+
+.RS
+.SY Note:
+If the
+.B \-T
+option is specified to
+.BR makechrootpkg ,
+the user container has a random name and is removed on build
+completion.
+.RE
+
+.TP
+.B \-\-recreate
+Recreate the chroot before building packages.
+
+.TP
+.BI \-\-prefix= prefix
+Select the configuration/binary to chroot-build packages.
+By default,
+.I prefix
+is set to
+.BR aur .
+
 .SS makepkg options
 The default build command is
 .BR "makepkg \-\-clean \-\-syncdeps" .
+Any arguments specified after \-\- replace this set of options.
 
 .TP
 .BR \-A ", " \-\-ignorearch
 Ignore a missing or incomplete
 .I arch
-field in the build script. (\fBmakepkg \-A\fR)
+field in the build script.
+.RB ( makepkg " " \-A )
 
 .TP
 .BR \-L ", " \-\-log
-Enable logging to a text file in the build directory. (\fBmakepkg
-\-L\fR)
+Enable logging to a text file in the build directory.
+.RB ( makepkg " " \-L )
 
 .TP
 .BR \-n ", " \-\-noconfirm
-Do not wait for user input. (\fBmakepkg \-\-noconfirm\fR)
+Do not wait for user input.
+.RB ( makepkg " " \-\-noconfirm )
 
 .TP
 .BR \-r ", " \-\-rmdeps
-Remove dependencies installed by makepkg. (\fBmakepkg \-\-rmdeps\fR)
+Remove dependencies installed by makepkg.
+.RB ( makepkg " " \-\-rmdeps )
 
 .SS repo\-add options
 .TP
-.B \-R
+.BR \-R ", " \-\-remove
 Remove old package files from disk when updating their entry in the
 database
 .RB ( "repo\-add \-R" ).
@@ -277,6 +339,97 @@ See
 .BR gpg (1)
 for details.
 
+.SH CHROOT NOTES
+.SS Building with makechrootpkg
+Changes to the pacman database are
+.I not
+propagated from the container to the local system. Packages must be
+installed and updated separately, typically through
+.BI "pacman \-Syu " package_name\fR.
+
+Package conflicts inside the container must be solved manually, as
+.B makechrootpkg
+uses
+.B "makepkg \-\-noconfirm \-s"
+internally. For example, to replace
+.I gcc
+with
+.I gcc\-multilib
+, run
+.B "arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S gcc\-multilib"
+as root.
+
+To install packages from the local repository (for example, on
+dependency resolution with
+.BR "makepkg \-s" ,
+the container requires read access to the host directory where it is
+located. This is ensured through a
+.IR "bind mount" .
+
+.SS Avoiding password prompts
+.BR makepkg (8)
+must be run as a regular user as of version 4.2, with privileged
+operations done via
+.BR sudo (8).
+It follows that
+.BR aur\-build (1)
+can not run directly as root. To avoid password prompts,
+.BR sudoers (5)
+can be used instead. For example, if
+.BR aur\-build (1)
+is run as the
+.I archie
+user, create the following sudoers policy:
+.EX
+
+  archie ALL = (root) NOPASSWD: SETENV: /usr/bin/archbuild
+
+.EE
+.SY Note:
+Should the rule only apply to specific hosts, replace
+.B ALL
+with the respective
+.IR hostname .
+
+.SS Using ccache and distcc
+As in the example above, install the required packages:
+.EX
+
+  # arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S ccache distcc
+
+.EE
+Ensure write access to
+.B ccache
+directories on the host:
+.EX
+
+  # aur build \-\-chroot \-\- \-d /home/_ccache:/build/.ccache
+
+.EE
+
+.SS Building for a different architecture
+To build packages for a different architecture, prepend
+.BI setarch " arch"
+to the
+.B aur\-build
+command line.
+
+The target architecture must be supported both by the host (run
+.B "setarch \-\-list"
+for an approximation), and have a matching
+.BR makepkg.conf (5)
+file available in
+.B /usr/share/devtools
+(such as
+.I /usr/share/devtools/makepkg\-i686.conf
+for
+.IR i686 ).
+
+.SY Note:
+Building for other CPU architectures may be done through
+QEMU, for example with
+.BR proot (1).
+
 .SH BUGS
 Databases are built with
 .B LANG=C
@@ -300,7 +453,6 @@ option is disabled by default.
 
 .SH SEE ALSO
 .BR aur (1),
-.BR aur\-chroot (1),
 .BR aur\-repo (1),
 .BR pacman (1),
 .BR makepkg.conf (5),
