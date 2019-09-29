@@ -39,12 +39,16 @@ set -- "${OPTRET[@]}"
 unset argv_repo sync_repo sift_args
 while true; do
     case "$1" in
-        -a|--all|--sync) sync_repo=1 ;;
-        -d|--database)   shift; argv_repo+=("$1") ;;
-        --sysroot)       shift; sift_args+=("--sysroot=$1") ;;
-        --dump-options)  printf -- '--%s\n' "${opt_long[@]}" ;
-                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                         exit ;;
+        -a|--all|--sync)
+            sync_repo=1 ;;
+        -d|--database)
+            shift; argv_repo+=("$1") ;;
+        --sysroot)
+            shift; sift_args+=("--sysroot=$1") ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break;;
     esac
     shift

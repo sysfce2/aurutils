@@ -41,14 +41,20 @@ set -- "${OPTRET[@]}"
 unset log_dir
 while true; do
     case "$1" in
-        -L|--write-log) shift; log_dir=$1 ;;
-        -r|--recurse)   recurse=1 ;;
-        -v|--verbose)   verbose=1 ;;
-        --force)        fetch_args+=('--force') ;;
-        --confirm-seen) confirm_seen=1 ;;
-        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                        exit ;;
+        -L|--write-log)
+            shift; log_dir=$1 ;;
+        -r|--recurse)
+            recurse=1 ;;
+        -v|--verbose)
+            verbose=1 ;;
+        --force)
+            fetch_args+=('--force') ;;
+        --confirm-seen)
+            confirm_seen=1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}" 
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break ;;
     esac
     shift

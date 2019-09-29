@@ -98,15 +98,20 @@ set -- "${OPTRET[@]}"
 unset all aux quiet repo upair
 while true; do
     case "$1" in
-        -a|--all)   all=1 ;;
-        -c|--current) format=equal ;;
-        -q|--quiet) quiet=1 ;;
-        -p|--path)  shift; target='file'
-                    aux=$1 ;;
-        -u|--upair) shift; upair=$1 ;;
-        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                        exit ;;
+        -a|--all)
+            all=1 ;;
+        -c|--current)
+            format=equal ;;
+        -q|--quiet)
+            quiet=1 ;;
+        -p|--path)
+            shift; target='file'; aux=$1 ;;
+        -u|--upair)
+            shift; upair=$1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break ;;
     esac
     shift

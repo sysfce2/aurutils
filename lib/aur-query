@@ -49,13 +49,18 @@ set -- "${OPTRET[@]}"
 unset by type
 while true; do
     case "$1" in
-        -b|--by)   shift; by=$1 ;;
-        -t|--type) shift; type=$1 ;;
-        --rpc-ver) shift; rpc_ver=$1 ;;
-        --rpc-url) shift; rpc_url=$1 ;;
-        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                        exit ;;
+        -b|--by)
+            shift; by=$1 ;;
+        -t|--type)
+            shift; type=$1 ;;
+        --rpc-ver)
+            shift; rpc_ver=$1 ;;
+        --rpc-url)
+            shift; rpc_url=$1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break ;;
     esac
     shift

@@ -2,7 +2,6 @@
 # aur-sync - download and build AUR packages automatically
 [[ -v AUR_DEBUG ]] && set -o xtrace
 set -o errexit
-shopt -s extglob
 argv0=sync
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
@@ -100,7 +99,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
           'sign' 'temp' 'upgrades' 'pkgver' 'rebuild' 'rebuild-tree'
-          'build-command:' 'ignore-file:')
+          'build-command:' 'ignore-file:' 'remove')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile'
             'noconfirm' 'nover' 'nograph' 'nover-shallow' 'noview'
             'rebuildtree' 'rmdeps')
@@ -113,42 +112,74 @@ set -- "${OPTRET[@]}"
 unset pkg pkg_i ignore_file
 while true; do
     case "$1" in
-        -d|--database)        shift; repo_args+=(-d "$1") ;;
-        -B|--build-command)   shift; build_args+=(-B "$1") ;;
-        -D|--directory)       shift; build_args+=(-D "$1") ;;
-        -M|--makepkg-conf)    shift; build_args+=(--makepkg-conf "$1") ;;
-        -C|--pacman-conf)     shift; build_args+=(--pacman-conf "$1") ;;
-        --bind)               shift; makechrootpkg_args+=(-D "$1") ;;
-        --bind-rw)            shift; makechrootpkg_args+=(-d "$1") ;;
-        --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
-                              pkg_i+=("${pkg[@]}") ;;
-        --ignore?(-)file)     shift; ignore_file=$1 ;;
-        --root)               shift; repo_args+=(-r "$1") ;;
-        -A|--ignore?(-)arch)  makepkg_args+=(--ignorearch)
-                              makechrootpkg_makepkg_args+=(-A) ;;
-        -c|--chroot)          chroot=1; build_args+=(-c) ;;
-        -f|--force)           build_args+=(-f) ;;
-        -L|--log)             makepkg_args+=(--log) ;;
-        -P|--provides)        provides=1 ;;
-        -n|--no?(-)confirm)   makepkg_args+=(--noconfirm) ;;
-        -p|--print)           build=0 ;;
-        -r|--rm?(-)deps)      makepkg_args+=(--rmdeps) ;;
-        -R)                   build_args+=(-R) ;;
-        -s|--sign)            build_args+=(-sv) ;;
-        -T|--temp)            makechrootpkg_args+=(-T) ;;
-        -u|--upgrades)        update=1 ;;
-        --allan)              rotate=1 ;;
-        --continue)           download=0 ;;
-        --no?(-)graph)        graph=0 ;;
-        --no?(-)ver)          chkver_depth=0 ;;
-        --no?(-)ver-shallow)  chkver_depth=1 ;;
-        --no?(-)view)         view=0 ;;
-        --pkgver)             build_args+=(--pkgver) ;;
-        --rebuild)            build_args+=(-f); chkver_depth=1 ;;
-        --rebuild?(-)tree)    build_args+=(-f); chkver_depth=0 ;;
-        --dump-options)       printf -- '--%s\n' "${opt_long[@]}" ;
-                              printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                              exit ;;
+        -d|--database)
+            shift; repo_args+=(-d "$1") ;;
+        -B|--build-command)
+            shift; build_args+=(-B "$1") ;;
+        -D|--directory)
+            shift; build_args+=(-D "$1") ;;
+        -M|--makepkg-conf)
+            shift; build_args+=(--makepkg-conf "$1") ;;
+        -C|--pacman-conf)
+            shift; build_args+=(--pacman-conf "$1") ;;
+        --bind)
+            shift; makechrootpkg_args+=(-D "$1") ;;
+        --bind-rw)
+            shift; makechrootpkg_args+=(-d "$1") ;;
+        --ignore)
+            shift; IFS=, read -a pkg -r <<< "$1"
+            pkg_i+=("${pkg[@]}") ;;
+        --ignorefile|--ignore-file)
+            shift; ignore_file=$1 ;;
+        --root)
+            shift; repo_args+=(-r "$1") ;;
+        -A|--ignorearch|--ignore-arch)
+            makepkg_args+=(--ignorearch)
+            makechrootpkg_makepkg_args+=(-A) ;;
+        -c|--chroot)
+            chroot=1; build_args+=(-c) ;;
+        -f|--force)
+            build_args+=(-f) ;;
+        -L|--log)
+            makepkg_args+=(--log) ;;
+        -P|--provides)
+            provides=1 ;;
+        -n|--noconfirm|--no-confirm)
+            makepkg_args+=(--noconfirm) ;;
+        -p|--print)
+            build=0 ;;
+        -r|--rmdeps|--rm-deps)
+            makepkg_args+=(--rmdeps) ;;
+        -R|--remove)
+            build_args+=(-R) ;;
+        -s|--sign)
+            build_args+=(-sv) ;;
+        -T|--temp)
+            makechrootpkg_args+=(-T) ;;
+        -u|--upgrades)
+            update=1 ;;
+        --allan)
+            rotate=1 ;;
+        --continue)
+            download=0 ;;
+        --nograph|--no-graph)
+            graph=0 ;;
+        --nover|--no-ver)
+            chkver_depth=0 ;;
+        --nover-shallow|--no-ver-shallow)
+            chkver_depth=1 ;;
+        --noview|--no-view)
+            view=0 ;;
+        --pkgver)
+            build_args+=(--pkgver) ;;
+        --rebuild)
+            build_args+=(-f); chkver_depth=1 ;;
+        --rebuildtree|--rebuild-tree)
+            build_args+=(-f); chkver_depth=0 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break ;;
     esac
     shift

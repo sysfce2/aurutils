@@ -132,24 +132,39 @@ set -- "${OPTRET[@]}"
 unset format
 while true; do
     case "$1" in
-        -a|--any)        multiple=union ;;
-        -i|--info)       type=info ;;
-        -s|--search)     type=search ;;
-        -d|--desc)       search_by=name-desc ;;
-        -m|--maintainer) search_by=maintainer ;;
-        -n|--name)       search_by=name ;;
-        --depends)       search_by=depends ;;
-        --makedepends)   search_by=makedepends ;;
-        --optdepends)    search_by=optdepends ;;
-        --checkdepends)  search_by=checkdepends ;;
-        -q|--short)      format=short ;;
-        -v|--verbose)    format=long ;;
-        -r|--raw)        output=raw ;;
-        -k|--key)        shift; sort_key=$1 ;;
-        --dump-options)  printf -- '--%s\n' "${opt_long[@]}" ;
-                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                         exit ;;
-        --)              shift; break ;;
+        -a|--any)
+            multiple=union ;;
+        -i|--info)
+            type=info ;;
+        -s|--search)
+            type=search ;;
+        -d|--desc)
+            search_by=name-desc ;;
+        -m|--maintainer)
+            search_by=maintainer ;;
+        -n|--name)
+            search_by=name ;;
+        --depends)
+            search_by=depends ;;
+        --makedepends)
+            search_by=makedepends ;;
+        --optdepends)
+            search_by=optdepends ;;
+        --checkdepends)
+            search_by=checkdepends ;;
+        -q|--short)
+            format=short ;;
+        -v|--verbose)
+            format=long ;;
+        -r|--raw)
+            output=raw ;;
+        -k|--key)
+            shift; sort_key=$1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
+        --) shift; break ;;
     esac
     shift
 done
