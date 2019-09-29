@@ -39,7 +39,9 @@ db_replaces() {
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
-        rm -rf "$tmp" "$var_tmp"
+        rm -rf "$tmp"
+        # Only remove package directory if all files were moved (#593)
+        rm -df "$var_tmp"
     else
         printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
         printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$var_tmp"
