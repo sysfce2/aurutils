@@ -34,7 +34,9 @@ db_replaces() {
 
 trap_exit() {
     if ! [[ -o xtrace ]]; then
-        rm -rf "$tmp" "$var_tmp"
+        rm -rf "$tmp"
+        # Only remove package directory if all files were moved (#593)
+        rm -df "$var_tmp"
     fi
 }
 
