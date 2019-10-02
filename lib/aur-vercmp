@@ -108,7 +108,7 @@ while true; do
     shift
 done
 
-tmp=$(mktemp) || exit
+tmp=$(mktemp --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 # check for interactive terminal

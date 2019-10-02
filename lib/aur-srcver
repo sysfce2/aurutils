@@ -66,7 +66,7 @@ if ! (( $# )); then
     usage
 fi
 
-tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
+tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 i=0
