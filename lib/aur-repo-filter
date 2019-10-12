@@ -27,7 +27,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:a'
-opt_long=('all' 'sync' 'database:' 'repo:')
+opt_long=('all' 'sync' 'database:' 'repo:' 'sysroot:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -40,6 +40,7 @@ while true; do
     case "$1" in
         -a|--all|--sync) sync_repo=1 ;;
         -d|--database)   shift; argv_repo+=("$1") ;;
+        --sysroot)       shift; sift_args+=("--sysroot=$1") ;;
         --dump-options)  printf -- '--%s\n' "${opt_long[@]}" ;
                          printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
                          exit ;;
