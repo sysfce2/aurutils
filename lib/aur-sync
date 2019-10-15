@@ -10,7 +10,7 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
 build_args=()
-makechrootpkg_args=(-cu)
+makechrootpkg_args=()
 makechrootpkg_makepkg_args=()
 makepkg_args=(--clean --syncdeps)
 repo_args=()
@@ -297,7 +297,7 @@ if ((view)); then
 fi
 
 if ((build)); then
-    build_args+=(-a "$tmp"/queue -d "$db_name" -r "$db_root")
+    build_args+=(--arg-file "$tmp"/queue --database "$db_name" --root "$db_root")
 
     if ((chroot)); then
         aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
