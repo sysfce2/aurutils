@@ -451,6 +451,15 @@ does not catch this signal, the
 .B \-\-rmdeps
 option is disabled by default.
 
+.BR pacman (8)
+has a size\-limit of 25\~MiB for databases. Using larger databases may result in an
+.B expected download size exceeded
+error. To avoid this issue, compress the database with
+.BR gzip (1).
+See
+.UR https://\:git.archlinux.org/\:pacman.git/\:commit/\:?id=\:6dc71926f9b16ebcf11b924941092d6eab204224
+.UE .
+
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-repo (1),
