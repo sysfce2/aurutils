@@ -153,15 +153,15 @@ Append a section for the local repository to
 Create the repository root and database:
 .EX
 
-  $ sudo install -d /home/custompkgs -o $USER
-  $ repo-add /home/custompkgs/custom.db.tar
+  $ sudo install \-d /home/custompkgs \-o $USER
+  $ repo\-add /home/custompkgs/custom.db.tar.gz
 
 .EE
 If built packages are available, add them to the database:
 .EX
 
   $ cd /home/custompkgs
-  $ repo-add -n custom.db.tar ./*.pkg.tar.xz
+  $ repo\-add \-n custom.db.tar.gz *.pkg.tar.xz
 
 .EE
 Synchronize pacman:
@@ -183,8 +183,7 @@ when rebuilding packages without increasing
 .BR pkgrel .
 (See GitHub issue #85)
 
-There are several ways to avoid this. A first approach is to set the
-repository path as a
+To avoid this, set the repository path as a
 .B pacman
 .IR CacheDir ,
 together with the
