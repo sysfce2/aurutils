@@ -1,8 +1,8 @@
 #!/bin/bash
 # aur-repo-filter - filter packages in the Arch Linux repositories
-readonly argv0=repo-filter
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-readonly arch_repo=(core extra testing community{,-testing} multilib{,-testing})
+argv0=repo-filter
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
 # The command line will hit ARG_MAX on approximately 70k packages;
 # spread arguments with xargs (and printf, as a shell built-in).

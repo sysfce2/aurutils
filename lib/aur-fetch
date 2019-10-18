@@ -1,9 +1,9 @@
 #!/bin/bash
 # aur-fetch - retrieve build files from the AUR
-readonly argv0=fetch
-readonly AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
-readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
+argv0=fetch
+AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
+XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # default options
 verbose=0 recurse=0 fetch_args=('--verbose') confirm_seen=0

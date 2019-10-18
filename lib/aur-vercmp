@@ -1,8 +1,8 @@
 #!/bin/bash
 # aur-vercmp - check packages for AUR updates
 set -o pipefail
-readonly argv0=vercmp
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+argv0=vercmp
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
 format=check
