@@ -47,12 +47,31 @@ when checking for updates. Implies
 .TP
 .BR \-l ", " \-\-list
 List the contents of the repository in
-.BI pkgname \et pkgver
+.BI pkgname \et pkgver \en
 format. If the
 .B \-S
 option is not enabled, the repository is queried directly through the
 .BI .db
 file on-disk.
+
+.TP
+.B \-\-table
+Change the format used by
+.B \-\-list
+from
+.BI pkgname \et pkgver \en
+to
+.BI pkgname \et depends \et pkgbase \et pkgver \en\c
+\&. If a package has no dependencies
+.B pkgname
+is used as
+.BR depends ,
+otherwise missing values are represented by
+.IR \- .
+Also see:
+.BR \-\-table
+from
+.BR aur\-depends (1).
 
 .TP
 .BR \-S ", " \-\-sync
@@ -72,6 +91,7 @@ List all local pacman repositories.
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-vercmp (1),
+.BR aur\-depends (1),
 .BR pacman (8),
 .BR pacman.conf (5)
 

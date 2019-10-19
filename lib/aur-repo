@@ -6,12 +6,54 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default arguments
 modifier=local
 vercmp_args=()
+table_format=0
 
-db_namever() {
-    awk '/%NAME%/ {
-        getline; pkgname=$1
-    } /%VERSION%/ {
-        getline; printf("%s\t%s\n", pkgname, $1)
+db_table() {
+    bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
+    function print_previous() {
+        table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
+        if (table && length(dependencies) > 0) {
+            for (i in dependencies) {
+                printf format, pkgname, dependencies[i], pkgbase, pkgver
+            }
+        } else {
+            printf format, pkgname, pkgname, pkgbase, pkgver
+        }
+    }
+
+    BEGIN {
+        pkgname = pkgbase = pkgver = "-"
+    }
+
+    /^%FILENAME%$/ && FNR > 1 {
+        print_previous()
+        pkgname = pkgbase = pkgver = "-"
+        delete dependencies
+    }
+
+    /^%NAME%$/ {
+        getline
+        pkgname = $1
+    }
+
+    /^%BASE%$/ {
+        getline
+        pkgbase = $1
+    }
+
+    /^%VERSION%$/ {
+        getline
+        pkgver = $1
+    }
+
+    /^%(MAKE|CHECK)?DEPENDS%$/ {
+        while (table && getline && $0 != "") {
+            dependencies[i++] = $1
+        }
+    }
+
+    END {
+        print_previous()
     }'
 }
 
@@ -25,7 +67,7 @@ source /usr/share/makepkg/util/parseopts.sh
 ## option parsing
 opt_short='c:d:r:aluS'
 opt_long=('database:' 'pacman-conf:' 'root:'
-          'all' 'list' 'repo-list' 'sync' 'upgrades')
+          'all' 'list' 'repo-list' 'sync' 'upgrades' 'table')
 opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -43,6 +85,7 @@ while true; do
         -l|--list)          mode=list_packages ;;
         -S|--sync)          modifier=sync ;;
         -u|--upgrades)      mode=list_upgrades ;;
+        --table)            table_format=1 ;;
         --repo-list)        mode=repo_list ;;
         --status-file)      shift; status_file=$1 ;;
         --dump-options)     printf -- '--%s\n' "${opt_long[@]}" ;
@@ -136,13 +179,13 @@ case $modifier in
             printf >&2 '%s: %s: not a directory\n' "$argv0" "$db_root"
             exit 20
         else
-            contents() { bsdcat "$db_root/$db_name".db | db_namever; }
+            contents() { db_table "$table_format" "$db_root/$db_name".db ; }
         fi
         ;;
     #requires
     # - [$db_name] (pacman.conf)
     sync)
-        contents() { bsdcat "$pacman_dbpath/sync/$db_name".db | db_namever; }
+        contents() { db_table "$table_format" "$pacman_dbpath/sync/$db_name".db ; }
         ;;
 esac
 
