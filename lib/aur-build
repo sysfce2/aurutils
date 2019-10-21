@@ -2,14 +2,13 @@
 # aur-build - build packages to a local repository
 set -o errexit
 shopt -s extglob
-readonly argv0=build
-readonly startdir=$PWD
-readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+argv0=build
+startdir=$PWD
+XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # hardware name
 machine=$(uname -m)
-readonly machine
 
 # default arguments
 archbuild_args=()

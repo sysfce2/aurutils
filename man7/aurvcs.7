@@ -30,11 +30,9 @@ Any option arguments are forwarded to
 .SS Program source
 .EX
 #!/bin/bash
-readonly argv0=vercmp\-devel
-readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:\-$HOME/.cache}
-readonly AURDEST=${AURDEST:\-$XDG_CACHE_HOME/aurutils/sync}
-readonly AURVCS=${AURVCS:\-.*\-(cvs|svn|git|hg|bzr|darcs)$}
-readonly PS4=\(aq+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }\(aq
+XDG_CACHE_HOME=${XDG_CACHE_HOME:\-$HOME/.cache}
+AURDEST=${AURDEST:\-$XDG_CACHE_HOME/aurutils/sync}
+AURVCS=${AURVCS:\-.*\-(cvs|svn|git|hg|bzr|darcs)$}
 
 filter_vcs() {
     awk \-v "mask=$AURVCS" \(aq$1 \(ti mask {print $1}\(aq "$@"

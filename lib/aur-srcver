@@ -1,7 +1,7 @@
 #!/bin/bash
 # aur-srcver - update and print package revisions
-readonly argv0=srcver
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+argv0=srcver
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 srcver_pkgbuild_info() {
     # shellcheck disable=SC2016

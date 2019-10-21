@@ -352,8 +352,8 @@ in $PATH, for example
 .EX
   #!/bin/bash
   # Remove unused build files in aur-sync cache
-  readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-  readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+  XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+  AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
   
   # Assumes build files were retrieved through git(1)
   find "$AURDEST" -name .git -execdir git clean -xf \\;

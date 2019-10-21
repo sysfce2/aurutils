@@ -2,11 +2,11 @@
 # aur-sync - download and build AUR packages automatically
 set -o errexit
 shopt -s extglob
-readonly argv0=sync
-readonly XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
-readonly AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
-readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+argv0=sync
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
 build_args=()
