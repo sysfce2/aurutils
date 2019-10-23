@@ -49,13 +49,18 @@ set -- "${OPTRET[@]}"
 unset by type
 while true; do
     case "$1" in
-        -b|--by)   shift; by=$1 ;;
-        -t|--type) shift; type=$1 ;;
-        --rpc-ver) shift; rpc_ver=$1 ;;
-        --rpc-url) shift; rpc_url=$1 ;;
-        --dump-options) printf -- '--%s\n' "${opt_long[@]}" ;
-                        printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                        exit ;;
+        -b|--by)
+            shift; by=$1 ;;
+        -t|--type)
+            shift; type=$1 ;;
+        --rpc-ver)
+            shift; rpc_ver=$1 ;;
+        --rpc-url)
+            shift; rpc_url=$1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break ;;
     esac
     shift
@@ -85,7 +90,7 @@ fi
 jq -R -r '@uri' | uri | wget -o "$wget_log" -i - -O - -nv
 wget_err=${PIPESTATUS[2]}
 
-if ((wget_err)); then
+if (( wget_err )); then
     cat "$wget_log" >&2
     exit "$wget_err"
 fi

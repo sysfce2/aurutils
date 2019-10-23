@@ -44,7 +44,7 @@ fi
 set -- "${OPTRET[@]}"
 
 makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
-num_procs=$(("$(nproc)" + 2))
+num_procs=$(( "$(nproc)" + 2 ))
 
 while true; do
     case "$1" in

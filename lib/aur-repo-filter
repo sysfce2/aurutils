@@ -39,18 +39,22 @@ set -- "${OPTRET[@]}"
 unset argv_repo sync_repo sift_args
 while true; do
     case "$1" in
-        -a|--all|--sync) sync_repo=1 ;;
-        -d|--database)   shift; argv_repo+=("$1") ;;
-        --sysroot)       shift; sift_args+=("--sysroot=$1") ;;
-        --dump-options)  printf -- '--%s\n' "${opt_long[@]}" ;
-                         printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g' ;
-                         exit ;;
+        -a|--all|--sync)
+            sync_repo=1 ;;
+        -d|--database)
+            shift; argv_repo+=("$1") ;;
+        --sysroot)
+            shift; sift_args+=("--sysroot=$1") ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break;;
     esac
     shift
 done
 
-if ((sync_repo)); then
+if (( sync_repo )); then
     sift_args+=(--sync)
 elif [[ -v argv_repo ]]; then
     sift_args+=(--exact "${argv_repo[@]/#/--repo=}")
@@ -76,7 +80,7 @@ while IFS= read -r str; do
     name=${str%%[<>=]*}
 
     # store version + operator as value (1 if unavailable)
-    if ((${#str} - ${#name})); then
+    if (( ${#str} - ${#name} )); then
         pkgset[$name]=${str:${#name}}
     else
         pkgset[$name]=1
