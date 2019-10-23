@@ -1,5 +1,6 @@
 #!/bin/bash
 # aur-vercmp - check packages for AUR updates
+[[ -v AUR_DEBUG ]] && set -o xtrace
 set -o pipefail
 argv0=vercmp
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -62,8 +63,10 @@ parse_aur() {
 }
 
 trap_exit() {
-    if [[ ! -o xtrace ]]; then
+    if [[ ! -v AUR_DEBUG ]]; then
         rm -rf "$tmp"
+    else
+        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
     fi
 }
 
@@ -75,7 +78,7 @@ usage() {
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-if [[ ! -v NO_COLOR ]] && [[ ! -o xtrace ]]; then
+if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
@@ -105,7 +108,7 @@ while true; do
     shift
 done
 
-tmp=$(mktemp) || exit
+tmp=$(mktemp --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 # check for interactive terminal

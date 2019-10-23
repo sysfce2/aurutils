@@ -1,5 +1,6 @@
 #!/bin/bash
 # aur-srcver - update and print package revisions
+[[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=srcver
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -19,8 +20,10 @@ srcver_pkgbuild_info() {
 }
 
 trap_exit() {
-    if ! [[ -o xtrace ]]; then
+    if [[ ! -v AUR_DEBUG ]]; then
         rm -rf "$tmp"
+    else
+        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
     fi
 }
 
@@ -63,7 +66,7 @@ if ! (( $# )); then
     usage
 fi
 
-tmp=$(mktemp -dt "$argv0".XXXXXXXX) || exit
+tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 i=0

@@ -1,5 +1,6 @@
 #!/bin/bash
 # aur-search - search for AUR packages
+[[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=search
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -100,8 +101,10 @@ info_short() {
 }
 
 trap_exit() {
-    if [[ ! -o xtrace ]]; then
+    if [[ ! -v AUR_DEBUG ]]; then
         rm -rf "$tmp"
+    else
+        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
     fi
 }
 
@@ -113,7 +116,7 @@ usage() {
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-if [[ ! -v NO_COLOR ]] && [[ ! -o xtrace ]]; then
+if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     # We use colored messages on both stdout and stderr, and these may
     # be desired even if stdout is not connected to a terminal. (in
     # particular, aur search foo | less -R, #585)
@@ -158,8 +161,7 @@ done
 if ! (($#)); then
     usage
 fi
-
-tmp=$(mktemp -t "$argv0".XXXXXXXX)
+tmp=$(mktemp --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 # XXX union is done by the AUR for info, but not search
