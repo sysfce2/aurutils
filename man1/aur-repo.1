@@ -1,7 +1,7 @@
 .TH AUR-REPO 1 2018-12-13 AURUTILS
 .SH NAME
 aur\-repo \- manage local repositories
-
+.
 .SH SYNOPSIS
 .SY "aur repo"
 .OP \-c config
@@ -10,7 +10,7 @@ aur\-repo \- manage local repositories
 .OP \-aluS
 .OP \-\-repo\-list
 .YS
-
+.
 .SH DESCRIPTION
 When run without arguments,
 .BR aur\-repo
@@ -18,32 +18,32 @@ prints the path of a selected repository to standard output. For other
 modes, see the
 .B OPTIONS
 section.
-
+.
 .SH OPTIONS
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
 The name of the pacman repository. May be specified through the
 .B AUR_REPO
 environment variable.
-
+.
 .TP
 .BI \-r " PATH" "\fR,\fP \-\-root=" PATH
  The path to the root of the pacman repository. May be specified
 through the
 .B AUR_DBROOT
 environment variable.
-
+.
 .TP
 .BR \-a ", " \-\-all
 Use
 .B "aur\-vercmp --all"
 when checking for updates. Implies
 .BR \-\-upgrades .
-
+.
 .TP
 .BR \-c ", " \-\-pacman\-conf
-
-
+.
+.
 .TP
 .BR \-l ", " \-\-list
 List the contents of the repository in
@@ -53,7 +53,7 @@ format. If the
 option is not enabled, the repository is queried directly through the
 .BI .db
 file on-disk.
-
+.
 .TP
 .B \-\-table
 Change the format used by
@@ -72,22 +72,22 @@ Also see:
 .BR \-\-table
 from
 .BR aur\-depends (1).
-
+.
 .TP
 .BR \-S ", " \-\-sync
 Query repositories through
 .BR pacman (8).
-
+.
 .TP
 .BR \-u ", " \-\-upgrades
 Use
 .BR aur\-vercmp (1)
 to check a pacman repository for updates.
-
+.
 .TP
 .BR \-\-repo\-list
 List all local pacman repositories.
-
+.
 .SH SEE ALSO
 .ad l
 .nh
@@ -96,10 +96,10 @@ List all local pacman repositories.
 .BR aur\-vercmp (1),
 .BR pacman.conf (5),
 .BR pacman (8)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:

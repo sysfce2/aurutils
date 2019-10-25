@@ -1,14 +1,14 @@
 .TH AUR-VERCMP 1 2018-12-06 AURUTILS
 .SH NAME
 aur\-vercmp \- check packages for AUR updates
-
+.
 .SH SYNOPSIS
 .SY "aur vercmp"
 .OP \-ac
 .OP \-p path
 .OP \-u filename
 .YS
-
+.
 .SH DESCRIPTION
 .B aur\-vercmp
 compares packages from
@@ -19,14 +19,14 @@ and
 space-separated) with their respective versions in the AUR, and prints
 any updated versions to
 .BR stdout .
-
+.
 .SH OPTIONS
 .TP
 .BR \-a ", " \-\-all
 Show packages with an older or equal version in the AUR. (Not
 applicable to
 .BR \-c .)
-
+.
 .TP
 .BR \-c ", " \-\-current
 Changes format to print packages with an equal or newer version to
@@ -34,7 +34,7 @@ Changes format to print packages with an equal or newer version to
 A human\-readable version of the comparison will be printed to
 .BR stderr .\&
 E.g.: aurutils-git: 2.0.0 is newer than 1.5.3
-
+.
 .TP
 .BI \-p " FILE" "\fR,\fP \-\-path=" FILE
 Read package versions from FILE instead of the AUR. FILE should be in
@@ -43,17 +43,17 @@ the same format as stdin
 and
 .IR pkgver ,
 space-separated).
-
+.
 .TP
 .BR \-q ", " \-\-quiet
 Only print package names to standard output.
-
+.
 .TP
 .BI \-u " FILENUM" "\fR,\fP \-\-upair=" FILENUM
 Print unpairable lines from file FILENUM, where FILENUM is 1 or 2
 (\fBjoin -a\fR). See commit dd4c302997c5eaee752a54c974c237a2b952d5c8
 for details.
-
+.
 .SH SEE ALSO
 .ad l
 .nh
@@ -63,10 +63,10 @@ for details.
 .BR jq (1),
 .BR pacman (8),
 .BR vercmp (8)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:

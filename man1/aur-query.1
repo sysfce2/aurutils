@@ -1,7 +1,7 @@
 .TH AUR-QUERY 1 2019-01-24 AURUTILS
 .SH NAME
 aur\-query \- send GET requests to the aurweb RPC interface
-
+.
 .SH SYNOPSIS
 .SY "aur query"
 .OP \-t type
@@ -9,39 +9,39 @@ aur\-query \- send GET requests to the aurweb RPC interface
 .OP \-\-rpc\-url URI
 .OP \-\-rpc\-ver NUM
 .YS
-
+.
 .SH DESCRIPTION
-
+.
 .SH OPTIONS
 .TP
 .BR \-b ", " \-\-by
-
+.
 .TP
 .BR \-t ", " \-\-type
-
+.
 .TP
 .BI \-\-rpc\-ver= NUM
-
+.
 .TP
 .BI \-\-rpc\-url= URI
-
+.
 .SH ENVIRONMENT
 .TP
 .B AUR_LOCATION
-
+.
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150
 arguments to avoid HTTP 414 errors (\fIFS#49089\fR).
-
+.
 .SH SEE ALSO
 .ad l
 .nh
 .BR jq (1),
 .BR wget (1)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:
