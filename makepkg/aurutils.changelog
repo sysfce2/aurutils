@@ -174,3 +174,4 @@
   + add `bash` completion (requires: `bash-completion`)
   + add `zsh` completion in a later release (#458)
 * Fixes for known issues in `1.5.3`.
+
