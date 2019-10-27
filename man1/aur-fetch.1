@@ -27,7 +27,7 @@ archives.
 .TP
 .BR \-r ", " \-\-recurse
 Download packages and their dependencies with
-.BR aur-depends (1).
+.BR aur\-depends (1).
 .
 .TP
 .BR \-v ", " \-\-verbose
@@ -48,14 +48,14 @@ Marks the package's checked out commit as seen.
 .SH NOTES
 .
 .SS HISTORY REWRITES
-.B aur-fetch
+.B aur\-fetch
 will refuse to fetch rewritten history by default. This happens rarely,
 as only Trusted Users have permissions to force-push to the AUR.
 .PP
 In those situations, something serious may have happened that may
 require the user to do manual intervention on the machine.
 To raise awareness to these events,
-.B aur-fetch
+.B aur\-fetch
 will refuse to fetch unless
 .B \-\-force
 is passed.
@@ -63,7 +63,7 @@ is passed.
 .
 .SS LOGS
 The logs shown by
-.B aur-fetch
+.B aur\-fetch
 show changes that happened since the commit referenced by the
 special reference
 .B AURUTILS_SEEN
@@ -72,27 +72,27 @@ stored inside the repository.
 This reference can be created with with:
 .PP
 .EX
-    \fB$ aur fetch --confirm-seen \fI<package> \fR[\fP<package>...\fR]\fR
+    \fB$ aur fetch \-\-confirm\-seen \fI<package> \fR[\fP<package>...\fR]\fR
 .EE
 .PP
 which will mark the current commit as seen, signaling
-.B aur-fetch
+.B aur\-fetch
 that current changes should not be shown in future logs.
 .PP
 When this reference is missing,
-.B aur-fetch
+.B aur\-fetch
 will consider the entire history as changes.
 .
 .
 .SS LOCAL MODIFICATIONS (EXPERIMENTAL)
 While
-.B aur-fetch
+.B aur\-fetch
 will try to preserve changes committed locally, by trying to reapply
 them on top of the incoming new changes, it will discard any uncommitted
 changes present in the repository.
 .PP
 If the changes cannot be applied cleanly,
-.B aur-fetch
+.B aur\-fetch
 will exit with error, leaving the repository files with conflict
 markers for the user to resolve.
 .

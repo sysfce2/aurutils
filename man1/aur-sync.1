@@ -29,7 +29,7 @@ The value of
 .BR PAGER ", "
 if defined;
 .IP \(bu 4
-.BR "less -K" .
+.BR "less \-K" .
 .P
 If the exit status of the pager exceeds 0 (for example, through user
 intervention),
@@ -79,9 +79,9 @@ Print target packages and their paths instead of building them.
 .TP
 .BR \-\-pkgver
 Run
-.B "makepkg -od --noprepare"
+.B "makepkg \-od \-\-noprepare"
 before the build process.
-.RB ( "aur-build --pkgver" )
+.RB ( "aur\-build \-\-pkgver" )
 .
 .TP
 .BR \-s ", " \-\-sign
@@ -121,7 +121,7 @@ upgrades are taken as target regardless of this setting.
 .BI \-\-provides\-from= DIR1,...
 As
 .BR \-\-provides ,
-but only the specified (comma\-separated) repositories are taken into
+but only the specified (comma-separated) repositories are taken into
 account. If the same package is provided in multiple repositories,
 ordering is ignored (for example, \-\-provides\-from=a,b is equivalent
 to \-\-provides\-from=b,a) and dependencies are installed according to
@@ -159,7 +159,7 @@ Update all obsolete AUR packages in a local repository.
 .
 .SS makepkg options
 The default build command is
-.BR "makepkg --clean --syncdeps" .
+.BR "makepkg \-\-clean \-\-syncdeps" .
 .
 .TP
 .BR \-A ", " \-\-ignorearch ", " \-\-ignore\-arch
@@ -200,7 +200,7 @@ The path pointing to the container. (\fBaur build \-D\fR)
 Bind a directory read-only. (\fBmakechrootpkg \-D\fR)
 .
 .TP
-.BI \-\-bind-rw= DIR
+.BI \-\-bind\-rw= DIR
 Bind a directory read-write. (\fBmakechrootpkg \-d\fR)
 .
 .TP
@@ -247,7 +247,7 @@ Targets may be taken from stdin using
 For example:
 .PP
 .EX
-    $ aur vercmp-devel | xargs aur sync --noconfirm
+    $ aur vercmp\-devel | xargs aur sync \-\-noconfirm
 .EE
 .PP
 Note that command output interferes with input from the tty. The
@@ -256,8 +256,8 @@ option may be used to disable interaction, or output redirected to a
 file:
 .PP
 .EX
-    $ aur vercmp-devel > new.txt
-    $ xargs -a new.txt aur sync
+    $ aur vercmp\-devel > new.txt
+    $ xargs \-a new.txt aur sync
 .EE
 .
 .SS File retrieval

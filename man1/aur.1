@@ -12,7 +12,7 @@ and computing dependencies are split to separate commands.
 .PP
 The chosen approach for managing packages is local pacman
 repositories, instead of foreign (installed by
-.BR "pacman -U" )
+.BR "pacman \-U" )
 packages.
 .PP
 A brief overview of local repositories is given in the
@@ -174,12 +174,12 @@ If built packages are available, add them to the database:
 Synchronize pacman:
 .PP
 .EX
-    $ sudo pacman -Syu
+    $ sudo pacman \-Syu
 .EE
 .
 .SS CacheDir (optional)
 When packages from a local repository are installed through
-.BR "pacman -S" ,
+.BR "pacman \-S" ,
 they are copied to a cache directory (usually
 .IR /var/cache/pacman/pkg )
 by
@@ -195,7 +195,7 @@ To avoid this, set the repository path as a
 together with the
 .B "CleanMethod = KeepCurrent"
 setting to avoid unexpected deletion of built packages with
-.BR "pacman -Sc" .
+.BR "pacman \-Sc" .
 .PP
 This can be done by editing
 .IR /etc/pacman.conf
@@ -209,7 +209,7 @@ as follows:
 .EE
 .PP
 Note that
-.BR "pacman -Scc"
+.BR "pacman \-Scc"
 will remove packages regardless of the
 .B CleanMethod
 setting.
@@ -223,28 +223,28 @@ is the interactive shell.
 Run actions on the dependency tree of an AUR package:
 .PP
 .EX
-    $ echo foo | aur depends | while read -r pkg; do ... done
+    $ echo foo | aur depends | while read \-r pkg; do ... done
 .EE
 .PP
 Build
-.I plasma-desktop-git
+.I plasma\-desktop\-git
 and its dependencies with
 .BR systemd\-nspawn (1):
 .PP
 .EX
-    $ aur sync -c plasma-desktop-git
+    $ aur sync \-c plasma\-desktop\-git
 .EE
 .PP
 Update all AUR packages in a single local repository:
 .PP
 .EX
-    $ aur sync -u
+    $ aur sync \-u
 .EE
 .PP
 Check foreign packages for AUR updates:
 .PP
 .EX
-    $ pacman -Qm | aur vercmp
+    $ pacman \-Qm | aur vercmp
 .EE
 .PP
 Check the
@@ -252,7 +252,7 @@ Check the
 repository for AUR updates:
 .PP
 .EX
-    $ aur repo -d custom --list | aur vercmp
+    $ aur repo \-d custom \-\-list | aur vercmp
 .EE
 .PP
 If
@@ -260,7 +260,7 @@ If
 only contains one local repository, the above may be shortened to:
 .PP
 .EX
-    $ aur repo --upgrades
+    $ aur repo \-\-upgrades
 .EE
 .
 .
@@ -270,14 +270,14 @@ Print packages from the
 repository that are unavailable in the AUR:
 .PP
 .EX
-    $ grep -Fxvf <(aur pkglist) <(pacman -Slq custom)
+    $ grep \-Fxvf <(aur pkglist) <(pacman \-Slq custom)
 .EE
 .PP
 As above, but for orphaned packages:
 .PP
 .EX
-    $ pacman -Slq custom | aur query -t info | \e
-          jq -r \(aq.[].results[] | select(.Maintainer == null)\(aq
+    $ pacman \-Slq custom | aur query \-t info | \e
+          jq \-r \(aq.[].results[] | select(.Maintainer == null)\(aq
 .EE
 .PP
 Update packages in the
@@ -285,8 +285,8 @@ Update packages in the
 repository which are installed on the host:
 .PP
 .EX
-    $ grep -Fxf <(pacman -Qq) <(pacman -Slq custom) > installed.txt
-    $ xargs -a installed.txt aur sync -d custom
+    $ grep \-Fxf <(pacman \-Qq) <(pacman \-Slq custom) > installed.txt
+    $ xargs \-a installed.txt aur sync \-d custom
 .EE
 .PP
 Search for AUR packages with both
@@ -296,7 +296,7 @@ and
 in the name:
 .PP
 .EX
-    $ aur pkglist -P \(aq(?=.*wm)(?=.*git)\(aq | xargs aur search -i
+    $ aur pkglist \-P \(aq(?=.*wm)(?=.*git)\(aq | xargs aur search \-i
 .EE
 .PP
 Select an AUR package with name matching
@@ -304,15 +304,15 @@ Select an AUR package with name matching
 and build the result:
 .PP
 .EX
-    $ select a in $(aur pkglist -F pony); do aur sync "$a"; break; done
+    $ select a in $(aur pkglist \-F pony); do aur sync "$a"; break; done
 .EE
 .
 .SS Official repositories
 Print Perl modules that are both in the AUR and official repositories:
 .PP
 .EX
-    $ aur pkglist -P \(aq^perl-.+\(aq > perl.txt
-    $ grep -Fxf <(aur repo-filter < perl.txt) perl.txt
+    $ aur pkglist \-P \(aq^perl\-.+\(aq > perl.txt
+    $ grep \-Fxf <(aur repo\-filter < perl.txt) perl.txt
 .EE
 .PP
 Print packages both in AUR and
@@ -320,7 +320,7 @@ Print packages both in AUR and
 and compare their versions:
 .PP
 .EX
-    $ aur repo -d community --all
+    $ aur repo \-d community \-\-all
 .EE
 .
 .SS Using PKGBUILDs
@@ -333,15 +333,15 @@ files):
 .EX
     $ git clone https://www.github.com/Earnestly/pkgbuilds
     $ cd pkgbuilds
-    $ find -name PKGBUILD -execdir sh -c \(aqmakepkg --printsrcinfo > .SRCINFO\(aq \e;
+    $ find \-name PKGBUILD \-execdir sh \-c \(aqmakepkg \-\-printsrcinfo > .SRCINFO\(aq \e;
     $ aur graph */.SRCINFO | tsort | tac > queue # Remove unwanted targets
-    $ aur build -a queue
+    $ aur build \-a queue
 .EE
 .PP
 Build a package for a different architecture, here \fIi686\fR:
 .PP
 .EX
-    $ setarch i686 aur sync -c --repo=custom_i686 tclkit
+    $ setarch i686 aur sync \-c \-\-repo=custom_i686 tclkit
 .EE
 .
 .
@@ -354,16 +354,16 @@ in $PATH, for example
 .PP
 .EX
     #!/bin/bash
-    # Remove unused build files in aur-sync cache
-    XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-    AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+    # Remove unused build files in aur\-sync cache
+    XDG_CACHE_HOME=${XDG_CACHE_HOME:\-$HOME/.cache}
+    AURDEST=${AURDEST:\-$XDG_CACHE_HOME/aurutils/sync}
 
     # Assumes build files were retrieved through git(1)
-    find "$AURDEST" -name .git -execdir git clean -xf \e;
+    find "$AURDEST" \-name .git \-execdir git clean \-xf \e;
 
     # Print directories which do not contain a PKGBUILD file
     for d in "$AURDEST"/*; do
-        [[ -f $d/PKGBUILD ]] || printf \(aq%s\en\(aq "$d"
+        [[ \-f $d/PKGBUILD ]] || printf \(aq%s\en\(aq "$d"
     done
 .EE
 .
@@ -371,18 +371,18 @@ in $PATH, for example
 .BR aur\-remove
 .PP
 .EX
-    #!/bin/sh --
-    # aur-remove - remove listed packages from all local repositories
+    #!/bin/sh \-\-
+    # aur\-remove \- remove listed packages from all local repositories
 
-    if [ "$#" -eq 0 ]; then
+    if [ "$#" \-eq 0 ]; then
         printf \(aqusage: aur remove package [package ...]\en\(aq >&2
         exit 1
     fi
 
-    aur repo --repo-list | while read -r repo_path; do
-        if repo_path=$(readlink -e "$repo_path"); then
-            repo-remove "$repo_path" "$@"
-            paccache -c "${repo_path%/*}" -rvk0 "$@"
+    aur repo \-\-repo\-list | while read \-r repo_path; do
+        if repo_path=$(readlink \-e "$repo_path"); then
+            repo\-remove "$repo_path" "$@"
+            paccache \-c "${repo_path%/*}" \-rvk0 "$@"
         fi
     done
 .EE
@@ -401,7 +401,7 @@ script in
 .PP
 .EX
     #!/bin/sh
-    pacman --config=/usr/share/devtools/pacman-extra.conf "$@"
+    pacman \-\-config=/usr/share/devtools/pacman\-extra.conf "$@"
 .EE
 .PP
 and point the

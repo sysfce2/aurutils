@@ -30,10 +30,10 @@ be downloaded using dead reckoning.
 .
 .EX
 https://cgit/$repo.git/plain/
-https://gitlab.com/$user/$repo/raw/${commit:-master}/
-https://try.gogs.io/$user/$repo/raw/${commit:-master}/
-http://repo.or.cz/$repo.git/blob_plain/${commit:-HEAD}:/
-https://raw.githubusercontent.com/$user/$repo/${commit:-master}/
+https://gitlab.com/$user/$repo/raw/${commit:\-master}/
+https://try.gogs.io/$user/$repo/raw/${commit:\-master}/
+http://repo.or.cz/$repo.git/blob_plain/${commit:\-HEAD}:/
+https://raw.githubusercontent.com/$user/$repo/${commit:\-master}/
 .EE
 .
 .SH EXAMPLES
@@ -45,25 +45,25 @@ https://raw.githubusercontent.com/$user/$repo/${commit:-master}/
     SigLevel = PackageOptional
     Server = https://raw.githubusercontent.com/Earnestly/earnestly/master
 
-    % repose -fvzr ~/earnestly earnestly
-    adding stlink-git 1.3.1.r17.g5c10d4b-1
+    % repose \-fvzr ~/earnestly earnestly
+    adding stlink\-git 1.3.1.r17.g5c10d4b\-1
     writing earnestly.db...
     writing earnestly.files...
 
-    % sudo pacman -Syu
+    % sudo pacman \-Syu
     :: Synchronising package databases...
-    earnestly        32.7 KiB  0.00B/s 00:00 [----------------------------] 100%
+    earnestly        32.7 KiB  0.00B/s 00:00 [\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-] 100%
 
-    % pacman -Sl earnestly
-    earnestly stlink-git 1.3.1.r17.g5c10d4b-1
+    % pacman \-Sl earnestly
+    earnestly stlink\-git 1.3.1.r17.g5c10d4b\-1
 
-    % sudo pacman -S stlink-git
+    % sudo pacman \-S stlink\-git
     resolving dependencies...
     looking for conflicting packages...
 
     Package (1)           New Version           Net Change  Download Size
 
-    earnestly/stlink-git  1.3.1.r17.g5c10d4b-1    0.41 MiB       0.09 MiB
+    earnestly/stlink\-git  1.3.1.r17.g5c10d4b\-1    0.41 MiB       0.09 MiB
 
     Total Download Size:   0.09 MiB
     Total Installed Size:  0.41 MiB
