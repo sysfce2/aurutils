@@ -73,7 +73,8 @@ opt_short='a:B:d:D:AcfnrsvLNR'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
           'makepkg-conf:' 'remove' 'build-command:' 'pkgver' 'prefix:'
-          'rmdeps' 'noconfirm' 'ignorearch' 'log' 'recreate')
+          'rmdeps' 'noconfirm' 'ignorearch' 'log' 'recreate'
+          'prevent-downgrade' 'new')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -119,6 +120,10 @@ while true; do
             repo_add_args+=(-v) ;;
         -R|--remove)
             repo_add_args+=(-R) ;;
+        --new)
+            repo_add_args+=(-n) ;;
+        --prevent-downgrade)
+            repo_add_args+=(-p) ;;
         # common makepkg options
         -r|--rmdeps)
             makepkg_args+=(--rmdeps) ;;

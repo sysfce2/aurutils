@@ -208,7 +208,7 @@ Remove dependencies installed by makepkg.
 .TP
 .BR \-R ", " \-\-remove
 Remove old package files from disk when updating their entry in the
-database
+database.
 .RB ( "repo\-add \-R" ).
 .
 .TP
@@ -226,6 +226,12 @@ environment variable can be set to the appropriate key identifier.
 Verify the PGP signature of the database before
 updating.
 .RB ( "repo\-add \-v" ).
+.
+.TP
+.BR \-\-prevent\-downgrade
+Do not add packages to the database if a newer version is already
+present.
+.RB ( "repo\-add \-p" ).
 .
 .SH ENVIRONMENT
 .TP
