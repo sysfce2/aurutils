@@ -9,17 +9,15 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=()
-makechrootpkg_args=()
-makechrootpkg_makepkg_args=()
-makepkg_args=(--clean --syncdeps)
+build_args=(--clean --syncdeps)
+build_extra_args=()
 repo_args=()
 
 # default options (enabled)
 build=1 chkver_depth=2 download=1 view=1 provides=0 graph=1
 
 # default options (disabled)
-chroot=0 rotate=0 update=0
+rotate=0 update=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -74,7 +72,7 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-d repo] [-CDM path] [-AcfkLnpPsTu] [--] pkgname...' "$argv0" >&2
+    plain 'usage: %s [-d repo] [--root path] [-cdfPpSu] [--] pkgname...' "$argv0" >&2
     exit 1
 }
 
@@ -103,7 +101,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
           'new' 'prevent-downgrade' 'verify')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile'
             'noconfirm' 'nover' 'nograph' 'nover-shallow' 'noview'
-            'rebuildtree' 'rmdeps')
+            'rebuildtree' 'rmdeps' 'gpg-sign')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -142,6 +140,8 @@ while true; do
             build_args+=(-f); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
             build_args+=(-f); chkver_depth=0 ;;
+        -u|--upgrades)
+            update=1 ;;
         # database options
         -d|--database|--repo)
             shift; repo_args+=(-d "$1") ;;
@@ -150,6 +150,8 @@ while true; do
         # build options
         -B|--build-command)
             shift; build_args+=(-B "$1") ;;
+        -c|--chroot)
+            build_args+=(-c) ;;
         -f|--force)
             build_args+=(-f) ;;
         --makepkg-conf)
@@ -158,36 +160,31 @@ while true; do
             shift; build_args+=(--pacman-conf "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
-        # chroot options
-        -c|--chroot)
-            chroot=1; build_args+=(-c) ;;
+        -S|--sign|--gpg-sign)
+            build_args+=(-s) ;;
+        # build options (devtools)
         -D|--directory)
             shift; build_args+=(-D "$1") ;;
         --bind)
-            shift; makechrootpkg_args+=(-D "$1") ;;
+            shift; build_args+=(--bind "$1") ;;
         --bind-rw)
-            shift; makechrootpkg_args+=(-d "$1") ;;
+            shift; build_args+=(--bind-rw "$1") ;;
         -T|--temp)
-            makechrootpkg_args+=(-T) ;;
-        # makepkg options
+            build_args+=(-T) ;;
+        # build options (makepkg)
         -A|--ignorearch|--ignore-arch)
-            makepkg_args+=(--ignorearch)
-            makechrootpkg_makepkg_args+=(-A) ;;
+            build_args+=(-A) ;;
         -L|--log)
-            makepkg_args+=(--log) ;;
+            build_args+=(--log) ;;
         -n|--noconfirm|--no-confirm)
-            makepkg_args+=(--noconfirm) ;;
+            build_args+=(--noconfirm) ;;
         -r|--rmdeps|--rm-deps)
-            makepkg_args+=(--rmdeps) ;;
-        # repo-add options
+            build_args+=(--rmdeps) ;;
+        # build options (repo-add)
         -R|--remove)
             build_args+=(-R) ;;
-        -s|--sign)
-            build_args+=(-s) ;;
         -v|--verify)
             build_args+=(-v) ;;
-        -u|--upgrades)
-            update=1 ;;
         --prevent-downgrade)
             build_args+=(--prevent-downgrade) ;;
         --new)
@@ -204,7 +201,13 @@ done
 
 tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 tmp_view=$(mktemp -d --tmpdir "aurutils-$argv0-view.XXXXXXXX") || exit
+
 trap 'trap_exit' EXIT
+
+# pass all arguments after -- to aur-build
+if (( $# )); then
+    build_extra_args+=("$@")
+fi
 
 # append contents of ignore file
 if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
@@ -361,14 +364,8 @@ if (( view )); then
 fi
 
 if (( build )); then
-    build_args+=(--arg-file "$tmp"/queue --database "$db_name" --root "$db_root")
-
-    if (( chroot )); then
-        aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
-            -- "${makechrootpkg_makepkg_args[@]}"
-    else
-        aur build "${build_args[@]}" -- "${makepkg_args[@]}"
-    fi
+    aur build --arg-file "$tmp"/queue --database "$db_name" --root "$db_root" \
+        "${build_args[@]}" -- "${build_extra_args[@]}"
 else
     xargs -a "$tmp"/queue -I{} printf '%s\n' "$(pwd -P)"/{}
 fi

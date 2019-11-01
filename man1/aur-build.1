@@ -48,76 +48,12 @@ would set the build command to
 .BR "makepkg \-sri" .
 .
 .TP
-.BI \-d " NAME" "\fR,\fP \-\-database=" NAME
-The name of the pacman database.
-.
-.TP
-.BR \-f ", " \-\-force
-Continue the build process if a package with the same name is found.
-.
-.TP
-.BR \-N ", " \-\-no\-sync
-Do not sync the local repository after building.
-.
-.TP
-.BI \-\-root= DIR
-The root directory for the repository. The
-.I root
-is the location for the pacman database
-.RI ( foo.db ),
-built packages, and secondary files such as the files database
-.RI ( foo.files ).
-This defaults to the value of the
-.B Server
-directive for the configured repository.
-.RS
-.B Note:
-The
-.I Server
-directive configured in
-.BR pacman.conf (5)
-is used for
-.BR pacman (8)
-sync operations regardless of this setting. See also
-.BR \-N .
-.RE
-.
-.TP
-.BI \-\-results= file
-Write absolute paths of successfully built packages to
-.IR file .
-.
-.TP
-.BR \-\-pkgver
-Run
-.B "makepkg \-\-noprepare \-od"
-before checking existing packages (effectively running an existing
-.B pkgver()
-function). This option adds
-.B \-\-holdver
-to the default
-.BR makepkg (8)
-options.
-.
-.SS archbuild options
-.TP
 .BR \-c ", " \-\-chroot
 Build packages inside a
 .BR systemd\-nspawn (1)
 container with
 .BR archbuild .
-.IP
-The default build command is
-.BR "makechrootpkg \-c \-n \-C" .
-All arguments specified after
-.B \-\-
-are appended to this set of options. Run
-.B "makechrootpkg \-h"
-for a list of available
-.B makechrootpkg
-options.
-.IP
-The prerequisites for this option are as follows:
+The prerequisites for using this option are as follows:
 .RS
 .IP \(bu 2
 Ensure the optional dependency
@@ -139,7 +75,93 @@ Place the pacman configuration in
 .br
 E.g.,
 .BR /usr/share/devtools/pacman\-aur.conf .
+.PP
 .RE
+.
+.TP
+.BI \-d " NAME" "\fR,\fP \-\-database=" NAME
+The name of the pacman database.
+.
+.TP
+.BR \-f ", " \-\-force
+Continue the build process if a package with the same name is found.
+.
+.TP
+.BR \-N ", " \-\-no\-sync
+Do not sync the local repository after building.
+.
+.TP
+.BR \-\-pkgver
+Run
+.B "makepkg \-\-noprepare \-od"
+before checking existing packages (effectively running an existing
+.B pkgver()
+function). This option adds
+.B \-\-holdver
+to the default
+.BR makepkg (8)
+options.
+.
+.TP
+.B \-\-pacman\-conf
+.
+.TP
+.B \-\-makepkg\-conf
+.
+.TP
+.BI \-\-results= file
+Write absolute paths of successfully built packages to
+.IR file .
+.
+.TP
+.BI \-\-root= DIR
+The root directory for the repository. The
+.I root
+is the location for the pacman database
+.RI ( foo.db ),
+built packages, and secondary files such as the files database
+.RI ( foo.files ).
+This defaults to the value of the
+.B Server
+directive for the configured repository.
+.
+.RS
+.B Note:
+The
+.I Server
+directive configured in
+.BR pacman.conf (5)
+is used for
+.BR pacman (8)
+sync operations regardless of this setting. See also
+.BR \-N .
+.RE
+.
+.TP
+.BR \-S ", " \-\-sign ", " \-\-gpg\-sign
+Sign built packages and the database
+.RB ( "repo\-add \-s" )
+with
+.BR gpg (1).
+To use another key than the default, the
+.B GPGKEY
+environment variable can be set to the appropriate key identifier.
+.
+.SS makechrootpkg options
+Additional options may be passed to
+.B makechrootpkg
+by placing them after
+.B --
+in the
+.B aur\-build
+command-line. For a list of available options, run
+.B "makechrootpkg \-h".
+.PP
+The default set of options used in
+.B archbuild
+is
+.BR "makechrootpkg \-c \-n \-C" ,
+and cannot be overridden.
 .
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
@@ -154,33 +176,40 @@ or
 .B /copy
 if unset).
 .
-.RS
 .TP
-.B Note:
-If the
-.B \-T
-option is specified to
-.BR makechrootpkg ,
-the user container has a random name and is removed on build
-completion.
-.RE
+.BI \-\-bind= DIR
+Bind a directory read-only. (\fBmakechrootpkg \-D\fR)
+.
+.TP
+.BI \-\-bind\-rw= DIR
+Bind a directory read-write. (\fBmakechrootpkg \-d\fR)
+.
+.TP
+.BI \-\-prefix= PREFIX
+Select the configuration/binary to chroot-build packages.
+By default,
+.I PREFIX
+is set to
+.BR aur .
 .
 .TP
 .B \-\-recreate
 Recreate the chroot before building packages.
 .
 .TP
-.BI \-\-prefix= prefix
-Select the configuration/binary to chroot-build packages.
-By default,
-.I prefix
-is set to
-.BR aur .
+.BR \-T ", " \-\-temp
+Build in a temporary container. (\fBmakechrootpkg \-T\fR) Temporary
+means that the user container has a random name and is removed on
+build completion.
 .
 .SS makepkg options
-The default build command is
-.BR "makepkg \-\-clean \-\-syncdeps" .
-Any arguments specified after \-\- replace this set of options.
+Additional options may be passed to
+.B makepkg
+by placing them after
+.B --
+in the
+.B aur\-build
+command-line.
 .
 .TP
 .BR \-A ", " \-\-ignorearch
@@ -188,6 +217,11 @@ Ignore a missing or incomplete
 .I arch
 field in the build script.
 .RB ( makepkg " " \-A )
+.
+.TP
+.BR \-\-clean
+Clean up leftover work files and directories after a successful build.
+.RB ( makepkg " " \-c )
 .
 .TP
 .BR \-L ", " \-\-log
@@ -204,6 +238,12 @@ Do not wait for user input.
 Remove dependencies installed by makepkg.
 .RB ( makepkg " " \-\-rmdeps )
 .
+.TP
+.BR \-s ", " \-\-syncdeps
+Install missing dependencies using
+.BR pacman .
+.RB ( makepkg " " \-\-syncdeps )
+.
 .SS repo\-add options
 .TP
 .BR \-R ", " \-\-remove
@@ -212,20 +252,15 @@ database.
 .RB ( "repo\-add \-R" ).
 .
 .TP
-.BR \-s ", " \-\-sign
-Sign built packages and the database
-.RB ( "repo\-add \-s" )
-with
-.BR gpg (1).
-To use another key than the default, the
-.B GPGKEY
-environment variable can be set to the appropriate key identifier.
-.
-.TP
 .BR \-v ", " \-\-verify
 Verify the PGP signature of the database before
 updating.
 .RB ( "repo\-add \-v" ).
+.
+.TP
+.BR \-\-new
+Only add packages that are not already in the database.
+.RB ( "repo\-add \-n" ).
 .
 .TP
 .BR \-\-prevent\-downgrade
@@ -356,8 +391,8 @@ uses
 internally. For example, to replace
 .I gcc
 with
-.I gcc\-multilib
-, run
+.IR gcc\-multilib ,
+run
 .B "arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S gcc\-multilib"
 as root.
 .PP
@@ -438,19 +473,6 @@ to avoid libalpm from skipping entries if the locale is not set
 (FS#49342). Packages are signed manually with
 .B "gpg \-\-batch \-\-detach\-sign \-\-no\-armor"
 (FS#49946).
-.PP
-When using
-.BR "makepkg \-\-rmdeps" ,
-installed dependencies will be removed through
-.BR "pacman \-Rn" .
-When answering "n" to the resulting prompt,
-.B makepkg
-will exit with "An unknown error has occurred", and send SIGUSR1 to its
-parent group. As
-.B aur\-build
-does not catch this signal, the
-.B \-\-rmdeps
-option is disabled by default.
 .PP
 .BR pacman (8)
 has a size-limit of 25\~MiB for databases. Using larger databases may result in an

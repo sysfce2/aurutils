@@ -12,12 +12,11 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 machine=$(uname -m)
 
 # default arguments
-archbuild_args=()
 chroot_prefix=aur
 gpg_args=(--detach-sign --no-armor --batch)
-makechrootpkg_args=()
-makepkg_args=(--clean --syncdeps)
-repo_add_args=()
+
+# do not hardcode (optional) arguments to build commands
+unset makepkg_args makechrootpkg_args archbuild_args repo_add_args
 
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0
@@ -49,7 +48,7 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-d repo] [-aCDMr path] [-cfNRXsv] [--] <makepkg args>' "$argv0" >&2
+    plain 'usage: %s [-acfBNS] [-d repo] [--root path] [--] <makepkg args>' "$argv0" >&2
     exit 1
 }
 
@@ -69,12 +68,12 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
 fi
 
 ## option parsing
-opt_short='a:B:d:D:AcfnrsvLNR'
+opt_short='a:B:d:D:AcfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
           'makepkg-conf:' 'remove' 'build-command:' 'pkgver' 'prefix:'
-          'rmdeps' 'noconfirm' 'ignorearch' 'log' 'recreate'
-          'prevent-downgrade' 'new')
+          'rmdeps' 'noconfirm' 'ignorearch' 'log' 'recreate' 'new' 'bind:'
+          'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -90,32 +89,55 @@ while true; do
             shift; queue=$1 ;;
         -B|--build-command)
             shift; build_cmd+=("$1") ;;
-        --makepkg-conf)
-            shift; makepkg_conf=$1 ;;
         -f|--force)
             overwrite=1 ;;
-        # database options
-        -d|--database|--repo)
-            shift; db_name=$1 ;;
-        --root)
-            shift; db_root=$1 ;;
-        --pacman-conf)
-            shift; pacman_conf=$1 ;;
-        -N|--no-sync)
-            no_sync=1 ;;
-        # chroot options
         -c|--chroot)
             chroot=1 ;;
-        -D|--directory)
-            shift; archbuild_args+=(-r "$1") ;;
+        -d|--database|--repo)
+            shift; db_name=$1 ;;
+        -N|--nosync|--no-sync)
+            no_sync=1 ;;
+        --makepkg-conf)
+            shift; makepkg_conf=$1 ;;
+        --pacman-conf)
+            shift; pacman_conf=$1 ;;
         --prefix)
             shift; chroot_prefix=$1 ;;
-        --recreate)
-            archbuild_args+=(-c) ;;
-        # common repo-add options
-        -s|--sign)
+        --pkgver)
+            run_pkgver=1
+            makepkg_args+=(--holdver) ;;
+        --results)
+            shift; results_file=$1 ;;
+        --root)
+            shift; db_root=$1 ;;
+        -S|--sign|--gpg-sign)
             sign_pkg=1
             repo_add_args+=(-s) ;;
+        # devtools options
+        -D|--directory)
+            shift; archbuild_args+=(-r "$1") ;;
+        --recreate)
+            archbuild_args+=(-c) ;;
+        --bind)
+            shift; makechrootpkg_args+=(-D "$1") ;;
+        --bind-rw)
+            shift; makechrootpkg_args+=(-d "$1") ;;
+        -T|--temp)
+            makechrootpkg_args+=(-T) ;;
+        # makepkg options
+        -A|--ignorearch|--ignore-arch)
+            makepkg_args+=(--ignorearch) ;;
+        --clean)
+            makepkg_args+=(--clean) ;;
+        -L|--log)
+            makepkg_args+=(--log) ;;
+        -n|--noconfirm|--no-confirm)
+            makepkg_args+=(--noconfirm) ;;
+        -r|--rmdeps)
+            makepkg_args+=(--rmdeps) ;;
+        -s|--syncdeps)
+            makepkg_args+=(--syncdeps) ;;
+        # repo-add options
         -v|--verify)
             repo_add_args+=(-v) ;;
         -R|--remove)
@@ -124,21 +146,7 @@ while true; do
             repo_add_args+=(-n) ;;
         --prevent-downgrade)
             repo_add_args+=(-p) ;;
-        # common makepkg options
-        -r|--rmdeps)
-            makepkg_args+=(--rmdeps) ;;
-        -n|--noconfirm)
-            makepkg_args+=(--noconfirm) ;;
-        -A|--ignorearch)
-            makepkg_args+=(--ignorearch) ;;
-        -L|--log)
-            makepkg_args+=(--log) ;;
         # other options
-        --pkgver)
-            run_pkgver=1
-            makepkg_args+=(--holdver) ;;
-        --results)
-            shift; results_file=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}"
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -154,14 +162,12 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$argv0.XXXXXXXX") 
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-# makechrootpkg arguments can only be appended to the defaults
-# specified in archbuild (-cn), unlike makepkg where we override our
-# own set of defaults (-cs).
+# Pass all arguments after -- to makepkg
 if (( $# )); then
     if (( chroot )); then
-        makechrootpkg_args=("$@")
+        makechrootpkg_args+=("$@")
     else
-        makepkg_args=("$@")
+        makepkg_args+=("$@")
     fi
 fi
 
@@ -287,6 +293,9 @@ while IFS= read -ru "$fd" path; do
         env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" "${build_cmd[@]}"
     elif (( chroot )); then
         printf '%s\n' >&2 "Running $chroot_prefix-$machine-build"
+        # archbuild hardcodes makechrootpkg -c -n -C. In turn, makechrootpkg
+        # hardcodes makepkg --syncdeps --noconfirm --log --holdver --skipinteg.
+        # These options cannot overriden, only appended to.
         env PKGDEST="$var_tmp" "$chroot_prefix"-"$machine"-build \
             "${archbuild_args[@]}" -- -d "$db_root" "${makechrootpkg_args[@]}"
     else
