@@ -1,57 +1,58 @@
 .TH AUR-DEPENDS 1 2019-01-15 AURUTILS
 .SH NAME
 aur\-depends \- retrieve dependencies using aurweb
-
+.
 .SH SYNOPSIS
 .SY "aur depends"
 .OP \-abnt
 .IR "pkgname [pkgname...]"
 .YS
-
+.
 .SH DESCRIPTION
-.B aur\-depends 
+.B aur\-depends
 solves dependencies for packages provided on the command-line,
 using aurweb.
-
+.
 .SH OPTIONS
 .TP
 .BR \-b ", " \-\-pkgbase
 Print dependency information (AUR-only) to stdout as
 .BR pkgbase ,
 in total order.
-
+.
 .TP
 .BR \-n ", " \-\-pkgname
 Print dependency information (AUR-only) to stdout as
 .BR pkgname ,
 in total order.
-
+.
 .TP
 .BR \-a ", " \-\-pkgname\-all
 Print dependency information to stdout as
 .BR pkgname ,
 in total order. All dependencies are printed.
-
+.
 .TP
 .BR \-t ", " \-\-table
 Output dependency information in the following format:
-
-.BI pkgname\etdepends\etpkgbase\etpkgver
-
+.BR \%pkgname\etdepends\etpkgbase\etpkgver .
+.
 .SH NOTES
 Version information is ignored for dependencies. See
 .B FS#54906
 for details.
-
+.
 .SH SEE ALSO
+.ad l
+.nh
 .BR aur (1),
 .BR aur\-graph (1),
 .BR aur\-query (1),
 .BR jq (1)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:

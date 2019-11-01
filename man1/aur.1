@@ -1,25 +1,24 @@
-'\" t
 .TH AUR 1 2019-03-03 AURUTILS
 .SH NAME
 aur \- helper tool for the arch user repository
-
+.
 .SH DESCRIPTION
 .BR aur (1)
 is the command wrapper for
 .BR aurutils ,
 a collection of scripts to automate usage of the Arch User
 Repository. Different tasks such as update checks, package searching,
-and computing dependencies are split to seperate commands.
-
+and computing dependencies are split to separate commands.
+.PP
 The chosen approach for managing packages is local pacman
 repositories, instead of foreign (installed by
-.BR "pacman -U" )
+.BR "pacman \-U" )
 packages.
-
+.PP
 A brief overview of local repositories is given in the
 .B "CREATING A LOCAL REPOSITORY"
 section.
-
+.
 .SH AUR COMMANDS
 The below gives a short overview; see the respective documentation for
 details.
@@ -29,82 +28,82 @@ searches for commands in
 by default, followed by
 .B $PATH
 as set in the environment.
-
+.PP
 A different path may be set at build time through the
 .B AUR_LIB_DIR
 macro, for example
 .IR /usr/local/lib/aurutils:/usr/lib/aurutils .
-
+.
 .P
 .BR aur\-build (1)
 .RS 4
 Build packages to a local repository.
 .RE
-
+.
 .P
 .BR aur\-depends (1)
 .RS 4
 Retrieve dependencies using aurweb.
 .RE
-
+.
 .P
 .BR aur\-fetch (1)
 .RS 4
 Fetch packages from a location.
 .RE
-
+.
 .P
 .BR aur\-graph (1)
 .RS 4
 Print package/dependency directed graph.
 .RE
-
+.
 .P
 .BR aur\-pkglist (1)
 .RS 4
 Print the AUR package list.
 .RE
-
+.
 .P
 .BR aur\-repo (1)
 .RS 4
 Manage local repositories.
 .RE
-
+.
 .P
 .BR aur\-repo\-filter (1)
 .RS 4
 Filter packages in the Arch Linux repositories.
 .RE
-
+.
 .P
 .BR aur\-search (1)
 .RS 4
 Search for AUR packages.
 .RE
-
+.
 .P
 .BR aur\-srcver (1)
 .RS 4
 List version of VCS packages.
 .RE
-
+.
 .P
 .BR aur\-sync (1)
 .RS 4
 Download and build AUR packages automatically.
 .RE
-
+.
 .P
 .BR aur\-vercmp (1)
 .RS 4
 Check packages for AUR updates.
 .RE
-
+.
 .SH EXIT STATUS
 Programs follow a subset of errno(3), or preserve command status where
 applicable.
-
+.
 .SH ENVIRONMENT
 .TP
 .B AUR_DEBUG
@@ -115,12 +114,12 @@ for
 scripts) in
 .B aur
 programs.
-
+.
 .TP
 .B NO_COLOR
 Output colorization can be disabled by setting this environment
 variable.
-
+.
 .SH CREATING A LOCAL REPOSITORY
 A local repository may be configured directly in
 .BR /etc/pacman.conf ,
@@ -130,58 +129,57 @@ directive. This section documents an example configuration; for
 details, consult the
 .BR pacman.conf (5)
 man page.
-
-.SY Note:
+.
+.TP
+.B Note:
 Avoid naming the repository
 .IR local ,
 as this name is reserved by
 .BR pacman (8).
-
-.SY Tip:
+.
+.TP
+.B Tip:
 Consider separate repositories for different purposes, such as
 version control packages.
-.YS
-
+.
 .SS Pacman configuration
-.P
 For the purposes of this example, we assume the local repository
 .I custom
 is located in
 .IR /home/custompkgs .
-
+.PP
 Append a section for the local repository to
 .IR /etc/pacman.conf
+.PP
 .EX
-
-  [custom]
-  SigLevel = Optional TrustAll
-  Server = file:///home/custompkgs
-
+    [custom]
+    SigLevel = Optional TrustAll
+    Server = file:///home/custompkgs
 .EE
+.PP
 Create the repository root and database:
+.PP
 .EX
-
-  $ sudo install \-d /home/custompkgs \-o $USER
-  $ repo\-add /home/custompkgs/custom.db.tar.gz
-
+    $ sudo install \-d /home/custompkgs \-o $USER
+    $ repo\-add /home/custompkgs/custom.db.tar.gz
 .EE
+.PP
 If built packages are available, add them to the database:
+.PP
 .EX
-
-  $ cd /home/custompkgs
-  $ repo\-add \-n custom.db.tar.gz *.pkg.tar.xz
-
+    $ cd /home/custompkgs
+    $ repo\-add \-n custom.db.tar.gz *.pkg.tar.xz
 .EE
+.PP
 Synchronize pacman:
+.PP
 .EX
-
-  $ sudo pacman -Syu
-
+    $ sudo pacman \-Syu
 .EE
-
+.
 .SS CacheDir (optional)
 When packages from a local repository are installed through
-.BR "pacman -S" ,
+.BR "pacman \-S" ,
 they are copied to a cache directory (usually
 .IR /var/cache/pacman/pkg )
 by
@@ -190,236 +188,233 @@ Besides using additional space, this may result in checksum mismatches
 when rebuilding packages without increasing
 .BR pkgrel .
 (See GitHub issue #85)
-
+.PP
 To avoid this, set the repository path as a
 .B pacman
 .IR CacheDir ,
 together with the
 .B "CleanMethod = KeepCurrent"
 setting to avoid unexpected deletion of built packages with
-.BR "pacman -Sc" .
-
+.BR "pacman \-Sc" .
+.PP
 This can be done by editing
 .IR /etc/pacman.conf
 as follows:
+.PP
 .EX
-
-  [options]
-  CacheDir = /var/cache/pacman/pkg
-  CacheDir = /home/custompkgs
-  CleanMethod = KeepCurrent
-
+    [options]
+    CacheDir = /var/cache/pacman/pkg
+    CacheDir = /home/custompkgs
+    CleanMethod = KeepCurrent
 .EE
+.PP
 Note that
-.BR "pacman -Scc"
+.BR "pacman \-Scc"
 will remove packages regardless of the
 .B CleanMethod
 setting.
-
+.
 .SH EXAMPLES
 In this section, we assume that
 .BR bash (1)
 is the interactive shell.
-
+.
 .SS Arch User Repository
 Run actions on the dependency tree of an AUR package:
+.PP
 .EX
-
-  $ echo foo | aur depends | while read -r pkg; do ... done
-
+    $ echo foo | aur depends | while read \-r pkg; do ... done
 .EE
+.PP
 Build
-.I plasma-desktop-git
+.I plasma\-desktop\-git
 and its dependencies with
 .BR systemd\-nspawn (1):
+.PP
 .EX
-
-  $ aur sync -c plasma-desktop-git
-
+    $ aur sync \-c plasma\-desktop\-git
 .EE
+.PP
 Update all AUR packages in a single local repository:
+.PP
 .EX
-
-  $ aur sync -u
-
+    $ aur sync \-u
 .EE
+.PP
 Check foreign packages for AUR updates:
+.PP
 .EX
-
-  $ pacman -Qm | aur vercmp
-
+    $ pacman \-Qm | aur vercmp
 .EE
+.PP
 Check the
 .I custom
 repository for AUR updates:
+.PP
 .EX
-
-  $ aur repo -d custom --list | aur vercmp
-
+    $ aur repo \-d custom \-\-list | aur vercmp
 .EE
+.PP
 If
 .B pacman.conf
 only contains one local repository, the above may be shortened to:
+.PP
 .EX
-
-  $ aur repo --upgrades
-
+    $ aur repo \-\-upgrades
 .EE
-
+.
+.
 .SS Arch User Repository - advanced usage
 Print packages from the
 .I custom
 repository that are unavailable in the AUR:
+.PP
 .EX
-
-  $ grep -Fxvf <(aur pkglist) <(pacman -Slq custom)
-
+    $ grep \-Fxvf <(aur pkglist) <(pacman \-Slq custom)
 .EE
+.PP
 As above, but for orphaned packages:
+.PP
 .EX
-
-  $ pacman -Slq custom | aur query -t info | \\
-       jq -r '.[].results[] | select(.Maintainer == null)'
-
+    $ pacman \-Slq custom | aur query \-t info | \e
+          jq \-r \(aq.[].results[] | select(.Maintainer == null)\(aq
 .EE
+.PP
 Update packages in the
 .I custom
 repository which are installed on the host:
+.PP
 .EX
-
-  $ grep -Fxf <(pacman -Qq) <(pacman -Slq custom) > installed.txt
-  $ xargs -a installed.txt aur sync -d custom
-
+    $ grep \-Fxf <(pacman \-Qq) <(pacman \-Slq custom) > installed.txt
+    $ xargs \-a installed.txt aur sync \-d custom
 .EE
+.PP
 Search for AUR packages with both
 .I wm
 and
 .I git
 in the name:
+.PP
 .EX
-
-  $ aur pkglist -P '(?=.*wm)(?=.*git)' | xargs aur search -i
-
+    $ aur pkglist \-P \(aq(?=.*wm)(?=.*git)\(aq | xargs aur search \-i
 .EE
+.PP
 Select an AUR package with name matching
 .IR pony ,
 and build the result:
+.PP
 .EX
-
-  $ select a in $(aur pkglist -F pony); do aur sync "$a"; break; done
-
+    $ select a in $(aur pkglist \-F pony); do aur sync "$a"; break; done
 .EE
-
+.
 .SS Official repositories
-.EE
 Print Perl modules that are both in the AUR and official repositories:
+.PP
 .EX
-
-  $ aur pkglist -P '^perl-.+' > perl.txt
-  $ grep -Fxf <(aur repo-filter < perl.txt) perl.txt
-
+    $ aur pkglist \-P \(aq^perl\-.+\(aq > perl.txt
+    $ grep \-Fxf <(aur repo\-filter < perl.txt) perl.txt
 .EE
+.PP
 Print packages both in AUR and
 .I [community]
 and compare their versions:
+.PP
 .EX
-
-  $ aur repo -d community --all
-
+    $ aur repo \-d community \-\-all
 .EE
-
+.
 .SS Using PKGBUILDs
 Build packages in the
 .I pkgbuilds
 github repository (generating required
 .B .SRCINFO
 files):
+.PP
 .EX
-
-  $ git clone https://www.github.com/Earnestly/pkgbuilds
-  $ cd pkgbuilds
-  $ find -name PKGBUILD -execdir sh -c 'makepkg --printsrcinfo > .SRCINFO' \\;
-
-  $ aur graph */.SRCINFO | tsort | tac > queue # Remove unwanted targets
-  $ aur build -a queue
-
-Build a package for a different architecture, here \fIi686\fR:
-.EX
-
-  $ setarch i686 aur sync -c --repo=custom_i686 tclkit
-
+    $ git clone https://www.github.com/Earnestly/pkgbuilds
+    $ cd pkgbuilds
+    $ find \-name PKGBUILD \-execdir sh \-c \(aqmakepkg \-\-printsrcinfo > .SRCINFO\(aq \e;
+    $ aur graph */.SRCINFO | tsort | tac > queue # Remove unwanted targets
+    $ aur build \-a queue
 .EE
-
+.PP
+Build a package for a different architecture, here \fIi686\fR:
+.PP
+.EX
+    $ setarch i686 aur sync \-c \-\-repo=custom_i686 tclkit
+.EE
+.
+.
 .SS Custom commands
 The following scripts are examples of custom commands added anywhere
 in $PATH, for example
 .IR /usr/local/bin .
-
+.PP
 .BR aur\-gc
-
+.PP
 .EX
-  #!/bin/bash
-  # Remove unused build files in aur-sync cache
-  XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-  AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
-  
-  # Assumes build files were retrieved through git(1)
-  find "$AURDEST" -name .git -execdir git clean -xf \\;
-  
-  # Print directories which do not contain a PKGBUILD file
-  for d in "$AURDEST"/*; do
-    [[ -f $d/PKGBUILD ]] || printf '%s\\n' "$d"
-  done
-.EE
+    #!/bin/bash
+    # Remove unused build files in aur\-sync cache
+    XDG_CACHE_HOME=${XDG_CACHE_HOME:\-$HOME/.cache}
+    AURDEST=${AURDEST:\-$XDG_CACHE_HOME/aurutils/sync}
 
+    # Assumes build files were retrieved through git(1)
+    find "$AURDEST" \-name .git \-execdir git clean \-xf \e;
+
+    # Print directories which do not contain a PKGBUILD file
+    for d in "$AURDEST"/*; do
+        [[ \-f $d/PKGBUILD ]] || printf \(aq%s\en\(aq "$d"
+    done
+.EE
+.
+.PP
 .BR aur\-remove
-
+.PP
 .EX
-  #!/bin/sh --
-  # aur-remove - remove listed packages from all local repositories
+    #!/bin/sh \-\-
+    # aur\-remove \- remove listed packages from all local repositories
 
-  if [ "$#" -eq 0 ]; then
-    printf 'usage: aur remove package [package ...]\en' >&2
-    exit 1
-  fi
-
-  aur repo --repo-list | while read -r repo_path; do
-    if repo_path=$(readlink -e "$repo_path"); then
-      repo-remove "$repo_path" "$@"
-      paccache -c "${repo_path%/*}" -rvk0 "$@"
+    if [ "$#" \-eq 0 ]; then
+        printf \(aqusage: aur remove package [package ...]\en\(aq >&2
+        exit 1
     fi
-  done
-.EE
 
+    aur repo \-\-repo\-list | while read \-r repo_path; do
+        if repo_path=$(readlink \-e "$repo_path"); then
+            repo\-remove "$repo_path" "$@"
+            paccache \-c "${repo_path%/*}" \-rvk0 "$@"
+        fi
+    done
+.EE
+.
 .SS Using third-party helpers
 Repository packages can be "made foreign" by temporarily removing the
 repository from the pacman configuration. This can be used with programs
 that support the
 .B PACMAN
 environment variable and check foreign packages for AUR updates.
-
+.PP
 For example, create the
 .I mypacman
 script in
 .IR /usr/local/bin/mypacman :
+.PP
 .EX
-
- #!/bin/sh
- pacman --config=/usr/share/devtools/pacman-extra.conf "$@"
-
+    #!/bin/sh
+    pacman \-\-config=/usr/share/devtools/pacman\-extra.conf "$@"
 .EE
+.PP
 and point the
 .B PACMAN
 variable towards it:
+.PP
 .EX
-
- $ export PACMAN=/usr/local/bin/mypacman
-
+    $ export PACMAN=/usr/local/bin/mypacman
 .EE
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72

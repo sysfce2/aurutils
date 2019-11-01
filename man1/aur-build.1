@@ -1,17 +1,17 @@
 .TH AUR\-BUILD 1 2019-01-24 AURUTILS
 .SH NAME
 aur\-build \- build packages to a local repository
-
+.
 .SH SYNOPSIS
 .SY "aur build"
 .OP \-d database
 .OP \-cfNRsv
 .OP \-a queue
 .OP \-B string
-.OP \--
+.OP \-\-
 .RI [ "makepkg args" ]
 .YS
-
+.
 .SH DESCRIPTION
 Build packages adding the results to a local repository, or a
 .BR pacman (8)
@@ -19,13 +19,13 @@ repository configured with a
 .I file://
 prefix in
 .BR pacman.conf (5).
-
+.
 .SH OPTIONS
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A text file describing directories that contain a PKGBUILD, relative to
 the current directory. If unspecified, the current directory is assumed.
-
+.
 .TP
 .BI \-B " STRING" "\fR,\fP \-\-build\-command=" STRING
 A string used as build command
@@ -39,26 +39,26 @@ The command has
 .BR AUR_DBROOT
 set in the user environment. (These variables should be unset where
 appropriate.)
-
+.IP
 To split the command on whitespace, repeat the
 .B \-B
 option for each substring. For example,
 .BI "\-B " "makepkg " "\-B " \-sri
 would set the build command to
 .BR "makepkg \-sri" .
-
+.
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
 The name of the pacman database.
-
+.
 .TP
 .BR \-f ", " \-\-force
 Continue the build process if a package with the same name is found.
-
+.
 .TP
-.BR \-N ", " \-\-no-sync
+.BR \-N ", " \-\-no\-sync
 Do not sync the local repository after building.
-
+.
 .TP
 .BI \-\-root= DIR
 The root directory for the repository. The
@@ -71,8 +71,7 @@ This defaults to the value of the
 .B Server
 directive for the configured repository.
 .RS
-
-.SY Note:
+.B Note:
 The
 .I Server
 directive configured in
@@ -82,12 +81,12 @@ is used for
 sync operations regardless of this setting. See also
 .BR \-N .
 .RE
-
+.
 .TP
 .BI \-\-results= file
 Write absolute paths of successfully built packages to
 .IR file .
-
+.
 .TP
 .BR \-\-pkgver
 Run
@@ -99,7 +98,7 @@ function). This option adds
 to the default
 .BR makepkg (8)
 options.
-
+.
 .SS archbuild options
 .TP
 .BR \-c ", " \-\-chroot
@@ -107,7 +106,7 @@ Build packages inside a
 .BR systemd\-nspawn (1)
 container with
 .BR archbuild .
-
+.IP
 The default build command is
 .BR "makechrootpkg \-c \-n \-C" .
 All arguments specified after
@@ -117,8 +116,8 @@ are appended to this set of options. Run
 for a list of available
 .B makechrootpkg
 options.
-
-The pre-requisites for this option are as follows:
+.IP
+The prerequisites for this option are as follows:
 .RS
 .IP \(bu 2
 Ensure the optional dependency
@@ -129,7 +128,7 @@ Make a symbolic link to
 .B /usr/bin/archbuild
 named
 .IR <chroot\-prefix> \- <arch> \-build
-available somwehere in your
+available somewhere in your
 .BR PATH .
 .br
 E.g.,
@@ -141,12 +140,12 @@ Place the pacman configuration in
 E.g.,
 .BR /usr/share/devtools/pacman\-aur.conf .
 .RE
-
+.
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
 The base directory for containers. Defaults to
 .BI /var/lib/archbuild/ <chroot\-prefix> \- <arch> \fR.
-
+.IP
 This directory usually contains a
 .B /root
 subdirectory that serves as template for user containers (named after
@@ -154,9 +153,10 @@ subdirectory that serves as template for user containers (named after
 or
 .B /copy
 if unset).
-
+.
 .RS
-.SY Note:
+.TP
+.B Note:
 If the
 .B \-T
 option is specified to
@@ -164,11 +164,11 @@ option is specified to
 the user container has a random name and is removed on build
 completion.
 .RE
-
+.
 .TP
 .B \-\-recreate
 Recreate the chroot before building packages.
-
+.
 .TP
 .BI \-\-prefix= prefix
 Select the configuration/binary to chroot-build packages.
@@ -176,41 +176,41 @@ By default,
 .I prefix
 is set to
 .BR aur .
-
+.
 .SS makepkg options
 The default build command is
 .BR "makepkg \-\-clean \-\-syncdeps" .
 Any arguments specified after \-\- replace this set of options.
-
+.
 .TP
 .BR \-A ", " \-\-ignorearch
 Ignore a missing or incomplete
 .I arch
 field in the build script.
 .RB ( makepkg " " \-A )
-
+.
 .TP
 .BR \-L ", " \-\-log
 Enable logging to a text file in the build directory.
 .RB ( makepkg " " \-L )
-
+.
 .TP
 .BR \-n ", " \-\-noconfirm
 Do not wait for user input.
 .RB ( makepkg " " \-\-noconfirm )
-
+.
 .TP
 .BR \-r ", " \-\-rmdeps
 Remove dependencies installed by makepkg.
 .RB ( makepkg " " \-\-rmdeps )
-
+.
 .SS repo\-add options
 .TP
 .BR \-R ", " \-\-remove
 Remove old package files from disk when updating their entry in the
 database
 .RB ( "repo\-add \-R" ).
-
+.
 .TP
 .BR \-s ", " \-\-sign
 Sign built packages and the database
@@ -219,45 +219,41 @@ with
 .BR gpg (1).
 To use another key than the default, the
 .B GPGKEY
-environment variable can be set to the appopriate key identifier.
-
+environment variable can be set to the appropriate key identifier.
+.
 .TP
 .BR \-v ", " \-\-verify
 Verify the PGP signature of the database before
 updating.
 .RB ( "repo\-add \-v" ).
-
+.
 .SH ENVIRONMENT
+.TP
 .B AUR_REPO
-.RS
 The repository used for building packages. If unspecified, the name is
 selected with
 .BR aur\-repo (1).
-.RE
-
+.
+.TP
 .B AUR_DBROOT
-.RS
 The root directory of the repository. If unspecified, the path is
 retrieved with
 .BR aur\-repo (1).
-.RE
-
+.
+.TP
 .B GPGKEY
-.RS
 The GPG key used for signing packages. Note that while this variable
 may be set in
 .BR makepkg.conf (5),
 it is then ignored for
 .BR repo\-add .
-.RE
-
+.
+.TP
 .B TMPDIR
-.RS
 The directory for temporary files. (This includes intermediary storage
 of built packages, defaulting to
 .IR /var/tmp .)
-.RE
-
+.
 .SH NOTES
 .SS Repository updates
 When building locally (outside a container),
@@ -271,7 +267,8 @@ official repositories "local", and warns if they are newer than any
 custom counterpart. Packages which define a
 .I replaces
 field are ignored if the target package is installed on the local system.
-
+.
+.
 .SS Using a dedicated build user
 While using a dedicated user for the build process does not increase
 security (beyond protecting against packaging errors that write to
@@ -281,16 +278,15 @@ multiple users or as a way to avoid password prompts. (Note that such
 a user must be unprivileged; as of pacman 4.2,
 .BR makepkg (8)
 may not run directly as root.)
-
+.PP
 New users may be created with
 .BR useradd (8)
 as follows:
+.PP
 .EX
-
-  # useradd build --system --home-dir /var/cache/build --create-home
-
+    # useradd build \-\-system \-\-home\-dir /var/cache/build \-\-create\-home
 .EE
-
+.PP
 Because dependency resolution is not replicated and left to
 .BR makepkg (8)
 (see
@@ -304,41 +300,41 @@ user should be allowed to run
 with elevated privileges. For example, create the
 .I /etc/sudoers.d/10_build
 file with following contents:
+.PP
 .EX
-
-  build ALL = (root) NOPASSWD: /usr/bin/pacman
-
+    build ALL = (root) NOPASSWD: /usr/bin/pacman
 .EE
-.BR aur-build (1)
+.PP
+.BR aur\-build (1)
 (and related programs such as
-.BR aur-sync (1))
+.BR aur\-sync (1))
 may now be run as the new
 .I build
 user. For example:
+.PP
 .EX
-
-  # cd /var/cache/build
-  # sudo -u build git clone https://aur.archlinux.org/mypackage.git
-  # cd mypackage
-  # sudo -u build aur build -d custom
-
+    # cd /var/cache/build
+    # sudo \-u build git clone https://aur.archlinux.org/mypackage.git
+    # cd mypackage
+    # sudo \-u build aur build \-d custom
 .EE
+.PP
 Any created files in the local repository (such as packages,
 signatures and database files) will be owned by the
 .I build
 user.
-
+.
 .SS PKGBUILD signatures
 GPG signatures defined in the
 .B validpgpkeys
 array may be automatically retrieved by setting
-.I "keyserver-options auto-key-retrieve"
+.I "keyserver\-options auto\-key\-retrieve"
 in
 .BR gpg.conf .
 See
 .BR gpg (1)
 for details.
-
+.
 .SH CHROOT NOTES
 .SS Building with makechrootpkg
 Changes to the pacman database are
@@ -346,7 +342,7 @@ Changes to the pacman database are
 propagated from the container to the local system. Packages must be
 installed and updated separately, typically through
 .BI "pacman \-Syu " package_name\fR.
-
+.PP
 Package conflicts inside the container must be solved manually, as
 .B makechrootpkg
 uses
@@ -358,14 +354,14 @@ with
 , run
 .B "arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S gcc\-multilib"
 as root.
-
+.PP
 To install packages from the local repository (for example, on
 dependency resolution with
 .BR "makepkg \-s" ,
 the container requires read access to the host directory where it is
 located. This is ensured through a
 .IR "bind mount" .
-
+.
 .SS Avoiding password prompts
 .BR makepkg (8)
 must be run as a regular user as of version 4.2, with privileged
@@ -380,40 +376,39 @@ can be used instead. For example, if
 is run as the
 .I archie
 user, create the following sudoers policy:
+.PP
 .EX
-
-  archie ALL = (root) NOPASSWD: SETENV: /usr/bin/archbuild
-
+    archie ALL = (root) NOPASSWD: SETENV: /usr/bin/archbuild
 .EE
-.SY Note:
+.TP
+.B Note:
 Should the rule only apply to specific hosts, replace
 .B ALL
 with the respective
 .IR hostname .
-
+.
 .SS Using ccache and distcc
 As in the example above, install the required packages:
+.PP
 .EX
-
-  # arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S ccache distcc
-
+    # arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S ccache distcc
 .EE
+.PP
 Ensure write access to
 .B ccache
 directories on the host:
+.PP
 .EX
-
-  # aur build \-\-chroot \-\- \-d /home/_ccache:/build/.ccache
-
+    # aur build \-\-chroot \-\- \-d /home/_ccache:/build/.ccache
 .EE
-
+.
 .SS Building for a different architecture
 To build packages for a different architecture, prepend
 .BI setarch " arch"
 to the
 .B aur\-build
 command line.
-
+.PP
 The target architecture must be supported both by the host (run
 .B "setarch \-\-list"
 for an approximation), and have a matching
@@ -424,12 +419,12 @@ file available in
 .I /usr/share/devtools/makepkg\-i686.conf
 for
 .IR i686 ).
-
-.SY Note:
+.TP
+.B Note:
 Building for other CPU architectures may be done through
 QEMU, for example with
 .BR proot (1).
-
+.
 .SH BUGS
 Databases are built with
 .B LANG=C
@@ -437,42 +432,44 @@ to avoid libalpm from skipping entries if the locale is not set
 (FS#49342). Packages are signed manually with
 .B "gpg \-\-batch \-\-detach\-sign \-\-no\-armor"
 (FS#49946).
-
+.PP
 When using
-.BR "makepkg --rmdeps" ,
+.BR "makepkg \-\-rmdeps" ,
 installed dependencies will be removed through
-.BR "pacman -Rn" .
+.BR "pacman \-Rn" .
 When answering "n" to the resulting prompt,
 .B makepkg
-will exit with "An unknown error has occured", and send SIGUSR1 to its
+will exit with "An unknown error has occurred", and send SIGUSR1 to its
 parent group. As
 .B aur\-build
 does not catch this signal, the
 .B \-\-rmdeps
 option is disabled by default.
-
+.PP
 .BR pacman (8)
-has a size\-limit of 25\~MiB for databases. Using larger databases may result in an
+has a size-limit of 25\~MiB for databases. Using larger databases may result in an
 .B expected download size exceeded
 error. To avoid this issue, compress the database with
 .BR gzip (1).
 See
 .UR https://\:git.archlinux.org/\:pacman.git/\:commit/\:?id=\:6dc71926f9b16ebcf11b924941092d6eab204224
 .UE .
-
+.
 .SH SEE ALSO
+.ad l
+.nh
 .BR aur (1),
 .BR aur\-repo (1),
-.BR pacman (1),
 .BR makepkg.conf (5),
 .BR pacman.conf (5),
 .BR makepkg (8),
-.BR repo-add (8),
+.BR pacman (8),
+.BR repo\-add (8),
 .BR setarch (8)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:

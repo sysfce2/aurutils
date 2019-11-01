@@ -1,7 +1,7 @@
 .TH AUR-FETCH 1 2018-03-17 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
-
+.
 .SH SYNOPSIS
 .SY "aur fetch"
 .OP \-L log_dir
@@ -13,104 +13,106 @@ aur\-fetch \- download packages from the AUR
 .OP \-\-confirm\-seen
 .IR package " [" package... ]
 .YS
-
+.
 .SH DESCRIPTION
 .B aur\-fetch
 downloads packages, specified on the command-line, from the AUR.
-
+.
 .SH OPTIONS
 .TP
 .BI \-L " DIRECTORY" "\fR,\fP \-\-write\-log=" DIRECTORY
 The location of where to store the diffs of previously unpacked
 archives.
-
+.
 .TP
 .BR \-r ", " \-\-recurse
 Download packages and their dependencies with
-.BR aur-depends (1).
-
+.BR aur\-depends (1).
+.
 .TP
 .BR \-v ", " \-\-verbose
 Print logs to
 .BR stdout .
-
+.
 .TP
 .BR \-\-force
 .B aur\-fetch
 will refuse to fetch if history was rewritten. This option allows
 overriding that check. (see \fIHISTORY REWRITES\fR under \fINOTES\fR)
-
+.
 .TP
 .B \-\-confirm\-seen
-Marks the pacakge's checked out commit as seen.
-
-
+Marks the package's checked out commit as seen.
+.
+.
 .SH NOTES
-
+.
 .SS HISTORY REWRITES
-.B aur-fetch
+.B aur\-fetch
 will refuse to fetch rewritten history by default. This happens rarely,
 as only Trusted Users have permissions to force-push to the AUR.
-
+.PP
 In those situations, something serious may have happened that may
 require the user to do manual intervention on the machine.
 To raise awareness to these events,
-.B aur-fetch
+.B aur\-fetch
 will refuse to fetch unless
 .B \-\-force
 is passed.
-
-
+.
+.
 .SS LOGS
 The logs shown by
-.B aur-fetch
+.B aur\-fetch
 show changes that happened since the commit referenced by the
 special reference
 .B AURUTILS_SEEN
 stored inside the repository.
-
+.PP
 This reference can be created with with:
-
+.PP
 .EX
-    \fB$ aur fetch --confirm-seen \fI<package> \fR[\fP<pacakge>...\fR]\fR
+    \fB$ aur fetch \-\-confirm\-seen \fI<package> \fR[\fP<package>...\fR]\fR
 .EE
-
+.PP
 which will mark the current commit as seen, signaling
-.B aur-fetch
+.B aur\-fetch
 that current changes should not be shown in future logs.
-
+.PP
 When this reference is missing,
-.B aur-fetch
+.B aur\-fetch
 will consider the entire history as changes.
-
-
+.
+.
 .SS LOCAL MODIFICATIONS (EXPERIMENTAL)
 While
-.B aur-fetch
+.B aur\-fetch
 will try to preserve changes committed locally, by trying to reapply
 them on top of the incoming new changes, it will discard any uncommitted
 changes present in the repository.
-
+.PP
 If the changes cannot be applied cleanly,
-.B aur-fetch
+.B aur\-fetch
 will exit with error, leaving the repository files with conflict
 markers for the user to resolve.
-
+.
 .SH SEE ALSO
+.ad l
+.nh
 .BR aur (1),
 .BR aur\-depends (1),
 .BR git (1),
 .BR git\-clone (1),
 .BR git\-fetch (1),
-.BR git\-pull (1),
 .BR git\-log (1),
-.BR git\-rev\-parse (1),
+.BR git\-pull (1),
 .BR git\-reset (1),
+.BR git\-rev\-parse (1),
 .BR git\-update\-ref (1)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:

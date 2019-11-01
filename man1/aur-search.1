@@ -1,99 +1,101 @@
 .TH AUR-SEARCH 1 2019-01-24 AURUTILS
 .SH NAME
 aur\-search \- search for AUR packages
-
+.
 .SH SYNOPSIS
 .SY "aur search"
 .OP \-adimnqrsv
 .OP \-k key
 .IR keyword ...
 .YS
-
+.
 .SH DESCRIPTION
 .B aur\-search
 searches the AUR by multiple strings of packages. The union of all
 results is returned.
-
+.PP
 By default, searches are performed by name and description using the
 .I searchby
 interface, and displayed in a brief format.
-
+.
 .SH OPTIONS
 .TP
 .BR \-q ", " \-\-short
 Only display package name, version and description.
-
+.
 .TP
 .BR \-r ", " \-\-raw
 Display the unprocessed JSON output.
-
+.
 .TP
 .BR \-v ", " \-\-verbose
 Display more package information.
-
+.
 .TP
 .BR \-i ", " \-\-info
 Use the
 .I info
 interface instead of
 .IR searchby .
-
+.
 .TP
 .BR \-d ", " \-\-desc
 Search by package name and description.
-
+.
 .TP
 .BR \-m ", " \-\-maintainer
 Search by maintainer.
-
+.
 .TP
 .BR \-n ", " \-\-name
 Search by package name.
-
+.
 .TP
 .BR \-\-depends
 Search for packages with keywords in
 .BR depends .
-
+.
 .TP
 .B \-\-makedepends
 Search for packages with keywords in
 .BR makedepends .
-
+.
 .TP
 .B \-\-optdepends
 Search for packages with keywords in
 .BR optdepends .
-
+.
 .TP
 .B \-\-checkdepends
 Search for packages with keywords in
 .BR checkdepends .
-
+.
 .TP
 .BI "\-k " key
 Sort results via a key, defaulting to
 .IR Name .
-
+.IP
 Valid choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
 \fIDescription\fR (for brief output) or \fIName\fR, \fIPackageBase\fR,
 \fIVersion\fR, \fIDescription\fR, \fIURL\fR, \fINumVotes\fR,
 \fIPopularity\fR, \fIOutOfDate\fR, \fIMaintainer\fR,
 \fIFirstSubmitted\fR, \fILastModified\fR (for \fB\-v\fR verbose
 output).
-
+.
 .SH EXIT STATUS
 The exit status is 0 on valid results, 1 if no results were found, or
-2 if an AUR error occured (such as "Too many results").
-
+2 if an AUR error occurred (such as "Too many results").
+.
 .SH SEE ALSO
+.ad l
+.nh
 .BR aur (1),
 .BR aur\-query (1),
 .BR jq (1)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:

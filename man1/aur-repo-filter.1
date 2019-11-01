@@ -1,13 +1,13 @@
-.TH AUR-REPO-FILTER 1 2019-03-17 AURUTILS
+.TH AUR\-REPO\-FILTER 1 2019-03-17 AURUTILS
 .SH NAME
 aur\-repo\-filter \- filter packages in the Arch Linux repositories
-
+.
 .SH SYNOPSIS
-.SY "aur repo-filter"
+.SY "aur repo\-filter"
 .OP \-a
 .OP \-d database
 .YS
-
+.
 .SH DESCRIPTION
 .B aur\-repo\-filter
 checks if
@@ -23,36 +23,38 @@ Arch Linux repositories. In particular, the
 and
 .BR multilib\-testing
 repositories are checked.
-
+.PP
 The package is printed to standard output if found.  If the package is
 provided by a package of a different name, the latter is printed to
 standard error.
-
+.
 .SH OPTIONS
 .TP
 .BR \-a ", " \-\-all ", " \-\-sync
 Query all available pacman repositories.
 .RB ( "pacsift " \-\-sync )
-
+.
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME "\fR,\fP \-\-repo=" NAME
 Restrict output to the pacman repository
 .IR NAME .
 Multiple repositories may be specified by repeating this argument.
-
+.
 .TP
 .BI \-\-sysroot= PATH
 Set an alternate system root. See
 .BR pacutils\-sysroot (7).
-
+.
 .SH SEE ALSO
+.ad l
+.nh
 .BR aur (1),
 .BR pacinfo (1),
 .BR pacsift (1)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
 .ME
-
+.
 .\" vim: set textwidth=72:
