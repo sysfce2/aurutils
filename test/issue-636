@@ -1,0 +1,14 @@
+#!/bin/bash
+
+argv0=issue-636
+tmp="$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX")"
+
+trap_exit() {
+    rm -rf "$tmp"
+}
+
+trap 'trap_exit' EXIT
+
+cd "$tmp" || exit
+
+aur fetch aurutils aurutils-git
