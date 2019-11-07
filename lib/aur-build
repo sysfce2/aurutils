@@ -225,13 +225,12 @@ else
 fi
 
 # Write successfully built packages to file (#437)
-if [[ -v results_file ]]; then
-    if [[ -w $results_file ]]; then
-        results=1
-    else
-        error '%s: %s: permission denied' "$argv0" "$results_file"
-        exit 13
-    fi
+if [[ -v results_file && -w $results_file ]]; then
+    : >"$results_file" # truncate file
+    results=1
+elif [[ -v results_file ]]; then
+    error '%s: %s: permission denied' "$argv0" "$results_file"
+    exit 13
 fi
 
 if (( sign_pkg )); then
@@ -341,7 +340,7 @@ while IFS= read -ru "$fd" path; do
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( results )); then
-        printf '%s\n' "${pkglist[@]}" | tee -a "$results_file"
+        printf "build:file://${db_path%/*}/%s\n" "${pkglist[@]}" | tee -a "$results_file"
     fi
 
     if (( chroot )) || (( no_sync )); then

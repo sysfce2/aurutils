@@ -69,6 +69,24 @@ in the git configuration.
 Marks the package's checked out commit as seen. See
 .BR NOTES .
 .
+.TP
+.BI \-\-results= file
+Writes
+.IB action :file:// path
+pairs to the specified
+.IR file .
+Possible values for
+.I action
+are
+.B clone
+and
+.BR fetch .
+.I path
+is the absolute path to the processed package repository.
+.IP
+Can be used by higher level tools to differentiate new clones from
+updates to existing repositories.
+.
 .
 .SH NOTES
 .
