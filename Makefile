@@ -10,7 +10,7 @@ AUR_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
 build: aur completion
 
 aur: aur.in
-	m4 -DAUR_LIB_DIR='$(AUR_LIB_DIR)' $< >$@
+	sed 's|AUR_LIB_DIR|$(AUR_LIB_DIR)|' $< >$@
 
 completion:
 	@$(MAKE) -C completions bash zsh

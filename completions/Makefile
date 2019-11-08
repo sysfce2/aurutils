@@ -5,11 +5,11 @@ SHRDIR ?= $(PREFIX)/share
 bash: bash/aur
 zsh: zsh/_aur
 
-bash/aur: command_opts.m4 bash/aurutils.in ../lib/*
-	m4 $(wordlist 1,2,$^) >$@
+bash/aur: command_opts bash/aurutils.in ../lib/*
+	bash $(wordlist 1,2,$^) >$@
 
-zsh/_aur: command_opts.m4 zsh/aurutils.in ../lib/*
-	m4 $(wordlist 1,2,$^) >$@
+zsh/_aur: command_opts zsh/aurutils.in ../lib/*
+	bash $(wordlist 1,2,$^) >$@
 
 install-bash: bash/aur
 	@install -Dm644 bash/aur -t '$(DESTDIR)$(SHRDIR)/bash-completion/completions'
