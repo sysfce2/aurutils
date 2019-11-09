@@ -1,3 +1,5 @@
+#!/bin/bash
+cat <<'EOF'
 #compdef aur
 
 zstyle ':completion::complete:aur:argument-rest:' sort false
@@ -6,7 +8,12 @@ _aur() {
     local context state state_descr line
     typeset -A opt_args
 
-    DEFAULT_OPTS
+    typeset -A default_cmds
+
+EOF
+source ./command_opts.sh
+default_opts
+cat <<'EOF'
 
     _arguments -C \
         '1: :(${(k)default_cmds})' \
@@ -21,3 +28,4 @@ _aur() {
             fi ;;
     esac
 }
+EOF

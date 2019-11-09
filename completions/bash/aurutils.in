@@ -1,9 +1,17 @@
+#!/bin/bash
+
+cat <<'EOF'
 _aur_completion()
 {
     local cur prev words cword
     _get_comp_words_by_ref cur prev words cword
 
-    DEFAULT_OPTS
+    declare -A default_cmds
+
+EOF
+source ./command_opts.sh
+default_opts
+cat <<'EOF'
 
     # complete subcommands
     if [[ $cword -eq 1 ]]; then
@@ -29,3 +37,4 @@ _aur_completion()
 
 
 complete -o bashdefault -o default -o nosort -F _aur_completion aur
+EOF
