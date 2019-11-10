@@ -8,17 +8,18 @@ startdir=$PWD
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# hardware name
-machine=$(uname -m)
+# default options
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0 prefix=aur
 
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0 chroot_prefix=aur
 
 # default arguments
+chroot_args=()
+conf_args=()
 gpg_args=(--detach-sign --no-armor --batch)
 makepkg_args=()
-makechrootpkg_args=()
-archbuild_args=()
+makechrootpkg_args=(-cu)
 repo_add_args=()
 repo_args=()
 
@@ -61,7 +62,7 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
 fi
 
 ## option parsing
-opt_short='a:B:d:D:AcfnrsvLNRST'
+opt_short='a:B:d:D:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
           'remove' 'build-command:' 'pkgver' 'prefix:' 'rmdeps'
@@ -74,7 +75,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset build_cmd db_name db_path db_root queue results_file
+unset build_cmd db_name db_path db_root results_file queue
 while true; do
     case "$1" in
         # build options
@@ -88,13 +89,14 @@ while true; do
             chroot=1 ;;
         -d|--database|--repo)
             shift; db_name=$1 ;;
+        --makepkg-conf)
+            shift; chroot_args+=(--makepkg-conf "$1") ;;
+        --pacman-conf)
+            shift; chroot_args+=(--pacman-conf "$1")
+            repo_args+=(--pacman-conf "$1")
+            conf_args+=(--config "$1") ;;
         -N|--nosync|--no-sync)
             no_sync=1 ;;
-        --pacman-conf)
-            shift; conf_args+=(--config "$1")
-            repo_args+=(--pacman-conf "$1") ;;
-        --prefix)
-            shift; chroot_prefix=$1 ;;
         --pkgver)
             run_pkgver=1
             makepkg_args+=(--holdver) ;;
@@ -105,21 +107,21 @@ while true; do
         -S|--sign|--gpg-sign)
             sign_pkg=1
             repo_add_args+=(-s) ;;
-        # devtools options
+        # chroot options
         -D|--directory)
-            shift; archbuild_args+=(-r "$1") ;;
-        --recreate)
-            archbuild_args+=(-c) ;;
+            shift; makechrootpkg_args+=(-r "$1") ;;
         --bind)
             shift; makechrootpkg_args+=(-D "$1") ;;
         --bind-rw)
-            shift; makechrootpkg_args+=(-d "$1") ;;
+            shift; makechrootpkg_args+=(-d"$1") ;;
+        --prefix)
+            shift; prefix=$1 ;;
         -T|--temp)
             makechrootpkg_args+=(-T) ;;
         # makepkg options
         -A|--ignorearch|--ignore-arch)
             makepkg_args+=(--ignorearch) ;;
-        --clean)
+        -C|--clean)
             makepkg_args+=(--clean) ;;
         -L|--log)
             makepkg_args+=(--log) ;;
@@ -154,19 +156,18 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$argv0.XXXXXXXX") 
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-# Pass all arguments after -- to makepkg
+# Append remaining options to the makechrootpkg command-line
 if (( $# )); then
-    if (( chroot )); then
-        makechrootpkg_args+=("$@")
-    else
-        makepkg_args+=("$@")
-    fi
+    makechrootpkg_args+=("$@")
+    makepkg_args+=("$@")
 fi
 
 # Assign environment variables (#443)
 : "${db_name=$AUR_REPO}"
 : "${db_root=$AUR_DBROOT}"
 
+# Automatically choose repository root and name based on pacman
+# configuration and user environment.
 case $db_name in
     "")
         case $db_root in
@@ -187,7 +188,7 @@ case $db_name in
         esac ;;
 esac
 
-# Resolve symbolic link to database
+# Resolve symbolic link to database.
 if ! db_path=$(readlink -e -- "$db_path"); then
     error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
@@ -202,25 +203,23 @@ if [[ -v results_file ]]; then
     results=1
 fi
 
-# Provisions for symbolic links to /usr/bin/archbuild. Because archbuild
-# only allows to pass bind mounts to makechrootpkg, and not arch-nspawn,
-# the below relies on the implicit mounting of file:// repositories
-# by arch-nspawn in devtools>=20190821. (#591)
 if (( chroot )); then
-    if ! type -P "$chroot_prefix"-"$machine"-build >/dev/null; then
-        error '%s: %s: command not found' "$argv0" "$chroot_prefix"-"$machine"-build
-        exit 1
-    fi
+    # Defaults to /usr/share/devtools/pacman-aur.conf
+    chroot_args+=(--prefix "$prefix")
 
-    chroot_pacman_conf=/usr/share/devtools/pacman-$chroot_prefix.conf
+    # Update pacman and makepkg configuration for the chroot build
+    # queue. A full system upgrade is run on the /root container to
+    # avoid lenghty upgrades for makechrootpkg -u.
+    aur chroot "${chroot_args[@]}" --no-build
+else
+    # Configuration for host builds.
+    # XXX move to aur-repo
+    { printf '[options]\n'
+      pacconf "${conf_args[@]}" --raw --options
 
-    if ! [[ -e $chroot_pacman_conf ]]; then
-        error '%s: pacman-%s.conf: no such file or directory' "$argv0" "$chroot_prefix"
-        exit 2
-    elif ! pacman-conf --config="$chroot_pacman_conf" --repo="$db_name" >/dev/null; then
-        error '%s: %s: local repository %s not configured' "$argv0" "$chroot_pacman_conf" "$db_name"
-        exit 1
-    fi
+      printf '[%s]\n' "$db_name"
+      pacconf "${conf_args[@]}" --raw --repo="$db_name"
+    } > "$tmp"/custom.conf
 fi
 
 if [[ -v queue ]]; then
@@ -245,14 +244,6 @@ else
         exit 1
     fi
 fi
-
-# Configuration for host builds.
-{ printf '[options]\n'
-  pacconf "${conf_args[@]}" --raw --options
-
-  printf '[%s]\n' "$db_name"
-  pacconf "${conf_args[@]}" --raw --repo="$db_name"
-} > "$tmp"/custom.conf
 
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
@@ -282,12 +273,9 @@ while IFS= read -ru "$fd" path; do
         printf '%s\n' >&2 "Running custom command: ${build_cmd[*]}"
         env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" "${build_cmd[@]}"
     elif (( chroot )); then
-        printf '%s\n' >&2 "Running $chroot_prefix-$machine-build"
-        # archbuild hardcodes makechrootpkg -c -n -C. In turn, makechrootpkg
-        # hardcodes makepkg --syncdeps --noconfirm --log --holdver --skipinteg.
-        # These options cannot overriden, only appended to.
-        env PKGDEST="$var_tmp" "$chroot_prefix"-"$machine"-build \
-            "${archbuild_args[@]}" -- -d "$db_root" "${makechrootpkg_args[@]}"
+        printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[@]}"
+        env PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --no-prepare \
+            -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
         env PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"

@@ -205,7 +205,7 @@ tmp_view=$(mktemp -d --tmpdir "aurutils-$argv0-view.XXXXXXXX") || exit
 
 trap 'trap_exit' EXIT
 
-# pass all arguments after -- to aur-build
+# Append remaining options to the aur-build command-line
 if (( $# )); then
     build_extra_args+=("$@")
 fi
