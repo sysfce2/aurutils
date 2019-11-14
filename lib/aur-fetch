@@ -106,7 +106,7 @@ fi | while read -r pkg; do
     export GIT_DIR GIT_WORK_TREE=$pkg
 
     if (( confirm_seen )); then
-        git update-ref AURUTILS_SEEN HEAD
+        git update-ref AUR_SEEN HEAD
         msg2 'Marked %s as seen' "$pkg"
         continue
     fi
@@ -118,7 +118,7 @@ fi | while read -r pkg; do
         exit 1
     fi
 
-    seen=$(git rev-parse --quiet --verify AURUTILS_SEEN)
+    seen=$(git rev-parse --quiet --verify AUR_SEEN)
 
     if [[ "$seen" != $(git rev-parse HEAD) ]]; then
         log_range=(HEAD ${seen:+^$seen})
