@@ -6,19 +6,22 @@ AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
-# default options
-verbose=0 recurse=0 fetch_args=('--verbose') confirm_seen=0
+# default arguments
+pull_args=('--verbose')
+diff_args=('--patch' '--stat')
 
-gen_patchfile() {
-    git diff-tree --patch --stat "${2:-$(git hash-object -t tree /dev/null)}" "$1"
-}
+# default options
+verbose=0 recurse=0 confirm_seen=0 rebase=-1 results=0
+
+# empty tree object
+git_empty_tree=$(git hash-object -t tree /dev/null)
 
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
 XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 !
-    plain 'usage: %s [-L directory] [-rv] pkgname...' "$argv0" >&2
+    plain >&2 'usage: %s [-L directory] [-Rrv] pkgname...' "$argv0"
     exit 1
 }
 
@@ -29,8 +32,9 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
-opt_short='rvL:'
-opt_long=('recurse' 'verbose' 'write-log:' 'force' 'confirm-seen')
+opt_short='rRvL:'
+opt_long=('recurse' 'verbose' 'write-log:' 'confirm-seen'
+          'rebase' 'reset' 'results:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -47,12 +51,16 @@ while true; do
             recurse=1 ;;
         -v|--verbose)
             verbose=1 ;;
-        --force)
-            fetch_args+=('--force') ;;
+        -R|--rebase)
+            rebase=1 ;;
+        --reset)
+            rebase=0 ;;
         --confirm-seen)
             confirm_seen=1 ;;
+        --results)
+            results_file=$1 ;;
         --dump-options)
-            printf -- '--%s\n' "${opt_long[@]}" 
+            printf -- '--%s\n' "${opt_long[@]}"
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
             exit ;;
         --) shift; break ;;
@@ -65,15 +73,21 @@ if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
     exit 20
 fi
 
+if [[ -v results_file && -w $results_file ]]; then
+    : >"$results_file" # truncate file
+    results=1
+elif [[ -v results_file ]]; then
+    error '%s: %s: permission denied' "$argv0" "$results_file"
+    exit 13
+fi
+
 if ! (( $# )); then
     error '%s: No pkgname given' "$argv0"
     exit 1
 fi
 
-# Prepare configuration directory.
-mkdir -p "$XDG_CONFIG_HOME"/aurutils/$argv0
-
 # Default to showing PKGBUILD first in patch. (#399)
+mkdir -p "$XDG_CONFIG_HOME/aurutils/$argv0"
 orderfile=$XDG_CONFIG_HOME/aurutils/$argv0/orderfile
 
 if [[ ! -s $orderfile ]]; then
@@ -89,49 +103,69 @@ if (( recurse )); then
 else
    printf '%s\n' "$@"
 fi | while read -r pkg; do
-    if [[ ! -e $pkg ]]; then
-        if git clone "$AUR_LOCATION"/"$pkg".git; then
-            # show PKGBUILDS first (#399)
-            git -C "$pkg" config diff.orderFile "$orderfile"
-            # only allow fast-forward fetches. (#)
-            git -C "$pkg" config remote.origin.fetch 'refs/heads/*:refs/remotes/origin/*'
+    # Avoid issues with filesystem boundaries. (#274)
+    export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+
+    # Reset/rebase if we're on valid repo
+    if git rev-parse --git-dir 2>/dev/null; then
+        if (( confirm_seen )); then
+            git update-ref AUR_SEEN HEAD
+
+            msg2 'Marked repository %s as seen' "$pkg"
+            continue # skip diff logic
+        fi
+
+        if (( rebase > 0 )) || {
+               (( rebase < 0 )) && [[ $(git config --get --bool aurutils.rebase) == "true" ]]
+           }; then
+            git reset --hard HEAD >&2
+
+            if ! git pull --rebase "${pull_args[@]}"; then
+                error '%s: %s: Failed to integrate changes' "$argv0" "$pkg"
+                exit 1
+            fi
         else
-            error '%s: %s: Failed to clone repository' "$argv0" "$pkg"
-            exit 1
-        fi
-    fi
-    # Avoid issues with filesystem boundaries, (#274)
-    # and make sure we have a valid git repository.
-    GIT_DIR=$(git rev-parse --resolve-git-dir "$pkg"/.git) || exit
-    export GIT_DIR GIT_WORK_TREE=$pkg
-
-    if (( confirm_seen )); then
-        git update-ref AUR_SEEN HEAD
-        msg2 'Marked %s as seen' "$pkg"
-        continue
-    fi
-
-    # Discard any local uncommited changes. (#552)
-    git reset --hard HEAD >&2
-    if ! git pull --rebase "${fetch_args[@]}"; then
-        error '%s: Failed to integrate changes.' "$pkg"
-        exit 1
-    fi
-
-    seen=$(git rev-parse --quiet --verify AUR_SEEN)
-
-    if [[ "$seen" != $(git rev-parse HEAD) ]]; then
-        log_range=(HEAD ${seen:+^$seen})
-
-        if (( verbose )); then
-            gen_patchfile "${log_range[@]}"
+            git fetch -v >&2
+            git reset --hard 'HEAD@{upstream}' >&2
         fi
 
-        if [[ $log_dir ]]; then
-            logfile="$log_dir/$pkg".patch
-            gen_patchfile "${log_range[@]}" >"$logfile"
-            plain '%s' "$logfile"
+        if ! seen=$(git rev-parse --quiet --verify AUR_SEEN); then
+            warning '%s: AUR_SEEN object not found, assuming empty tree' "$argv0"
+            seen=$git_empty_tree
         fi
+
+        if [[ $seen != "$(git rev-parse HEAD)" ]]; then
+            range=${seen:+$seen..}HEAD
+
+            # Contents have changed since last inspection; print differences.
+            if (( verbose )); then
+                git --no-pager log "${diff_args[@]}" "$range"
+            fi
+
+            if [[ $log_dir ]]; then
+                git --no-pager log "${diff_args[@]}" "$range" >"$log_dir/$pkg.log"
+            fi
+        fi
+
+        if (( results )); then
+            printf 'fetch:file://%s\n' "$PWD/$pkg" | tee -a "$results_file"
+        fi
+    # Otherwise, try to clone anew
+    elif git clone "$AUR_LOCATION/$pkg".git "$GIT_DIR"; then
+        if (( confirm_seen )); then
+            git update-ref AUR_SEEN HEAD
+
+            msg2 'Marked new repository %s as seen' "$pkg"
+        fi
+
+        # Show PKGBUILDs first. (#399)
+        git config diff.orderFile "$orderfile"
+
+        if (( results )); then
+            printf 'clone:file://%s\n' "$PWD/$pkg" | tee -a "$results_file"
+        fi
+    else
+        error '%s: %s: Failed to clone repository' "$argv0" "$pkg"
     fi
 done
 
