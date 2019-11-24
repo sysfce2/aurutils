@@ -4,15 +4,14 @@
 argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default arguments
-modifier=local
-vercmp_args=()
-table_format=0
+# default options
+modifier=local table_format=0
 
 db_table() {
     bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
+
         if (table && length(dependencies) > 0) {
             for (i in dependencies) {
                 printf format, pkgname, dependencies[i], pkgbase, pkgver
@@ -67,8 +66,8 @@ source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
 opt_short='c:d:r:aluS'
-opt_long=('database:' 'pacman-conf:' 'root:'
-          'all' 'list' 'repo-list' 'sync' 'upgrades' 'table')
+opt_long=('database:' 'pacman-conf:' 'root:' 'path' 'all' 'list'
+          'repo-list' 'sync' 'upgrades' 'table')
 opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -76,7 +75,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset mode db_name db_root status_file pacman_conf
+unset mode db_name db_root status_file pacman_conf vercmp_args
 while true; do
     case $1 in
         -d|--database)
@@ -86,18 +85,19 @@ while true; do
         -c|--pacman-conf)
             shift; pacman_conf=$1 ;;
         -a|--all)
-            mode=list_upgrades
-            vercmp_args+=(-a) ;;
+            mode=upgrades; vercmp_args+=(-a) ;;
         -l|--list)
-            mode=list_packages ;;
-        -S|--sync)
-            modifier=sync ;;
+            mode=packages ;;
         -u|--upgrades)
-            mode=list_upgrades ;;
-        --table)
-            table_format=1 ;;
+            mode=upgrades ;;
+        --path)
+            mode=path ;;
         --repo-list)
             mode=repo_list ;;
+        -S|--sync)
+            modifier=sync ;;
+        --table)
+            table_format=1 ;;
         --status-file)
             shift; status_file=$1 ;;
         --dump-options)
@@ -125,7 +125,8 @@ while read -r key _ value; do
             ;;
         Server=file://*)
             server=${value#file://}
-            conf_repo+=("$server" "$section")
+            conf_serv+=("$server")
+            conf_repo+=("$section")
 
             case $section in
                 $db_name)
@@ -152,7 +153,7 @@ case $mode in
     #requires (none)
     repo_list)
         if [[ ${conf_repo[*]} ]]; then
-            printf '%q/%q.db\n' "${conf_repo[@]}"
+            printf '%q\n' "${conf_repo[@]}"
         else
             printf >&2 '%s: no file:// repository configured\n' "$argv0"
         fi
@@ -161,14 +162,16 @@ esac
 
 if ! [[ $db_name ]]; then
     case ${#conf_repo[@]} in
-        2) db_root=${conf_repo[0]}
-           db_name=${conf_repo[1]}
+        1) db_root=${conf_serv[0]}
+           db_name=${conf_repo[0]}
            ;;
         0) printf >&2 '%s: no file:// repository found\n' "$argv0"
            exit 2
            ;;
         *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
-           printf '%q\n' "${conf_repo[@]}" | paste - - | column -t >&2
+           for i in "${!conf_repo[@]}"; do
+               printf '%q\t%q\n' "${conf_repo[$i]}" "${conf_serv[$i]}"
+           done | column -t >&2
            exit 1
            ;;
     esac
@@ -203,15 +206,17 @@ case $modifier in
 esac
 
 case $mode in
-    list_upgrades)
+    upgrades)
         contents | aur vercmp "${vercmp_args[@]}"
         ;;
-    list_packages)
+    packages)
         contents
         ;;
-    *)
+    path)
         printf '%s\n' "$db_root/$db_name".db
         ;;
+    *)
+        usage ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

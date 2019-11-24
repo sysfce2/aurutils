@@ -167,7 +167,7 @@ fi
 case $db_name in
     "")
         case $db_root in
-            "") db_path=$(aur repo)
+            "") db_path=$(aur repo --path)
                 db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
                 ;;
@@ -176,7 +176,7 @@ case $db_name in
         esac ;;
     *)
         case $db_root in
-            "") db_path=$(aur repo -d "$db_name")
+            "") db_path=$(aur repo --path -d "$db_name")
                 db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
                 ;;
