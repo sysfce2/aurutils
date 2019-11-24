@@ -66,7 +66,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
 opt_short='c:d:r:aluS'
-opt_long=('database:' 'pacman-conf:' 'root:' 'path' 'all' 'list'
+opt_long=('database:' 'repo:' 'pacman-conf:' 'root:' 'path' 'all' 'list'
           'repo-list' 'sync' 'upgrades' 'table')
 opt_hidden=('dump-options' 'status-file:')
 
@@ -78,7 +78,7 @@ set -- "${OPTRET[@]}"
 unset mode db_name db_root status_file pacman_conf vercmp_args
 while true; do
     case $1 in
-        -d|--database)
+        -d|--database|--repo)
             shift; db_name=$1 ;;
         -r|--root)
             shift; db_root=$1 ;;
