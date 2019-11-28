@@ -91,7 +91,7 @@ while true; do
         -u|--upgrades)
             mode=upgrades ;;
         --path)
-            mode=path ;;
+            mode=path; modifier=path ;;
         --repo-list)
             mode=repo_list ;;
         -S|--sync)
@@ -113,7 +113,7 @@ done
 : "${db_name=$AUR_REPO}"
 : "${db_root=$AUR_DBROOT}"
 
-unset conf_repo server
+unset conf_file_repo server
 
 while read -r key _ value; do
     case $key=$value in
@@ -125,8 +125,8 @@ while read -r key _ value; do
             ;;
         Server=file://*)
             server=${value#file://}
-            conf_serv+=("$server")
-            conf_repo+=("$section")
+            conf_file_serv+=("$server")
+            conf_file_repo+=("$section")
 
             case $section in
                 $db_name)
@@ -149,28 +149,33 @@ while read -r key _ value; do
 done < <(pacman-conf --config "${pacman_conf:-/etc/pacman.conf}")
 
 # exclusive modes
-case $mode in
-    #requires (none)
-    repo_list)
-        if [[ ${conf_repo[*]} ]]; then
-            printf '%q\n' "${conf_repo[@]}"
-        else
-            printf >&2 '%s: no file:// repository configured\n' "$argv0"
-        fi
-        exit 0 ;;
-esac
+if [[ $mode == repo_list ]]; then
+    if ! [[ ${conf_file_repo[*]} ]]; then
+        printf >&2 '%s: no file:// repository configured\n' "$argv0"
+        exit 2
+    fi
+
+    if [[ $mode == path ]]; then
+        for i in "${!conf_file_repo[@]}"; do
+            printf '%q/%q\n' "${conf_file_serv[$i]}" "${conf_file_repo[$i]}"
+        done
+    else
+        printf '%q\n' "${conf_file_repo[@]}"
+    fi
+    exit 0
+fi
 
 if ! [[ $db_name ]]; then
-    case ${#conf_repo[@]} in
-        1) db_root=${conf_serv[0]}
-           db_name=${conf_repo[0]}
+    case ${#conf_file_repo[@]} in
+        1) db_root=${conf_file_serv[0]}
+           db_name=${conf_file_repo[0]}
            ;;
-        0) printf >&2 '%s: no file:// repository found\n' "$argv0"
+        0) printf >&2 '%s: no file:// repository configured\n' "$argv0"
            exit 2
            ;;
         *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
-           for i in "${!conf_repo[@]}"; do
-               printf '%q\t%q\n' "${conf_repo[$i]}" "${conf_serv[$i]}"
+           for i in "${!conf_file_repo[@]}"; do
+               printf '%q\t%q\n' "${conf_file_repo[$i]}" "${conf_file_serv[$i]}"
            done | column -t >&2
            exit 1
            ;;
@@ -195,14 +200,16 @@ case $modifier in
             printf >&2 '%s: %s: not a directory\n' "$argv0" "$db_root"
             exit 20
         else
-            contents() { db_table "$table_format" "$db_root/$db_name".db ; }
-        fi
-        ;;
+            contents() {
+                db_table "$table_format" "$db_root/$db_name".db
+            }
+        fi ;;
     #requires
     # - [$db_name] (pacman.conf)
     sync)
-        contents() { db_table "$table_format" "$pacman_dbpath/sync/$db_name".db ; }
-        ;;
+        contents() {
+            db_table "$table_format" "$pacman_dbpath/sync/$db_name".db
+        } ;;
 esac
 
 case $mode in
