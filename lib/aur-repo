@@ -90,10 +90,10 @@ while true; do
             mode=packages ;;
         -u|--upgrades)
             mode=upgrades ;;
-        --path)
-            mode=path; modifier=path ;;
         --repo-list)
             mode=repo_list ;;
+        --path)
+            modifier=path ;;
         -S|--sync)
             modifier=sync ;;
         --table)
@@ -155,7 +155,7 @@ if [[ $mode == repo_list ]]; then
         exit 2
     fi
 
-    if [[ $mode == path ]]; then
+    if [[ $modifier == path ]]; then
         for i in "${!conf_file_repo[@]}"; do
             printf '%q/%q\n' "${conf_file_serv[$i]}" "${conf_file_repo[$i]}"
         done
@@ -219,11 +219,13 @@ case $mode in
     packages)
         contents
         ;;
-    path)
-        printf '%s\n' "$db_root/$db_name".db
-        ;;
     *)
-        usage ;;
+        case $modifier in
+            path)
+                printf '%s\n' "$db_root/$db_name".db ;;
+            *)
+                usage ;;
+        esac ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
