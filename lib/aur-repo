@@ -159,7 +159,7 @@ if [[ $mode == repo_list ]]; then
 
     if [[ $modifier == path ]]; then
         for i in "${!conf_file_repo[@]}"; do
-            printf '%q/%q\n' "${conf_file_serv[$i]}" "${conf_file_repo[$i]}"
+            printf '%q/%q.db\n' "${conf_file_serv[$i]}" "${conf_file_repo[$i]}"
         done
     else
         printf '%q\n' "${conf_file_repo[@]}"
