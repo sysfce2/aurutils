@@ -65,9 +65,9 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:aluS'
+opt_short='c:d:r:alquS'
 opt_long=('database:' 'repo:' 'pacman-conf:' 'root:' 'path' 'all' 'list'
-          'repo-list' 'sync' 'upgrades' 'table')
+          'repo-list' 'sync' 'upgrades' 'table' 'quiet')
 opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -84,10 +84,12 @@ while true; do
             shift; db_root=$1 ;;
         -c|--pacman-conf)
             shift; pacman_conf=$1 ;;
-        -a|--all)
-            mode=upgrades; vercmp_args+=(-a) ;;
         -l|--list)
             mode=packages ;;
+        -a|--all)
+            mode=upgrades; vercmp_args+=(-a) ;;
+        -q|--quiet)
+            mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
         --repo-list)
@@ -220,12 +222,11 @@ case $mode in
         contents
         ;;
     *)
-        case $modifier in
-            path)
-                printf '%s\n' "$db_root/$db_name".db ;;
-            *)
-                usage ;;
-        esac ;;
+        if [[ $modifier == path ]]; then
+            printf '%s\n' "$db_root/$db_name".db
+        else
+            usage
+        fi ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
