@@ -78,12 +78,9 @@ if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
     exit 20
 fi
 
-if [[ -v results_file && -w $results_file ]]; then
+if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
     results=1
-elif [[ -v results_file ]]; then
-    error '%s: %s: permission denied' "$argv0" "$results_file"
-    exit 13
 fi
 
 if ! (( $# )); then
