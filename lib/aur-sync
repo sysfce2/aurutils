@@ -99,7 +99,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
           'sign' 'temp' 'upgrades' 'pkgver' 'rebuild' 'rebuild-tree'
           'build-command:' 'ignore-file:' 'remove' 'provides-from:'
           'new' 'prevent-downgrade' 'verify')
-opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile'
+opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:'
             'noconfirm' 'nover' 'nograph' 'nover-shallow' 'noview'
             'rebuildtree' 'rmdeps' 'gpg-sign')
 

@@ -72,9 +72,9 @@ opt_short='a:B:d:D:AcfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
           'makepkg-conf:' 'remove' 'build-command:' 'pkgver' 'prefix:'
-          'rmdeps' 'noconfirm' 'ignorearch' 'log' 'recreate' 'new' 'bind:'
+          'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'recreate' 'new' 'bind:'
           'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean')
-opt_hidden=('dump-options')
+opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage

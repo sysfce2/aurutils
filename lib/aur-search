@@ -120,8 +120,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='k:adimnqrsv'
-opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends'
-          'makedepends' 'optdepends' 'checkdepends' 'key:' 'raw')
+opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
+          'makedepends' 'optdepends' 'checkdepends' 'key:' 'raw' 'short')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
