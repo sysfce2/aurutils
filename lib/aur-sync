@@ -91,7 +91,7 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
-opt_short='B:d:D:AcfkLnpPrRsTuv'
+opt_short='B:d:D:AcfLnpPrRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph'
@@ -149,11 +149,11 @@ while true; do
             shift; repo_args+=(-r "$1") ;;
         # build options
         -B|--build-command)
-            shift; build_args+=(-B "$1") ;;
+            shift; build_args+=(--build-command "$1") ;;
         -c|--chroot)
-            build_args+=(-c) ;;
+            build_args+=(--chroot) ;;
         -f|--force)
-            build_args+=(-f) ;;
+            build_args+=(--force) ;;
         --makepkg-conf)
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
@@ -161,10 +161,10 @@ while true; do
         --pkgver)
             build_args+=(--pkgver) ;;
         -S|--sign|--gpg-sign)
-            build_args+=(-s) ;;
+            build_args+=(--sign) ;;
         # build options (devtools)
         -D|--directory)
-            shift; build_args+=(-D "$1") ;;
+            shift; build_args+=(--directory "$1") ;;
         --bind)
             shift; build_args+=(--bind "$1") ;;
         --bind-rw)
@@ -173,7 +173,7 @@ while true; do
             build_args+=(-T) ;;
         # build options (makepkg)
         -A|--ignorearch|--ignore-arch)
-            build_args+=(-A) ;;
+            build_args+=(--ignorearch) ;;
         -L|--log)
             build_args+=(--log) ;;
         -n|--noconfirm|--no-confirm)
@@ -182,9 +182,9 @@ while true; do
             build_args+=(--rmdeps) ;;
         # build options (repo-add)
         -R|--remove)
-            build_args+=(-R) ;;
+            build_args+=(--remove) ;;
         -v|--verify)
-            build_args+=(-v) ;;
+            build_args+=(--verify) ;;
         --prevent-downgrade)
             build_args+=(--prevent-downgrade) ;;
         --new)
