@@ -178,6 +178,7 @@ fi | while read -r pkg; do
         fi
     else
         error '%s: %s: Failed to clone repository' "$argv0" "$pkg"
+        exit 1
     fi
 done
 
