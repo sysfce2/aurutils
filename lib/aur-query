@@ -38,7 +38,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='b:t:'
-opt_long=('by:' 'type:' 'aur-url:' 'rpc-ver:' 'rpc-url:')
+opt_long=('by:' 'type:' 'rpc-ver:' 'rpc-url:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then

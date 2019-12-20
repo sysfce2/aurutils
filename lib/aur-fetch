@@ -58,7 +58,7 @@ while true; do
         --confirm-seen)
             confirm_seen=1 ;;
         --results)
-            results_file=$1 ;;
+            shift; results_file=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}"
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'

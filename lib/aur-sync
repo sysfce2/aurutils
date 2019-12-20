@@ -9,17 +9,15 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=()
-makechrootpkg_args=()
-makechrootpkg_makepkg_args=()
-makepkg_args=(--clean --syncdeps)
+build_args=(--clean --syncdeps)
+build_extra_args=()
 repo_args=()
 
 # default options (enabled)
 build=1 chkver_depth=2 download=1 view=1 provides=0 graph=1
 
 # default options (disabled)
-chroot=0 rotate=0 update=0
+rotate=0 update=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -74,7 +72,7 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-d repo] [-CDM path] [-AcfkLnpPsTu] [--] pkgname...' "$argv0" >&2
+    plain 'usage: %s [-d repo] [--root path] [-cdfPpSu] [--] pkgname...' "$argv0" >&2
     exit 1
 }
 
@@ -93,16 +91,17 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
-opt_short='B:C:d:D:M:AcfkLnpPrRsTu'
+opt_short='B:d:D:AcfLnpPrRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
           'sign' 'temp' 'upgrades' 'pkgver' 'rebuild' 'rebuild-tree'
-          'build-command:' 'ignore-file:' 'remove' 'provides-from:')
-opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile'
+          'build-command:' 'ignore-file:' 'remove' 'provides-from:'
+          'new' 'prevent-downgrade' 'verify')
+opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:'
             'noconfirm' 'nover' 'nograph' 'nover-shallow' 'noview'
-            'rebuildtree' 'rmdeps')
+            'rebuildtree' 'rmdeps' 'gpg-sign')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -112,59 +111,16 @@ set -- "${OPTRET[@]}"
 unset pkg pkg_i repo repo_p ignore_file
 while true; do
     case "$1" in
-        -d|--database|--repo)
-            shift; repo_args+=(-d "$1") ;;
-        -B|--build-command)
-            shift; build_args+=(-B "$1") ;;
-        -D|--directory)
-            shift; build_args+=(-D "$1") ;;
-        -M|--makepkg-conf)
-            shift; build_args+=(--makepkg-conf "$1") ;;
-        -C|--pacman-conf)
-            shift; build_args+=(--pacman-conf "$1") ;;
-        --bind)
-            shift; makechrootpkg_args+=(-D "$1") ;;
-        --bind-rw)
-            shift; makechrootpkg_args+=(-d "$1") ;;
+        # sync options
+        --allan)
+            rotate=1 ;;
+        --continue)
+            download=0 ;;
         --ignore)
             shift; IFS=, read -a pkg -r <<< "$1"
             pkg_i+=("${pkg[@]}") ;;
         --ignorefile|--ignore-file)
             shift; ignore_file=$1 ;;
-        --root)
-            shift; repo_args+=(-r "$1") ;;
-        -A|--ignorearch|--ignore-arch)
-            makepkg_args+=(--ignorearch)
-            makechrootpkg_makepkg_args+=(-A) ;;
-        -c|--chroot)
-            chroot=1; build_args+=(-c) ;;
-        -f|--force)
-            build_args+=(-f) ;;
-        -L|--log)
-            makepkg_args+=(--log) ;;
-        -P|--provides)
-            provides=1 ;;
-        --provides-from)
-            shift; IFS=, read -a repo -r <<< "$1"
-            repo_p+=("${repo[@]}") ;;
-        -n|--noconfirm|--no-confirm)
-            makepkg_args+=(--noconfirm) ;;
-        -p|--print)
-            build=0 ;;
-        -r|--rmdeps|--rm-deps)
-            makepkg_args+=(--rmdeps) ;;
-        -R|--remove)
-            build_args+=(-R) ;;
-        -s|--sign)
-            build_args+=(-sv) ;;
-        -T|--temp)
-            makechrootpkg_args+=(-T) ;;
-        -u|--upgrades)
-            update=1 ;;
-        --allan)
-            rotate=1 ;;
-        --continue)
-            download=0 ;;
         --nograph|--no-graph)
             graph=0 ;;
         --nover|--no-ver)
@@ -173,12 +129,67 @@ while true; do
             chkver_depth=1 ;;
         --noview|--no-view)
             view=0 ;;
-        --pkgver)
-            build_args+=(--pkgver) ;;
+        -P|--provides)
+            provides=1 ;;
+        --provides-from)
+            shift; IFS=, read -a repo -r <<< "$1"
+            repo_p+=("${repo[@]}") ;;
+        -p|--print)
+            build=0 ;;
         --rebuild)
             build_args+=(-f); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
             build_args+=(-f); chkver_depth=0 ;;
+        -u|--upgrades)
+            update=1 ;;
+        # database options
+        -d|--database|--repo)
+            shift; repo_args+=(-d "$1") ;;
+        --root)
+            shift; repo_args+=(-r "$1") ;;
+        # build options
+        -B|--build-command)
+            shift; build_args+=(--build-command "$1") ;;
+        -c|--chroot)
+            build_args+=(--chroot) ;;
+        -f|--force)
+            build_args+=(--force) ;;
+        --makepkg-conf)
+            shift; build_args+=(--makepkg-conf "$1") ;;
+        --pacman-conf)
+            shift; build_args+=(--pacman-conf "$1") ;;
+        --pkgver)
+            build_args+=(--pkgver) ;;
+        -S|--sign|--gpg-sign)
+            build_args+=(--sign) ;;
+        # build options (devtools)
+        -D|--directory)
+            shift; build_args+=(--directory "$1") ;;
+        --bind)
+            shift; build_args+=(--bind "$1") ;;
+        --bind-rw)
+            shift; build_args+=(--bind-rw "$1") ;;
+        -T|--temp)
+            build_args+=(-T) ;;
+        # build options (makepkg)
+        -A|--ignorearch|--ignore-arch)
+            build_args+=(--ignorearch) ;;
+        -L|--log)
+            build_args+=(--log) ;;
+        -n|--noconfirm|--no-confirm)
+            build_args+=(--noconfirm) ;;
+        -r|--rmdeps|--rm-deps)
+            build_args+=(--rmdeps) ;;
+        # build options (repo-add)
+        -R|--remove)
+            build_args+=(--remove) ;;
+        -v|--verify)
+            build_args+=(--verify) ;;
+        --prevent-downgrade)
+            build_args+=(--prevent-downgrade) ;;
+        --new)
+            build_args+=(--new) ;;
+        # other options
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}"
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -190,7 +201,13 @@ done
 
 tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 tmp_view=$(mktemp -d --tmpdir "aurutils-$argv0-view.XXXXXXXX") || exit
+
 trap 'trap_exit' EXIT
+
+# pass all arguments after -- to aur-build
+if (( $# )); then
+    build_extra_args+=("$@")
+fi
 
 # append contents of ignore file
 if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
@@ -347,14 +364,8 @@ if (( view )); then
 fi
 
 if (( build )); then
-    build_args+=(--arg-file "$tmp"/queue --database "$db_name" --root "$db_root")
-
-    if (( chroot )); then
-        aur build "${build_args[@]}" -- "${makechrootpkg_args[@]}" \
-            -- "${makechrootpkg_makepkg_args[@]}"
-    else
-        aur build "${build_args[@]}" -- "${makepkg_args[@]}"
-    fi
+    aur build --arg-file "$tmp"/queue --database "$db_name" --root "$db_root" \
+        "${build_args[@]}" -- "${build_extra_args[@]}"
 else
     xargs -a "$tmp"/queue -I{} printf '%s\n' "$(pwd -P)"/{}
 fi

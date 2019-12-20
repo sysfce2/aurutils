@@ -37,11 +37,9 @@ intervention),
 terminates immediately.
 .
 .SH OPTIONS
-.SS Build options
 .TP
-.BR \-f ", " \-\-force
-Continue the build process if a package with the same name exists.
-.RB ( "aur build \-f" )
+.B \-\-continue
+Do not download package files.
 .
 .TP
 .BI \-\-ignore= PACKAGE
@@ -73,42 +71,13 @@ upgrade candidates from
 Version checks for package dependencies remain enabled.
 .
 .TP
-.BR \-p ", " \-\-print
-Print target packages and their paths instead of building them.
-.
-.TP
-.BR \-\-pkgver
-Run
-.B "makepkg \-od \-\-noprepare"
-before the build process.
-.RB ( "aur\-build \-\-pkgver" )
-.
-.TP
-.BR \-s ", " \-\-sign
-Sign built packages with
-.BR gpg (1).
-(\fBaur build \-sv\fR)
-.
-.TP
-.BR \-\-rebuild
-Alias for
-.BR "\-f \-\-nover\-shallow" .
-.
-.TP
-.BR \-\-rebuildtree ", " \-\-rebuild\-tree
-Alias for
-.BR "\-f \-\-nover" .
-.
-.SS Download options
-.TP
-.B \-\-continue
-Do not download package files.
-.
-.TP
 .BR \-\-noview ", " \-\-no\-view
 Do not present build files for inspection.
 .
-.SS Repository options
+.TP
+.BR \-p ", " \-\-print
+Print target packages and their paths instead of building them.
+.
 .TP
 .BR \-P ", " \-\-provides
 Take virtual dependencies
@@ -128,6 +97,17 @@ to \-\-provides\-from=b,a) and dependencies are installed according to
 the order defined in
 .BR pacman.conf (5).
 .
+.TP
+.BR \-u ", " \-\-upgrades
+Update all obsolete AUR packages in a local repository.
+.
+.SS Database options
+Values for the following options are automatically selected, if a
+single local repository is defined in
+.BR pacman.conf (5).
+See
+.BR aur\-repo (1)
+for details.
 .
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
@@ -147,43 +127,16 @@ The location of the repository root. Defaults to the
 .I Server
 value of the configured repository.
 .
-.TP
-.BI \-R ", " \-\-remove
-Remove old package files from disk when updating their entry in the
-database
-.RB ( "aur\-build \-R" ).
-.
-.TP
-.BR \-u ", " \-\-upgrades
-Update all obsolete AUR packages in a local repository.
-.
-.SS makepkg options
+.SS Build options
 The default build command is
 .BR "makepkg \-\-clean \-\-syncdeps" .
-.
-.TP
-.BR \-A ", " \-\-ignorearch ", " \-\-ignore\-arch
-Ignore a missing or incomplete
-.I arch
-field in the build script. (\fBmakepkg \-A\fR)
-.
-.TP
-.BR \-L ", " \-\-log
-Enable logging to a text file in the build directory. (\fBmakepkg
-\-L\fR)
-.
-.TP
-.BR \-n ", " \-\-noconfirm ", " \-\-no\-confirm
-Do not wait for user input. (\fBmakepkg \-\-noconfirm\fR)
-.
-.TP
-.BR \-r ", " \-\-rmdeps ", " \-\-rm\-deps
-Remove dependencies installed by makepkg. (\fBmakepkg \-\-rmdeps\fR)
-.
-.SS makechrootpkg options
-The default build command is
-.BR "makechrootpkg \-c \-n \-C" .
-See
+Additional options may be passed to
+.B aur\-build
+by placing them after
+.B --
+in the
+.B aur\-sync
+command-line. See
 .BR aur\-build (1)
 for details.
 .
@@ -192,20 +145,32 @@ for details.
 Build packages in a systemd\-nspawn container. (\fBaur build \-c\fR)
 .
 .TP
-.BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
-The path pointing to the container. (\fBaur build \-D\fR)
+.BR \-f ", " \-\-force
+Continue the build process if a package with the same name exists.
+.RB ( "aur build \-f" )
 .
 .TP
-.BI \-\-bind= DIR
-Bind a directory read-only. (\fBmakechrootpkg \-D\fR)
+.BR \-\-pkgver
+Run
+.B "makepkg \-od \-\-noprepare"
+before the build process.
+.RB ( "aur\-build \-\-pkgver" )
 .
 .TP
-.BI \-\-bind\-rw= DIR
-Bind a directory read-write. (\fBmakechrootpkg \-d\fR)
+.BR \-\-rebuild
+Alias for
+.BR "\-f \-\-nover\-shallow" .
 .
 .TP
-.BR \-T ", " \-\-temp
-Build in a temporary container. (\fBmakechrootpkg \-T\fR)
+.BR \-\-rebuildtree ", " \-\-rebuild\-tree
+Alias for
+.BR "\-f \-\-nover" .
+.
+.TP
+.BR \-S ", " \-\-sign ", " \-\-gpg-sign
+Sign built packages with
+.BR gpg (1).
+.RB ( "aur build \-S" )
 .
 .SH ENVIRONMENT
 .TP
