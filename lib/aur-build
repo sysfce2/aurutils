@@ -253,28 +253,6 @@ fi
 # Configuration for host builds.
 conf_single "${pacman_conf:-/etc/pacman.conf}" "$db_name" >"$tmp"/custom.conf
 
-# PKGDEST is defined below through makepkg.conf (#513)
-unset PKGDEST
-
-{ if [[ -v makepkg_conf ]]; then
-      cat -s "$makepkg_conf"
-  else
-      # Write makepkg configuration in the order as parsed by makepkg
-      cat -s /etc/makepkg.conf
-
-      if [[ -r $XDG_CONFIG_HOME/pacman/makepkg.conf ]]; then
-          cat -s "$XDG_CONFIG_HOME"/pacman/makepkg.conf
-      elif [[ -r $HOME/.makepkg.conf ]]; then
-          cat -s "$HOME"/.makepkg.conf
-      fi
-  fi
-
-  # PKGDEST defined here is NOT exported to the build environment.
-  # This is not a concern for container builds, as makechrootpkg
-  # already has a similar mechanism for defining PKGDEST. (#498)
-  printf "PKGDEST='%s'\\n" "$var_tmp"
-} >"$tmp"/makepkg.conf
-
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
 
@@ -308,7 +286,7 @@ while IFS= read -ru "$fd" path; do
             "${archbuild_args[@]}" -- -d "$db_root" "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
-        makepkg --config "$tmp"/makepkg.conf "${makepkg_args[@]}"
+        env PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
