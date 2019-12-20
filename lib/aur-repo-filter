@@ -41,7 +41,7 @@ while true; do
     case "$1" in
         -a|--all|--sync)
             sync_repo=1 ;;
-        -d|--database)
+        -d|--database|--repo)
             shift; argv_repo+=("$1") ;;
         --sysroot)
             shift; sift_args+=("--sysroot=$1") ;;

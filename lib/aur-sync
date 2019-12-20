@@ -94,7 +94,7 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
 fi
 
 opt_short='B:C:d:D:M:AcfkLnpPrRsTu'
-opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:'
+opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph'
           'no-ver-shallow' 'no-view' 'print' 'provides' 'rm-deps'
@@ -112,7 +112,7 @@ set -- "${OPTRET[@]}"
 unset pkg pkg_i repo repo_p ignore_file
 while true; do
     case "$1" in
-        -d|--database)
+        -d|--database|--repo)
             shift; repo_args+=(-d "$1") ;;
         -B|--build-command)
             shift; build_args+=(-B "$1") ;;

@@ -4,15 +4,14 @@
 argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default arguments
-modifier=local
-vercmp_args=()
-table_format=0
+# default options
+modifier=local table_format=0
 
 db_table() {
     bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
+
         if (table && length(dependencies) > 0) {
             for (i in dependencies) {
                 printf format, pkgname, dependencies[i], pkgbase, pkgver
@@ -66,9 +65,9 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:aluS'
-opt_long=('database:' 'pacman-conf:' 'root:'
-          'all' 'list' 'repo-list' 'sync' 'upgrades' 'table')
+opt_short='c:d:r:alquS'
+opt_long=('database:' 'repo:' 'pacman-conf:' 'root:' 'path' 'all' 'list'
+          'repo-list' 'sync' 'upgrades' 'table' 'quiet')
 opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -76,28 +75,31 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset mode db_name db_root status_file pacman_conf
+unset mode db_name db_root status_file pacman_conf vercmp_args
 while true; do
     case $1 in
-        -d|--database)
+        -d|--database|--repo)
             shift; db_name=$1 ;;
         -r|--root)
             shift; db_root=$1 ;;
         -c|--pacman-conf)
             shift; pacman_conf=$1 ;;
-        -a|--all)
-            mode=list_upgrades
-            vercmp_args+=(-a) ;;
         -l|--list)
-            mode=list_packages ;;
-        -S|--sync)
-            modifier=sync ;;
+            mode=packages ;;
+        -a|--all)
+            mode=upgrades; vercmp_args+=(-a) ;;
+        -q|--quiet)
+            mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
-            mode=list_upgrades ;;
-        --table)
-            table_format=1 ;;
+            mode=upgrades ;;
         --repo-list)
             mode=repo_list ;;
+        --path)
+            modifier=path ;;
+        -S|--sync)
+            modifier=sync ;;
+        --table)
+            table_format=1 ;;
         --status-file)
             shift; status_file=$1 ;;
         --dump-options)
@@ -113,7 +115,7 @@ done
 : "${db_name=$AUR_REPO}"
 : "${db_root=$AUR_DBROOT}"
 
-unset conf_repo server
+unset conf_file_repo server
 
 while read -r key _ value; do
     case $key=$value in
@@ -125,7 +127,8 @@ while read -r key _ value; do
             ;;
         Server=file://*)
             server=${value#file://}
-            conf_repo+=("$server" "$section")
+            conf_file_serv+=("$server")
+            conf_file_repo+=("$section")
 
             case $section in
                 $db_name)
@@ -148,27 +151,34 @@ while read -r key _ value; do
 done < <(pacman-conf --config "${pacman_conf:-/etc/pacman.conf}")
 
 # exclusive modes
-case $mode in
-    #requires (none)
-    repo_list)
-        if [[ ${conf_repo[*]} ]]; then
-            printf '%q/%q.db\n' "${conf_repo[@]}"
-        else
-            printf >&2 '%s: no file:// repository configured\n' "$argv0"
-        fi
-        exit 0 ;;
-esac
+if [[ $mode == repo_list ]]; then
+    if ! [[ ${conf_file_repo[*]} ]]; then
+        printf >&2 '%s: no file:// repository configured\n' "$argv0"
+        exit 2
+    fi
+
+    if [[ $modifier == path ]]; then
+        for i in "${!conf_file_repo[@]}"; do
+            printf '%q/%q.db\n' "${conf_file_serv[$i]}" "${conf_file_repo[$i]}"
+        done
+    else
+        printf '%q\n' "${conf_file_repo[@]}"
+    fi
+    exit 0
+fi
 
 if ! [[ $db_name ]]; then
-    case ${#conf_repo[@]} in
-        2) db_root=${conf_repo[0]}
-           db_name=${conf_repo[1]}
+    case ${#conf_file_repo[@]} in
+        1) db_root=${conf_file_serv[0]}
+           db_name=${conf_file_repo[0]}
            ;;
-        0) printf >&2 '%s: no file:// repository found\n' "$argv0"
+        0) printf >&2 '%s: no file:// repository configured\n' "$argv0"
            exit 2
            ;;
         *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
-           printf '%q\n' "${conf_repo[@]}" | paste - - | column -t >&2
+           for i in "${!conf_file_repo[@]}"; do
+               printf '%q\t%q\n' "${conf_file_repo[$i]}" "${conf_file_serv[$i]}"
+           done | column -t >&2
            exit 1
            ;;
     esac
@@ -192,26 +202,31 @@ case $modifier in
             printf >&2 '%s: %s: not a directory\n' "$argv0" "$db_root"
             exit 20
         else
-            contents() { db_table "$table_format" "$db_root/$db_name".db ; }
-        fi
-        ;;
+            contents() {
+                db_table "$table_format" "$db_root/$db_name".db
+            }
+        fi ;;
     #requires
     # - [$db_name] (pacman.conf)
     sync)
-        contents() { db_table "$table_format" "$pacman_dbpath/sync/$db_name".db ; }
-        ;;
+        contents() {
+            db_table "$table_format" "$pacman_dbpath/sync/$db_name".db
+        } ;;
 esac
 
 case $mode in
-    list_upgrades)
+    upgrades)
         contents | aur vercmp "${vercmp_args[@]}"
         ;;
-    list_packages)
+    packages)
         contents
         ;;
     *)
-        printf '%s\n' "$db_root/$db_name".db
-        ;;
+        if [[ $modifier == path ]]; then
+            printf '%s\n' "$db_root/$db_name".db
+        else
+            usage
+        fi ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
