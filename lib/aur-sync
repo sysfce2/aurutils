@@ -314,7 +314,7 @@ fi
 if (( download )); then
     msg "Retrieving package files" >&2
     parallel -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
-        aur fetch -L "$tmp_view" :::: "$tmp"/queue
+        aur fetch -L "$tmp_view" -S :::: "$tmp"/queue
 fi
 
 # link build files in the queue (absolute links)

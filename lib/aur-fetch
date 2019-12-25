@@ -11,10 +11,7 @@ pull_args=('--verbose')
 diff_args=('--patch' '--stat')
 
 # default options
-verbose=0 recurse=0 confirm_seen=0 rebase=-1 results=0
-
-# empty tree object
-git_empty_tree=$(git hash-object -t tree /dev/null)
+verbose=0 recurse=0 confirm_seen=0 results=0 sync=no
 
 usage() {
     cat <<! | base64 -d
@@ -32,9 +29,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
-opt_short='rRvL:'
-opt_long=('recurse' 'verbose' 'write-log:' 'confirm-seen'
-          'rebase' 'reset' 'results:')
+opt_short='rvL:S'
+opt_long=('recurse' 'verbose' 'write-log:' 'confirm-seen' 'sync:' 'results:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -51,10 +47,16 @@ while true; do
             recurse=1 ;;
         -v|--verbose)
             verbose=1 ;;
-        -R|--rebase)
-            rebase=1 ;;
-        --reset)
-            rebase=0 ;;
+        -S)
+            sync=auto ;;
+        --sync)
+            case $2 in
+                auto|reset|rebase|no)
+                    sync=$2 ;;
+                *)
+                    error "$argv0: invalid --sync option"
+                    usage ;;
+            esac ;;
         --confirm-seen)
             confirm_seen=1 ;;
         --results)
@@ -73,12 +75,9 @@ if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
     exit 20
 fi
 
-if [[ -v results_file && -w $results_file ]]; then
+if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
     results=1
-elif [[ -v results_file ]]; then
-    error '%s: %s: permission denied' "$argv0" "$results_file"
-    exit 13
 fi
 
 if ! (( $# )); then
@@ -103,11 +102,11 @@ if (( recurse )); then
 else
    printf '%s\n' "$@"
 fi | while read -r pkg; do
-    # Avoid issues with filesystem boundaries. (#274)
-    export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+    # Reset/rebase if we are on valid repo
+    if GIT_DIR=$pkg/.git git rev-parse --git-dir >/dev/null 2>&1; then
+        # Avoid issues with filesystem boundaries. (#274)
+        export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
 
-    # Reset/rebase if we're on valid repo
-    if git rev-parse --git-dir 2>/dev/null; then
         if (( confirm_seen )); then
             git update-ref AUR_SEEN HEAD
 
@@ -115,23 +114,29 @@ fi | while read -r pkg; do
             continue # skip diff logic
         fi
 
-        if (( rebase > 0 )) || {
-               (( rebase < 0 )) && [[ $(git config --get --bool aurutils.rebase) == "true" ]]
-           }; then
-            git reset --hard HEAD >&2
+        git fetch --verbose >&2 || exit 1
 
-            if ! git pull --rebase "${pull_args[@]}"; then
-                error '%s: %s: Failed to integrate changes' "$argv0" "$pkg"
-                exit 1
-            fi
-        else
-            git fetch -v >&2
-            git reset --hard 'HEAD@{upstream}' >&2
-        fi
+        case $sync in
+            auto)
+                if [[ $(git config --get --bool aurutils.rebase) == "true" ]]; then
+                    plain 'aurutils.rebase is set for %s' "$pkg"
+                    sync=rebase
+                else
+                    sync=reset
+                fi ;;&
+            rebase)
+                git reset --hard 'HEAD' >&2
+                git rebase "${pull_args[@]}" >&2 ;;
+            reset)
+                git reset --hard 'HEAD@{upstream}' >&2 ;;
+        esac || {
+            error '%s: %s: Failed to integrate changes' "$argv0" "$pkg"
+            exit 1
+        }
 
         if ! seen=$(git rev-parse --quiet --verify AUR_SEEN); then
-            warning '%s: AUR_SEEN object not found, assuming empty tree' "$argv0"
-            seen=$git_empty_tree
+            warning '%s: AUR_SEEN object not found for %s, assuming empty tree' "$pkg" "$argv0"
+            seen=$(git hash-object -t tree /dev/null)
         fi
 
         if [[ $seen != "$(git rev-parse HEAD)" ]]; then
@@ -150,11 +155,14 @@ fi | while read -r pkg; do
         if (( results )); then
             printf 'fetch:file://%s\n' "$PWD/$pkg" | tee -a "$results_file"
         fi
+
     # Otherwise, try to clone anew
-    elif git clone "$AUR_LOCATION/$pkg".git "$GIT_DIR"; then
+    elif git clone "$AUR_LOCATION/$pkg"; then
+        # Avoid issues with filesystem boundaries. (#274)
+        export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+
         if (( confirm_seen )); then
             git update-ref AUR_SEEN HEAD
-
             msg2 'Marked new repository %s as seen' "$pkg"
         fi
 
@@ -166,6 +174,7 @@ fi | while read -r pkg; do
         fi
     else
         error '%s: %s: Failed to clone repository' "$argv0" "$pkg"
+        exit 1
     fi
 done
 
