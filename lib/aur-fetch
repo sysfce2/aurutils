@@ -13,9 +13,6 @@ diff_args=('--patch' '--stat')
 # default options
 verbose=0 recurse=0 confirm_seen=0 results=0 sync=no
 
-# empty tree object
-git_empty_tree=$(git hash-object -t tree /dev/null)
-
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
@@ -117,7 +114,7 @@ fi | while read -r pkg; do
             continue # skip diff logic
         fi
 
-        git fetch --verbose >&2
+        git fetch --verbose >&2 || exit 1
 
         case $sync in
             auto)
@@ -138,8 +135,8 @@ fi | while read -r pkg; do
         }
 
         if ! seen=$(git rev-parse --quiet --verify AUR_SEEN); then
-            warning '%s: AUR_SEEN object not found, assuming empty tree' "$argv0"
-            seen=$git_empty_tree
+            warning '%s: AUR_SEEN object not found for %s, assuming empty tree' "$pkg" "$argv0"
+            seen=$(git hash-object -t tree /dev/null)
         fi
 
         if [[ $seen != "$(git rev-parse HEAD)" ]]; then
