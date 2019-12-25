@@ -231,7 +231,6 @@ if (( chroot )); then
     fi
 fi
 
-
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
 else
@@ -239,12 +238,9 @@ else
 fi
 
 # Write successfully built packages to file (#437)
-if [[ -v results_file && -w $results_file ]]; then
+if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
     results=1
-elif [[ -v results_file ]]; then
-    error '%s: %s: permission denied' "$argv0" "$results_file"
-    exit 13
 fi
 
 if (( sign_pkg )); then
