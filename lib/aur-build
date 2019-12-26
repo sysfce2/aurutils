@@ -18,6 +18,9 @@ gpg_args=(--detach-sign --no-armor --batch)
 # do not hardcode (optional) arguments to build commands
 unset makepkg_args makechrootpkg_args archbuild_args repo_add_args
 
+# Use this pacman config location
+pacman_conf="/etc/pacman.conf"
+
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0
 
@@ -178,7 +181,7 @@ fi
 case $db_name in
     "")
         case $db_root in
-            "") db_path=$(aur repo --path)
+            "") db_path=$(aur repo --path --pacman-conf "$pacman_conf")
                 db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
                 ;;
@@ -187,7 +190,7 @@ case $db_name in
         esac ;;
     *)
         case $db_root in
-            "") db_path=$(aur repo --path -d "$db_name")
+            "") db_path=$(aur repo --path --pacman-conf "$pacman_conf" -d "$db_name")
                 db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
                 ;;
