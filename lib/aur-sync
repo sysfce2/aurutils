@@ -109,7 +109,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset pkg pkg_i repo repo_p ignore_file pacman_conf
+unset pkg pkg_i repo repo_p ignore_file
 while true; do
     case "$1" in
         # sync options
@@ -158,7 +158,7 @@ while true; do
         --makepkg-conf)
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
-            shift; pacman_conf="$1"; build_args+=(--pacman-conf "$1") ;;
+            shift; build_args+=(--pacman-conf "$1"); repo_args+=(--pacman-conf "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
         -S|--sign|--gpg-sign)
@@ -232,7 +232,7 @@ mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
 # retrieve path to local repo (#448)
-aur repo --pacman-conf "${pacman_conf:-/etc/pacman.conf}" "${repo_args[@]}" --list --status-file=db >db_info
+aur repo "${repo_args[@]}" --list --status-file=db >db_info
 
 { IFS= read -r db_name
   IFS= read -r db_root
