@@ -50,11 +50,12 @@ while true; do
         -S)
             sync=auto ;;
         --sync)
-            case $2 in
+            shift
+            case $1 in
                 auto|reset|rebase|no)
-                    sync=$2 ;;
+                    sync=$1 ;;
                 *)
-                    error "$argv0: invalid --sync option"
+                    error '%s: invalid --sync option: %s' "$argv0" "$1"
                     usage ;;
             esac ;;
         --confirm-seen)
