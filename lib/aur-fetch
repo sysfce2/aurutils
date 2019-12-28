@@ -11,7 +11,7 @@ pull_args=('--verbose')
 diff_args=('--patch' '--stat')
 
 # default options
-verbose=0 recurse=0 confirm_seen=0 results=0 sync=no
+verbose=0 recurse=0 confirm_seen=0 results=0 sync=no log_fmt=diff
 
 usage() {
     cat <<! | base64 -d
@@ -30,7 +30,7 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='rvL:S'
-opt_long=('recurse' 'verbose' 'write-log:' 'confirm-seen' 'sync:' 'results:')
+opt_long=('recurse' 'verbose' 'write-log:' 'confirm-seen' 'sync:' 'results:' 'format:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -50,11 +50,21 @@ while true; do
         -S)
             sync=auto ;;
         --sync)
-            case $2 in
+            shift
+            case $1 in
                 auto|reset|rebase|no)
-                    sync=$2 ;;
+                    sync=$1 ;;
                 *)
-                    error "$argv0: invalid --sync option"
+                    error '%s: invalid --sync option: %s' "$argv0" "$1"
+                    usage ;;
+            esac ;;
+        --format)
+            shift
+            case $1 in
+                diff|log)
+                    log_fmt=$1 ;;
+                *)
+                    error '%s: invalid --format option: %s' "$argv0" "$1"
                     usage ;;
             esac ;;
         --confirm-seen)
@@ -144,11 +154,11 @@ fi | while read -r pkg; do
 
             # Contents have changed since last inspection; print differences.
             if (( verbose )); then
-                git --no-pager log "${diff_args[@]}" "$range"
+                git --no-pager "$log_fmt" "${diff_args[@]}" "$range"
             fi
 
             if [[ $log_dir ]]; then
-                git --no-pager log "${diff_args[@]}" "$range" >"$log_dir/$pkg.log"
+                git --no-pager "$log_fmt" "${diff_args[@]}" "$range" >"$log_dir/$pkg.$log_fmt"
             fi
         fi
 
