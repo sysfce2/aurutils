@@ -51,7 +51,7 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-acfBNS] [-d repo] [--root path] [--] <makepkg args>' "$argv0" >&2
+    plain >&2 'usage: %s [-acfBNS] [-d repo] [--root path] [--] <makepkg args>' "$argv0"    
     exit 1
 }
 

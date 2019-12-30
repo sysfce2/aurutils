@@ -73,7 +73,7 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-d repo] [--root path] [-cdfPpSu] [--] pkgname...' "$argv0" >&2
+    plain >&2 'usage: %s [-d repo] [--root path] [-cdfPpSu] [--] pkgname...' "$argv0"
     exit 1
 }
 
@@ -239,7 +239,7 @@ aur repo "${repo_args[@]}" --list --status-file=db >db_info
 } <db
 
 if [[ -w $db_root/$db_name.db ]]; then
-    msg 'Using [%s] repository' "$db_name" >&2
+    msg >&2 'Using [%s] repository' "$db_name"
 else
     error '%s: %s: permission denied' "$argv0" "$db_root/$db_name.db"
     exit 13
@@ -259,7 +259,7 @@ if [[ -s argv ]]; then
     # $1 pkgname $2 depends $3 pkgbase $4 pkgver
     xargs --arg-file=argv aur depends --table >depends
 else
-    plain "there is nothing to do" >&2
+    plain >&2 "there is nothing to do"
     exit
 fi
 
@@ -308,12 +308,12 @@ cut -f1,2 pkginfo | select_pkgbase - queue_1 >queue
 if [[ -s queue ]]; then
     cd_safe "$AURDEST"
 else
-    plain "there is nothing to do" >&2
+    plain >&2 "there is nothing to do"
     exit
 fi
 
 if (( download )); then
-    msg "Retrieving package files" >&2
+    msg >&2 "Retrieving package files"
     parallel -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
         aur fetch -L "$tmp_view" -S :::: "$tmp"/queue
 fi

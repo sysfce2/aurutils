@@ -105,7 +105,7 @@ trap_exit() {
 }
 
 usage() {
-    plain 'usage: %s [-adimnqrsv] [-k key] pkgname...' "$argv0" >&2
+    plain >&2 'usage: %s [-adimnqrsv] [-k key] pkgname...' "$argv0"
     exit 1
 }
 

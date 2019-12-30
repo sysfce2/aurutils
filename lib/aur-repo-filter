@@ -21,7 +21,7 @@ provides() {
 }
 
 usage() {
-    plain 'usage: %s [-d repo] [-S]' "$argv0" >&2
+    plain >&2 'usage: %s [-d repo] [-S]' "$argv0"
     exit 1
 }
 
