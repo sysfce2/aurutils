@@ -94,7 +94,7 @@ if [[ ! -s $orderfile ]]; then
 fi
 
 if (( confirm_seen )); then
-    msg "Marking repositories as seen"
+    msg >&2 "Marking repositories as seen"
 fi
 
 if (( recurse )); then
@@ -110,7 +110,7 @@ fi | while read -r pkg; do
         if (( confirm_seen )); then
             git update-ref AUR_SEEN HEAD
 
-            msg2 'Marked repository %s as seen' "$pkg"
+            msg2 >&2 'Marked repository %s as seen' "$pkg"
             continue # skip diff logic
         fi
 
@@ -119,7 +119,7 @@ fi | while read -r pkg; do
         case $sync in
             auto)
                 if [[ $(git config --get --bool aurutils.rebase) == "true" ]]; then
-                    plain 'aurutils.rebase is set for %s' "$pkg"
+                    plain >&2 'aurutils.rebase is set for %s' "$pkg"
                     sync=rebase
                 else
                     sync=reset
