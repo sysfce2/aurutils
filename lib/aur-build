@@ -22,14 +22,6 @@ archbuild_args=()
 repo_add_args=()
 repo_args=()
 
-conf_single() {
-    awk -v "repo=[$2]" '
-    /^\[.*\]$/ {
-        do_print = ($1 == "[options]" || $1 == repo)
-    }
-    do_print'
-}
-
 db_replaces() {
     bsdcat "$1" | awk '
     /%REPLACES%/ {
@@ -82,7 +74,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset queue db_name db_path db_root build_cmd results_file
+unset build_cmd db_name db_path db_root queue results_file
 while true; do
     case "$1" in
         # build options
@@ -199,11 +191,15 @@ esac
 if ! db_path=$(readlink -e -- "$db_path"); then
     error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
-fi
-
-if ! [[ -w $db_path ]]; then
+elif ! [[ -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
+fi
+
+# Write successfully built packages to file (#437)
+if [[ -v results_file ]]; then
+    : >"$results_file" # truncate file
+    results=1
 fi
 
 # Provisions for symbolic links to /usr/bin/archbuild. Because archbuild
@@ -233,12 +229,6 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-# Write successfully built packages to file (#437)
-if [[ -v results_file ]]; then
-    : >"$results_file" # truncate file
-    results=1
-fi
-
 if (( sign_pkg )); then
     if [[ -v GPGKEY ]]; then
         gpg --list-keys "$GPGKEY"
@@ -257,7 +247,12 @@ else
 fi
 
 # Configuration for host builds.
-pacman_conf "${conf_args[@]}" | conf_single "$db_name" >"$tmp"/custom.conf
+{ printf '[options]\n'
+  pacconf "${conf_args[@]}" --raw --options
+
+  printf '[%s]\n' "$db_name"
+  pacconf "${conf_args[@]}" --raw --repo="$db_name"
+} > "$tmp"/custom.conf
 
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
