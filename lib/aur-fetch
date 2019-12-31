@@ -133,15 +133,15 @@ fi | while read -r pkg; do
                     sync=rebase
                 else
                     sync=reset
-                fi ;&
-            *)  # expand $sync with newly assigned value
-                case $sync in
-                    rebase)
-                        git reset --hard 'HEAD' >&2
-                        git rebase "${pull_args[@]}" >&2 ;;
-                    reset)
-                        git reset --hard 'HEAD@{upstream}' >&2 ;;
-                esac ;;
+                fi ;;
+        esac
+
+        case $sync in
+            rebase)
+                git reset --hard 'HEAD' >&2
+                git rebase "${pull_args[@]}" >&2 ;;
+            reset)
+                git reset --hard 'HEAD@{upstream}' >&2 ;;
         esac || {
             error '%s: %s: Failed to integrate changes' "$argv0" "$pkg"
             exit 1

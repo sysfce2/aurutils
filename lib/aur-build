@@ -11,26 +11,16 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # hardware name
 machine=$(uname -m)
 
-# default arguments
-chroot_prefix=aur
-gpg_args=(--detach-sign --no-armor --batch)
-
-# do not hardcode (optional) arguments to build commands
-unset makepkg_args makechrootpkg_args archbuild_args repo_add_args
-
-# Use this pacman config location
-pacman_conf="/etc/pacman.conf"
-
 # default options
-chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0 chroot_prefix=aur
 
-conf_single() {
-    pacman-conf --config "$1" | awk -v "repo=[$2]" '
-    /^\[.*\]$/ {
-        do_print = ($1 == "[options]" || $1 == repo)
-    }
-    do_print'
-}
+# default arguments
+gpg_args=(--detach-sign --no-armor --batch)
+makepkg_args=()
+makechrootpkg_args=()
+archbuild_args=()
+repo_add_args=()
+repo_args=()
 
 db_replaces() {
     bsdcat "$1" | awk '
@@ -74,8 +64,8 @@ fi
 opt_short='a:B:d:D:AcfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
-          'makepkg-conf:' 'remove' 'build-command:' 'pkgver' 'prefix:'
-          'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'recreate' 'new' 'bind:'
+          'remove' 'build-command:' 'pkgver' 'prefix:' 'rmdeps'
+          'no-confirm' 'ignore-arch' 'log' 'recreate' 'new' 'bind:'
           'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean')
 opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync')
 
@@ -84,7 +74,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset queue db_name db_path db_root build_cmd makepkg_conf pacman_conf results_file
+unset build_cmd db_name db_path db_root queue results_file
 while true; do
     case "$1" in
         # build options
@@ -100,10 +90,9 @@ while true; do
             shift; db_name=$1 ;;
         -N|--nosync|--no-sync)
             no_sync=1 ;;
-        --makepkg-conf)
-            shift; makepkg_conf=$1 ;;
         --pacman-conf)
-            shift; pacman_conf=$1 ;;
+            shift; conf_args+=(--config "$1")
+            repo_args+=(--pacman-conf "$1") ;;
         --prefix)
             shift; chroot_prefix=$1 ;;
         --pkgver)
@@ -181,7 +170,7 @@ fi
 case $db_name in
     "")
         case $db_root in
-            "") db_path=$(aur repo --path --pacman-conf "$pacman_conf")
+            "") db_path=$(aur repo "${repo_args[@]}" --path)
                 db_name=$(basename "$db_path" .db)
                 db_root=$(dirname "$db_path")
                 ;;
@@ -190,8 +179,7 @@ case $db_name in
         esac ;;
     *)
         case $db_root in
-            "") db_path=$(aur repo --path --pacman-conf "$pacman_conf" -d "$db_name")
-                db_name=$(basename "$db_path" .db)
+            "") db_path=$(aur repo "${repo_args[@]}" --path -d "$db_name")
                 db_root=$(dirname "$db_path")
                 ;;
              *) db_path=$db_root/$db_name.db
@@ -203,11 +191,15 @@ esac
 if ! db_path=$(readlink -e -- "$db_path"); then
     error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
-fi
-
-if ! [[ -w $db_path ]]; then
+elif ! [[ -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
+fi
+
+# Write successfully built packages to file (#437)
+if [[ -v results_file ]]; then
+    : >"$results_file" # truncate file
+    results=1
 fi
 
 # Provisions for symbolic links to /usr/bin/archbuild. Because archbuild
@@ -231,20 +223,10 @@ if (( chroot )); then
     fi
 fi
 
-
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
 else
     exec {fd}< <(printf '\n')
-fi
-
-# Write successfully built packages to file (#437)
-if [[ -v results_file && -w $results_file ]]; then
-    : >"$results_file" # truncate file
-    results=1
-elif [[ -v results_file ]]; then
-    error '%s: %s: permission denied' "$argv0" "$results_file"
-    exit 13
 fi
 
 if (( sign_pkg )); then
@@ -265,7 +247,12 @@ else
 fi
 
 # Configuration for host builds.
-conf_single "${pacman_conf:-/etc/pacman.conf}" "$db_name" >"$tmp"/custom.conf
+{ printf '[options]\n'
+  pacconf "${conf_args[@]}" --raw --options
+
+  printf '[%s]\n' "$db_name"
+  pacconf "${conf_args[@]}" --raw --repo="$db_name"
+} > "$tmp"/custom.conf
 
 while IFS= read -ru "$fd" path; do
     cd_safe "$startdir/$path"
