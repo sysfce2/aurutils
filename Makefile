@@ -3,14 +3,14 @@ PREFIX ?= /usr
 SHRDIR ?= $(PREFIX)/share
 BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
-AUR_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
+AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
 
 .PHONY: shellcheck install build completion aur
 
 build: aur completion
 
 aur: aur.in
-	sed 's|AUR_LIB_DIR|$(AUR_LIB_DIR)|' $< >$@
+	sed 's|AURUTILS_LIB_DIR|$(AURUTILS_LIB_DIR)|' $< >$@
 
 completion:
 	@$(MAKE) -C completions bash zsh

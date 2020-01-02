@@ -22,16 +22,16 @@ section.
 .SH AUR COMMANDS
 The below gives a short overview; see the respective documentation for
 details.
+.PP
 .BR aur (1)
 searches for commands in
 .BR /usr/lib/aurutils/
 by default, followed by
 .B $PATH
-as set in the environment.
-.PP
-A different path may be set at build time through the
-.B AUR_LIB_DIR
-macro, for example
+as set in the environment. A different path may be set at run-time
+through the
+.B AUR_EXEC_PATH
+environment variable, for example
 .IR /usr/local/lib/aurutils:/usr/lib/aurutils .
 .
 .P
@@ -114,6 +114,15 @@ for
 scripts) in
 .B aur
 programs.
+.
+.TP
+.B AUR_EXEC_PATH
+The path in which
+.B aur
+searches for commands, prepended to
+.BR $PATH .
+Defaults to
+.BR /usr/lib/aurutils .
 .
 .TP
 .B NO_COLOR
