@@ -274,8 +274,8 @@ while IFS= read -ru "$fd" path; do
         env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" "${build_cmd[@]}"
     elif (( chroot )); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[@]}"
-        env PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --no-prepare \
-            -- "${makechrootpkg_args[@]}"
+        env PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" \
+            --bind-rw "$db_root" --no-prepare -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
         env PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
