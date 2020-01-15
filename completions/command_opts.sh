@@ -1,7 +1,7 @@
 #!/bin/bash
 
-have_optdump=('build' 'depends' 'fetch' 'pkglist' 'repo' 'repo-filter' 'query'
-              'search' 'srcver' 'sync' 'vercmp')
+have_optdump=('build' 'chroot' 'depends' 'fetch' 'pkglist' 'repo' 'repo-filter'
+              'query' 'search' 'srcver' 'sync' 'vercmp')
 no_optdump=('graph')
 
 default_opts() {
