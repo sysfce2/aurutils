@@ -14,7 +14,7 @@ makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 prefix=extra
 
 # default options
-prepare=1 build=1 create=0 
+prepare=1 build=1 create=0
 
 usage() {
     printf >&2 'usage: %s [--create] [-CDM path] -- <makechrootpkg args>\n' "$argv0"
@@ -25,7 +25,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'no-build' 'no-prepare'
-          'create' 'prefix:' 'bind:' 'bind-ro:' 'temp')
+          'create' 'prefix:' 'bind:' 'bind-rw:' 'temp')
 opt_hidden=('dump-options' 'nobuild' 'noprepare')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -55,7 +55,7 @@ while true; do
         --bind)
             shift; bindmounts_ro+=("$1") ;;
         --bind-rw)
-            shift; bindmounts_rw+=(-d "$1") ;;
+            shift; bindmounts_rw+=("$1") ;;
         # other options
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}"
@@ -84,7 +84,7 @@ pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$prefix.conf}
 while read -r key _ value; do
     case $key=$value in
         Server=file://*)
-            bindmounts_ro+=("${value#file://}") ;;
+            bindmounts_rw+=("${value#file://}") ;;
     esac
 done < <(pacman-conf --config "$pacman_conf")
 
