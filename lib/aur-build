@@ -106,7 +106,7 @@ while true; do
             repo_add_args+=(-s) ;;
         # chroot options
         -D|--directory)
-            shift; makechrootpkg_args+=(-r "$1") ;;
+            shift; chroot_args+=(-D "$1") ;;
         --bind)
             shift; makechrootpkg_args+=(-D "$1") ;;
         --bind-rw)
