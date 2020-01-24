@@ -25,7 +25,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'no-build' 'no-prepare'
-          'prefix:' 'bind:' 'bind-rw:' 'temp')
+          'prefix:' 'bind:' 'bind-rw:')
 opt_hidden=('dump-options' 'nobuild' 'noprepare')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
