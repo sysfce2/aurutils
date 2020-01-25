@@ -326,7 +326,7 @@ trust_exit_success=0
 
 if type -P >/dev/null vifm; then
     # Avoid directory prefix in printed paths (#452)
-    viewer() ( cd "$1"; vifm -c 'view!' -c '0' - )
+    viewer() ( cd "$1"; vifm -c 'set vifminfo=' -c 'view!' -c '0' - )
     trust_exit_success=1
 else
     # shellcheck disable=SC2086
