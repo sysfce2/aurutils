@@ -5,6 +5,12 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux/base
     steps:
-      - run: pacman -Syu --noconfirm base base-devel
+      - run: pacman -Syu --noconfirm base base-devel shellcheck
       - uses: actions/checkout@v2
-      - run: test/parseopt-consistency
+
+      - name: Option parsing consistency
+        run: test/parseopt-consistency
+
+      - name: Shellcheck
+        if: success() || failure() # Do not fail-fast
+        run: make shellcheck
