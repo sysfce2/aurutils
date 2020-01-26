@@ -1,0 +1,27 @@
+#!/bin/bash
+shopt -s extglob
+shopt -s nullglob
+export AUR_ASROOT=1
+
+parse_loop() {
+  awk '/^while true; do$/,/^done$/ {
+    if ( $0 ~ /^\s*-.*)$/ && $1 != "--)" ) {  # match -<something>) except --)
+      gsub(/[ )]/,"")                         # remove spaces and final parens
+      split($0, patterns,"|")                 # split on |
+      getline                                 # ask for next line for shift check
+      for (i in patterns) {                   # print options accordingly
+        print ($1 ~ /^shift/) ? patterns[i] ":" : patterns[i]
+      }
+    }
+  }'
+}
+
+ret=0
+for aurcmd in "${BASH_SOURCE%/*}"/../lib/!(aur-graph); do
+      diff --color -U0 --label "$aurcmd Options" --label "$aurcmd Loop" \
+        <(bash --pretty-print -O extglob "$aurcmd" | parse_loop | sort) \
+        <(AUR_DEBUG=1 command "$aurcmd" --dump-options 2>/dev/null | sort)
+      ((ret|=$?))
+done
+
+exit $ret

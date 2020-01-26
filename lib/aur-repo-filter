@@ -46,7 +46,7 @@ while true; do
         --sysroot)
             shift; sift_args+=("--sysroot=$1") ;;
         --dump-options)
-            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
             exit ;;
         --) shift; break;;

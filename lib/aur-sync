@@ -192,7 +192,7 @@ while true; do
             build_args+=(--new) ;;
         # other options
         --dump-options)
-            printf -- '--%s\n' "${opt_long[@]}"
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
             exit ;;
         --) shift; break ;;
