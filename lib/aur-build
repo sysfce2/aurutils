@@ -252,16 +252,19 @@ while IFS= read -ru "$fd" path; do
     fi
 
     if (( ! overwrite )); then
-        unset mark
+        unset exists
 
-        while IFS= read -r; do
-            [[ -f $REPLY ]] && mark+=("$REPLY")
+        while IFS= read -r candidate_pkg; do
+            [[ -f $candidate_pkg ]] && exists+=("$candidate_pkg")
         done < <(PKGDEST="$db_root" makepkg --packagelist)
 
-        if [[ ${mark[*]} ]]; then
-            warning '%s: skipping built package (use -f to overwrite)' "$argv0"
+        # Preserve the exit status from makepkg --packagelist (#671)
+        wait $!
 
-            printf '%q\n' >&2 "${mark[@]}"
+        if [[ ${exists[*]} ]]; then
+            warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
+
+            printf '%q\n' >&2 "${exists[@]}"
             continue
         fi
     fi

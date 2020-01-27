@@ -78,6 +78,11 @@ case $prefix in
 esac
 pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$prefix.conf}
 
+if [[ ! -r $pacman_conf ]]; then
+    printf >&2 '%s: config file %s could not be read\n' "$argv0" "$pacman_conf"
+    exit 1
+fi
+
 # bind mount file:// paths to container (#461)
 while read -r key _ value; do
     case $key=$value in
