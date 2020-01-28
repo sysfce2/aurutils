@@ -1,6 +1,6 @@
 #!/bin/bash -
 readonly argv0=aur
-readonly lib_dir='AUR_LIB_DIR'
+readonly lib_dir=${AUR_EXEC_PATH:-'AURUTILS_LIB_DIR'}
 shopt -s nullglob
 
 if [[ -z $1 ]]; then
