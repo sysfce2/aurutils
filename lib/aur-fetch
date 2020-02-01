@@ -112,6 +112,8 @@ if (( recurse )); then
 else
    printf '%s\n' "$@"
 fi | while read -r pkg; do
+    unset GIT_DIR GIT_WORK_TREE
+
     # Reset/rebase if we are on valid repo
     if GIT_DIR=$pkg/.git git rev-parse --git-dir >/dev/null 2>&1; then
         # Avoid issues with filesystem boundaries. (#274)
