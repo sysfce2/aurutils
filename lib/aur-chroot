@@ -95,7 +95,9 @@ if (( prepare )); then
     # parent path is not created by mkarchroot (#371)
     if [[ ! -d $directory ]]; then
         sudo install -d "$directory" -m 755 -v
+    fi
 
+    if [[ ! -d $directory/root ]]; then
         sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
              "$directory"/root "${base_packages[@]}"
     fi
