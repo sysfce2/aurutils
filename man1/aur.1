@@ -421,6 +421,15 @@ variable towards it:
     $ export PACMAN=/usr/local/bin/mypacman
 .EE
 .
+.SS Rebuilding packages against updated dependencies
+It is sometimes needed to rebuild packages when their dependencies are
+updated, for example in case of dynamic library linking.
+.PP
+You can use
+.MT https://github.com/maximbaz/rebuild-detector
+rebuild-detector
+to detect which packages need to be rebuilt.
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter
