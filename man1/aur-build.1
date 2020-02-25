@@ -373,6 +373,16 @@ See
 .BR gpg (1)
 for details.
 .
+.SS Rebuilding packages against updated dependencies
+It is sometimes needed to rebuild packages when their dependencies are
+updated, for example in case of dynamic library linking.
+.PP
+You can use
+.UR https://\:github.com/\:maximbaz/\:rebuild-detector
+rebuild-detector
+.UE
+to detect which packages need to be rebuilt.
+.
 .SH CHROOT NOTES
 .SS Building with makechrootpkg
 Changes to the pacman database are
