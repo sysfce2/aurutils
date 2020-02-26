@@ -212,7 +212,7 @@ fi
 
 # Append contents of ignore file
 if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
-    while IFS="#" read -r i _; do pkg_i+=("$i"); done < "$ignore_file"
+    while IFS="#" read -r i _; do [[ $i ]] && pkg_i+=("$i"); done < "$ignore_file"
 fi
 
 if (( rotate )); then
