@@ -75,7 +75,7 @@ esac
 
 # store output on error
 wget_log=$(mktemp --tmpdir aurutils-wget.XXXXXXXX) || exit
-trap 'rm -rf "$wget_log"' EXIT
+trap 'rm -rf -- "$wget_log"' EXIT
 
 # check for interactive terminal
 if [[ -t 0 ]]; then
