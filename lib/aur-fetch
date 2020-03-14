@@ -104,7 +104,7 @@ else
 fi | while read -r pkg; do
     unset GIT_DIR GIT_WORK_TREE
 
-    if GIT_DIR=$pkg/.git git rev-parse --git-dir >/dev/null 2>&1; then
+    if [[ -d $pkg/.git ]]; then
         # Avoid issues with filesystem boundaries. (#274)
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
 
