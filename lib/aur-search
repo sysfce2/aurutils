@@ -98,7 +98,7 @@ info_short() {
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
-        rm -rf "$tmp"
+        rm -rf -- "$tmp"
     else
         printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
     fi

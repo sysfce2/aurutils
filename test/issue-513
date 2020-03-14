@@ -1,6 +1,6 @@
 #!/bin/bash -e
 tmp_server=$(mktemp -d)
-trap 'rm -rf "$tmp_server"' EXIT
+trap 'rm -rf -- "$tmp_server"' EXIT
 
 pacman_config() {
     cat <<EOF
