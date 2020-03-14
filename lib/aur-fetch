@@ -108,12 +108,20 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries. (#274)
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
 
-        git fetch --verbose >&2 || exit 1
+        # Retrieve new upstream revisions
+        git fetch --verbose >&2 || exit
+        fetch_head=$(git rev-parse FETCH_HEAD)
 
-        prev_head=$(git rev-parse 'HEAD')
+        # HEAD before git rebase or git reset
+        prev_head=$(git rev-parse HEAD)
+
+        if (( results )); then
+            printf 'fetch:%s:%s:file://%s\n' "$prev_head" "$fetch_head" "$PWD/$pkg" | tee -a "$results_file"
+        fi
+
         case $sync in
             auto)
-                if [[ $(git config --get --type bool aurutils.rebase) == "true" ]]; then
+                if [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
                     plain >&2 'aurutils.rebase is set for %s' "$pkg"
                     sync=rebase
                 else
@@ -123,20 +131,31 @@ fi | while read -r pkg; do
 
         case $sync in
             rebase)
-                { git stash
-                  git reset --hard 'HEAD'
-                  git rebase --verbose
-                } >&2 ;;
+                git stash
+                git reset --hard HEAD
+                git rebase --verbose
+                ;;
             reset)
-                { git stash
-                  git reset --hard 'HEAD@{upstream}'
-                } >&2 ;;
-        esac || {
-            error '%s: %s: failed to integrate changes' "$argv0" "$pkg"
+                git stash
+                git reset --hard 'HEAD@{upstream}'
+                ;;
+        esac >&2 || {
+            error '%s: %s: failed to %s repository' "$argv0" "$sync" "$pkg"
             exit 1
         }
 
-        if [[ $prev_head != "$(git rev-parse HEAD)" ]]; then
+        head=$(git rev-parse HEAD)
+
+        if (( results )); then
+            case $sync in
+                rebase) printf 'rebase:%s:%s:file://%s\n' "$prev_head" "$head" "$PWD/$pkg"
+                        ;;
+                reset)  printf 'reset:%s:%s:file://%s\n' "$prev_head" "$head" "$PWD/$pkg"
+                        ;;
+            esac | tee -a "$results_file"
+        fi
+
+        if [[ $prev_head != "$head" ]]; then
             range=$prev_head..HEAD
 
             if (( verbose )); then
@@ -148,10 +167,6 @@ fi | while read -r pkg; do
             fi
         fi
 
-        if (( results )); then
-            printf 'fetch:file://%s\n' "$PWD/$pkg" | tee -a "$results_file"
-        fi
-
     # Otherwise, try to clone anew
     elif git clone "$AUR_LOCATION/$pkg"; then
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
@@ -160,7 +175,7 @@ fi | while read -r pkg; do
         git config diff.orderFile "$orderfile"
 
         if (( results )); then
-            printf 'clone:file://%s\n' "$PWD/$pkg" | tee -a "$results_file"
+            printf 'clone:%s:%s:file://%s\n' 0 "$(git rev-parse HEAD)" "$PWD/$pkg" | tee -a "$results_file"
         fi
     else
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"
