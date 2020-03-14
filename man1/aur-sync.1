@@ -1,4 +1,4 @@
-.TH AUR-SYNC 1 2019-01-24 AURUTILS
+.TH AUR-SYNC 1 2020-03-14 AURUTILS
 .SH Name
 aur\-sync \- download and build AUR packages automatically
 .
@@ -23,16 +23,8 @@ The value of
 if defined;
 .IP \(bu 4
 .BR vifm "(1), "
-if installed;
-.IP \(bu 4
-The value of
-.BR PAGER ", "
-if defined;
-.IP \(bu 4
-.BR "less \-K" .
-.P
-If the exit status of the pager exceeds 0 (for example, through user
-intervention),
+if installed. If the exit status of the pager exceeds 0 (for example,
+through user intervention),
 .B aur\-sync
 terminates immediately.
 .
@@ -176,15 +168,23 @@ Sign built packages with
 .TP
 .B AURDEST
 Determines where build files will be cloned. This must be an absolute path.
-Defaults to $XDG_CACHE_HOME/aurutils/sync
+Defaults to
+.IR $XDG_CACHE_HOME/aurutils/sync .
 .
 .TP
 .B AUR_PAGER
-.RS
 The file manager used to view and edit build files. This variable is
-split on white space, allowing
-.IR "AUR_PAGER=program \-option" .
-.RE
+split on white space to allow program options, for example:
+.IR "AUR_PAGER=less \-K" .
+.
+.TP
+.B AUR_CONFIRM_PAGER
+Display an additional prompt after the file manager has exited (see
+.BR AUR_PAGER ).
+If set, display an additional confirmation prompt after the file
+manager has exited successfully. This may be used for (GUI) file
+managers not supporting an exit status greater zero to indicate
+unreviewed files.
 .
 .SH NOTES
 .SS File inspection
@@ -193,12 +193,10 @@ aborts on build failure, or other errors such as an interrupted file
 review process by the user, in particular
 .B :cq
 in
-.BR vifm (1),
-or
-.B "Ctrl+C"
-in
-.BR less (1).
-.
+.BR vifm (1).
+See also
+.B AUR_CONFIRM_PAGER
+for adding a confirmation prompt if the viewer exited successfully.
 .PP
 To avoid downloading files again, the
 .B \-\-continue
