@@ -14,7 +14,7 @@ usage() {
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
 XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 !
-    plain >&2 'usage: %s [-L directory] [-RrSv] pkgname...' "$argv0"
+    plain >&2 'usage: %s [-L directory] [-rSv] pkgname...' "$argv0"
     exit 1
 }
 
@@ -104,7 +104,6 @@ else
 fi | while read -r pkg; do
     unset GIT_DIR GIT_WORK_TREE
 
-    # Reset/rebase if we are on valid repo
     if GIT_DIR=$pkg/.git git rev-parse --git-dir >/dev/null 2>&1; then
         # Avoid issues with filesystem boundaries. (#274)
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
@@ -114,7 +113,7 @@ fi | while read -r pkg; do
         prev_head=$(git rev-parse 'HEAD')
         case $sync in
             auto)
-                if [[ $(git config --get --bool aurutils.rebase) == "true" ]]; then
+                if [[ $(git config --get --type bool aurutils.rebase) == "true" ]]; then
                     plain >&2 'aurutils.rebase is set for %s' "$pkg"
                     sync=rebase
                 else
@@ -136,7 +135,6 @@ fi | while read -r pkg; do
         if [[ $prev_head != "$(git rev-parse HEAD)" ]]; then
             range=$prev_head..HEAD
 
-            # Contents have changed since last inspection; print differences.
             if (( verbose )); then
                 git --no-pager "$log_fmt" --patch --stat "$range"
             fi
