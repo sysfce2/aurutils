@@ -119,15 +119,18 @@ fi | while read -r pkg; do
             printf 'fetch:%s:%s:file://%s\n' "$prev_head" "$fetch_head" "$PWD/$pkg" | tee -a "$results_file"
         fi
 
-        case $sync in
-            auto)
-                if [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
-                    plain >&2 'aurutils.rebase is set for %s' "$pkg"
+        if [[ $sync == 'auto' ]]; then
+            if [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
+                plain >&2 'aurutils.rebase is set for %s' "$pkg"
+
+                if ! git merge-base --is-ancestor 'HEAD@{upstream}' HEAD; then
                     sync=rebase
-                else
-                    sync=reset
-                fi ;;
-        esac
+                fi
+
+            elif [[ $prev_head != $(git rev-parse 'HEAD@{upstream}') ]]; then
+                sync=reset
+            fi # else sync = no
+        fi
 
         case $sync in
             rebase)
