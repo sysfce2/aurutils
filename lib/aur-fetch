@@ -123,10 +123,14 @@ fi | while read -r pkg; do
 
         case $sync in
             rebase)
-                git reset --hard 'HEAD' >&2
-                git rebase --verbose >&2 ;;
+                { git stash
+                  git reset --hard 'HEAD'
+                  git rebase --verbose
+                } >&2 ;;
             reset)
-                git reset --hard 'HEAD@{upstream}' >&2 ;;
+                { git stash
+                  git reset --hard 'HEAD@{upstream}'
+                } >&2 ;;
         esac || {
             error '%s: %s: failed to integrate changes' "$argv0" "$pkg"
             exit 1
