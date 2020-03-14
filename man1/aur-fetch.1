@@ -1,4 +1,4 @@
-.TH AUR-FETCH 1 2018-03-17 AURUTILS
+.TH AUR-FETCH 1 2020-03-14 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
@@ -6,24 +6,16 @@ aur\-fetch \- download packages from the AUR
 .SY "aur fetch"
 .OP \-L log_dir
 .OP \-r
-.OP \-R
+.OP \-S
 .OP \-v
-.IR package " [" package... ]
-.YS
-.SY "aur fetch"
-.OP \-\-confirm\-seen
 .IR package " [" package... ]
 .YS
 .
 .SH DESCRIPTION
 .B aur\-fetch
-downloads packages, specified on the command-line, from the AUR.
+downloads packages specified on the command-line from the AUR.
 .
 .SH OPTIONS
-.TP
-.BI \-L " DIRECTORY" "\fR,\fP \-\-write\-log=" DIRECTORY
-The location of where to store the diffs of previously unpacked
-archives.
 .
 .TP
 .BR \-r ", " \-\-recurse
@@ -31,58 +23,83 @@ Download packages and their dependencies with
 .BR aur\-depends (1).
 .
 .TP
-.BR \-v ", " \-\-verbose
-Print logs to
-.BR stdout .
-.
-.TP
-.BR \-\-format= [ diff | log ]
-Specifies the format logs are generated.
-.
-.TP
-.B \-\-reset
-Reset to the upstream commit, discarding local changes.
+.BI \-\-sync= MODE
+If
+.I MODE
+is set to
+.BR reset ,
+reset to the upstream commit for the git repository, discarding any
+local changes.
 .IP
-When neither
-.BR \-\-rebase " or " \-\-reset
-are specified, the default behaviour is
-.BR \-\-reset ,
-unless
-.BR aurutils.rebase " is set to " true
-in which case
-.B \-\-rebase
-will be used.
+If
+.I MODE
+is set to
+.BR rebase ,
+update with
+.BR "git pull \-\-rebase"
+instead of resetting to the upstream commit. This can be used to keep
+locally committed changes to PKGBUILDS, while discarding uncommitted
+changes.
 .IP
-If specified,
-.BR \-\-reset " takes precedence over " aurutils.rebase .
-.
-.TP
-.BR \-R ", " \-\-rebase
-Instead of resetting to the upstream commit, update with
-.BR "git pull \-\-rebase" .
-This can be used to keep locally committed changes to PKGBUILDS.
-Uncommitted changes are discarded. See
-.BR NOTES .
+If
+.I MODE
+is set to
+.BR auto ,
+the git configuration for each repository is checked for
+.BR aurutils.rebase .
+If set to
+.BR true ,
+and the
+.B HEAD
+commit is not an ancestor of the
+.BR HEAD@{upstream}
+commit, behave as if
+.I MODE
+was set to
+.B rebase
+for the given repository. If
+.B HEAD
+is already an ancestor, perform no action. If
+.BR aurutils.rebase
+is unset or set to any other value, and the
+.B HEAD
+commit differs from the
+.B HEAD@{upstream}
+commit, behave as if
+.I MODE
+was set to
+.BR reset .
 .IP
-This feature can be enabled on a per-repository basis by setting
-.BR aurutils.rebase " to " true
-in the git configuration.
+.RS
+.B Note:
+If a rebase does not apply cleanly, the user is expected to fix any
+issues occuring in the git repository before continuing. A rebase may
+also inadvertently keep malicious commits that Trusted Users have
+removed from the git history. The
+.B rebase
+or
+.B auto
+modes should thus be used with care.
+.RE
 .
 .TP
-.B \-\-confirm\-seen
-Marks the package's checked out commit as seen. See
-.BR NOTES .
+.B \-S
+Alias for
+.BR \-\-sync=auto .
 .
 .TP
-.BI \-\-results= file
-Writes
-.IB action :file:// path
-pairs to the specified
-.IR file .
+.BI \-\-results= FILE
+Write colon-delimited output in the following form to
+.IR FILE :
+.IP
+<action>:<head_from>:<head_to>:file://<path>
+.IP
 Possible values for
 .I action
 are
-.B clone
+.BR clone ,
+.BR rebase ,
+.BR reset ,
 and
 .BR fetch .
 .I path
@@ -91,37 +108,34 @@ is the absolute path to the processed package repository.
 Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
 .
-.
-.SH NOTES
-.
-.SS LOGS
-The logs shown by
+.SS Log options
+Logs shown by
 .BR aur\-fetch (1)
-show changes that happened since the commit referenced by the
-special reference
-.B AUR_SEEN
-stored inside the repository.
-.PP
-This reference can be created with with:
-.PP
-.EX
-    \fB$ aur fetch \-\-confirm\-seen \fI<package> \fR[\fP<package>...\fR]\fR
-.EE
-.PP
-which will mark the current commit as seen, signaling
-.BR aur\-fetch (1)
-that current changes should not be shown in future logs.
+show changes that happened since the commit referenced by the previous
+.B HEAD
+before
+.BR git\-reset (1)
+or
+.BR git\-rebase (1).
+See the
+.B \-\-sync
+option for more information.
+.TP
+.BI \-L " DIRECTORY" "\fR,\fP \-\-write\-log=" DIRECTORY
+The directory where logs between merged revisions are stored.
 .
+.TP
+.BR \-\-format= [ diff | log ]
+Use
+.BR git\-diff (1)
+or
+.BR git\-log (1)
+to generate logs, respectively.
 .
-.SS REBASE
-This option should be used with care. While it enables users
-to keep personalized changes to PKGBUILDS, it will cause failures if
-.BR git\-rebase (1)
-does not apply cleanly. The user is expected to fix those issues
-before continuing.
-.PP
-More importantly, it may inadvertently keep malicious commits that
-Trusted Users have removed from the git history.
+.TP
+.BR \-v ", " \-\-verbose
+Print logs to
+.BR stdout .
 .
 .SH SEE ALSO
 .ad l
