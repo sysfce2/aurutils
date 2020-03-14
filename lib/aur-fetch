@@ -6,19 +6,15 @@ AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
-# default arguments
-pull_args=('--verbose')
-diff_args=('--patch' '--stat')
-
 # default options
-verbose=0 recurse=0 confirm_seen=0 results=0 sync=no log_fmt=diff
+verbose=0 recurse=0 results=0 sync=no log_fmt=diff
 
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
 XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 !
-    plain >&2 'usage: %s [-L directory] [-Rrv] pkgname...' "$argv0"
+    plain >&2 'usage: %s [-L directory] [-RrSv] pkgname...' "$argv0"
     exit 1
 }
 
@@ -30,7 +26,7 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='rvL:S'
-opt_long=('recurse' 'verbose' 'write-log:' 'confirm-seen' 'sync:' 'results:' 'format:')
+opt_long=('recurse' 'verbose' 'write-log:' 'sync:' 'results:' 'format:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -67,8 +63,6 @@ while true; do
                     error '%s: invalid --format option: %s' "$argv0" "$1"
                     usage ;;
             esac ;;
-        --confirm-seen)
-            confirm_seen=1 ;;
         --results)
             shift; results_file=$1 ;;
         --dump-options)
@@ -81,7 +75,7 @@ while true; do
 done
 
 if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
-    error '%s: %s: Not a directory' "$argv0" "$log_dir"
+    error '%s: %s: not a directory' "$argv0" "$log_dir"
     exit 20
 fi
 
@@ -91,7 +85,7 @@ if [[ -v results_file ]]; then
 fi
 
 if ! (( $# )); then
-    error '%s: No pkgname given' "$argv0"
+    error '%s: no pkgname given' "$argv0"
     exit 1
 fi
 
@@ -101,10 +95,6 @@ orderfile=$XDG_CONFIG_HOME/aurutils/$argv0/orderfile
 
 if [[ ! -s $orderfile ]]; then
     printf 'PKGBUILD\n' > "$orderfile"
-fi
-
-if (( confirm_seen )); then
-    msg >&2 "Marking repositories as seen"
 fi
 
 if (( recurse )); then
@@ -119,15 +109,9 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries. (#274)
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
 
-        if (( confirm_seen )); then
-            git update-ref AUR_SEEN HEAD
-
-            msg2 >&2 'Marked repository %s as seen' "$pkg"
-            continue # skip diff logic
-        fi
-
         git fetch --verbose >&2 || exit 1
 
+        prev_head=$(git rev-parse 'HEAD')
         case $sync in
             auto)
                 if [[ $(git config --get --bool aurutils.rebase) == "true" ]]; then
@@ -141,29 +125,24 @@ fi | while read -r pkg; do
         case $sync in
             rebase)
                 git reset --hard 'HEAD' >&2
-                git rebase "${pull_args[@]}" >&2 ;;
+                git rebase --verbose >&2 ;;
             reset)
                 git reset --hard 'HEAD@{upstream}' >&2 ;;
         esac || {
-            error '%s: %s: Failed to integrate changes' "$argv0" "$pkg"
+            error '%s: %s: failed to integrate changes' "$argv0" "$pkg"
             exit 1
         }
 
-        if ! seen=$(git rev-parse --quiet --verify AUR_SEEN); then
-            warning '%s: AUR_SEEN object not found for %s, assuming empty tree' "$pkg" "$argv0"
-            seen=$(git hash-object -t tree /dev/null)
-        fi
-
-        if [[ $seen != "$(git rev-parse HEAD)" ]]; then
-            range=${seen:+$seen..}HEAD
+        if [[ $prev_head != "$(git rev-parse HEAD)" ]]; then
+            range=$prev_head..HEAD
 
             # Contents have changed since last inspection; print differences.
             if (( verbose )); then
-                git --no-pager "$log_fmt" "${diff_args[@]}" "$range"
+                git --no-pager "$log_fmt" --patch --stat "$range"
             fi
 
             if [[ $log_dir ]]; then
-                git --no-pager "$log_fmt" "${diff_args[@]}" "$range" >"$log_dir/$pkg.$log_fmt"
+                git --no-pager "$log_fmt" --patch --stat "$range" >"$log_dir/$pkg.$log_fmt"
             fi
         fi
 
@@ -173,13 +152,7 @@ fi | while read -r pkg; do
 
     # Otherwise, try to clone anew
     elif git clone "$AUR_LOCATION/$pkg"; then
-        # Avoid issues with filesystem boundaries. (#274)
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
-
-        if (( confirm_seen )); then
-            git update-ref AUR_SEEN HEAD
-            msg2 'Marked new repository %s as seen' "$pkg"
-        fi
 
         # Show PKGBUILDs first. (#399)
         git config diff.orderFile "$orderfile"
@@ -188,7 +161,7 @@ fi | while read -r pkg; do
             printf 'clone:file://%s\n' "$PWD/$pkg" | tee -a "$results_file"
         fi
     else
-        error '%s: %s: Failed to clone repository' "$argv0" "$pkg"
+        error '%s: %s: failed to clone repository' "$argv0" "$pkg"
         exit 1
     fi
 done
