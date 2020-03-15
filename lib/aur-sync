@@ -255,7 +255,7 @@ fi
 if [[ -s argv ]]; then
     # shellcheck disable=SC2094
     # $1 pkgname $2 depends $3 pkgbase $4 pkgver
-    xargs -a argv aur depends --table >depends
+    xargs -a argv -d'\n' aur depends --table >depends
 else
     plain >&2 "there is nothing to do"
     exit
@@ -312,14 +312,16 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    parallel -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
-        aur fetch -L "$tmp_view" -S :::: "$tmp"/queue
+    xargs -a "$tmp"/queue -d'\n' aur fetch -L "$tmp_view" -S
 fi
 
 # Link build files in the queue (absolute links)
-parallel -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
+while read -r pkg; do
+    [[ $pkg ]] && printf '%s\0' "$(pwd -P)/$pkg"
+done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
 
 if (( graph )); then
+    # Avoid exceeding ARG_MAX with printf as built-in command
     if ! printf '%s\0' "$tmp_view"/*/.SRCINFO | xargs -0 cat -- | aur_graph >/dev/null; then
         error '%s: failed to validate dependency graph' "$argv0"
         exit 1
