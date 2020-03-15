@@ -320,7 +320,7 @@ fi
 parallel -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
 
 if (( graph )); then
-    if ! aur graph "$tmp_view"/*/.SRCINFO >/dev/null; then
+    if ! printf '%s\0' "$tmp_view"/*/.SRCINFO | xargs -0 cat -- | aur_graph >/dev/null; then
         error '%s: failed to validate dependency graph' "$argv0"
         exit 1
     fi
