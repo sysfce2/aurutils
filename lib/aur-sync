@@ -198,7 +198,7 @@ fi
 
 if [[ -s argv ]]; then
     # $1 pkgname $2 depends $3 pkgbase $4 pkgver
-    xargs --arg-file=argv aur depends --table >depends
+    xargs --arg-file=argv -d'\n' aur depends --table >depends
 else
     plain "there is nothing to do" >&2
     exit
@@ -251,13 +251,14 @@ else
 fi
 
 if ((download)); then
-    msg "Retrieving package files" >&2
-    parallel -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
-        aur fetch "${fetch_args[@]}" :::: "$tmp"/queue
+    msg >&2 "Retrieving package files"
+    xargs -a "$tmp"/queue -d'\n' aur fetch -L "$tmp_view" -S
 fi
 
-# link build files in the queue (absolute links)
-parallel -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
+# Link build files in the queue (absolute links)
+while read -r pkg; do
+    [[ $pkg ]] && printf '%s\0' "$(pwd -P)/$pkg"
+done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
 
 if type -P >/dev/null vifm; then
     # avoid directory prefix in printed paths (#452)
@@ -267,9 +268,10 @@ else
     viewer() ( cd "$1"; command -- ${PAGER:-less -K -+F} )
 fi
 
-# check if dependency graph is valid
-if ((graph)); then
-    aur graph "$tmp_view"/*/.SRCINFO >/dev/null
+# Check AUR metadata for validity (#20)
+if ((graph)) && ! find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
+    error '%s: failed to validate dependency graph' "$argv0"
+    exit 1
 fi
 
 if ((view)); then
