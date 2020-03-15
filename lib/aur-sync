@@ -357,7 +357,9 @@ if (( build )); then
     aur build --arg-file "$tmp"/queue --database "$db_name" --root "$db_root" \
         "${build_args[@]}" -- "${build_extra_args[@]}"
 else
-    xargs -a "$tmp"/queue -I{} printf '%s\n' "$(pwd -P)"/{}
+    while read -r pkg; do
+        [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
+    done < "$tmp"/queue
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
