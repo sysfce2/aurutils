@@ -58,10 +58,6 @@ complement() {
     grep -Fxvf "$@" || return $(( $? - 1 ))
 }
 
-order() {
-    cut -f1,2 depends | tr_ver | tsort
-}
-
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp" "$tmp_view"
@@ -212,7 +208,9 @@ fi
 
 # Append contents of ignore file
 if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
-    while IFS="#" read -r i _; do [[ $i ]] && pkg_i+=("$i"); done < "$ignore_file"
+    while IFS='#' read -r i _; do
+        [[ $i ]] && pkg_i+=("$i")
+    done < "$ignore_file"
 fi
 
 if (( rotate )); then
@@ -257,7 +255,7 @@ fi
 if [[ -s argv ]]; then
     # shellcheck disable=SC2094
     # $1 pkgname $2 depends $3 pkgbase $4 pkgver
-    xargs --arg-file=argv aur depends --table >depends
+    xargs -a argv -d'\n' aur depends --table >depends
 else
     plain >&2 "there is nothing to do"
     exit
@@ -294,7 +292,7 @@ cut -f2 --complement depends | sort -u >pkginfo
 } >filter
 
 # pkgname queue (AUR + repos)
-if order depends >queue_0; then
+if cut -f1,2 depends | tr_ver | tsort >queue_0; then
     tac queue_0 | lib32 | complement filter >queue_1
 else
     # input contains a loop
@@ -314,16 +312,20 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    parallel -Xj +3 --nice 10 --halt now,fail=1 --keep-order \
-        aur fetch -L "$tmp_view" -S :::: "$tmp"/queue
+    xargs -a "$tmp"/queue -d'\n' aur fetch -L "$tmp_view" -S
 fi
 
 # Link build files in the queue (absolute links)
-parallel -X ln -s "$(pwd -P)"/{} "$tmp_view" :::: "$tmp"/queue
+while read -r pkg; do
+    [[ $pkg ]] && printf '%s\0' "$(pwd -P)/$pkg"
+done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
 
-# Check if dependency graph is valid
 if (( graph )); then
-    aur graph "$tmp_view"/*/.SRCINFO >/dev/null
+    # Avoid exceeding ARG_MAX with printf as built-in command
+    if ! printf '%s\0' "$tmp_view"/*/.SRCINFO | xargs -0 cat -- | aur_graph >/dev/null; then
+        error '%s: failed to validate dependency graph' "$argv0"
+        exit 1
+    fi
 fi
 
 if (( view )); then
@@ -344,10 +346,10 @@ if (( view )); then
           find "$tmp_view" -maxdepth 1 -type f
 
           # Print build directories in dependency order
-          xargs -I{} -a "$tmp"/queue find -L "$tmp_view"/{} -maxdepth 1
+          xargs -a "$tmp"/queue -I{} find -L "$tmp_view"/{} -maxdepth 1
         } | viewer "$tmp_view"
     else
-        error '%s: no viewer found, please install vifm or define AUR_PAGER' "$argv0"
+        error '%s: no viewer found, please install vifm or set AUR_PAGER' "$argv0"
         exit 1
     fi
     xargs -a "$tmp/queue" aur fetch --confirm-seen
@@ -357,7 +359,9 @@ if (( build )); then
     aur build --arg-file "$tmp"/queue --database "$db_name" --root "$db_root" \
         "${build_args[@]}" -- "${build_extra_args[@]}"
 else
-    xargs -a "$tmp"/queue -I{} printf '%s\n' "$(pwd -P)"/{}
+    while read -r pkg; do
+        [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
+    done < "$tmp"/queue
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
