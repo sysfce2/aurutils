@@ -10,7 +10,6 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
 build_args=(--clean --syncdeps)
-build_extra_args=()
 repo_args=()
 
 # default options (enabled)
@@ -201,11 +200,6 @@ tmp_view=$(mktemp -d --tmpdir "aurutils-$argv0-view.XXXXXXXX") || exit
 
 trap 'trap_exit' EXIT
 
-# Append remaining options to the aur-build command-line
-if (( $# )); then
-    build_extra_args+=("$@")
-fi
-
 # Append contents of ignore file
 if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
     while IFS='#' read -r i _; do
@@ -356,8 +350,7 @@ if (( view )); then
 fi
 
 if (( build )); then
-    aur build --arg-file "$tmp"/queue --database "$db_name" --root "$db_root" \
-        "${build_args[@]}" -- "${build_extra_args[@]}"
+    aur build -a "$tmp"/queue -d "$db_name" --root "$db_root" "${build_args[@]}"
 else
     while read -r pkg; do
         [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"

@@ -121,20 +121,21 @@ value of the configured repository.
 .
 .SS Build options
 The default build command is
-.BR "makepkg \-\-clean \-\-syncdeps" .
-Additional options may be passed to
-.B aur\-build
-by placing them after
-.B --
-in the
-.B aur\-sync
-command-line. See
+.BR "aur-build \-\-clean \-\-syncdeps" .
+Specifying
 .BR aur\-build (1)
-for details.
+options such as
+.B \-\-chroot
+or
+.B \-\-force
+to
+.B aur\-sync
+will append these options to the build command.
 .
 .TP
 .BR \-c ", " \-\-chroot
-Build packages in a systemd\-nspawn container. (\fBaur build \-c\fR)
+Build packages in a systemd\-nspawn container.
+.RB ( "aur build \-c" )
 .
 .TP
 .BR \-f ", " \-\-force
@@ -196,7 +197,7 @@ in
 .BR vifm (1).
 See also
 .B AUR_CONFIRM_PAGER
-for adding a confirmation prompt if the viewer exited successfully.
+for adding a confirmation prompt after the viewer exited successfully.
 .PP
 To avoid downloading files again, the
 .B \-\-continue
