@@ -66,9 +66,9 @@ source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
 opt_short='c:d:r:alquS'
-opt_long=('database:' 'repo:' 'pacman-conf:' 'root:' 'path' 'all' 'list'
+opt_long=('database:' 'repo:' 'config:' 'root:' 'path' 'all' 'list'
           'repo-list' 'sync' 'upgrades' 'table' 'quiet')
-opt_hidden=('dump-options' 'status-file:')
+opt_hidden=('dump-options' 'status-file:' 'pacman-conf:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -82,7 +82,7 @@ while true; do
             shift; db_name=$1 ;;
         -r|--root)
             shift; db_root=$1 ;;
-        -c|--pacman-conf)
+        -c|--config|--pacman-conf)
             shift; pacman_conf=$1 ;;
         -l|--list)
             mode=packages ;;
