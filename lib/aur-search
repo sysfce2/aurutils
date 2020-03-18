@@ -90,7 +90,7 @@ info_short() {
         esac
 
         # Unset LC_ALL to ensure it doesn't override LC_NUMERIC.
-        LC_ALL= LC_NUMERIC=C printf -v Popularity '%.2f' "$Popularity"
+        LC_ALL='' LC_NUMERIC=C printf -v Popularity '%.2f' "$Popularity"
 
         printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(+%s %s%%) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
                "$Name" "$Version" "$NumVotes" "$Popularity" "$Maintainer" "$OutOfDate" "$Description"
