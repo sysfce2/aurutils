@@ -346,7 +346,6 @@ if (( view )); then
         error '%s: no viewer found, please install vifm or set AUR_PAGER' "$argv0"
         exit 1
     fi
-    xargs -a "$tmp/queue" aur fetch --confirm-seen
 fi
 
 if (( build )); then
