@@ -316,7 +316,7 @@ done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
 
 if (( graph )); then
     # Avoid exceeding ARG_MAX with printf as built-in command
-    if ! printf '%s\0' "$tmp_view"/*/.SRCINFO | xargs -0 cat -- | aur_graph >/dev/null; then
+    if ! printf '%s\0' "$tmp_view"/*/.SRCINFO | xargs -0 cat -- | aur graph >/dev/null; then
         error '%s: failed to validate dependency graph' "$argv0"
         exit 1
     fi
