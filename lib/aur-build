@@ -158,7 +158,13 @@ fi
 # Propagate pacman config to aur-repo and pacconf (#543)
 conf_args=()
 if [[ -v pacman_conf ]]; then
+    chroot_args+=(--pacman-conf "$pacman_conf")
     conf_args+=(--config "$pacman_conf")
+fi
+
+# Defaults to /usr/share/devtools/makepkg-<arch>.conf
+if [[ -v makepkg_conf ]]; then
+    chroot_args+=(--makepkg-conf "$makepkg_conf")
 fi
 
 # Assign environment variables (#443)
@@ -206,15 +212,6 @@ fi
 if (( chroot )); then
     # Defaults to /usr/share/devtools/pacman-aur.conf
     chroot_args+=(--prefix "$prefix")
-
-    if [[ -v pacman_conf ]]; then
-        chroot_args+=(--pacman-conf "$pacman_conf")
-    fi
-
-    # Defaults to /usr/share/devtools/makepkg-<arch>.conf
-    if [[ -v makepkg_conf ]]; then
-        chroot_args+=(--makepkg-conf "$makepkg_conf")
-    fi
 
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
