@@ -12,11 +12,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0 prefix=aur
 
 # default arguments
-chroot_args=()
+chroot_args=() conf_args=() makepkg_args=() makechrootpkg_makepkg_args=() repo_add_args=()
 gpg_args=(--detach-sign --no-armor --batch)
-makepkg_args=()
-makechrootpkg_args=(-cu)
-repo_add_args=()
+makechrootpkg_args=(-c -u)
 
 db_replaces() {
     bsdcat "$1" | awk '
@@ -57,12 +55,13 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
 fi
 
 ## option parsing
-opt_short='a:B:d:D:AcCfnrsvLNRST'
+opt_short='a:B:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
           'remove' 'build-command:' 'pkgver' 'prefix:' 'rmdeps'
           'no-confirm' 'ignore-arch' 'log' 'new' 'makepkg-conf:'
-          'bind:' 'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean')
+          'bind:' 'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean'
+          'namcap' 'checkpkg' 'user:')
 opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -88,7 +87,7 @@ while true; do
             shift; makepkg_conf=$1 ;;
         --pacman-conf)
             shift; pacman_conf=$1 ;;
-        -N|--nosync|--no-sync)
+        --nosync|--no-sync)
             no_sync=1 ;;
         --pkgver)
             run_pkgver=1
@@ -109,11 +108,18 @@ while true; do
             shift; makechrootpkg_args+=(-d"$1") ;;
         --prefix)
             shift; prefix=$1 ;;
+        -N|--namcap)
+            makechrootpkg_args+=(-n) ;;
+        --checkpkg) # XXX short option
+            makechrootpkg_args+=(-C) ;;
         -T|--temp)
             makechrootpkg_args+=(-T) ;;
+        -U|--user)
+            shift; makechrootpkg_args+=(-U "$1") ;;
         # makepkg options
         -A|--ignorearch|--ignore-arch)
-            makepkg_args+=(--ignorearch) ;;
+            makepkg_args+=(--ignorearch)
+            makechrootpkg_makepkg_args+=(--ignorearch) ;;
         -C|--clean)
             makepkg_args+=(--clean) ;;
         -L|--log)
@@ -151,12 +157,11 @@ trap 'exit' INT
 
 # Append remaining options to the makechrootpkg command-line
 if (( $# )); then
-    makechrootpkg_args+=("$@")
     makepkg_args+=("$@")
+    makechrootpkg_makepkg_args+=("$@")
 fi
 
 # Propagate pacman config to aur-repo and pacconf (#543)
-conf_args=()
 if [[ -v pacman_conf ]]; then
     chroot_args+=(--pacman-conf "$pacman_conf")
     conf_args+=(--config "$pacman_conf")
@@ -284,7 +289,7 @@ while IFS= read -ru "$fd" path; do
     elif (( chroot )); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
         env PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --no-prepare \
-            -- "${makechrootpkg_args[@]}"
+            -- "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
         env PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
