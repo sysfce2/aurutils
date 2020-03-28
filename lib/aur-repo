@@ -223,7 +223,7 @@ case $mode in
         ;;
     *)
         if [[ $modifier == path ]]; then
-            printf '%s\n' "$db_root/$db_name".db
+            readlink -f -- "$db_root/$db_name".db
         else
             usage
         fi ;;

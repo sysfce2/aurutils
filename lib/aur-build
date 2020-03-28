@@ -180,13 +180,13 @@ case $db_name in
             "") db_path=$(aur repo "${repo_args[@]}" --path -d "$db_name")
                 db_root=$(dirname "$db_path")
                 ;;
-             *) db_path=$db_root/$db_name.db
+             *) db_path=$(readlink -f -- "$db_root/$db_name".db)
                 ;;
         esac ;;
 esac
 
 # Resolve symbolic link to database.
-if ! db_path=$(readlink -e -- "$db_path"); then
+if ! [[ -f $db_path ]]; then
     error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
 elif ! [[ -w $db_path ]]; then
