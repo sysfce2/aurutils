@@ -64,7 +64,7 @@ while true; do
     shift
 done
 
-# Use remaining options for the makechrootpkg command-line
+# Reset makechrootpkg command-line if specified
 if (( $# )); then
     makechrootpkg_args=("$@")
 fi

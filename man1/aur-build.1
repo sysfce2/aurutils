@@ -1,4 +1,4 @@
-.TH AUR\-BUILD 1 2019-01-24 AURUTILS
+.TH AUR\-BUILD 1 2019-03-27 AURUTILS
 .SH NAME
 aur\-build \- build packages to a local repository
 .
@@ -87,7 +87,7 @@ The name of the pacman database.
 Continue the build process if a package with the same name is found.
 .
 .TP
-.BR \-N ", " \-\-no\-sync
+.BR \-\-no\-sync
 Do not sync the local repository after building.
 .
 .TP
@@ -145,21 +145,6 @@ To use another key than the default, the
 environment variable can be set to the appropriate key identifier.
 .
 .SS makechrootpkg options
-Additional options may be passed to
-.B makechrootpkg
-by placing them after
-.B --
-in the
-.B aur\-build
-command-line. For a list of available options, run
-.B "makechrootpkg \-h".
-.PP
-The default set of options used in
-.B archbuild
-is
-.BR "makechrootpkg \-c \-n \-C" ,
-and cannot be overridden.
-.
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
 The base directory for containers. Defaults to
@@ -190,8 +175,16 @@ is set to
 .BR aur .
 .
 .TP
-.B \-\-recreate
-Recreate the chroot before building packages.
+.BR \-N ", " \-\-namcap
+Run
+.BR namcap (1)
+on the built package.
+.
+.TP
+.BR \-\-checkpkg
+Run
+.BR checkpkg (1)
+on the built package.
 .
 .TP
 .BR \-T ", " \-\-temp
@@ -199,6 +192,9 @@ Build in a temporary container. (\fBmakechrootpkg \-T\fR) Temporary
 means that the user container has a random name and is removed on
 build completion.
 .
+.TP
+.BI \-U " USER" "\fR,\fP \-\-user=" USER
+
 .SS makepkg options
 Additional options may be passed to
 .B makepkg
@@ -306,7 +302,6 @@ custom counterpart. Packages which define a
 .I replaces
 field are ignored if the target package is installed on the local system.
 .
-.
 .SS Using a dedicated build user
 While using a dedicated user for the build process does not increase
 security (beyond protecting against packaging errors that write to
@@ -382,96 +377,6 @@ You can use
 rebuild-detector
 .UE
 to detect which packages need to be rebuilt.
-.
-.SH CHROOT NOTES
-.SS Building with makechrootpkg
-Changes to the pacman database are
-.I not
-propagated from the container to the local system. Packages must be
-installed and updated separately, typically through
-.BI "pacman \-Syu " package_name\fR.
-.PP
-Package conflicts inside the container must be solved manually, as
-.B makechrootpkg
-uses
-.B "makepkg \-\-noconfirm \-s"
-internally. For example, to replace
-.I gcc
-with
-.IR gcc\-multilib ,
-run
-.B "arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S gcc\-multilib"
-as root.
-.PP
-To install packages from the local repository (for example, on
-dependency resolution with
-.BR "makepkg \-s" ,
-the container requires read access to the host directory where it is
-located. This is ensured through a
-.IR "bind mount" .
-.
-.SS Avoiding password prompts
-.BR makepkg (8)
-must be run as a regular user as of version 4.2, with privileged
-operations done via
-.BR sudo (8).
-It follows that
-.BR aur\-build (1)
-can not run directly as root. To avoid password prompts,
-.BR sudoers (5)
-can be used instead. For example, if
-.BR aur\-build (1)
-is run as the
-.I archie
-user, create the following sudoers policy:
-.PP
-.EX
-    archie ALL = (root) NOPASSWD: SETENV: /usr/bin/archbuild
-.EE
-.TP
-.B Note:
-Should the rule only apply to specific hosts, replace
-.B ALL
-with the respective
-.IR hostname .
-.
-.SS Using ccache and distcc
-As in the example above, install the required packages:
-.PP
-.EX
-    # arch\-nspawn /var/lib/archbuild/aur\-x86_64/root pacman \-S ccache distcc
-.EE
-.PP
-Ensure write access to
-.B ccache
-directories on the host:
-.PP
-.EX
-    # aur build \-\-chroot \-\- \-d /home/_ccache:/build/.ccache
-.EE
-.
-.SS Building for a different architecture
-To build packages for a different architecture, prepend
-.BI setarch " arch"
-to the
-.B aur\-build
-command line.
-.PP
-The target architecture must be supported both by the host (run
-.B "setarch \-\-list"
-for an approximation), and have a matching
-.BR makepkg.conf (5)
-file available in
-.B /usr/share/devtools
-(such as
-.I /usr/share/devtools/makepkg\-i686.conf
-for
-.IR i686 ).
-.TP
-.B Note:
-Building for other CPU architectures may be done through
-QEMU, for example with
-.BR proot (1).
 .
 .SH BUGS
 Databases are built with

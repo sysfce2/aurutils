@@ -93,7 +93,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
           'no-ver-argv' 'no-view' 'print' 'provides' 'rm-deps'
           'sign' 'temp' 'upgrades' 'pkgver' 'rebuild' 'rebuild-tree'
           'build-command:' 'ignore-file:' 'remove' 'provides-from:'
-          'new' 'prevent-downgrade' 'verify')
+          'new' 'prevent-downgrade' 'verify' 'results:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:'
             'noconfirm' 'nover' 'nograph' 'nover-argv' 'noview'
             'rebuildtree' 'rmdeps' 'gpg-sign')
@@ -156,6 +156,8 @@ while true; do
             repo_args+=(--pacman-conf "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
+        --results)
+            shift; build_args+=(--results "$1") ;;
         -S|--sign|--gpg-sign)
             build_args+=(--sign) ;;
         # build options (devtools)
