@@ -31,7 +31,7 @@ uri_search() {
 }
 
 usage() {
-    printf 'usage: %s [-t [info|search] ] [-b by]' "$argv0" >&2
+    printf 'usage: %s [-t [info|search] ] [-b by]\n' "$argv0" >&2
     exit 1
 }
 
@@ -73,10 +73,6 @@ case $type in
          *) usage ;;
 esac
 
-# store output on error
-wget_log=$(mktemp --tmpdir aurutils-wget.XXXXXXXX) || exit
-trap 'rm -rf -- "$wget_log"' EXIT
-
 # check for interactive terminal
 if [[ -t 0 ]]; then
     cat >&2 <<EOF
@@ -87,10 +83,6 @@ EOF
 fi
 
 # pipeline
-if ! jq -R -r '@uri' | uri | wget -o "$wget_log" -i - -O - -nv; then
-    err=$?
-    cat >&2 "$wget_log"
-    exit "$err"
-fi
+jq -R -r '@uri' | uri | awk '{ printf "url %s\n", $0; }' | curl -K- -fgLsS
 
 # vim: set et sw=4 sts=4 ft=sh:

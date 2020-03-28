@@ -16,7 +16,7 @@ extract_date() {
 }
 
 list_update() {
-    if wget -O - -o last_transfer "$1" | gzip -d - > "$2"; then
+    if curl -f "$1" --stderr last_transfer | gzip -d - > "$2"; then
         extract_date "$2"
     else
         printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
@@ -24,8 +24,8 @@ list_update() {
 }
 
 list_http_date() {
-    if wget -S --spider -o last_transfer "$1"; then
-        awk -F', ' '/Date:/ {print $2}' last_transfer
+    if curl -f "$1" -SsIo last_transfer; then
+        awk -F', ' '/^[Dd]ate:/ {print $2}' last_transfer
     else
         printf >&2 '%s: warning: failed to retrieve HTTP date\n' "$argv0"
     fi
