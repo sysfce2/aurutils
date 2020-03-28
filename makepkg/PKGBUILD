@@ -11,11 +11,12 @@ changelog=aurutils.changelog
 sha256sums=('SKIP')
 conflicts=('aurutils')
 provides=("aurutils=${pkgver%%.r*}")
-depends=('git' 'jq' 'pacutils' 'wget')
+depends=('git' 'jq' 'pacutils' 'curl')
 makedepends=('git')
 optdepends=('bash-completion: bash completion'
+            'zsh: zsh completion'
             'devtools: aur-chroot'
-            'vifm: build file interaction')
+            'vifm: default pager')
 
 pkgver() {
     cd aurutils
