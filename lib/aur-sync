@@ -67,7 +67,7 @@ trap_exit() {
 }
 
 usage() {
-    plain >&2 'usage: %s [-d repo] [--root path] [-cdfPpSu] [--] pkgname...' "$argv0"
+    plain >&2 'usage: %s [-d repo] [--root path] [-cdfpSu] [--] pkgname...' "$argv0"
     exit 1
 }
 
@@ -316,9 +316,11 @@ while read -r pkg; do
     [[ $pkg ]] && printf '%s\0' "$(pwd -P)/$pkg"
 done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
 
+# Check AUR metadata for validity (#20)
 if (( graph )); then
-    # Avoid exceeding ARG_MAX with printf as built-in command
-    if ! printf '%s\0' "$tmp_view"/*/.SRCINFO | xargs -0 cat -- | aur graph >/dev/null; then
+    # Use find to avoid exceeding ARG_MAX
+    # See: https://www.in-ulm.de/~mascheck/various/argmax/
+    if ! find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
         error '%s: failed to validate dependency graph' "$argv0"
         exit 1
     fi
