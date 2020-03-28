@@ -13,7 +13,7 @@ build_args=(--clean --syncdeps)
 repo_args=()
 
 # default options (enabled)
-build=1 chkver_depth=2 download=1 view=1 provides=0 graph=1
+build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1
 
 # default options (disabled)
 rotate=0 update=0
@@ -86,17 +86,17 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
-opt_short='B:d:D:AcfLnpPrRSTuv'
+opt_short='B:d:D:AcfLnprRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
           'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
           'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph'
-          'no-ver-argv' 'no-view' 'print' 'provides' 'rm-deps'
+          'no-ver-argv' 'no-view' 'no-provides' 'print' 'rm-deps'
           'sign' 'temp' 'upgrades' 'pkgver' 'rebuild' 'rebuild-tree'
           'build-command:' 'ignore-file:' 'remove' 'provides-from:'
           'new' 'prevent-downgrade' 'verify' 'results:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:'
             'noconfirm' 'nover' 'nograph' 'nover-argv' 'noview'
-            'rebuildtree' 'rmdeps' 'gpg-sign')
+            'noprovides' 'rebuildtree' 'rmdeps' 'gpg-sign')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -124,8 +124,8 @@ while true; do
             chkver_depth=1 ;;
         --noview|--no-view)
             view=0 ;;
-        -P|--provides)
-            provides=1 ;;
+        --noprovides|--no-provides)
+            provides=0 ;;
         --provides-from)
             shift; IFS=, read -a repo -r <<< "$1"
             repo_p+=("${repo[@]}") ;;
