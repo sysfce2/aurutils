@@ -5,10 +5,6 @@ argv0=query
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default options
-declare -i rpc_ver=5
-declare    rpc_url="$AUR_LOCATION/rpc/?v=$rpc_ver"
-
 uri_info() {
     #global rpc_url
     awk -v rpc="$rpc_url&type=info" '{
@@ -47,13 +43,13 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset by type
+unset arg_by arg_type rpc_url rpc_ver
 while true; do
     case "$1" in
         -b|--by)
-            shift; by=$1 ;;
+            shift; arg_by=$1 ;;
         -t|--type)
-            shift; type=$1 ;;
+            shift; arg_type=$1 ;;
         --rpc-ver)
             shift; rpc_ver=$1 ;;
         --rpc-url)
@@ -67,10 +63,14 @@ while true; do
     shift
 done
 
+# set AUR remote
+rpc_ver=${rpc_ver:-5}
+rpc_url=${rpc_url:-$AUR_LOCATION/rpc/?v=$rpc_ver}
+
 # set filters
-case $type in
+case $arg_type in
       info) uri() { uri_info; } ;;
-    search) uri() { uri_search "${by:-name-desc}"; } ;;
+    search) uri() { uri_search "${arg_by:-name-desc}"; } ;;
          *) usage ;;
 esac
 
