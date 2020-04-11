@@ -5,10 +5,6 @@ argv0=query
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default options
-declare -i rpc_ver=5
-declare    rpc_url="$AUR_LOCATION/rpc/?v=$rpc_ver"
-
 uri_info() {
     #global rpc_url
     awk -v rpc="$rpc_url&type=info" '{
@@ -19,7 +15,8 @@ uri_info() {
         else if (NR > 1)
             printf "&arg[]=%s", $0
     } END {
-        printf "\n"
+        if (NR != 0)
+            printf "\n"
     }'
 }
 
@@ -46,13 +43,13 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset by type
+unset arg_by arg_type rpc_url rpc_ver
 while true; do
     case "$1" in
         -b|--by)
-            shift; by=$1 ;;
+            shift; arg_by=$1 ;;
         -t|--type)
-            shift; type=$1 ;;
+            shift; arg_type=$1 ;;
         --rpc-ver)
             shift; rpc_ver=$1 ;;
         --rpc-url)
@@ -66,10 +63,14 @@ while true; do
     shift
 done
 
+# set AUR remote
+rpc_ver=${rpc_ver:-5}
+rpc_url=${rpc_url:-$AUR_LOCATION/rpc/?v=$rpc_ver}
+
 # set filters
-case $type in
+case $arg_type in
       info) uri() { uri_info; } ;;
-    search) uri() { uri_search "${by:-name-desc}"; } ;;
+    search) uri() { uri_search "${arg_by:-name-desc}"; } ;;
          *) usage ;;
 esac
 
@@ -83,6 +84,9 @@ EOF
 fi
 
 # pipeline
-jq -R -r '@uri' | uri | awk '{ printf "url %s\n", $0; }' | curl -K- -fgLsS
+readarray -t urls < <(jq -R -r '@uri' | uri )
+if (( ${#urls[@]} )); then
+    printf 'url %s\n' "${urls[@]}" | curl -K- -fgLsS
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:

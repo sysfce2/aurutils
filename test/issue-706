@@ -1,0 +1,2 @@
+#!/bin/bash
+aur query -t info </dev/null
