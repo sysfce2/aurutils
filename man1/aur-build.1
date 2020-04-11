@@ -93,11 +93,11 @@ Do not sync the local repository after building.
 .TP
 .BR \-\-pkgver
 Run
-.B "makepkg \-\-noprepare \-od"
+.B "makepkg \-od \-\ignorearch"
 before checking existing packages (effectively running an existing
 .B pkgver()
 function). This option adds
-.B \-\-holdver
+.B \-\-noextract
 to the default
 .BR makepkg (8)
 options.

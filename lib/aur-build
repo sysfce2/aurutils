@@ -91,7 +91,7 @@ while true; do
             no_sync=1 ;;
         --pkgver)
             run_pkgver=1
-            makepkg_args+=(--holdver) ;;
+            makepkg_args+=(--noextract) ;;
         --results)
             shift; results_file=$1 ;;
         --root)
@@ -262,7 +262,7 @@ while IFS= read -ru "$fd" path; do
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
         # Ignore architecture in pkgver() function (#536)
-        makepkg --noprepare -od --ignorearch
+        makepkg -od --ignorearch
     fi
 
     if (( ! overwrite )); then
