@@ -71,22 +71,20 @@ Do not present build files for inspection.
 Print target packages and their paths instead of building them.
 .
 .TP
-.BR \-P ", " \-\-provides
-Take virtual dependencies
+.BR \-\-noprovides ", " \-\-no\-provides
+Do not take virtual dependencies
 .RB ( provides )
-in pacman sync repository into account. Version information is not
-considered. Packages specified on the command line or available
-upgrades are taken as target regardless of this setting.
+in pacman sync repository into account. Packages specified on the
+command line or available upgrades are taken as target regardless of
+this setting.
 .
 .TP
 .BI \-\-provides\-from= DIR1,...
-As
-.BR \-\-provides ,
-but only the specified (comma-separated) repositories are taken into
-account. If the same package is provided in multiple repositories,
-ordering is ignored (for example, \-\-provides\-from=a,b is equivalent
-to \-\-provides\-from=b,a) and dependencies are installed according to
-the order defined in
+Only take specified (comma-separated) repositories into acount for
+virtual dependencies. If the same package is provided in multiple
+repositories, ordering is ignored (for example, \-\-provides\-from=a,b
+is equivalent to \-\-provides\-from=b,a) and dependencies are
+installed according to the order defined in
 .BR pacman.conf (5).
 .
 .TP
