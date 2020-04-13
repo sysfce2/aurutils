@@ -9,7 +9,7 @@ XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 # default arguments (empty)
 chroot_args=() pacconf_args=() repo_add_args=() makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
@@ -199,7 +199,6 @@ fi
 # Write successfully built packages to file (#437)
 if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
-    results=1
 fi
 
 # Defaults to /usr/share/devtools/pacman-<prefix>.conf
@@ -312,7 +311,7 @@ while IFS= read -ru "$fd" path; do
     cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
-    if (( results )); then
+    if [[ -v results_file ]]; then
         printf "build:file://${db_path%/*}/%s\n" "${pkglist[@]}" | tee -a "$results_file"
     fi
 
