@@ -4,23 +4,25 @@ aur\-fetch \- download packages from the AUR
 .
 .SH SYNOPSIS
 .SY "aur fetch"
-.OP \-L log_dir
 .OP \-r
 .OP \-S
-.OP \-v
-.IR package " [" package... ]
+.IR pkgbase " [" pkgbase... ]
 .YS
 .
 .SH DESCRIPTION
 .B aur\-fetch
-downloads packages specified on the command-line from the AUR.
+downloads packages specified on the command-line from the AUR using
+.BR git (1).
 .
 .SH OPTIONS
-.
 .TP
 .BR \-r ", " \-\-recurse
 Download packages and their dependencies with
 .BR aur\-depends (1).
+If this option is specified, arguments must be supplied by
+.B pkgname
+instead of by
+.BR pkgbase .
 .
 .TP
 .BI \-\-sync= MODE
@@ -107,35 +109,6 @@ is the absolute path to the processed package repository.
 .IP
 Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
-.
-.SS Log options
-Logs shown by
-.BR aur\-fetch (1)
-show changes that happened since the commit referenced by the previous
-.B HEAD
-before
-.BR git\-reset (1)
-or
-.BR git\-rebase (1).
-See the
-.B \-\-sync
-option for more information.
-.TP
-.BI \-L " DIRECTORY" "\fR,\fP \-\-write\-log=" DIRECTORY
-The directory where logs between merged revisions are stored.
-.
-.TP
-.BR \-\-format= [ diff | log ]
-Use
-.BR git\-diff (1)
-or
-.BR git\-log (1)
-to generate logs, respectively.
-.
-.TP
-.BR \-v ", " \-\-verbose
-Print logs to
-.BR stdout .
 .
 .SH SEE ALSO
 .ad l
