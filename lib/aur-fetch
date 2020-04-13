@@ -116,8 +116,11 @@ fi | while read -r pkg; do
         export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
 
         # Retrieve new upstream revisions
-        git fetch --verbose >&2 || exit
-        fetch_head=$(git rev-parse FETCH_HEAD)
+        if git fetch --verbose >&2; then
+            fetch_head=$(git rev-parse FETCH_HEAD)
+        else
+            exit 1
+        fi
 
         # HEAD before git rebase or git reset
         prev_head=$(git rev-parse HEAD)
@@ -141,12 +144,10 @@ fi | while read -r pkg; do
 
         case $sync in
             rebase)
-                git stash
                 git reset --hard HEAD
                 git rebase --verbose
                 ;;
             reset)
-                git stash
                 git reset --hard 'HEAD@{upstream}'
                 ;;
         esac >&2 || {
