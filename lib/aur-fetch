@@ -7,7 +7,15 @@ XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # default options
-verbose=0 recurse=0 results=0 sync=no log_fmt=diff
+verbose=0 recurse=0 sync=no log_fmt=diff
+
+results() {
+    local mode=$1 prev=$2 current=$3 path=$4 dest=$5
+
+    if [[ -w $dest ]]; then
+        printf '%s:%s:%s:file://%s\n' "$mode" "$prev" "$current" "$path" | tee -a "$dest"
+    fi
+}
 
 usage() {
     cat <<! | base64 -d
@@ -34,7 +42,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset log_dir
+unset log_dir results_file
 while true; do
     case "$1" in
         -L|--write-log)
@@ -80,8 +88,7 @@ if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
 fi
 
 if [[ -v results_file ]]; then
-    : >"$results_file" # truncate file
-    results=1
+    : >"$results_file" || exit 1 # truncate file
 fi
 
 if ! (( $# )); then
@@ -115,8 +122,8 @@ fi | while read -r pkg; do
         # HEAD before git rebase or git reset
         prev_head=$(git rev-parse HEAD)
 
-        if (( results )); then
-            printf 'fetch:%s:%s:file://%s\n' "$prev_head" "$fetch_head" "$PWD/$pkg" | tee -a "$results_file"
+        if [[ -v results_file ]]; then
+            results 'fetch' "$prev_head" "$fetch_head" "$PWD/$pkg" "$results_file"
         fi
 
         if [[ $sync == 'auto' ]]; then
@@ -149,13 +156,8 @@ fi | while read -r pkg; do
 
         head=$(git rev-parse HEAD)
 
-        if (( results )); then
-            case $sync in
-                rebase) printf 'rebase:%s:%s:file://%s\n' "$prev_head" "$head" "$PWD/$pkg"
-                        ;;
-                reset)  printf 'reset:%s:%s:file://%s\n' "$prev_head" "$head" "$PWD/$pkg"
-                        ;;
-            esac | tee -a "$results_file"
+        if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
+            results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
         fi
 
         if [[ $prev_head != "$head" ]]; then
@@ -177,8 +179,8 @@ fi | while read -r pkg; do
         # Show PKGBUILDs first. (#399)
         git config diff.orderFile "$orderfile"
 
-        if (( results )); then
-            printf 'clone:%s:%s:file://%s\n' 0 "$(git rev-parse HEAD)" "$PWD/$pkg" | tee -a "$results_file"
+        if [[ -v results_file ]]; then
+            results 'clone' '0' "$(git rev-parse HEAD)" "$PWD/$pkg" "$results_file"
         fi
     else
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"
