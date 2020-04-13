@@ -109,11 +109,11 @@ if (( recurse )); then
 else
    printf '%s\n' "$@"
 fi | while read -r pkg; do
-    unset GIT_DIR GIT_WORK_TREE
+    unset -f git
 
     if [[ -d $pkg/.git ]]; then
         # Avoid issues with filesystem boundaries. (#274)
-        export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+        git() { command git -C "$pkg" "$@"; }
 
         # Retrieve new upstream revisions
         if git fetch --verbose >&2; then
@@ -175,7 +175,7 @@ fi | while read -r pkg; do
 
     # Otherwise, try to clone anew
     elif git clone "$AUR_LOCATION/$pkg"; then
-        export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+        git() { command git -C "$pkg" "$@"; }
 
         # Show PKGBUILDs first. (#399)
         git config diff.orderFile "$orderfile"
