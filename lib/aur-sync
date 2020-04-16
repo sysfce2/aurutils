@@ -67,7 +67,7 @@ trap_exit() {
 }
 
 usage() {
-    plain >&2 'usage: %s [-d repo] [--root path] [-cdfoSu] [--] pkgname...' "$argv0"
+    plain >&2 'usage: %s [-d repo] [--root path] [-cdfoSu] pkgname...' "$argv0"
     exit 1
 }
 
@@ -258,7 +258,7 @@ fi
 if [[ -s argv ]]; then
     # shellcheck disable=SC2094
     # depends: $1 pkgname $2 depends $3 pkgbase $4 pkgver
-    xargs -a argv -d'\n' aur depends --table >depends
+    xargs -a argv -d'\n' aur depends --table -- >depends
 else
     plain >&2 "there is nothing to do"
     exit
