@@ -16,7 +16,7 @@ repo_args=()
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1
 
 # default options (disabled)
-rotate=0 update=0
+rotate=0 update=0 repo_targets=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -87,16 +87,16 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
 fi
 
 opt_short='B:d:D:AcfLnprRSTuv'
-opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:'
-          'root:' 'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue'
-          'force' 'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph'
-          'no-ver-argv' 'no-view' 'no-provides' 'print' 'rm-deps'
-          'sign' 'temp' 'upgrades' 'pkgver' 'rebuild' 'rebuild-tree'
-          'build-command:' 'ignore-file:' 'remove' 'provides-from:'
-          'new' 'prevent-downgrade' 'verify' 'results:')
-opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:'
-            'noconfirm' 'nover' 'nograph' 'nover-argv' 'noview'
-            'noprovides' 'rebuildtree' 'rmdeps' 'gpg-sign')
+opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
+          'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
+          'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
+          'no-view' 'no-provides' 'print' 'rm-deps' 'sign' 'temp' 'upgrades'
+          'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'build-command:'
+          'ignore-file:' 'remove' 'provides-from:' 'new' 'prevent-downgrade'
+          'verify' 'results:')
+opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
+            'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'rebuildall'
+            'rebuildtree' 'rmdeps' 'gpg-sign')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -135,6 +135,8 @@ while true; do
             build_args+=(-f); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
             build_args+=(-f); chkver_depth=0 ;;
+        --rebuildall|--rebuild-all)
+            build_args+=(-f); chkver_depth=0; repo_targets=1 ;;
         -u|--upgrades)
             update=1 ;;
         # database options
@@ -217,7 +219,7 @@ if (( rotate )); then
     fi
 fi
 
-if ! (( $# + update )); then
+if ! (( $# + update + repo_targets )); then
     error '%s: no targets specified' "$argv0"
     exit 1
 fi
@@ -243,21 +245,26 @@ fi
       printf '%s\n' "$@"
   fi
 
-  if (( update )); then
+  # append repository packages (all)
+  if (( repo_targets )); then
+      cut -f1 <db_info
+
+  # append repository packages (updated)
+  elif (( update )); then
       aur vercmp --quiet <db_info
   fi
 } >argv
 
 if [[ -s argv ]]; then
     # shellcheck disable=SC2094
-    # $1 pkgname $2 depends $3 pkgbase $4 pkgver
+    # depends: $1 pkgname $2 depends $3 pkgbase $4 pkgver
     xargs -a argv -d'\n' aur depends --table >depends
 else
     plain >&2 "there is nothing to do"
     exit
 fi
 
-# $1 pkgname $2 pkgbase $3 pkgver
+# pkginfo: $1 pkgname $2 pkgbase $3 pkgver
 cut -f2 --complement depends | sort -u >pkginfo
 
 { if (( ${#pkg_i[@]} )); then

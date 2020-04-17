@@ -158,6 +158,17 @@ Alias for
 .BR "\-f \-\-nover" .
 .
 .TP
+.BR \-\-rebuildall ", " \-\-rebuild\-all
+As
+.BR \-\-rebuild\-tree ,
+but append all packages in the repository (see
+.BR \-d )
+as targets. May be used in conjunction with
+.B \-\-print
+to repopulate source directories in
+.BR $AURDEST .
+.
+.TP
 .BR \-S ", " \-\-sign ", " \-\-gpg-sign
 Sign built packages with
 .BR gpg (1).
