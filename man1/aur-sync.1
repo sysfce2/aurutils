@@ -47,6 +47,10 @@ be specified after a number sign. Defaults to
 .BR $XDG_CONFIG_HOME/aurutils/sync/ignore .
 .
 .TP
+.BR \-\-nobuild ", " \-\-no\-build
+Print target packages and their paths instead of building them.
+.
+.TP
 .BR \-\-nograph ", " \-\-no\-graph
 Do not verify the AUR dependency graph with
 .BR aur\-graph (1).
@@ -65,10 +69,6 @@ Version checks for package dependencies remain enabled.
 .TP
 .BR \-\-noview ", " \-\-no\-view
 Do not present build files for inspection.
-.
-.TP
-.BR \-p ", " \-\-print
-Print target packages and their paths instead of building them.
 .
 .TP
 .BR \-\-noprovides ", " \-\-no\-provides

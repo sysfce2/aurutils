@@ -67,7 +67,7 @@ trap_exit() {
 }
 
 usage() {
-    plain >&2 'usage: %s [-d repo] [--root path] [-cdfpSu] [--] pkgname...' "$argv0"
+    plain >&2 'usage: %s [-d repo] [--root path] [-cdfSu] [--] pkgname...' "$argv0"
     exit 1
 }
 
@@ -86,17 +86,17 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
-opt_short='B:d:D:AcfLnprRSTuv'
+opt_short='B:d:D:AcfLnrRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
           'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
-          'no-view' 'no-provides' 'print' 'rm-deps' 'sign' 'temp' 'upgrades'
+          'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'build-command:'
           'ignore-file:' 'remove' 'provides-from:' 'new' 'prevent-downgrade'
           'verify' 'results:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
-            'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'rebuildall'
-            'rebuildtree' 'rmdeps' 'gpg-sign')
+            'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
+            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -116,6 +116,8 @@ while true; do
             pkg_i+=("${pkg[@]}") ;;
         --ignorefile|--ignore-file)
             shift; ignore_file=$1 ;;
+        --nobuild|--no-build)
+            build=0 ;;
         --nograph|--no-graph)
             graph=0 ;;
         --nover|--no-ver)
@@ -129,8 +131,6 @@ while true; do
         --provides-from)
             shift; IFS=, read -a repo -r <<< "$1"
             repo_p+=("${repo[@]}") ;;
-        -p|--print)
-            build=0 ;;
         --rebuild)
             build_args+=(-f); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
