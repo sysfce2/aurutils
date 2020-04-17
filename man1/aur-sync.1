@@ -4,7 +4,7 @@ aur\-sync \- download and build AUR packages automatically
 .
 .SH SYNOPSIS
 .SY "aur sync"
-.OP \-AcfgkLPstTuh
+.OP \-AcfgkLostTu
 .OP \-\-
 .IR pkgname ...
 .YS
@@ -47,6 +47,10 @@ be specified after a number sign. Defaults to
 .BR $XDG_CONFIG_HOME/aurutils/sync/ignore .
 .
 .TP
+.BR \-o ", " \-\-nobuild ", " \-\-no\-build
+Print target packages and their paths instead of building them.
+.
+.TP
 .BR \-\-nograph ", " \-\-no\-graph
 Do not verify the AUR dependency graph with
 .BR aur\-graph (1).
@@ -65,10 +69,6 @@ Version checks for package dependencies remain enabled.
 .TP
 .BR \-\-noview ", " \-\-no\-view
 Do not present build files for inspection.
-.
-.TP
-.BR \-p ", " \-\-print
-Print target packages and their paths instead of building them.
 .
 .TP
 .BR \-\-noprovides ", " \-\-no\-provides
@@ -156,6 +156,17 @@ Alias for
 .BR \-\-rebuildtree ", " \-\-rebuild\-tree
 Alias for
 .BR "\-f \-\-nover" .
+.
+.TP
+.BR \-\-rebuildall ", " \-\-rebuild\-all
+As
+.BR \-\-rebuild\-tree ,
+but append all packages in the repository (see
+.BR \-d )
+as targets. May be used in conjunction with
+.B \-\-print
+to repopulate source directories in
+.BR $AURDEST .
 .
 .TP
 .BR \-S ", " \-\-sign ", " \-\-gpg-sign
