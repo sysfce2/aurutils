@@ -168,6 +168,7 @@ fi
 # Defaults to /usr/share/devtools/makepkg-<arch>.conf
 if [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
+    makepkg_args+=(--config "$makepkg_conf")
 fi
 
 # Assign environment variables (#443)
