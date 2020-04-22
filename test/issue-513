@@ -1,9 +1,8 @@
 #!/bin/bash -e
-tmp_server=$(mktemp -d)
-trap 'rm -rf -- "$tmp_server"' EXIT
+tmp=$(mktemp -d)
+trap 'rm -rf -- "$tmp"' EXIT
 
-pacman_config() {
-    cat <<EOF
+cat >"$tmp"/pacman.conf <<EOF
 [options]
 HoldPkg = pacman-git glibc
 Architecture = auto
@@ -16,13 +15,23 @@ Include = /etc/pacman.d/mirrorlist
 Include = /etc/pacman.d/mirrorlist
 [custom]
 SigLevel = Optional TrustAll
-Server = file://$tmp_server
+Server = file://$tmp
 EOF
+
+cat >"$tmp"/PKGBUILD <<EOF
+pkgname=foo
+pkgver=1
+pkgrel=1
+arch=('any')
+
+package() {
+    true
 }
+EOF
 
 # create local repository
-repo-add "$tmp_server"/custom.db.tar
+repo-add "$tmp"/custom.db.tar
 
 # issue 513: PKGDEST (environment) should be ignored
-cd ../makepkg
-PKGDEST=/does/not/exist aur build -d custom -C <(pacman_config) -f
+cd "$tmp"
+PKGDEST=/does/not/exist aur build -d custom --pacman-conf "$tmp"/pacman.conf
