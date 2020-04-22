@@ -1,6 +1,9 @@
-#!/bin/bash -e
-tmp=$(mktemp -d)
-trap 'rm -rf -- "$tmp"' EXIT
+#!/bin/bash
+if tmp=$(mktemp -d); then
+    trap 'rm -rf -- "$tmp"' EXIT
+else
+    exit 1
+fi
 
 cat >"$tmp"/pacman.conf <<EOF
 [options]
@@ -30,8 +33,7 @@ package() {
 EOF
 
 # create local repository
-repo-add "$tmp"/custom.db.tar
+repo-add "$tmp"/custom.db.tar || exit
 
 # issue 513: PKGDEST (environment) should be ignored
-cd "$tmp"
-PKGDEST=/does/not/exist aur build -d custom --pacman-conf "$tmp"/pacman.conf
+env -C "$tmp" PKGDEST=/does/not/exist aur build -d custom --pacman-conf "$tmp"/pacman.conf
