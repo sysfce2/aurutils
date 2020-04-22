@@ -1,0 +1,37 @@
+#!/bin/bash -e
+tmp=$(mktemp -d)
+trap 'rm -rf -- "$tmp"' EXIT
+
+cat >"$tmp"/pacman.conf <<EOF
+[options]
+HoldPkg = pacman-git glibc
+Architecture = auto
+CheckSpace
+[core]
+Include = /etc/pacman.d/mirrorlist
+[extra]
+Include = /etc/pacman.d/mirrorlist
+[community]
+Include = /etc/pacman.d/mirrorlist
+[custom]
+SigLevel = Optional TrustAll
+Server = file://$tmp
+EOF
+
+cat >"$tmp"/PKGBUILD <<EOF
+pkgname=foo
+pkgver=1
+pkgrel=1
+arch=('any')
+
+package() {
+    true
+}
+EOF
+
+# create local repository
+repo-add "$tmp"/custom.db.tar
+
+# issue 714: select repository without -d or --root
+cd "$tmp"
+aur build --pacman-conf "$tmp"/pacman.conf
