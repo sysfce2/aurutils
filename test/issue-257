@@ -1,8 +1,10 @@
 #!/bin/bash
-aur search python
+out=$(aur search python)
+err=$?
 
 # expected: "Too many package results", exit 2
-case $? in
-    2) exit 0 ;;
-    *) exit 1 ;;
-esac
+if (( err == 2 )); then
+    exit 0
+else
+    exit 1
+fi

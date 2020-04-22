@@ -1,8 +1,10 @@
 #!/bin/bash
-aur search .invalid
+out=$(aur search .invalid)
+err=$?
 
-# expected: [empty], exit 1
-case $? in
-    1) exit 0 ;;
-    *) exit 1 ;;
-esac
+# expected: empty output, exit 1
+if [[ ! $out ]] && (( err == 1 )); then
+    exit 0
+else
+    exit 1
+fi
