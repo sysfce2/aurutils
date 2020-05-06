@@ -3,8 +3,4 @@ out=$(aur search .invalid)
 err=$?
 
 # expected: empty output, exit 1
-if [[ ! $out ]] && (( err == 1 )); then
-    exit 0
-else
-    exit 1
-fi
+[[ ! $out ]] && (( err == 1 ))

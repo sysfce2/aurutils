@@ -1,9 +1,6 @@
 #!/bin/bash
-if tmp=$(mktemp -d); then
-    trap 'rm -rf -- "$tmp"' EXIT
-else
-    exit 1
-fi
+tmp=$(mktemp -d) || exit
+trap 'rm -rf -- "$tmp"' EXIT
 
 cat >"$tmp"/pacman.conf <<EOF
 [options]

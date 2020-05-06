@@ -3,8 +3,4 @@ out=$(aur search aurutils)
 err=$?
 
 # expected: valid results, exit 0
-if [[ $out ]] && (( err == 0 )); then
-    exit 0
-else
-    exit 1
-fi
+[[ $out ]] && (( err == 0 ))

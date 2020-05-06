@@ -1,16 +1,9 @@
 #!/bin/bash
-if tmp=$(mktemp -d); then
-    trap 'rm -rf -- "$tmp"' EXIT
-else
-    exit 1
-fi
+tmp=$(mktemp -d) || exit
+trap 'rm -rf -- "$tmp"' EXIT
 
 out=$(env -C "$tmp" aur fetch aurutils aurutils-git)
 err=$?
 
 # expected: cloned repositories (x2), exit 0
-if (( err == 0 )) && [[ -d $tmp/aurutils/.git ]] && [[ -d $tmp/aurutils-git/.git ]]; then
-    exit 0
-else
-    exit 1
-fi
+(( err == 0 )) && [[ -d $tmp/aurutils/.git ]] && [[ -d $tmp/aurutils-git/.git ]]
