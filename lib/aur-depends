@@ -25,6 +25,7 @@ tr_ver() {
     sed -r 's/[<>=].*$//g'
 }
 
+# shellcheck disable=SC2086
 chain() {
     local a num sub
 
