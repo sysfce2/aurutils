@@ -131,7 +131,7 @@ while read -r key _ value; do
             conf_file_repo+=("$section")
 
             case $section in
-                $db_name)
+                "$db_name")
                     if ! [[ $db_root ]]; then
                         db_root=$server
                     elif [[ $db_root != "$server" ]]; then
@@ -141,7 +141,7 @@ while read -r key _ value; do
             ;;
         Server=*://*)
             case $section in
-                $db_name)
+                "$db_name")
                     if ! [[ $db_root ]]; then
                         db_root=$value
                     fi ;;
