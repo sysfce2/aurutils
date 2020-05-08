@@ -25,6 +25,7 @@ tr_ver() {
     sed -r 's/[<>=].*$//g'
 }
 
+# shellcheck disable=SC2086
 chain() {
     local a num sub
 
@@ -120,7 +121,7 @@ if cd "$tmp" && mkdir json tsv; then
     case $rings in
         1) true # no dependencies
            ;;
-        $max_request)
+        "$max_request")
             printf >&2 '%s: total requests: %d (out of range)\n' "$argv0" $(( max_request + 1 ))
             exit 34 ;;
     esac

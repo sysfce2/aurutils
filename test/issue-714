@@ -32,5 +32,5 @@ EOF
 # create local repository
 repo-add "$tmp"/custom.db.tar || exit
 
-# issue 513: PKGDEST (environment) should be ignored
-env -C "$tmp" PKGDEST=/does/not/exist aur build -d custom --pacman-conf "$tmp"/pacman.conf
+# issue 714: select repository without -d or --root
+env -C "$tmp" aur build --pacman-conf "$tmp"/pacman.conf

@@ -1,2 +1,6 @@
 #!/bin/bash
-aur query -t info </dev/null
+out=$(aur query -t info </dev/null)
+err=$?
+
+# expected: empty output, exit 0
+[[ ! $out ]] && (( err == 0 ))
