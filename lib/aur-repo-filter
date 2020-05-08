@@ -5,6 +5,9 @@ argv0=repo-filter
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 
+# default options
+sync_repo=0
+
 # The command line will hit ARG_MAX on approximately 70k packages;
 # spread arguments with xargs (and printf, as a shell built-in).
 satisfies() {
@@ -36,7 +39,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset argv_repo sync_repo sift_args
+unset argv_repo sift_args
 while true; do
     case "$1" in
         -a|--all|--sync)
@@ -73,7 +76,7 @@ fi
 
 # associative array for input package names
 declare -A pkgset
-unset strset
+strset=()
 
 while IFS= read -r str; do
     # store unversioned string as key

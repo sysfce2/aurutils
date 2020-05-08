@@ -8,8 +8,8 @@ aur\-build \- build packages to a local repository
 .OP \-cfNRsv
 .OP \-a queue
 .OP \-B string
-.OP \-\-
-.RI [ "makepkg args" ]
+.OP \-\-margs
+.RI [ makepkg_args... ]
 .YS
 .
 .SH DESCRIPTION
@@ -25,27 +25,6 @@ prefix in
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A text file describing directories that contain a PKGBUILD, relative to
 the current directory. If unspecified, the current directory is assumed.
-.
-.TP
-.BI \-B " STRING" "\fR,\fP \-\-build\-command=" STRING
-A string used as build command
-(instead of
-.B makepkg
-or
-.BR makechrootpkg ).
-The command has
-.BR PKGDEST ,
-.BR AUR_REPO ", and"
-.BR AUR_DBROOT
-set in the user environment. (These variables should be unset where
-appropriate.)
-.IP
-To split the command on whitespace, repeat the
-.B \-B
-option for each substring. For example,
-.BI "\-B " "makepkg " "\-B " \-sri
-would set the build command to
-.BR "makepkg \-sri" .
 .
 .TP
 .BR \-c ", " \-\-chroot
@@ -199,10 +178,7 @@ build completion.
 Additional options may be passed to
 .B makepkg
 by placing them after
-.B --
-in the
-.B aur\-build
-command-line.
+.BR \-\-m\-args .
 .
 .TP
 .BR \-A ", " \-\-ignorearch

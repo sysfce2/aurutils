@@ -1,6 +1,6 @@
 Andrew Gregory <https://github.com/andrewgregory>
 Assaf Gordon <http://savannah.gnu.org/users/agn>
-Robin Broda <https://github.com/coderobe>
+bartoszek <https://github.com/bartoszek>
 Damien Robert <https://github.com/DamienRobert>
 Dave Reisner <https://github.com/falconindy>
 e36freak <https://github.com/e36freak>
@@ -16,6 +16,7 @@ Patrick Burroughs <https://github.com/Celti>
 Peter van den Hurk <https://github.com/runical>
 rafasc <https://github.com/rafasc>
 Remy Marquis <https://github.com/rmarquis>
+Robin Broda <https://github.com/coderobe
 Sam Stuewe <https://github.com/halosghost>
 Simon Gomizelj <https://github.com/vodik>
 Tatsuhiro Tsujikawa <https://github.com/tatsuhiro-t>
@@ -32,4 +33,3 @@ pacaur (aur-sync)
 git (general design)
 pacutils (general design)
 repose (local repository)
-yaourt (--build-command)

@@ -86,17 +86,17 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
-opt_short='B:d:D:AcfLnorRSTuv'
+opt_short='d:D:AcfLnorRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
           'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
           'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
-          'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'build-command:'
-          'ignore-file:' 'remove' 'provides-from:' 'new' 'prevent-downgrade'
-          'verify' 'results:')
+          'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
+          'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
+          'results:' 'makepkg-args:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign')
+            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -145,12 +145,12 @@ while true; do
         --root)
             shift; repo_args+=(-r "$1") ;;
         # build options
-        -B|--build-command)
-            shift; build_args+=(--build-command "$1") ;;
         -c|--chroot)
             build_args+=(--chroot) ;;
         -f|--force)
             build_args+=(--force) ;;
+        --makepkg-args|--margs)
+            shift; build_args+=(--margs "$1") ;;
         --makepkg-conf)
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)

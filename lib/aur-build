@@ -37,7 +37,7 @@ trap_exit() {
 }
 
 usage() {
-    plain >&2 'usage: %s [-acfBNS] [-d repo] [--root path] [--] <makepkg args>' "$argv0"
+    plain >&2 'usage: %s [-acfNS] [-d repo] [--root path] [--margs makepkg_arg...]' "$argv0"
     exit 1
 }
 
@@ -57,28 +57,25 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
 fi
 
 ## option parsing
-opt_short='a:B:d:D:U:AcCfnrsvLNRST'
+opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:'
-          'remove' 'build-command:' 'pkgver' 'prefix:' 'rmdeps'
-          'no-confirm' 'ignore-arch' 'log' 'new' 'makepkg-conf:'
-          'bind:' 'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean'
-          'namcap' 'checkpkg' 'user:')
-opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync')
+          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:' 'remove'
+          'pkgver' 'prefix:' 'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'new'
+          'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
+          'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:')
+opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync' 'margs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset build_cmd db_name db_path db_root makepkg_conf pacman_conf results_file queue
+unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
     case "$1" in
         # build options
         -a|--arg-file)
             shift; queue=$1 ;;
-        -B|--build-command)
-            shift; build_cmd+=("$1") ;;
         -f|--force)
             overwrite=1 ;;
         -c|--chroot)
@@ -118,7 +115,7 @@ while true; do
             makechrootpkg_args+=(-T) ;;
         -U|--user)
             shift; makechrootpkg_args+=(-U "$1") ;;
-        # makepkg options
+        # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             makepkg_args+=(--ignorearch)
             makechrootpkg_makepkg_args+=(--ignorearch) ;;
@@ -132,6 +129,11 @@ while true; do
             makepkg_args+=(--rmdeps) ;;
         -s|--syncdeps)
             makepkg_args+=(--syncdeps) ;;
+        # makepkg options
+        --makepkg-args|--margs)
+            shift; IFS=, read -a arg -r <<< "$1"
+            makepkg_args+=("${arg[@]}")
+            makechrootpkg_makepkg_args+=("${arg[@]}") ;;
         # repo-add options
         -v|--verify)
             repo_add_args+=(-v) ;;
@@ -157,12 +159,6 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$argv0.XXXXXXXX") 
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-# Append remaining options to the makechrootpkg command-line
-if (( $# )); then
-    makepkg_args+=("$@")
-    makechrootpkg_makepkg_args+=("$@")
-fi
-
 # Propagate pacman config to aur-repo and pacconf (#543)
 if [[ -v pacman_conf ]]; then
     chroot_args+=(--pacman-conf "$pacman_conf")
@@ -172,6 +168,7 @@ fi
 # Defaults to /usr/share/devtools/makepkg-<arch>.conf
 if [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
+    makepkg_args+=(--config "$makepkg_conf")
 fi
 
 # Assign environment variables (#443)
@@ -230,7 +227,6 @@ if (( chroot )); then
     aur chroot "${chroot_args[@]}" --no-build
 else
     # Configuration for host builds.
-    # XXX move to aur-repo
     { printf '[options]\n'
       pacconf "${conf_args[@]}" --raw --options
 
@@ -267,7 +263,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        # Ignore architecture in pkgver() function (#536)
+        # Ignore architecture inside pkgver() function (#536)
         makepkg -od --ignorearch
     fi
 
@@ -289,10 +285,7 @@ while IFS= read -ru "$fd" path; do
         fi
     fi
 
-    if [[ -v build_cmd ]]; then
-        printf '%s\n' >&2 "Running custom command: ${build_cmd[*]}"
-        env PKGDEST="$var_tmp" AUR_REPO="$db_name" AUR_DBROOT="$db_root" "${build_cmd[@]}"
-    elif (( chroot )); then
+    if (( chroot )); then
         printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
         env PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --no-prepare \
             -- "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
