@@ -30,7 +30,7 @@ cat <<'EOF'
     # Fallback to default (files) completion in such cases.
 
     opts=(${default_cmds[${words[1]}]})
-    if [[ ${opts[*]} != *$prev:* ]]; then
+    if [[ ${opts[*]} != *$prev:* ]] || [[ $cword -eq 2 ]]; then
         COMPREPLY=($(compgen -W "${opts[*]%:}" -- "$cur"));
     fi
 }
