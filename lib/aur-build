@@ -12,7 +12,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 results=0 prefix=aur
 
 # default arguments (empty)
-chroot_args=() conf_args=() makepkg_args=() makechrootpkg_makepkg_args=() repo_add_args=()
+chroot_args=() conf_args=() repo_add_args=() makepkg_args=() makechrootpkg_makepkg_args=() pkgver_makepkg_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
@@ -118,17 +118,21 @@ while true; do
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             makepkg_args+=(--ignorearch)
-            makechrootpkg_makepkg_args+=(--ignorearch) ;;
+            makechrootpkg_makepkg_args+=(--ignorearch)
+            pkgver_makepkg_args+=(--ignorearch) ;;
         -C|--clean)
             makepkg_args+=(--clean) ;;
         -L|--log)
             makepkg_args+=(--log) ;;
         -n|--noconfirm|--no-confirm)
-            makepkg_args+=(--noconfirm) ;;
+            makepkg_args+=(--noconfirm)
+            pkgver_makepkg_args+=(--noconfirm) ;;
         -r|--rmdeps)
-            makepkg_args+=(--rmdeps) ;;
+            makepkg_args+=(--rmdeps)
+            pkgver_makepkg_args+=(--rmdeps) ;;
         -s|--syncdeps)
-            makepkg_args+=(--syncdeps) ;;
+            makepkg_args+=(--syncdeps)
+            pkgver_makepkg_args+=(--syncdeps) ;;
         # makepkg options
         --makepkg-args|--margs)
             shift; IFS=, read -a arg -r <<< "$1"
@@ -263,8 +267,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        # Ignore architecture inside pkgver() function (#536)
-        makepkg -od --ignorearch
+        makepkg -od "${pkgver_makepkg_args[@]}"
     fi
 
     if (( ! overwrite )); then

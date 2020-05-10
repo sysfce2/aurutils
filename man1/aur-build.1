@@ -72,14 +72,26 @@ Do not sync the local repository after building.
 .TP
 .BR \-\-pkgver
 Run
-.B "makepkg \-od \-\ignorearch"
+.B "makepkg \-od
 before checking existing packages (effectively running an existing
 .B pkgver()
-function). This option adds
-.B \-\-noextract
-to the default
+function). Th
+.BR \-\-noconfirm
+option is added to the default
 .BR makepkg (8)
 options.
+.
+.B Note:
+The
+.RE
+.BR \-r ,
+.BR \-s ,
+and
+.BR \-\-noconfirm
+options are passed on to the above command. Other
+.BR makepkg (8)
+options are ignored.
+.RE
 .
 .TP
 .B \-\-pacman\-conf
