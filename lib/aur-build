@@ -225,11 +225,17 @@ if (( chroot )); then
     # Defaults to /usr/share/devtools/pacman-aur.conf
     chroot_args+=(--prefix "$prefix")
 
+    # makepkg --packagelist includes the package extension, but makechrootpkg
+    # ignores PKGEXT set on the host. Retrieve it seperately.
+    packagelist() { aur chroot "${chroot_args[@]}" --packagelist; }
+
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
     aur chroot "${chroot_args[@]}" --no-build
 else
+    packagelist() { makepkg --packagelist; }
+
     # Configuration for host builds.
     { printf '[options]\n'
       pacconf "${conf_args[@]}" --raw --options
@@ -275,7 +281,7 @@ while IFS= read -ru "$fd" path; do
 
         while IFS= read -r candidate_pkg; do
             [[ -f $candidate_pkg ]] && exists+=("$candidate_pkg")
-        done < <(PKGDEST="$db_root" makepkg --packagelist)
+        done < <(PKGDEST="$db_root" packagelist)
 
         # Preserve the exit status from makepkg --packagelist (#671)
         wait $!

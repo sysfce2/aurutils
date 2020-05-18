@@ -14,7 +14,7 @@ makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 prefix=extra
 
 # default options
-prepare=1 build=1
+prepare=1 build=1 packagelist=0
 
 usage() {
     printf >&2 'usage: %s [-CDM path] -- <makechrootpkg args>\n' "$argv0"
@@ -25,7 +25,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'no-build' 'no-prepare'
-          'prefix:' 'bind:' 'bind-rw:')
+          'prefix:' 'bind:' 'bind-rw:' 'packagelist')
 opt_hidden=('dump-options' 'nobuild' 'noprepare')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -40,6 +40,8 @@ while true; do
             build=0 ;;
         --no-prepare|--noprepare)
             prepare=0 ;;
+        --packagelist)
+            packagelist=1 ;;
         --prefix)
             shift; prefix=$1 ;;
         # arch-nspawn options
@@ -69,7 +71,7 @@ if (( $# )); then
     makechrootpkg_args=("$@")
 fi
 
-# pacman configuration
+# base container configuration
 case $prefix in
     multilib*)
         base_packages=('multilib-devel') ;;
@@ -79,7 +81,10 @@ esac
 pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$prefix.conf}
 
 if [[ ! -r $pacman_conf ]]; then
-    printf >&2 '%s: config file %s could not be read\n' "$argv0" "$pacman_conf"
+    printf >&2 '%s: config file %q could not be read\n' "$argv0" "$pacman_conf"
+    exit 1
+elif [[ ! -r $makepkg_conf ]]; then
+    printf >&2 '%s: config file %q could not be read\n' "$argv0" "$makepkg_conf"
     exit 1
 fi
 
@@ -90,6 +95,11 @@ while read -r key _ value; do
             bindmounts_rw+=("${value#file://}") ;;
     esac
 done < <(pacman-conf --config "$pacman_conf")
+
+if (( packagelist )); then
+    makepkg --config "$makepkg_conf" --packagelist
+    exit $?
+fi
 
 if (( prepare )); then
     # parent path is not created by mkarchroot (#371)
