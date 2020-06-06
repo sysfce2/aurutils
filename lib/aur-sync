@@ -372,7 +372,7 @@ if (( view )); then
             exit 22
         fi
 
-        if read -r view < "$view_db/$pkg"; then
+        if [[ -f $view_db/$pkg ]] && read -r view < "$view_db/$pkg"; then
             # Check if hash points to a valid object
             if ! git cat-file -e "$view"; then
                 error '%s: %s: invalid revision' "$argv0" "$pkg"
@@ -383,6 +383,10 @@ if (( view )); then
                 git --no-pager "$log_fmt" --patch --stat \
                     "$view..$head" > "$tmp_view/$pkg.$log_fmt"
             fi
+
+        elif [[ -f $view_db/$pkg ]]; then
+            error '%s: %s: failed to read revision' "$argv0" "$pkg"
+            exit 1
         fi
     done < "$tmp"/queue
     unset -f git
