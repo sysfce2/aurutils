@@ -5,12 +5,14 @@ set -o errexit
 argv0=sync
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
 build_args=(--clean --syncdeps)
 repo_args=()
+log_fmt='diff'
 
 # default options (enabled)
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1
@@ -93,7 +95,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'results:' 'makepkg-args:')
+          'results:' 'makepkg-args:' 'format:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:')
@@ -111,6 +113,8 @@ while true; do
             rotate=1 ;;
         --continue)
             download=0 ;;
+        --format)
+            shift; log_fmt=$1 ;;
         --ignore)
             shift; IFS=, read -a pkg -r <<< "$1"
             pkg_i+=("${pkg[@]}") ;;
@@ -204,6 +208,18 @@ tmp_view=$(mktemp -d --tmpdir "aurutils-$argv0-view.XXXXXXXX") || exit
 
 trap 'trap_exit' EXIT
 
+# Directory for git checksums (revisions viewed by the user, #379)
+view_db=$XDG_DATA_HOME/aurutils/view
+mkdir -p "$view_db"
+
+# Default to showing PKGBUILD first in patch. (#399)
+orderfile=$XDG_CONFIG_HOME/aurutils/$argv0/orderfile
+mkdir -p "${orderfile%/*}"
+
+if [[ ! -s $orderfile ]]; then
+    printf 'PKGBUILD\n' > "$orderfile"
+fi
+
 # Append contents of ignore file
 if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
     while IFS='#' read -r i _; do
@@ -227,9 +243,10 @@ fi
 mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
-# Retrieve path to local repo (#448)
+# db_info: $1 pkgname $2 pkgver
 aur repo "${repo_args[@]}" --list --status-file=db >db_info
 
+# Retrieve path to local repo (#448)
 { IFS= read -r db_name
   IFS= read -r db_root
 } <db
@@ -315,7 +332,19 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    xargs -a "$tmp"/queue -d'\n' aur fetch -L "$tmp_view" -S
+    xargs -a "$tmp"/queue -d'\n' aur fetch -S --results "$tmp"/fetch_results
+
+    # shellcheck disable=SC2034
+    while IFS=: read -r mode rev_old rev path; do
+        path=${path#file://} name=${path##*/}
+
+        case $mode in
+            clone)
+                git -C "$path" config diff.orderFile "$orderfile" ;;
+            fetch|rebase|reset)
+                ;;
+        esac
+    done < "$tmp"/fetch_results
 fi
 
 # Link build files in the queue (absolute links)
@@ -324,16 +353,44 @@ while read -r pkg; do
 done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
 
 # Check AUR metadata for validity (#20)
-if (( graph )); then
-    # Use find to avoid exceeding ARG_MAX
-    # See: https://www.in-ulm.de/~mascheck/various/argmax/
-    if ! find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
-        error '%s: failed to validate dependency graph' "$argv0"
-        exit 1
-    fi
+if (( graph )) && ! find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
+    error '%s: failed to verify dependency graph' "$argv0"
+    exit 1
 fi
 
 if (( view )); then
+    declare -A heads
+
+    while read -r pkg; do
+        git() { command git -C "$pkg" "$@"; }
+
+        # Ensure every directory is a git repository (--continue)
+        if head=$(git rev-parse HEAD); then
+            heads[$pkg]=$head
+        else
+            error '%s: %s: not a git repository' "$argv0" "$pkg"
+            exit 22
+        fi
+
+        if [[ -f $view_db/$pkg ]] && read -r view < "$view_db/$pkg"; then
+            # Check if hash points to a valid object
+            if ! git cat-file -e "$view"; then
+                error '%s: %s: invalid revision' "$argv0" "$pkg"
+                exit 22
+            fi
+
+            if [[ $view != "$head" ]]; then
+                git --no-pager "$log_fmt" --patch --stat \
+                    "$view..$head" > "$tmp_view/$pkg.$log_fmt"
+            fi
+
+        elif [[ -f $view_db/$pkg ]]; then
+            error '%s: %s: failed to read revision' "$argv0" "$pkg"
+            exit 1
+        fi
+    done < "$tmp"/queue
+    unset -f git
+
     if [[ -v AUR_PAGER ]]; then
         # shellcheck disable=SC2086
         command -- $AUR_PAGER "$tmp_view"
@@ -357,6 +414,11 @@ if (( view )); then
         error '%s: no viewer found, please install vifm or set AUR_PAGER' "$argv0"
         exit 1
     fi
+
+    # Update gitsums (viewer exited successfully)
+    while read -r pkg; do
+        printf '%s\n' "${heads[$pkg]}" > "$view_db/$pkg"
+    done < "$tmp"/queue
 fi
 
 if (( build )); then

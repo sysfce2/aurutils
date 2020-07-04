@@ -7,14 +7,22 @@ XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # default options
-verbose=0 recurse=0 results=0 sync=no log_fmt=diff
+recurse=0 sync=no
+
+results() {
+    local mode=$1 prev=$2 current=$3 path=$4 dest=$5
+
+    if [[ -w $dest ]]; then
+        printf '%s:%s:%s:file://%s\n' "$mode" "$prev" "$current" "$path" | tee -a "$dest"
+    fi
+}
 
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
 XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 !
-    plain >&2 'usage: %s [-L directory] [-rSv] pkgname...' "$argv0"
+    plain >&2 'usage: %s [-rS] [--] pkgname...' "$argv0"
     exit 1
 }
 
@@ -25,8 +33,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
-opt_short='rvL:S'
-opt_long=('recurse' 'verbose' 'write-log:' 'sync:' 'results:' 'format:')
+opt_short='rS'
+opt_long=('recurse' 'sync:' 'results:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -34,15 +42,11 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset log_dir
+unset results_file
 while true; do
     case "$1" in
-        -L|--write-log)
-            shift; log_dir=$1 ;;
         -r|--recurse)
             recurse=1 ;;
-        -v|--verbose)
-            verbose=1 ;;
         -S)
             sync=auto ;;
         --sync)
@@ -52,15 +56,6 @@ while true; do
                     sync=$1 ;;
                 *)
                     error '%s: invalid --sync option: %s' "$argv0" "$1"
-                    usage ;;
-            esac ;;
-        --format)
-            shift
-            case $1 in
-                diff|log)
-                    log_fmt=$1 ;;
-                *)
-                    error '%s: invalid --format option: %s' "$argv0" "$1"
                     usage ;;
             esac ;;
         --results)
@@ -74,27 +69,13 @@ while true; do
     shift
 done
 
-if [[ -v $log_dir ]] && [[ ! -d $log_dir ]]; then
-    error '%s: %s: not a directory' "$argv0" "$log_dir"
-    exit 20
-fi
-
-if [[ -v results_file ]]; then
-    : >"$results_file" # truncate file
-    results=1
-fi
-
 if ! (( $# )); then
     error '%s: no pkgname given' "$argv0"
     exit 1
 fi
 
-# Default to showing PKGBUILD first in patch. (#399)
-mkdir -p "$XDG_CONFIG_HOME/aurutils/$argv0"
-orderfile=$XDG_CONFIG_HOME/aurutils/$argv0/orderfile
-
-if [[ ! -s $orderfile ]]; then
-    printf 'PKGBUILD\n' > "$orderfile"
+if [[ -v results_file ]]; then
+    : >"$results_file" || exit 1 # truncate file
 fi
 
 if (( recurse )); then
@@ -102,21 +83,24 @@ if (( recurse )); then
 else
    printf '%s\n' "$@"
 fi | while read -r pkg; do
-    unset GIT_DIR GIT_WORK_TREE
+    unset -f git
 
     if [[ -d $pkg/.git ]]; then
-        # Avoid issues with filesystem boundaries. (#274)
-        export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+        # Avoid issues with filesystem boundaries (#274)
+        git() { command git -C "$pkg" "$@"; }
 
         # Retrieve new upstream revisions
-        git fetch --verbose >&2 || exit
-        fetch_head=$(git rev-parse FETCH_HEAD)
+        if git fetch --verbose >&2; then
+            fetch_head=$(git rev-parse FETCH_HEAD)
+        else
+            exit 1
+        fi
 
         # HEAD before git rebase or git reset
         prev_head=$(git rev-parse HEAD)
 
-        if (( results )); then
-            printf 'fetch:%s:%s:file://%s\n' "$prev_head" "$fetch_head" "$PWD/$pkg" | tee -a "$results_file"
+        if [[ -v results_file ]]; then
+            results 'fetch' "$prev_head" "$fetch_head" "$PWD/$pkg" "$results_file"
         fi
 
         if [[ $sync == 'auto' ]]; then
@@ -134,12 +118,10 @@ fi | while read -r pkg; do
 
         case $sync in
             rebase)
-                git stash
                 git reset --hard HEAD
                 git rebase --verbose
                 ;;
             reset)
-                git stash
                 git reset --hard 'HEAD@{upstream}'
                 ;;
         esac >&2 || {
@@ -149,36 +131,16 @@ fi | while read -r pkg; do
 
         head=$(git rev-parse HEAD)
 
-        if (( results )); then
-            case $sync in
-                rebase) printf 'rebase:%s:%s:file://%s\n' "$prev_head" "$head" "$PWD/$pkg"
-                        ;;
-                reset)  printf 'reset:%s:%s:file://%s\n' "$prev_head" "$head" "$PWD/$pkg"
-                        ;;
-            esac | tee -a "$results_file"
-        fi
-
-        if [[ $prev_head != "$head" ]]; then
-            range=$prev_head..HEAD
-
-            if (( verbose )); then
-                git --no-pager "$log_fmt" --patch --stat "$range"
-            fi
-
-            if [[ $log_dir ]]; then
-                git --no-pager "$log_fmt" --patch --stat "$range" >"$log_dir/$pkg.$log_fmt"
-            fi
+        if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
+            results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
         fi
 
     # Otherwise, try to clone anew
     elif git clone "$AUR_LOCATION/$pkg"; then
-        export GIT_DIR=$pkg/.git GIT_WORK_TREE=$pkg
+        head=$(git -C "$pkg" rev-parse HEAD)
 
-        # Show PKGBUILDs first. (#399)
-        git config diff.orderFile "$orderfile"
-
-        if (( results )); then
-            printf 'clone:%s:%s:file://%s\n' 0 "$(git rev-parse HEAD)" "$PWD/$pkg" | tee -a "$results_file"
+        if [[ -v results_file ]]; then
+            results 'clone' '0' "$head" "$PWD/$pkg" "$results_file"
         fi
     else
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"
