@@ -8,8 +8,7 @@ RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
 # unprivileged user
 ARG USERNAME=archie
-RUN useradd -m -s /bin/bash $USERNAME
-RUN install -o $USERNAME -Dm755 /home/$USERNAME/.local && \
+RUN useradd -m -s /bin/bash $USERNAME && \
     install -o $USERNAME -dm755 /home/$USERNAME/.local/bin
 ENV PATH "/home/${USERNAME}/.local/bin:$PATH"
 
