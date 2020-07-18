@@ -8,7 +8,8 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 modifier=local table_format=0
 
 db_table() {
-    bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
+    # do not extract an empty database (#727)
+    (( $(bsdtar -tf "$2" | wc -l) )) && bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
 
