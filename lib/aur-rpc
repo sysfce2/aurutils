@@ -81,7 +81,7 @@ EOF
 fi
 
 # pipeline
-jq -R -r '@uri' | uri | wget -o "$wget_log" -i - -O - -nv
+jq -R -r '@uri' | uri | wget -o "$wget_log" -i - -O - -nv --no-config
 wget_err=${PIPESTATUS[2]}
 
 if ((wget_err)); then

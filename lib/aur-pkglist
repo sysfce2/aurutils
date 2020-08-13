@@ -18,7 +18,7 @@ extract_date() {
 }
 
 list_update() {
-    if wget -O - -o last_transfer "$1" | gzip -d - > "$2"; then
+    if wget -O - -o last_transfer "$1" --no-config | gzip -d - > "$2"; then
         extract_date "$2"
     else
         printf >&2 'warning: failed to retrieve package list\n'
@@ -26,7 +26,7 @@ list_update() {
 }
 
 list_http_date() {
-    if wget -S --spider -o last_transfer "$1"; then
+    if wget -S --spider -o last_transfer "$1" --no-config ; then
         awk -F', ' '/Date:/ {print $2}' last_transfer
     else
         printf >&2 'warning: failed to retrieve HTTP date\n'

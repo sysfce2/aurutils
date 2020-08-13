@@ -82,7 +82,7 @@ fetch_tar() {
     #global tmp
     local log_dir=$1 archive base
 
-    wget -i /dev/stdin --directory-prefix "$tmp" || return 1
+    wget -i /dev/stdin --directory-prefix "$tmp" --no-config || return 1
 
     for archive in "$tmp"/*.tar.gz; do
         base=$(basename "$archive" .tar.gz)
