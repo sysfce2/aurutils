@@ -1,3 +1,28 @@
+## 2.3.4
+
+* `aur-build`
+  + pass `PKGDEST` directly to `makepkg`
+  + only remove package tmpdir if empty
+* `aur-chroot`
+  + use `pacman-extra.conf` by default (#722)
+* `aur-srcver`
+  + remove `parallel`
+  + add `--jobs`
+* `aur-sync`
+  + remove `parallel`
+* remove `aur-jobs`
+* use `wget --no-config` (#732)
+
+## 2.3.3
+
+* `aur-chroot`
+  + Fix long options with required arguments (#637)
+
+## 2.3.2
+
+* `aur-build`
+  + remove `--delta` (#547)
+
 ## 2.3.1
 
 * `aur-build`
