@@ -9,7 +9,9 @@ modifier=local table_format=0
 
 db_table() {
     # do not extract an empty database (#727)
-    (( $(bsdtar -tf "$2" | wc -l) )) && bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
+    (( $(bsdtar -tf "$2" | wc -l) )) || return 0
+    
+    bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
 
