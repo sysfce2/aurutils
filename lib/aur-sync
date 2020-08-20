@@ -252,7 +252,7 @@ fi
 
 if ((download)); then
     msg >&2 "Retrieving package files"
-    xargs -a "$tmp"/queue -d'\n' aur fetch -L "$tmp_view" -S
+    xargs -a "$tmp"/queue -d'\n' aur fetch -L "$tmp_view"
 fi
 
 # Link build files in the queue (absolute links)
