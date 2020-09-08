@@ -31,6 +31,7 @@ test_packages=(
     'shaman-git' # special characters - UTF8
     'openrct2-git' # make/depends_arch
     'poeizo' 'curr' # dependency order (#414)
+    'mingw-w64-gcc-base' # cyclic dependencies - required removal of makedeps
 )
 
 test_packages_crazy=(
@@ -40,5 +41,5 @@ test_packages_crazy=(
 )
 
 for p in "${test_packages[@]}"; do
-    { aur sync -n --no-view --repo=custom "$p" && pacman -Si custom/"$p"; } || exit
+    { aur sync --rmdeps --no-confirm --no-view --repo=custom "$p" && pacman -Si custom/"$p"; } || exit
 done
