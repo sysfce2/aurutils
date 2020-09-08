@@ -1,0 +1,44 @@
+#!/bin/bash
+var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}") || exit
+trap 'rm -rf -- "$var_tmp"' EXIT
+
+cat >"$var_tmp"/pacman.conf <<EOF
+[options]
+HoldPkg = pacman-git glibc
+Architecture = auto
+CheckSpace
+[core]
+Include = /etc/pacman.d/mirrorlist
+[extra]
+Include = /etc/pacman.d/mirrorlist
+[community]
+Include = /etc/pacman.d/mirrorlist
+[custom]
+SigLevel = Optional TrustAll
+Server = file://$var_tmp
+EOF
+
+# create local repository
+repo-add "$var_tmp"/custom.db.tar || exit
+
+test_packages=(
+    'clion' # split package - multiple packages from same package base
+    'libc++' 'libc++-abi' # split package - depends on package from same package base
+    'python-pyalsaaudio' # split packages - independent
+    'hnwatch' # split packages - pkgbase does not match pkgname
+    'gimp-plugin-separate+' # Special characters
+    'ros-build-tools' # empty make/depends
+    'shaman-git' # special characters - UTF8
+    'openrct2-git' # make/depends_arch
+    'poeizo' 'curr' # dependency order (#414)
+)
+
+test_packages_crazy=(
+    'aws-cli-git' # versioned dependencies (PKGBUILD fails by design)
+    'plasma-git-meta' # 100+ depends
+    'ros-lunar-desktop' # 250+ depends 
+)
+
+for p in "${test_packages[@]}"; do
+    { aur sync -n --no-view --repo=custom "$p" && pacman -Si custom/"$p"; } || exit
+done
