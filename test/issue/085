@@ -4,6 +4,8 @@ trap 'rm -rf -- "$tmp"' EXIT
 
 cat >"$tmp"/pacman.conf <<EOF
 [options]
+CacheDir = /var/cache/pacman/pkg
+CacheDir = $tmp
 HoldPkg = pacman-git glibc
 Architecture = auto
 CheckSpace
@@ -37,6 +39,7 @@ package() {
 }
 EOF
 
+# TODO: add test with pkgver bumps (no CacheDir)
 i=0
 while [ $((i < 10)) -eq 1 ]; do
     { env -C "$tmp" aur build -rsfd custom && sudo pacman -S --noconfirm custom/test-random; } || exit
