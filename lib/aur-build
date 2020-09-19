@@ -219,6 +219,7 @@ while IFS= read -ru "$fd" path; do
         env PKGDEST="$var_tmp" aur chroot --no-prepare "${chroot_args[@]}" -- "${makechrootpkg_args[@]}"
     else
         printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
+        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
