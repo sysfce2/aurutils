@@ -22,24 +22,23 @@ EOF
 repo-add "$var_tmp"/custom.db.tar || exit
 
 test_packages=(
-    'clion' # split package - multiple packages from same package base
-    'libc++' 'libc++-abi' # split package - depends on package from same package base
     'python-pyalsaaudio' # split packages - independent
-    'hnwatch' # split packages - pkgbase does not match pkgname
-    'gimp-plugin-separate+' # Special characters
+    'fasm-linux-git' 'hnwatch' # split packages - pkgbase does not match pkgname
     'ros-build-tools' # empty make/depends
-    'shaman-git' # special characters - UTF8
-    'openrct2-git' # make/depends_arch
-    'poeizo' 'curr' # dependency order (#414)
+    'curr' # dependency order (#414)
     'mingw-w64-gcc-base' # cyclic dependencies - required removal of makedeps
+    'gimp-plugin-separate+' # Special characters
 )
 
-test_packages_crazy=(
-    'aws-cli-git' # versioned dependencies (PKGBUILD fails by design)
+test_packages_big=(
+    'clion' # split package - multiple packages from same package base
+    'libc++' 'libc++-abi' # split package - depends on package from same package base
+    'openrct2-git' # make/depends_arch
     'plasma-git-meta' # 100+ depends
     'ros-lunar-desktop' # 250+ depends 
 )
 
 for p in "${test_packages[@]}"; do
-    { aur sync --rmdeps --no-confirm --no-view --repo=custom "$p" && pacman -Si custom/"$p"; } || exit
+    { aur sync --rmdeps --no-confirm --no-view --repo=custom --margs --skippgpcheck --pacman-conf "$var_tmp"/pacman.conf "$p" && \
+	    pacman -Si --config "$var_tmp"/pacman.conf custom/"$p"; } || exit
 done

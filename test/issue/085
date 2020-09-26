@@ -1,5 +1,5 @@
 #!/bin/bash
-mp=$(mktemp -d) || exit
+tmp=$(mktemp -d) || exit
 trap 'rm -rf -- "$tmp"' EXIT
 
 cat >"$tmp"/pacman.conf <<EOF
@@ -42,9 +42,8 @@ EOF
 # TODO: add test with pkgver bumps (no CacheDir)
 i=0
 while [ $((i < 10)) -eq 1 ]; do
-    { env -C "$tmp" aur build -rsfd custom && sudo pacman -S --noconfirm custom/test-random; } || exit
+    { env -C "$tmp" aur build -rsfd custom --pacman-conf "$tmp"/pacman.conf && \
+	    sudo pacman -S --noconfirm custom/test-random --config "$tmp"/pacman.conf; } || exit
     i=$((i +1))
 done
 
-# TODO: use temporary pacman lib
-sudo pacman -R --noconfirm custom/test-random
