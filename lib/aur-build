@@ -208,18 +208,25 @@ if (( chroot )); then
     # makepkg --packagelist includes the package extension, but makechrootpkg
     # ignores PKGEXT set on the host. Retrieve it seperately.
     packagelist() {
-        printf '%s\n' >&2 "Running aur chroot ${chroot_args[*]} --packagelist"
-        aur chroot "${chroot_args[@]}" --packagelist
+        local args=("--packagelist" "${chroot_args[@]}")
+
+        printf 'Running aur-chroot %s\n' >&2 "${args[*]}"
+        aur chroot "${args[@]}"
     }
 
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
-    aur chroot "${chroot_args[@]}" --no-build
+    args=("--no-build" "${chroot_args[@]}")
+
+    printf 'Running aur-chroot %s\n' >&2 "${args[*]}"
+    aur chroot "${args[@]}"
 else
     packagelist() {
-        printf '%s\n' >&2 "Running makepkg ${makepkg_conf[*]} --packagelist"
-        makepkg "${makepkg_conf[@]}" --packagelist
+        local args=("--packagelist" "${makepkg_conf[@]}")
+
+        printf 'Running makepkg %s\n' >&2 "${args[*]}"
+        makepkg "${args[@]}"
     }
 
     # Configuration for host builds.
@@ -259,8 +266,10 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        printf '%s\n' >&2 "Running makepkg -od ${makepkg_conf[*]} ${makepkg_common_args[*]}"
-        makepkg -od "${makepkg_conf[@]}" "${makepkg_common_args[@]}"
+        args=("-od" "${makepkg_common_args[@]}" "${makepkg_conf[@]}")
+
+        printf 'Running makepkg %s\n' >&2 "${args[*]}"
+        makepkg "${args[@]}"
     fi
 
     if (( ! overwrite )); then
@@ -282,12 +291,19 @@ while IFS= read -ru "$fd" path; do
     fi
 
     if (( chroot )); then
-        printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
-        PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --no-prepare \
-            -- "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
+        args=("--no-prepare" "${chroot_args[@]}"
+              -- "${makechrootpkg_args[@]}"
+              -- "${makechrootpkg_makepkg_args[@]}")
+
+        printf 'Running aur-chroot %s\n' >&2 "${args[*]}"
+        PKGDEST="$var_tmp" aur chroot "${args[@]}"
+            
     else
-        printf '%s\n' >&2 "Running makepkg ${makepkg_conf[*]} ${makepkg_args[*]} ${makepkg_common_args[*]}"
-        PKGDEST="$var_tmp" makepkg "${makepkg_conf[@]}" "${makepkg_args[@]}" "${makepkg_common_args[@]}"
+        args=("${makepkg_common_args[@]}" "${makepkg_args[@]}"
+              "${makepkg_conf[@]}")
+
+        printf 'Running makepkg %s\n' >&2 "${args[*]}"
+        PKGDEST="$var_tmp" makepkg "${args[@]}"
     fi
 
     cd_safe "$var_tmp"
