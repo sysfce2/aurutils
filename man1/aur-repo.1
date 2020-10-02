@@ -85,9 +85,6 @@ path.
 .B \-\-table
 Change the format used by
 .B \-\-list
-from
-.IP
-.BI pkgname \et pkgver \en
 to
 .IP
 .BI pkgname \et depends \et pkgbase \et pkgver \en\c
@@ -103,6 +100,17 @@ See also
 .BR \-\-table
 in
 .BR aur\-depends (1)
+.
+.SH ENVIRONMENT
+.TP
+.B AUR_REPO
+The name of a pacman repository, see
+.BR \-d .
+.
+.TP
+.B AUR_DBROOT
+The path to the root of a local repository, see
+.BR \-r .
 .
 .SH SEE ALSO
 .ad l
