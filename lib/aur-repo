@@ -71,9 +71,9 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:alquS'
+opt_short='c:d:r:alpquS'
 opt_long=('database:' 'repo:' 'config:' 'root:' 'path' 'all' 'list'
-          'repo-list' 'sync' 'upgrades' 'table' 'quiet')
+          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'ini')
 opt_hidden=('dump-options' 'status-file:' 'pacman-conf:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -94,20 +94,22 @@ while true; do
             mode=packages ;;
         -a|--all)
             mode=upgrades; vercmp_args+=(-a) ;;
+        -p|--path)
+            mode=path ;;
         -q|--quiet)
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
         --repo-list)
             mode=repo_list ;;
-        --path)
-            modifier=path ;;
         -S|--sync)
             modifier=sync ;;
         --table)
             table_format=1 ;;
         --status-file)
             shift; status_file=$1 ;;
+        --ini)
+            modifier=ini ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -163,16 +165,21 @@ if [[ $mode == repo_list ]]; then
         exit 2
     fi
 
-    if [[ $modifier == path ]]; then
-        for i in "${!conf_file_repo[@]}"; do
-            printf '%q/%q.db\n' "${conf_file_serv[$i]}" "${conf_file_repo[$i]}"
-        done
-    else
-        printf '%q\n' "${conf_file_repo[@]}"
-    fi
+    # XXX: add SigLevel in output
+    case $modifier in
+        ini)
+            for i in "${!conf_file_repo[@]}"; do
+                printf '[%s]\n' "${conf_file_repo[$i]}"
+                printf 'Server = %s\n' "${conf_file_serv[$i]}"
+            done ;;
+        *)
+            printf '%q\n' "${conf_file_repo[@]}"
+            ;;
+    esac
     exit 0
 fi
 
+# other modes
 if ! [[ $db_name ]]; then
     case ${#conf_file_repo[@]} in
         1) db_root=${conf_file_serv[0]}
@@ -230,12 +237,12 @@ case $mode in
     packages)
         contents
         ;;
+    path)
+        readlink -f -- "$db_root/$db_name".db
+        ;;
     *)
-        if [[ $modifier == path ]]; then
-            readlink -f -- "$db_root/$db_name".db
-        else
-            usage
-        fi ;;
+        usage
+        ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
