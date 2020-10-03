@@ -1,7 +1,7 @@
-.TH AUR-CHROOT 2020-03-27 AURUTILS
+.TH AUR-CHROOT 2020-10-02 AURUTILS
 .SH NAME
 aur\-chroot \- build packages with systemd-nspawn
-
+.
 .SH SYNOPSIS
 .SY "aur chroot"
 .OP \-d database
@@ -13,62 +13,78 @@ aur\-chroot \- build packages with systemd-nspawn
 .OP \-\-
 .RI [ "makechrootpkg args" ]
 .YS
-
+.
 .SH DESCRIPTION
-Build packages in an nspawn container, adding the results to a local
-repository.
-
+Build packages inside a
+.BR systemd\-nspawn (1)
+container.
+.
 .SH OPTIONS
-All arguments after \-\- are passed to \fBmakechrootpkg\fR.
-
+All arguments after
+.B \-\-
+are passed to \fBmakechrootpkg\fR.
+.
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
 The base directory for containers. This directory usually contains a
 .B /root
 subdirectory that serves as template for user containers (named after
-.I $SUDO_USER
-, or
+.IR $SUDO_USER ,
+or
 .B /copy
 if unset).
-
-.SY Note:
+.IP
+.B Note:
 If the
 .B \-T
 parameter is specified to
 .BR makechrootpkg ,
 the user container has a random name and is removed on build
 completion.
-
+.
 .TP
 .BI \-C " FILE" "\fR,\fP \-\-pacman\-conf=" FILE
 The
 .BR pacman.conf (5)
-file used inside the container. Defaults to devtools'
-.IR pacman-extra.conf .
+file used inside the container. Defaults to
+.IR /usr/share/devtools/pacman\-extra.conf .
+.IP
 This file is processed with
 .BR pacconf (1)
 to include necessary information from the host, such as mirrors. If a
 local repository name is specified with
 .BR \-d ,
 its configuration is appended to this file.
-
+.
 .TP
 .BI \-M " FILE" "\fR,\fP \-\-makepkg\-conf=" FILE
 The
 .BR makepkg.conf (5)
 file used inside the container. Defaults to devtools'
 .IR makepkg\-<machine>.conf .
-
+.
+.TP
+.B \-\-bind
+.
+.TP
+.B \-\-bind\-rw
+.
 .TP
 .B \-\-no\-build
 Update or create the
 .B /root
 copy of the container; do not build a package.
-
+.
 .TP
 .B \-\-no\-prepare
 Build a package, do not update the container.
-
+.
+.TP
+.B \-\-packagelist
+.
+.TP
+.B \-\-prefix
+.
 .SH ENVIRONMENT
 Packages are placed in the directory specified in
 .BR PKGDEST .
@@ -76,7 +92,7 @@ If unset, the current directory
 .RB ( $PWD )
 is used. See also
 .BR makepkg.conf (5).
-
+.
 .SH NOTES
 .SS Building with makechrootpkg
 Changes to the pacman database are
@@ -84,7 +100,7 @@ Changes to the pacman database are
 propagated from the container to the local system. Packages must be
 installed and updated separately, typically through
 .BI "pacman \-Syu " package_name\fR.
-
+.
 Package conflicts inside the container must be solved manually, as
 .B makechrootpkg
 uses
@@ -96,15 +112,15 @@ with
 , run
 .B "arch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib"
 as root.
-
-.SS Accessing the local repository
+.
+.SS Accessing a local repository
 To install packages from the local repository (for example, on
 dependency resolution with
 .BR "makepkg \-s" ,
 the container requires read access to the host directory where it is
 located. This is ensured through a
 .IR "bind mount" .
-
+.
 .SS Avoiding password prompts
 .BR makepkg (8)
 must be run as a regular user as of version 4.2, with privileged
@@ -115,8 +131,8 @@ It follows that
 and
 .BR aur\-build (1)
 can not run directly as root. To avoid password prompts,
-.BR sudoers (5) can
-be used instead. For example, if
+.BR sudoers (5)
+can be used instead. For example, if
 .BR aur\-chroot (1)
 is run as the
 .I archie
@@ -153,14 +169,14 @@ Necessary
 options may be set in a specified (\-M)
 .BR makepkg.conf (5)
 file. See GitHub issue #334 for details.
-
+.
 .SS Building for a different architecture
 To build packages for a different architecture, prepend
 .BI setarch " arch"
 to the
 .B aur\-build
 command line.
-
+.
 The target architecture must be supported both by the host (run
 .B "setarch \-\-list"
 for an approximation), and have a matching
@@ -176,7 +192,7 @@ for
 Building for other CPU architectures may be done through
 QEMU, for example with
 .BR proot (1).
-
+.
 .SH SEE ALSO
 .BR aur (1),
 .BR aur\-build (1),
@@ -185,7 +201,7 @@ QEMU, for example with
 .BR makepkg.conf (5),
 .BR pacman.conf (5),
 .BR setarch (8)
-
+.
 .SH AUTHORS
 .MT https://github.com/AladW
 Alad Wenter

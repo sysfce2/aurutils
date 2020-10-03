@@ -11,9 +11,14 @@ aur\-repo\-filter \- filter packages in the Arch Linux repositories
 .SH DESCRIPTION
 .B aur\-repo\-filter
 checks if
-.IR package[<cmp><version>] ,
-taken from standard input, is satisfied by a package in the official
-Arch Linux repositories. In particular, the
+.I package[<cmp><version>]
+is satisfied by a package using
+.BR "pacsift \-\-satisfies".
+Strings are taken from standard input. The package is printed to
+standard output if found.  If the package is provided by a package of
+a different name, the latter is printed to standard error.
+.PP
+By default, the Arch Linux repositories
 .BR core ,
 .BR extra ,
 .BR testing ,
@@ -22,11 +27,14 @@ Arch Linux repositories. In particular, the
 .BR multilib ,
 and
 .BR multilib\-testing
-repositories are checked.
+repositories are checked, though other repositories may be specified.
 .PP
-The package is printed to standard output if found.  If the package is
-provided by a package of a different name, the latter is printed to
-standard error.
+.RE
+.I <cmp>
+may be any of the following:
+"=", "<", "<=", ">", ">=". See
+.BR pacsift (1)
+for details.
 .
 .SH OPTIONS
 .TP
@@ -38,7 +46,7 @@ Query all available pacman repositories.
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME "\fR,\fP \-\-repo=" NAME
 Restrict output to the pacman repository
 .IR NAME .
-Multiple repositories may be specified by repeating this argument.
+Multiple repositories can be specified by repeating this argument.
 .
 .TP
 .BI \-\-sysroot= PATH
@@ -50,7 +58,8 @@ Set an alternate system root. See
 .nh
 .BR aur (1),
 .BR pacinfo (1),
-.BR pacsift (1)
+.BR pacsift (1),
+.BR pacutils\-sysroot (7)
 .
 .SH AUTHORS
 .MT https://github.com/AladW

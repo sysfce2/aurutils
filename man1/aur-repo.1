@@ -1,4 +1,4 @@
-.TH AUR-REPO 1 2018-12-13 AURUTILS
+.TH AUR-REPO 1 2020-10-02 AURUTILS
 .SH NAME
 aur\-repo \- manage local repositories
 .
@@ -7,32 +7,59 @@ aur\-repo \- manage local repositories
 .OP \-c config
 .OP \-d database
 .OP \-r root
-.OP \-aluS
+.OP \-aquS
 .OP \-\-repo\-list
 .YS
 .
 .SH DESCRIPTION
 When run without arguments,
 .BR aur\-repo
-prints the path of a file:// repository to standard output. For other
-modes, see the
+prints the path of a local (file://) repository to standard
+output. For other modes, see the
 .B OPTIONS
 section.
 .
 .SH OPTIONS
 .TP
+.BI \-c " FILE" "\fR,\fP \-\-config=" FILE
+Specify an alternate
+.BR pacman (8)
+configuration file.
+.
+.TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
-The name of the pacman repository. May be specified through the
-.B AUR_REPO
-environment variable.
+The name of a
+.BR pacman (8)
+repository.
+.IP
+The repository should have a
+.B file://
+location, or any other location when using
+.BR \-\-sync .
 .
 .TP
 .BI \-r " PATH" "\fR,\fP \-\-root=" PATH
- The path to the root of the pacman repository. May be specified
-through the
-.B AUR_DBROOT
-environment variable.
+The path to the root of a local repository. 
 .
+.SS Modes
+.TP
+.BR \-l ", " \-\-list
+List the contents of a local repository in the following format:
+.IP
+.BI pkgname \et pkgver \en
+.
+.TP
+.BR \-u ", " \-\-upgrades
+Check package updates with
+.BR aur\-vercmp (1)
+.
+.TP
+.BR \-\-repo\-list
+List all local
+.BR pacman (8)
+repositories.
+.
+.SS Modifiers
 .TP
 .BR \-a ", " \-\-all
 Use
@@ -41,52 +68,49 @@ when checking for updates. Implies
 .BR \-\-upgrades .
 .
 .TP
-.BR \-c ", " \-\-config ", " \-\-pacman\-conf
-.
+.BR \-q ", " \-\-quiet
+Only print package names.
 .
 .TP
-.BR \-l ", " \-\-list
-List the contents of the repository in
-.BI pkgname \et pkgver \en
-format. If the
-.B \-S
-option is not enabled, the repository is queried directly through the
-.BI .db
-file on-disk.
+.BR \-S ", " \-\-sync
+Query repositories in
+.BR DBPATH /sync
+(defaults to
+.BR /var/lib/pacman/sync )
+instead of by their
+.B file://
+path.
 .
 .TP
 .B \-\-table
 Change the format used by
 .B \-\-list
-from
-.BI pkgname \et pkgver \en
 to
+.IP
 .BI pkgname \et depends \et pkgbase \et pkgver \en\c
-\&. If a package has no dependencies
+\&.
+.IP
+If a package has no dependencies
 .B pkgname
 is used as
 .BR depends ,
 otherwise missing values are represented by
 .IR \- .
-Also see:
+See also
 .BR \-\-table
-from
-.BR aur\-depends (1).
+in
+.BR aur\-depends (1)
+.
+.SH ENVIRONMENT
+.TP
+.B AUR_REPO
+The name of a pacman repository, see
+.BR \-d .
 .
 .TP
-.BR \-S ", " \-\-sync
-Query repositories through
-.BR pacman (8).
-.
-.TP
-.BR \-u ", " \-\-upgrades
-Use
-.BR aur\-vercmp (1)
-to check a pacman repository for updates.
-.
-.TP
-.BR \-\-repo\-list
-List all local pacman repositories.
+.B AUR_DBROOT
+The path to the root of a local repository, see
+.BR \-r .
 .
 .SH SEE ALSO
 .ad l
