@@ -13,7 +13,7 @@ results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
 
     if [[ -w $dest ]]; then
-        printf '%s:%s:%s:file://%s\n' "$mode" "$prev" "$current" "$path" | tee -a "$dest"
+        printf >> "$dest" '%s:%s:%s:file://%s\n' "$mode" "$prev" "$current" "$path"
     fi
 }
 
