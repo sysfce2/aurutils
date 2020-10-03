@@ -7,6 +7,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 modifier=local table_format=0
 
+# default arguments
+conf_args=()
+
 db_table() {
     # do not extract an empty database (#727)
     (( $(bsdtar -tf "$2" | wc -l) )) || return 0
@@ -114,6 +117,10 @@ while true; do
     shift
 done
 
+if [[ -v pacman_conf ]]; then
+    conf_args+=(--config "$pacman_conf")
+fi
+
 # assign environment variables
 : "${db_name=$AUR_REPO}"
 : "${db_root=$AUR_DBROOT}"
@@ -133,25 +140,21 @@ while read -r key _ value; do
             conf_file_serv+=("$server")
             conf_file_repo+=("$section")
 
-            case $section in
-                "$db_name")
-                    if ! [[ $db_root ]]; then
-                        db_root=$server
-                    elif [[ $db_root != "$server" ]]; then
-                        printf >&2 '%s: warning: --root and pacman.conf mismatch (%s)\n' "$argv0" "$db_name"
-                    fi ;;
-            esac
+            if [[ $section == "$db_name" ]]; then
+                if ! [[ $db_root ]]; then
+                    db_root=$server
+                elif [[ $db_root != "$server" ]]; then
+                    printf >&2 '%s: warning: --root and pacman.conf mismatch (%s)\n' "$argv0" "$db_name"
+                fi
+            fi
             ;;
         Server=*://*)
-            case $section in
-                "$db_name")
-                    if ! [[ $db_root ]]; then
-                        db_root=$value
-                    fi ;;
-            esac
+            if [[ $section == "$db_name" ]] && ! [[ $db_root ]]; then
+                db_root=$value
+            fi
             ;;
     esac
-done < <(pacman-conf --config "${pacman_conf:-/etc/pacman.conf}")
+done < <(pacman-conf "${conf_args[@]}")
 
 # exclusive modes
 if [[ $mode == repo_list ]]; then
