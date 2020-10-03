@@ -247,8 +247,8 @@ cd_safe "$tmp"
 aur repo "${repo_args[@]}" --list --status-file=db >db_info
 
 # Retrieve path to local repo (#448)
-{ IFS= read -r db_name
-  IFS= read -r db_root
+{ IFS=: read -r _ db_name
+  IFS=: read -r _ db_root
 } <db
 
 if [[ -w $db_root/$db_name.db ]]; then

@@ -191,7 +191,10 @@ if ! [[ $db_name ]]; then
 fi
 
 if [[ -v status_file ]]; then
-    printf '%s\n%s\n' "$db_name" "$db_root" >"$status_file"
+    { printf 'repo:%s\n' "$db_name"
+      printf 'root:%s\n' "$db_root"
+      printf 'conf:%s\n' "$pacman_conf"
+    } > "$status_file"
 fi
 
 case $modifier in
