@@ -1,0 +1,49 @@
+#!/bin/bash
+tmp=$(mktemp -d) || exit
+trap 'rm -rf -- "$tmp"' EXIT
+
+cat >"$tmp"/pacman.conf <<EOF
+[options]
+CacheDir = /var/cache/pacman/pkg
+CacheDir = $tmp
+HoldPkg = pacman-git glibc
+Architecture = auto
+CheckSpace
+[core]
+Include = /etc/pacman.d/mirrorlist
+[extra]
+Include = /etc/pacman.d/mirrorlist
+[community]
+Include = /etc/pacman.d/mirrorlist
+[custom]
+SigLevel = Optional TrustAll
+Server = file://$tmp
+EOF
+
+# create local repository
+repo-add "$tmp"/custom.db.tar || exit
+
+# cache/checksum test
+cat > "$tmp"/PKGBUILD <<'EOF'
+pkgname=test-random
+pkgver=1
+pkgrel=1
+pkgdesc="description"
+arch=('any')
+url="http://example.com"
+license=('GPL')
+
+package() {
+    mkdir -p "$pkgdir"/var/tmp/
+    dd if=/dev/urandom of="$pkgdir"/var/tmp/random bs=1M count=4
+}
+EOF
+
+# TODO: add test with pkgver bumps (no CacheDir)
+i=0
+while [ $((i < 10)) -eq 1 ]; do
+    { env -C "$tmp" aur build -rsfd custom --pacman-conf "$tmp"/pacman.conf && \
+	    sudo pacman -S --noconfirm custom/test-random --config "$tmp"/pacman.conf; } || exit
+    i=$((i +1))
+done
+
