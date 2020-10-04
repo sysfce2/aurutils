@@ -4,6 +4,7 @@
 set -o errexit
 shopt -s extglob
 argv0=build
+runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$UID}/aurutils
 startdir=$PWD
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -60,7 +61,7 @@ fi
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:' 'remove'
+          'verify' 'directory:' 'no-sync' 'config:' 'pacman-conf:' 'results:' 'remove'
           'pkgver' 'prefix:' 'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:')
@@ -71,7 +72,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset db_name db_path db_root makepkg_conf results_file queue
+unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
     case "$1" in
         # build options
@@ -143,8 +144,10 @@ while true; do
         --prevent-downgrade)
             repo_add_args+=(-p) ;;
         # other options
+        --config)
+            shift; pacconf_args+=(--config "$1") ;;
         --pacman-conf)
-            shift; pacconf_args+=(--config "$1")
+            shift; pacman_conf=$1
             chroot_args+=(--pacman-conf "$1") ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
@@ -222,11 +225,24 @@ if (( chroot )); then
     printf 'Running aur-chroot %s\n' >&2 "${args[*]}"
     aur chroot "${args[@]}"
 else
+    # makepkg -s does not support setting pacman.conf
+    if [[ -v pacman_conf ]]; then
+        mkdir -p "$runtime_dir"
+
+        { printf '#!/bin/sh --\n'
+          printf 'pacman --config "%s" "$@"\n' "$pacman_conf"
+        } > "$runtime_dir"/pacman_cfg
+
+        chmod +x "$runtime_dir"/pacman_cfg
+        PACMAN=$runtime_dir/pacman_cfg
+    fi
+    PACMAN=${PACMAN:-pacman}
+
     packagelist() {
         local args=("--packagelist" "${makepkg_conf[@]}")
 
         printf 'Running makepkg %s\n' >&2 "${args[*]}"
-        makepkg "${args[@]}"
+        PACMAN="$PACMAN" makepkg "${args[@]}"
     }
 
     # Configuration for host builds.
@@ -269,7 +285,7 @@ while IFS= read -ru "$fd" path; do
         args=("-od" "${makepkg_common_args[@]}" "${makepkg_conf[@]}")
 
         printf 'Running makepkg %s\n' >&2 "${args[*]}"
-        makepkg "${args[@]}"
+        PACMAN="$PACMAN" makepkg "${args[@]}"
     fi
 
     if (( ! overwrite )); then
@@ -303,7 +319,7 @@ while IFS= read -ru "$fd" path; do
               "${makepkg_conf[@]}")
 
         printf 'Running makepkg %s\n' >&2 "${args[*]}"
-        PKGDEST="$var_tmp" makepkg "${args[@]}"
+        PKGDEST="$var_tmp" PACMAN="$PACMAN" makepkg "${args[@]}"
     fi
 
     cd_safe "$var_tmp"

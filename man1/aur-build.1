@@ -83,6 +83,16 @@ builds, this reflects the
 command.
 .
 .TP
+.BI \-\-config= FILE
+The
+.BR pacman.conf (5)
+file to use for syncing and retrieving local repositories. This option
+does not affect
+.BR makepkg (8)
+calls. (See also
+.BR \-\-pacman\-conf .)
+.
+.TP
 .BR \-\-no\-sync
 Do not sync the local repository after building.
 .
@@ -186,6 +196,18 @@ Run
 on the built package.
 .
 .TP
+.BI \-\-makepkg\-conf= FILE
+The
+.BR makepkg.conf (5)
+file used inside the container. (\fBaur\-chroot \-\-makepkg\-conf\fR)
+.
+.TP
+.BI \-\-pacman\-conf= FILE
+The
+.BR pacman.conf (5)
+file used inside the container. (\fBaur\-chroot \-\-pacman\-conf\fR)
+.
+.TP
 .BI \-\-prefix= PREFIX
 The path component
 .B <prefix>
@@ -234,6 +256,27 @@ Enable logging to a text file in the build directory.
 .BR \-\-clean
 Clean up leftover work files and directories after a successful build.
 .RB ( makepkg " " \-c )
+.
+.TP
+.BI \-\-pacman\-conf= FILE
+The
+.BR pacman.conf (5)
+file used for
+.BR makepkg (8)
+invocations.
+.IP
+.B Note:
+This option invalidates the use of the
+.B PACMAN
+environment variable.
+.
+.TP
+.BI \-\-makepkg\-conf= FILE
+The
+.BR makepkg.conf (5)
+file used for
+.BR makepkg (8)
+invocations.
 .
 .SS repo\-add options
 .TP
