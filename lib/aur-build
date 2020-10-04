@@ -351,7 +351,7 @@ while IFS= read -ru "$fd" path; do
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if [[ -v results_file ]]; then
-        printf "build:file://${db_path%/*}/%s\n" "${pkglist[@]}" | tee -a "$results_file"
+        printf >> "$results_file" "build:file://${db_path%/*}/%s\n" "${pkglist[@]}"
     fi
 
     if (( chroot )) || (( no_sync )); then
