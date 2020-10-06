@@ -7,6 +7,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 modifier=local table_format=0
 
+# default arguments
+conf_args=()
+
 db_table() {
     # do not extract an empty database (#727)
     (( $(bsdtar -tf "$2" | wc -l) )) || return 0
@@ -68,9 +71,9 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:alquS'
+opt_short='c:d:r:alpquS'
 opt_long=('database:' 'repo:' 'config:' 'root:' 'path' 'all' 'list'
-          'repo-list' 'sync' 'upgrades' 'table' 'quiet')
+          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'ini')
 opt_hidden=('dump-options' 'status-file:' 'pacman-conf:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -91,20 +94,22 @@ while true; do
             mode=packages ;;
         -a|--all)
             mode=upgrades; vercmp_args+=(-a) ;;
+        -p|--path)
+            mode=path ;;
         -q|--quiet)
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
         --repo-list)
             mode=repo_list ;;
-        --path)
-            modifier=path ;;
         -S|--sync)
             modifier=sync ;;
         --table)
             table_format=1 ;;
         --status-file)
             shift; status_file=$1 ;;
+        --ini)
+            modifier=ini ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -113,6 +118,10 @@ while true; do
     esac
     shift
 done
+
+if [[ -v pacman_conf ]]; then
+    conf_args+=(--config "$pacman_conf")
+fi
 
 # assign environment variables
 : "${db_name=$AUR_REPO}"
@@ -133,25 +142,21 @@ while read -r key _ value; do
             conf_file_serv+=("$server")
             conf_file_repo+=("$section")
 
-            case $section in
-                "$db_name")
-                    if ! [[ $db_root ]]; then
-                        db_root=$server
-                    elif [[ $db_root != "$server" ]]; then
-                        printf >&2 '%s: warning: --root and pacman.conf mismatch (%s)\n' "$argv0" "$db_name"
-                    fi ;;
-            esac
+            if [[ $section == "$db_name" ]]; then
+                if ! [[ $db_root ]]; then
+                    db_root=$server
+                elif [[ $db_root != "$server" ]]; then
+                    printf >&2 '%s: warning: --root and pacman.conf mismatch (%s)\n' "$argv0" "$db_name"
+                fi
+            fi
             ;;
         Server=*://*)
-            case $section in
-                "$db_name")
-                    if ! [[ $db_root ]]; then
-                        db_root=$value
-                    fi ;;
-            esac
+            if [[ $section == "$db_name" ]] && ! [[ $db_root ]]; then
+                db_root=$value
+            fi
             ;;
     esac
-done < <(pacman-conf --config "${pacman_conf:-/etc/pacman.conf}")
+done < <(pacman-conf "${conf_args[@]}")
 
 # exclusive modes
 if [[ $mode == repo_list ]]; then
@@ -160,16 +165,21 @@ if [[ $mode == repo_list ]]; then
         exit 2
     fi
 
-    if [[ $modifier == path ]]; then
-        for i in "${!conf_file_repo[@]}"; do
-            printf '%q/%q.db\n' "${conf_file_serv[$i]}" "${conf_file_repo[$i]}"
-        done
-    else
-        printf '%q\n' "${conf_file_repo[@]}"
-    fi
+    # XXX: add SigLevel in output
+    case $modifier in
+        ini)
+            for i in "${!conf_file_repo[@]}"; do
+                printf '[%s]\n' "${conf_file_repo[$i]}"
+                printf 'Server = %s\n' "${conf_file_serv[$i]}"
+            done ;;
+        *)
+            printf '%q\n' "${conf_file_repo[@]}"
+            ;;
+    esac
     exit 0
 fi
 
+# other modes
 if ! [[ $db_name ]]; then
     case ${#conf_file_repo[@]} in
         1) db_root=${conf_file_serv[0]}
@@ -188,7 +198,10 @@ if ! [[ $db_name ]]; then
 fi
 
 if [[ -v status_file ]]; then
-    printf '%s\n%s\n' "$db_name" "$db_root" >"$status_file"
+    { printf 'repo:%s\n' "$db_name"
+      printf 'root:%s\n' "$db_root"
+      printf 'conf:%s\n' "$pacman_conf"
+    } > "$status_file"
 fi
 
 case $modifier in
@@ -224,12 +237,12 @@ case $mode in
     packages)
         contents
         ;;
+    path)
+        readlink -f -- "$db_root/$db_name".db
+        ;;
     *)
-        if [[ $modifier == path ]]; then
-            readlink -f -- "$db_root/$db_name".db
-        else
-            usage
-        fi ;;
+        usage
+        ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
