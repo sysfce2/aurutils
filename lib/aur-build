@@ -27,6 +27,11 @@ db_replaces() {
     }'
 }
 
+run_msg() {
+    printf >&2 'Running %s\n' "$*"
+    "$@"
+}
+
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -211,19 +216,13 @@ if (( chroot )); then
     # makepkg --packagelist includes the package extension, but makechrootpkg
     # ignores PKGEXT set on the host. Retrieve it seperately.
     packagelist() {
-        local args=("--packagelist" "${chroot_args[@]}")
-
-        printf 'Running aur-chroot %s\n' >&2 "${args[*]}"
-        aur chroot "${args[@]}"
+        run_msg aur chroot --packagelist "${chroot_args[@]}"
     }
 
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
-    args=("--no-build" "${chroot_args[@]}")
-
-    printf 'Running aur-chroot %s\n' >&2 "${args[*]}"
-    aur chroot "${args[@]}"
+    run_msg aur chroot --no-build "${chroot_args[@]}"
 else
     # makepkg -s does not support setting pacman.conf
     if [[ -v pacman_conf ]]; then
@@ -239,10 +238,7 @@ else
     PACMAN=${PACMAN:-pacman}
 
     packagelist() {
-        local args=("--packagelist" "${makepkg_conf[@]}")
-
-        printf 'Running makepkg %s\n' >&2 "${args[*]}"
-        PACMAN="$PACMAN" makepkg "${args[@]}"
+        PACMAN="$PACMAN" run_msg makepkg --packagelist "${makepkg_conf[@]}"
     }
 
     # Configuration for host builds.
@@ -282,10 +278,8 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        args=("-od" "${makepkg_common_args[@]}" "${makepkg_conf[@]}")
-
-        printf 'Running makepkg %s\n' >&2 "${args[*]}"
-        PACMAN="$PACMAN" makepkg "${args[@]}"
+        PACMAN="$PACMAN" run_msg makepkg -od \
+              "${makepkg_common_args[@]}" "${makepkg_conf[@]}"
     fi
 
     if (( ! overwrite )); then
@@ -307,19 +301,13 @@ while IFS= read -ru "$fd" path; do
     fi
 
     if (( chroot )); then
-        args=("--no-prepare" "${chroot_args[@]}"
-              -- "${makechrootpkg_args[@]}"
-              -- "${makechrootpkg_makepkg_args[@]}")
-
-        printf 'Running aur-chroot %s\n' >&2 "${args[*]}"
-        PKGDEST="$var_tmp" aur chroot "${args[@]}"
+        PKGDEST="$var_tmp" run_msg aur chroot --no-prepare "${chroot_args[@]}" \
+               -- "${makechrootpkg_args[@]}" \
+               -- "${makechrootpkg_makepkg_args[@]}"
             
     else
-        args=("${makepkg_common_args[@]}" "${makepkg_args[@]}"
-              "${makepkg_conf[@]}")
-
-        printf 'Running makepkg %s\n' >&2 "${args[*]}"
-        PKGDEST="$var_tmp" PACMAN="$PACMAN" makepkg "${args[@]}"
+        PKGDEST="$var_tmp" PACMAN="$PACMAN" run_msg makepkg \
+               "${makepkg_common_args[@]}" "${makepkg_args[@]}" "${makepkg_conf[@]}"
     fi
 
     cd_safe "$var_tmp"
