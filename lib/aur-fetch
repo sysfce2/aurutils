@@ -118,7 +118,9 @@ fi | while read -r pkg; do
 
         case $sync in
             rebase)
-                git reset --hard HEAD
+                if [[ $(git config --get --type bool rebase.autoStash) != 'true' ]]; then
+                    git reset --hard 'HEAD'
+                fi
                 git rebase --verbose
                 ;;
             reset)
