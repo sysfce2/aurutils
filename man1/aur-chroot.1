@@ -4,12 +4,13 @@ aur\-chroot \- build packages with systemd-nspawn
 .
 .SH SYNOPSIS
 .SY "aur chroot"
-.OP \-d database
 .OP \-D directory
-.OP \-M makepkg_conf
 .OP \-C pacman_conf
+.OP \-M makepkg_conf
 .OP \-\-no\-build
 .OP \-\-no\-prepare
+.OP \-\-packagelist
+.OP \-\-prefix
 .OP \-\-
 .RI [ "makechrootpkg args" ]
 .YS
@@ -50,11 +51,10 @@ file used inside the container. Defaults to
 .IR /usr/share/devtools/pacman\-extra.conf .
 .IP
 This file is processed with
-.BR pacconf (1)
-to include necessary information from the host, such as mirrors. If a
-local repository name is specified with
-.BR \-d ,
-its configuration is appended to this file.
+.B pacman\-conf
+to bind-mount listed
+.B file://
+repositories.
 .
 .TP
 .BI \-M " FILE" "\fR,\fP \-\-makepkg\-conf=" FILE
@@ -65,9 +65,11 @@ file used inside the container. Defaults to devtools'
 .
 .TP
 .B \-\-bind
+Bind a directory read-only to the container. (\fBmakechrootpkg \-D\fR)
 .
 .TP
 .B \-\-bind\-rw
+Bind a directory read-write to the container. (\fBmakechrootpkg \-d\fR)
 .
 .TP
 .B \-\-no\-build
@@ -81,9 +83,23 @@ Build a package, do not update the container.
 .
 .TP
 .B \-\-packagelist
+List the package filenames that would be produced without
+building.
+.RB ( "makepkg \-\-packagelist" )
+using the
+.BR makepkg.conf (5)
+file specified with the
+.B \-\-makepkg\-conf
+option.
 .
 .TP
 .B \-\-prefix
+The path component
+.B <prefix>
+in the pacman configuration
+.BR /usr/share/devtools/pacman\-<prefix>.conf .
+Defaults to
+.BR extra .
 .
 .SH ENVIRONMENT
 Packages are placed in the directory specified in
@@ -100,16 +116,16 @@ Changes to the pacman database are
 propagated from the container to the local system. Packages must be
 installed and updated separately, typically through
 .BI "pacman \-Syu " package_name\fR.
-.
-Package conflicts inside the container must be solved manually, as
+.PP
+Package conflicts inside the container must be resolved manually, as
 .B makechrootpkg
 uses
 .B "makepkg \-\-noconfirm \-s"
 internally. For example, to replace
 .I gcc
 with
-.I gcc\-multilib
-, run
+.IR gcc\-multilib ,
+run
 .B "arch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib"
 as root.
 .
