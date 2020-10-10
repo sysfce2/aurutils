@@ -36,6 +36,6 @@ for pkg in "${test_package[@]}"; do
     AURDEST="$var_tmp" aur sync "${config[@]}" --chroot -D "$chroot" -rnd "$tmp_uid" \
            --no-view --margs --skippgpcheck "$pkg"
 
-    sudo pacsync --config "$var_tmp"/pacman.conf "$tmp_uuid"
+    sudo pacsync --config "$var_tmp"/pacman.conf "$tmp_uid"
     pacman -Si --config "$var_tmp"/pacman.conf "$tmp_uid/$pkg"
 done
