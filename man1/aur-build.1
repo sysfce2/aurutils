@@ -26,6 +26,25 @@ prefix in
 .BR pacman.conf (5).
 .
 .SH OPTIONS
+.SY Note:
+The following options require root privileges:
+.BR \-\-syncdeps ,
+.BR \-\-rmdeps ,
+.BR \-\-chroot .
+Unless the
+.B \-\-nosync
+or
+.B \-\-chroot
+options are provided,
+.B aur\-build
+will also attempt to sync to local the repository with
+.B pacman \-Syu
+and
+.BR "pacman \-Fy" .
+See the
+.B Repository updates
+section for details.
+.
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A text file describing directories containing a PKGBUILD relative to
@@ -342,7 +361,9 @@ of built packages, defaulting to
 .SS Repository updates
 When building locally (outside a container),
 .B "pacman \-Syu"
-is run while restricted to a local repository. This is comparable to
+is run with
+.BR pacman.conf (8)
+only containing the local repository. This is comparable to
 .BR "makepkg \-i" ,
 but without subsequent package installation (if a package was
 installed before, it is updated to the latest available version). An

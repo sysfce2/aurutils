@@ -7,3 +7,5 @@ err=$?
 
 # expected: cloned repositories (x2), exit 0
 (( err == 0 )) && [[ -d $tmp/aurutils/.git ]] && [[ -d $tmp/aurutils-git/.git ]]
+
+# vim: set et sw=4 sts=4 ft=sh:\n

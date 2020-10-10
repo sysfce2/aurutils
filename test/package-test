@@ -1,0 +1,38 @@
+#!/bin/bash
+set -e
+
+var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}") || exit
+trap 'rm -rf -- "$var_tmp"' EXIT
+tmp_uid=custom-$RANDOM
+
+cat >"$var_tmp"/pacman.conf <<EOF
+[options]
+HoldPkg = pacman-git glibc
+Architecture = auto
+CheckSpace
+CacheDir = $var_tmp
+CacheDir = /var/cache/pacman/pkg
+[core]
+Include = /etc/pacman.d/mirrorlist
+[extra]
+Include = /etc/pacman.d/mirrorlist
+[community]
+Include = /etc/pacman.d/mirrorlist
+[$tmp_uid]
+SigLevel = Optional TrustAll
+Server = file://$var_tmp
+EOF
+
+# create local repository
+repo-add "$var_tmp/$tmp_uid".db.tar
+
+# test package candidates
+source ./package
+config=(--config "$var_tmp"/pacman.conf --pacman-conf "$var_tmp"/pacman.conf)
+
+for pkg in "${test_package[@]}"; do
+    AURDEST="$var_tmp" aur sync "${config[@]}" -rnd "$tmp_uid" --no-view \
+           --margs --skippgpcheck "$pkg"
+
+    pacman -Si --config "$var_tmp"/pacman.conf "$tmp_uid/$pkg"
+done

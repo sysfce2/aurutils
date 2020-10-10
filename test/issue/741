@@ -21,23 +21,26 @@ SigLevel = Optional TrustAll
 Server = file://$tmp
 EOF
 
-cat >"$tmp"/PKGBUILD <<EOF
-pkgname=foo
-pkgver=1
-pkgrel=1
-arch=('any')
-
-package() {
-    true
-}
-EOF
-
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
 
-# issue 714: select repository without -d or --root
 config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
-env -C "$tmp" aur build "${config[@]}"
-pacman -Si --config "$tmp"/pacman.conf "$tmp_uid"/foo
+pkg=aurutils
+rev=0f3cbf98ded15a6088f1e3f9ebfe0de20c854f24
+ver=2.3.1
+
+# checkout and build previous revision
+cd "$tmp"
+aur fetch "$pkg"
+
+cd "$pkg"
+git reset --hard "$rev"
+aur build -rnsd "$tmp_uid" --margs --skippgpcheck "${config[@]}"
+pacsift --config "$tmp"/pacman.conf --repo="$tmp_uid" --satisfies="$pkg=$ver"
+
+# update to latest revision
+cd -
+AURDEST="$tmp" aur sync -rnd "$tmp_uid" --margs --skippgpcheck --no-view "${config[@]}" "$pkg"
+pacsift --config "$tmp"/pacman.conf --repo="$tmp_uid" --satisfies="$pkg>$ver"
 
 # vim: set et sw=4 sts=4 ft=sh:\n

@@ -152,8 +152,7 @@ while true; do
         --config)
             shift; pacconf_args+=(--config "$1") ;;
         --pacman-conf)
-            shift; pacman_conf=$1
-            chroot_args+=(--pacman-conf "$1") ;;
+            shift; pacman_conf=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -209,10 +208,14 @@ if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
 fi
 
-# Defaults to /usr/share/devtools/pacman-<prefix>.conf
-chroot_args+=(--prefix "$prefix")
-
 if (( chroot )); then
+    if [[ -v pacman_conf ]]; then
+        chroot_args+=(--pacman-conf "$pacman_conf")
+    else
+        # Defaults to /usr/share/devtools/pacman-<prefix>.conf
+        chroot_args+=(--prefix "$prefix")
+    fi
+
     # makepkg --packagelist includes the package extension, but makechrootpkg
     # ignores PKGEXT set on the host. Retrieve it seperately.
     packagelist() {
@@ -304,7 +307,6 @@ while IFS= read -ru "$fd" path; do
         PKGDEST="$var_tmp" run_msg aur chroot --no-prepare "${chroot_args[@]}" \
                -- "${makechrootpkg_args[@]}" \
                -- "${makechrootpkg_makepkg_args[@]}"
-            
     else
         PKGDEST="$var_tmp" PACMAN="$PACMAN" run_msg makepkg \
                "${makepkg_common_args[@]}" "${makepkg_args[@]}" "${makepkg_conf[@]}"
