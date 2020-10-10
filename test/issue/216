@@ -2,7 +2,7 @@
 set -e
 
 tmp=$(mktemp -d)
-trap 'rm -rf -- "$tmp"' EXIT
+trap 'rm -rf "$tmp"' EXIT
 tmp_uid=custom-$RANDOM
 
 cat >"$tmp"/pacman.conf <<EOF
@@ -21,23 +21,9 @@ SigLevel = Optional TrustAll
 Server = file://$tmp
 EOF
 
-cat >"$tmp"/PKGBUILD <<EOF
-pkgname=foo
-pkgver=1
-pkgrel=1
-arch=('any')
-
-package() {
-    true
-}
-EOF
-
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
 
-# issue 714: select repository without -d or --root
-config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
-env -C "$tmp" aur build "${config[@]}"
-pacman -Si --config "$tmp"/pacman.conf "$tmp_uid"/foo
-
-# vim: set et sw=4 sts=4 ft=sh:\n
+# issue 216: aur-sync with unset variables
+env -i HOME="$HOME" USER="$USER" LANG="$LANG" aur sync -d "$tmp_uid" aurutils \
+    --config "$tmp"/pacman.conf -o --no-view --no-ver

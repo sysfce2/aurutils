@@ -1,6 +1,9 @@
 #!/bin/bash
-tmp=$(mktemp -d) || exit
+set -e
+
+tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT
+tmp_uid=custom-$RANDOM
 
 cat >"$tmp"/pacman.conf <<EOF
 [options]
@@ -15,13 +18,13 @@ Include = /etc/pacman.d/mirrorlist
 Include = /etc/pacman.d/mirrorlist
 [community]
 Include = /etc/pacman.d/mirrorlist
-[custom]
+[$tmp_uid]
 SigLevel = Optional TrustAll
 Server = file://$tmp
 EOF
 
 # create local repository
-repo-add "$tmp"/custom.db.tar || exit
+repo-add "$tmp/$tmp_uid".db.tar
 
 # cache/checksum test
 cat > "$tmp"/PKGBUILD <<'EOF'
@@ -34,16 +37,20 @@ url="http://example.com"
 license=('GPL')
 
 package() {
-    mkdir -p "$pkgdir"/var/tmp/
+    install -dm1777 "$pkgdir"/var/tmp/
     dd if=/dev/urandom of="$pkgdir"/var/tmp/random bs=1M count=4
 }
 EOF
 
 # TODO: add test with pkgver bumps (no CacheDir)
+config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
 i=0
+
 while [ $((i < 10)) -eq 1 ]; do
-    { env -C "$tmp" aur build -rsfd custom --pacman-conf "$tmp"/pacman.conf && \
-	    sudo pacman -S --noconfirm custom/test-random --config "$tmp"/pacman.conf; } || exit
+    env -C "$tmp" aur build -rsfd "$tmp_uid" "${config[@]}"
+    sudo pacman -S --noconfirm --config "$tmp"/pacman.conf "$tmp_uid"/test-random
+
     i=$((i +1))
 done
 
+# vim: set et sw=4 sts=4 ft=sh:\n

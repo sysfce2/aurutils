@@ -4,3 +4,5 @@ err=$?
 
 # expected: empty output, exit 0
 [[ ! $out ]] && (( err == 0 ))
+
+# vim: set et sw=4 sts=4 ft=sh:\n
