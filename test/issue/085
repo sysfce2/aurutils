@@ -7,7 +7,6 @@ tmp_uid=custom-$RANDOM
 
 cat >"$tmp"/pacman.conf <<EOF
 [options]
-CacheDir = /var/cache/pacman/pkg
 CacheDir = $tmp
 HoldPkg = pacman-git glibc
 Architecture = auto
@@ -26,8 +25,11 @@ EOF
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
 
+# create temporary pacman database
+mkdir -p "$tmp"/pacman/{local,sync}
+
 # cache/checksum test
-cat > "$tmp"/PKGBUILD <<'EOF'
+cat > "$tmp"/PKGBUILD <<EOF
 pkgname=test-random
 pkgver=1
 pkgrel=1
@@ -37,18 +39,24 @@ url="http://example.com"
 license=('GPL')
 
 package() {
-    install -dm1777 "$pkgdir"/var/tmp/
-    dd if=/dev/urandom of="$pkgdir"/var/tmp/random bs=1M count=4
+    install -dm1777 "\$pkgdir"/tmp
+    install -dm0700 "\$pkgdir"$tmp
+    dd if=/dev/urandom of="\$pkgdir"$tmp/random bs=1M count=4
 }
 EOF
 
+cat "$tmp"/PKGBUILD
 # TODO: add test with pkgver bumps (no CacheDir)
 config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
 i=0
 
 while [ $((i < 10)) -eq 1 ]; do
-    env -C "$tmp" aur build -rsfd "$tmp_uid" "${config[@]}"
-    sudo pacman -S --noconfirm --config "$tmp"/pacman.conf "$tmp_uid"/test-random
+    env -C "$tmp" aur build -Nfd "$tmp_uid" "${config[@]}"
+    fakeroot pacsync --config "$tmp"/pacman.conf --dbpath "$tmp"/pacman
+    # XXX: results in "could not change the root directory", however
+    # this does not seem to affect the result of the test
+    fakeroot pacman -S --noconfirm --dbpath "$tmp"/pacman \
+             --config "$tmp"/pacman.conf "$tmp_uid"/test-random
 
     i=$((i +1))
 done
