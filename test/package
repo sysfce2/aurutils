@@ -1,0 +1,19 @@
+test_package=(
+    'python-pyalsaaudio' # split packages - independent
+    'fasm-linux-git' 'hnwatch' # split packages - pkgbase does not match pkgname
+    'ros-build-tools' # empty make/depends
+    'curr' # dependency order (#414)
+    'gimp-plugin-separate+' # Special characters
+)
+
+test_package_big=(
+    'clion' # split package - multiple packages from same package base
+    'libc++' 'libc++-abi' # split package - depends on package from same package base
+    'openrct2-git' # make/depends_arch
+    'mingw-w64-gcc-base' # cyclic dependencies - required removal of makedeps
+)
+
+test_package_huge=(
+    'plasma-git-meta' # 100+ depends
+    'ros-lunar-desktop' # 250+ depends 
+)
