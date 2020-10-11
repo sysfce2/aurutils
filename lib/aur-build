@@ -89,6 +89,8 @@ while true; do
             chroot=1 ;;
         -d|--database|--repo)
             shift; db_name=$1 ;;
+        --config)
+            shift; pacconf_args+=(--config "$1") ;;        
         --nosync|--no-sync)
             no_sync=1 ;;
         --pkgver)
@@ -149,8 +151,6 @@ while true; do
         --prevent-downgrade)
             repo_add_args+=(-p) ;;
         # other options
-        --config)
-            shift; pacconf_args+=(--config "$1") ;;
         --pacman-conf)
             shift; pacman_conf=$1 ;;
         --dump-options)
@@ -228,6 +228,7 @@ if (( chroot )); then
     run_msg aur chroot --update "${chroot_args[@]}"
 else
     # makepkg -s does not support setting pacman.conf
+    # XXX: support existing PACMAN values
     if [[ -v pacman_conf ]]; then
         mkdir -p "$runtime_dir"
 
@@ -250,7 +251,7 @@ else
 
       printf '[%s]\n' "$db_name"
       pacconf "${pacconf_args[@]}" --raw --repo="$db_name"
-    } > "$tmp"/custom.conf
+    } > "$tmp"/local.conf
 fi
 
 if [[ -v queue ]]; then
@@ -349,8 +350,8 @@ while IFS= read -ru "$fd" path; do
     else
         replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
 
-        sudo pacman -Fy  --config="$tmp"/custom.conf
-        sudo pacman -Syu --config="$tmp"/custom.conf --ignore="$replaces" --noconfirm
+        sudo pacman -Fy  --config="$tmp"/local.conf
+        sudo pacman -Syu --config="$tmp"/local.conf --ignore="$replaces" --noconfirm
     fi
 done
 
