@@ -14,19 +14,19 @@ makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 prefix=extra
 
 # default options
-prepare=1 build=1 packagelist=0
+update=0 build=0 packagelist=0
 
 usage() {
-    printf >&2 'usage: %s [-CDM path] -- <makechrootpkg args>\n' "$argv0"
+    printf >&2 'usage: %s [-BU] [-CDM path] -- <makechrootpkg args>\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='C:D:M:'
-opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'no-build' 'no-prepare'
+opt_short='C:D:M:BU'
+opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
           'prefix:' 'bind:' 'bind-rw:' 'packagelist')
-opt_hidden=('dump-options' 'nobuild' 'noprepare')
+opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -36,10 +36,10 @@ set -- "${OPTRET[@]}"
 unset bindmounts_ro bindmounts_rw pacman_conf
 while true; do
     case "$1" in
-        --no-build|--nobuild)
-            build=0 ;;
-        --no-prepare|--noprepare)
-            prepare=0 ;;
+        -B|--build)
+            build=1 ;;
+        -U|--update)
+            update=1 ;;
         --packagelist)
             packagelist=1 ;;
         --prefix)
@@ -101,7 +101,7 @@ if (( packagelist )); then
     exit $?
 fi
 
-if (( prepare )); then
+if (( update )); then
     # parent path is not created by mkarchroot (#371)
     if [[ ! -d $directory ]]; then
         sudo install -d "$directory" -m 755 -v
