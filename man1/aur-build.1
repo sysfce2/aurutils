@@ -92,16 +92,6 @@ To use another key than the default, the
 environment variable can be set to the appropriate key identifier.
 .
 .TP
-.BI \-U " USER" "\fR,\fP \-\-user=" USER
-Run all
-.B makepkg
-commands as the specified user. For
-.B \-\-chroot
-builds, this reflects the
-.B makechrootpkg \-U
-command.
-.
-.TP
 .BI \-\-config= FILE
 The
 .BR pacman.conf (5)
@@ -122,7 +112,7 @@ Run
 before checking existing packages (effectively running an existing
 .B pkgver()
 function). The
-.BR \-\-noconfirm
+.BR \-\-noextract
 option is added to the default
 .BR makepkg (8)
 options.
@@ -134,7 +124,7 @@ The
 .BR \-s ,
 and
 .BR \-\-noconfirm
-options are passed on to the above command. Other
+options are forwarded to the above command. Other
 .BR makepkg (8)
 options are ignored.
 .RE
@@ -201,6 +191,12 @@ means that the user container has a random name and is removed on
 build completion.
 .
 .TP
+.BI \-U " USER" "\fR,\fP \-\-user=" USER
+Run the host
+.BR makepkg (8)
+instance as the specified user. (\fBmakechrootpkg \-U\fR)
+.
+.TP
 .BI \-\-bind= DIR
 Bind a directory read-only to the container. (\fBmakechrootpkg \-D\fR)
 .
@@ -218,13 +214,15 @@ on the built package.
 .BI \-\-makepkg\-conf= FILE
 The
 .BR makepkg.conf (5)
-file used inside the container. (\fBaur\-chroot \-\-makepkg\-conf\fR)
+file used inside the container.
+.RB ( aur\-chroot " " \-\-makepkg\-conf )
 .
 .TP
 .BI \-\-pacman\-conf= FILE
 The
 .BR pacman.conf (5)
-file used inside the container. (\fBaur\-chroot \-\-pacman\-conf\fR)
+file used inside the container.
+.RB ( aur\-chroot " " \-\-pacman\-conf )
 .
 .TP
 .BI \-\-prefix= PREFIX
@@ -232,7 +230,7 @@ The path component
 .B <prefix>
 in the pacman configuration
 .BR /usr/share/devtools/pacman\-<prefix>.conf .
-.RB ( "aur\-chroot \-\-prefix" )
+.RB ( aur\-chroot " " \-\-prefix )
 Defaults to
 .BR aur .
 .
@@ -285,7 +283,7 @@ file used for
 invocations.
 .IP
 .B Note:
-This option invalidates the use of the
+This option invalidates use of the
 .B PACMAN
 environment variable.
 .
@@ -296,30 +294,31 @@ The
 file used for
 .BR makepkg (8)
 invocations.
+.RB ( makepkg " " \-\-config )
 .
 .SS repo\-add options
 .TP
 .BR \-v ", " \-\-verify
 Verify the PGP signature of the database before
 updating.
-.RB ( "repo\-add \-v" ).
+.RB ( repo\-add " " \-v )
 .
 .TP
 .BR \-R ", " \-\-remove
 Remove old package files from disk when updating their entry in the
 database.
-.RB ( "repo\-add \-R" ).
+.RB ( repo\-add " " \-R )
 .
 .TP
 .BR \-\-new
 Only add packages that are not already in the database.
-.RB ( "repo\-add \-n" ).
+.RB ( repo\-add " " \-n )
 .
 .TP
 .BR \-\-prevent\-downgrade
 Do not add packages to the database if a newer version is already
 present.
-.RB ( "repo\-add \-p" ).
+.RB ( repo\-add " " \-p )
 .
 .SH ENVIRONMENT
 .TP
