@@ -351,6 +351,21 @@ is it only respected by
 .BR makepkg .
 .
 .TP
+.B MAKEPKG
+The command used to build packages. Any
+.BR makepkg (8)
+options (see the
+.B makepkg options
+section) forwarded must be supported by this command, as well as the
+.IR \-o ,
+.IR \-d ,
+and
+.I \-\-noextract
+options if
+.B aur\-build \-\-pkgver
+is used.
+.
+.TP
 .B TMPDIR
 The directory for temporary files. (This includes intermediary storage
 of built packages, defaulting to

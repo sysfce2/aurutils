@@ -128,7 +128,6 @@ while true; do
             makepkg_common_args+=(--rmdeps) ;;
         -s|--syncdeps)
             makepkg_common_args+=(--syncdeps) ;;
-        # makepkg options (config)
         --makepkg-conf)
             shift; makepkg_conf+=(--config "$1")
             chroot_args+=(--makepkg-conf "$1") ;;
@@ -201,6 +200,11 @@ if ! [[ -f $db_path ]]; then
 elif ! [[ -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
+fi
+
+# Custom makepkg command
+if [[ $MAKEPKG ]]; then
+    makepkg() { command -- "$MAKEPKG" "$@"; }
 fi
 
 # Write successfully built packages to file (#437)
