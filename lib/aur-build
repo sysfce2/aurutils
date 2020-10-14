@@ -90,7 +90,7 @@ while true; do
         -d|--database|--repo)
             shift; db_name=$1 ;;
         --config)
-            shift; pacconf_args+=(--config "$1") ;;        
+            shift; pacconf_args+=(--config "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
         --pkgver)
@@ -231,22 +231,25 @@ if (( chroot )); then
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --update "${chroot_args[@]}"
 else
-    # makepkg -s does not support setting pacman.conf
-    # XXX: support existing PACMAN values
+    # makepkg -s does not support setting pacman.conf. Use a pacman --config
+    # wrapper and propagate it with the PACMAN environment variable to makepkg.
+    PACMAN=${PACMAN:-pacman}
+
     if [[ -v pacman_conf ]]; then
         mkdir -p "$runtime_dir"
 
         { printf '#!/bin/sh --\n'
-          printf 'pacman --config "%s" "$@"\n' "$pacman_conf"
+          printf '%s --config "%s" "$@"\n' "$PACMAN" "$pacman_conf"
         } > "$runtime_dir"/pacman_cfg
 
         chmod +x "$runtime_dir"/pacman_cfg
-        PACMAN=$runtime_dir/pacman_cfg
+        makepkg_pacman=$runtime_dir/pacman_cfg
+    else
+        makepkg_pacman=$PACMAN
     fi
-    PACMAN=${PACMAN:-pacman}
 
     packagelist() {
-        PACMAN="$PACMAN" run_msg makepkg --packagelist "${makepkg_conf[@]}"
+        run_msg makepkg --packagelist "${makepkg_conf[@]}"
     }
 
     # Configuration for host builds.
@@ -286,7 +289,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        PACMAN="$PACMAN" run_msg makepkg -od \
+        PACMAN="$makepkg_pacman" run_msg makepkg -od \
               "${makepkg_common_args[@]}" "${makepkg_conf[@]}"
     fi
 
@@ -313,7 +316,7 @@ while IFS= read -ru "$fd" path; do
                -- "${makechrootpkg_args[@]}" \
                -- "${makechrootpkg_makepkg_args[@]}"
     else
-        PKGDEST="$var_tmp" PACMAN="$PACMAN" run_msg makepkg \
+        PKGDEST="$var_tmp" PACMAN="$makepkg_pacman" run_msg makepkg \
                "${makepkg_common_args[@]}" "${makepkg_args[@]}" "${makepkg_conf[@]}"
     fi
 
