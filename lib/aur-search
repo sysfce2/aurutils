@@ -195,7 +195,6 @@ esac
 
 # set filters (2)
 case $multiple in
-       none) combine() { tee; } ;;
     section) combine() { sort | uniq -d; } ;;
       union) combine() { sort | uniq -u; } ;;
 esac
@@ -221,8 +220,11 @@ case $count in
            # no results found
            exit 1
        fi ;;
-    *) tabulate "$sort_key" < "$tmp" | combine | info
-       ;;
+    *) if [[ $multiple != 'none' ]]; then
+           tabulate "$sort_key" < "$tmp" | combine | info
+       else
+           tabulate "$sort_key" < "$tmp" | info
+       fi ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
