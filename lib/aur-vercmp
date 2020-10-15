@@ -6,7 +6,15 @@ argv0=vercmp
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-format=check target=aur
+format=check target=aur all=0 quiet=0
+
+my_vercmp() {
+    if [[ $1 == "$2" ]]; then
+        printf '%d' 0 # common case
+    else
+        vercmp "$1" "$2"
+    fi
+}
 
 cmp_equal_or_newer() {
     local pkg v_cmp v_in op
@@ -28,7 +36,7 @@ cmp_equal_or_newer() {
 }
 
 cmp_checkupdates() {
-    local all=$1 pkg v_cmp v_in op
+    local pkg v_cmp v_in op
 
     while read -r pkg v_cmp v_in; do
         case $v_in in
@@ -36,7 +44,7 @@ cmp_checkupdates() {
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
 
-        if ! (( all )) && (( op > -1 )); then
+        if (( ! all )) && (( op > -1 )); then
             continue
         fi
 
@@ -54,14 +62,6 @@ cmp_checkupdates() {
     done
 }
 
-my_vercmp() {
-    if [[ $1 == "$2" ]]; then
-        printf '%d' 0 # common case
-    else
-        vercmp "$1" "$2"
-    fi
-}
-
 parse_aur() {
     aur query -t info | jq -r '.results[] | [.Name, .Version] | @tsv'
 }
@@ -75,7 +75,7 @@ trap_exit() {
 }
 
 usage() {
-    plain >&2 'usage: %s [-p path] [-acq]' "$argv0"
+    plain >&2 'usage: %s [-acq] [-p path]' "$argv0"
     exit 1
 }
 
@@ -87,15 +87,15 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='p:u:acq'
-opt_long=('all' 'current' 'path:' 'quiet')
-opt_hidden=('dump-options' 'upair:')
+opt_long=('all' 'current' 'path:' 'quiet' 'upair:')
+opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset all aux quiet repo upair
+unset aux repo upair
 while true; do
     case "$1" in
         -a|--all)
@@ -105,7 +105,8 @@ while true; do
         -q|--quiet)
             quiet=1 ;;
         -p|--path)
-            shift; target='file'; aux=$1 ;;
+            shift; aux=$1
+            target='file' ;;
         -u|--upair)
             shift; upair=$1 ;;
         --dump-options)
@@ -130,21 +131,18 @@ EOF
 fi
 sort -k 1b,1 >"$tmp"
 
-# set filters (1)
-case $target in
-     aur) get() { awk '{print $1}' "$tmp" | parse_aur; } ;;
-    file) get() { awk '{print $0}' "$aux"; } ;;
-esac
-
-# set filters (2)
+# set filters
 case $format in
-    check) cmp() { cmp_checkupdates "${all-0}" "${quiet-0}"; }
+    check) cmp() { cmp_checkupdates; }
            upair=${upair-1} ;; # join unpaired of target
     equal) cmp() { cmp_equal_or_newer; }
            upair=${upair-2} ;; # join unpaired of input
 esac
 
 # pipeline
-get | sort -k 1b,1 | join -a "$upair" -e - -o 0,1.2,2.2 - "$tmp" | cmp
+case $target in
+     aur) awk '{print $1}' "$tmp" | parse_aur ;;
+    file) awk '{print $0}' "$aux" ;;
+esac | sort -k 1b,1 | join -a "$upair" -e - -o 0,1.2,2.2 - "$tmp" | cmp
 
 # vim: set et sw=4 sts=4 ft=sh:
