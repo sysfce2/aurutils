@@ -1,5 +1,5 @@
 .TH AUR-SYNC 1 2020-03-14 AURUTILS
-.SH Name
+.SH NAME
 aur\-sync \- download and build AUR packages automatically
 .
 .SH SYNOPSIS
@@ -31,6 +31,13 @@ terminates immediately.
 .TP
 .B \-\-continue
 Do not download package files.
+.
+.TP
+.B \-\-config
+The
+.BR pacman.conf (5)
+file for syncing and retrieving local repositories.
+.RB ( "aur-build \-\-config" ", " "aur-repo \-\-config" )
 .
 .TP
 .BI \-\-ignore= PACKAGE
@@ -90,6 +97,27 @@ installed according to the order defined in
 .BR \-u ", " \-\-upgrades
 Update all obsolete AUR packages in a local repository.
 .
+.TP
+.BR \-\-rebuild
+Alias for
+.BR "\-f \-\-nover\-argv" .
+.
+.TP
+.BR \-\-rebuildtree ", " \-\-rebuild\-tree
+Alias for
+.BR "\-f \-\-nover" .
+.
+.TP
+.BR \-\-rebuildall ", " \-\-rebuild\-all
+As
+.BR \-\-rebuild\-tree ,
+but append all packages in the repository (see
+.BR \-d )
+as targets. May be used together with
+.B \-o
+to repopulate source directories in
+.BR $AURDEST .
+.
 .SS Database options
 Values for the following options are automatically selected, if a
 single local repository is defined in
@@ -127,7 +155,9 @@ or
 .B \-\-force
 to
 .B aur\-sync
-will append these options to the build command.
+will append these options to the build command. See
+.BR aur\-build (1)
+for more information.
 .
 .TP
 .BR \-c ", " \-\-chroot
@@ -151,27 +181,6 @@ before the build process.
 Remove old package files from disk when updating their entry in the
 database.
 .RB ( "aur build \-R" )
-.
-.TP
-.BR \-\-rebuild
-Alias for
-.BR "\-f \-\-nover\-argv" .
-.
-.TP
-.BR \-\-rebuildtree ", " \-\-rebuild\-tree
-Alias for
-.BR "\-f \-\-nover" .
-.
-.TP
-.BR \-\-rebuildall ", " \-\-rebuild\-all
-As
-.BR \-\-rebuild\-tree ,
-but append all packages in the repository (see
-.BR \-d )
-as targets. May be used together with
-.B \-o
-to repopulate source directories in
-.BR $AURDEST .
 .
 .TP
 .BR \-S ", " \-\-sign ", " \-\-gpg-sign
