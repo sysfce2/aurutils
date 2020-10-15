@@ -3,7 +3,12 @@
 [[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=query
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
+AUR_QUERY_PARALLEL=${AUR_QUERY_PARALLEL:-0}
+AUR_QUERY_PARALLEL_MAX=${AUR_QUERY_PARALLEL_MAX:-15}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# default arguments
+curl_args=(-fgLsS --tcp-fastopen)
 
 uri_info() {
     #global rpc_url
@@ -25,6 +30,14 @@ uri_search() {
     awk -v rpc="$rpc_url&type=search&by=$1&arg" '{
         printf "%s=%s\n", rpc, $0
     }'
+}
+
+trap_exit() {
+    if [[ ! -v AUR_DEBUG ]]; then
+        rm -rf -- "$tmp"
+    else
+        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
+    fi
 }
 
 usage() {
@@ -63,14 +76,17 @@ while true; do
     shift
 done
 
+tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
+trap 'trap_exit' EXIT
+
 # set AUR remote
 rpc_ver=${rpc_ver:-5}
 rpc_url=${rpc_url:-$AUR_LOCATION/rpc/?v=$rpc_ver}
 
 # set filters
 case $arg_type in
-      info) uri() { uri_info; } ;;
-    search) uri() { uri_search "${arg_by:-name-desc}"; } ;;
+      info) uri_write() { uri_info; } ;;
+    search) uri_write() { uri_search "${arg_by:-name-desc}"; } ;;
          *) usage ;;
 esac
 
@@ -84,9 +100,30 @@ EOF
 fi
 
 # pipeline
-readarray -t urls < <(jq -R -r '@uri' | uri )
-if (( ${#urls[@]} )); then
-    printf 'url %s\n' "${urls[@]}" | curl -K- -fgLsS
+readarray -t urls < <(jq -R -r '@uri' | uri_write)
+
+if (( AUR_QUERY_PARALLEL )); then
+    mkdir "$tmp"/out
+    counter=0
+
+    for uri in "${urls[@]}"; do
+        counter=$((counter+1))
+
+        printf 'url %s\n' "$uri"
+        printf 'output %q\n' "$tmp/out/$counter"
+    done > "$tmp"/par_config
+
+    if [[ -s $tmp/par_config ]]; then
+        curl -K "$tmp"/par_config "${curl_args[@]}" \
+             --parallel --parallel-max "$AUR_QUERY_PARALLEL_MAX" || exit
+    fi
+
+    if [[ -f $tmp/out/1 ]]; then
+        cat "$tmp"/out/*
+    fi
+
+elif (( ${#urls[@]} )); then
+    printf 'url "%s"\n' "${urls[@]}" | curl -K- "${curl_args[@]}"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
