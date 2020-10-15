@@ -1,4 +1,4 @@
-.TH AUR-CHROOT 2020-10-02 AURUTILS
+.TH AUR-CHROOT 2020-10-12 AURUTILS
 .SH NAME
 aur\-chroot \- build packages with systemd-nspawn
 .
@@ -7,8 +7,8 @@ aur\-chroot \- build packages with systemd-nspawn
 .OP \-D directory
 .OP \-C pacman_conf
 .OP \-M makepkg_conf
-.OP \-\-no\-build
-.OP \-\-no\-prepare
+.OP \-\-build
+.OP \-\-update
 .OP \-\-packagelist
 .OP \-\-prefix
 .OP \-\-
@@ -24,6 +24,16 @@ container.
 All arguments after
 .B \-\-
 are passed to \fBmakechrootpkg\fR.
+.
+.TP
+.BR \-B ", " \-\-build
+Build a package inside the container.
+.
+.TP
+.BR \-U ", " \-\-update
+Update or create the
+.B /root
+copy of the container.
 .
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
@@ -70,16 +80,6 @@ Bind a directory read-only to the container. (\fBmakechrootpkg \-D\fR)
 .TP
 .B \-\-bind\-rw
 Bind a directory read-write to the container. (\fBmakechrootpkg \-d\fR)
-.
-.TP
-.B \-\-no\-build
-Update or create the
-.B /root
-copy of the container; do not build a package.
-.
-.TP
-.B \-\-no\-prepare
-Build a package, do not update the container.
 .
 .TP
 .B \-\-packagelist
