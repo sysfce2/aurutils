@@ -154,14 +154,14 @@ while true; do
         -f|--force)
             build_args+=(--force) ;;
         --config)
-            shift; build_args+=(--config "$1") ;;
+            shift; build_args+=(--config "$1")
+            repo_args+=(--config "$1") ;;
         --makepkg-args|--margs)
             shift; build_args+=(--margs "$1") ;;
         --makepkg-conf)
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
-            shift; build_args+=(--pacman-conf "$1")
-            repo_args+=(--pacman-conf "$1") ;;
+            shift; build_args+=(--pacman-conf "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
         --results)

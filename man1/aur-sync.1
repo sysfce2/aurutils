@@ -1,5 +1,5 @@
 .TH AUR-SYNC 1 2020-03-14 AURUTILS
-.SH Name
+.SH NAME
 aur\-sync \- download and build AUR packages automatically
 .
 .SH SYNOPSIS
@@ -31,6 +31,13 @@ terminates immediately.
 .TP
 .B \-\-continue
 Do not download package files.
+.
+.TP
+.B \-\-config
+The
+.BR pacman.conf (5)
+file for syncing and retrieving local repositories.
+.RB ( "aur-build \-\-config" ", " "aur-repo \-\-config" )
 .
 .TP
 .BI \-\-ignore= PACKAGE
