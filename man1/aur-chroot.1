@@ -23,7 +23,8 @@ container.
 .SH OPTIONS
 All arguments after
 .B \-\-
-are passed to \fBmakechrootpkg\fR.
+are passed to
+.BR makechrootpkg .
 .
 .TP
 .BR \-B ", " \-\-build
@@ -75,11 +76,13 @@ file used inside the container. Defaults to devtools'
 .
 .TP
 .B \-\-bind
-Bind a directory read-only to the container. (\fBmakechrootpkg \-D\fR)
+Bind a directory read-only to the container.
+.RB ( makechrootpkg " " \-D )
 .
 .TP
 .B \-\-bind\-rw
-Bind a directory read-write to the container. (\fBmakechrootpkg \-d\fR)
+Bind a directory read-write to the container.
+.RB ( makechrootpkg " " \-d )
 .
 .TP
 .B \-\-packagelist
@@ -181,7 +184,7 @@ directories on the host:
 
 .EE
 Necessary
-.BR makepkg (1)
+.BR makepkg (8)
 options may be set in a specified (\-M)
 .BR makepkg.conf (5)
 file. See GitHub issue #334 for details.
@@ -214,6 +217,7 @@ QEMU, for example with
 .BR aur\-build (1),
 .BR pacconf (1),
 .BR pacman (1),
+.BR makepkg (8),
 .BR makepkg.conf (5),
 .BR pacman.conf (5),
 .BR setarch (8)

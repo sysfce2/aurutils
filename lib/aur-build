@@ -89,6 +89,8 @@ while true; do
             chroot=1 ;;
         -d|--database|--repo)
             shift; db_name=$1 ;;
+        --config)
+            shift; pacconf_args+=(--config "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
         --pkgver)
@@ -126,7 +128,6 @@ while true; do
             makepkg_common_args+=(--rmdeps) ;;
         -s|--syncdeps)
             makepkg_common_args+=(--syncdeps) ;;
-        # makepkg options (config)
         --makepkg-conf)
             shift; makepkg_conf+=(--config "$1")
             chroot_args+=(--makepkg-conf "$1") ;;
@@ -149,8 +150,6 @@ while true; do
         --prevent-downgrade)
             repo_add_args+=(-p) ;;
         # other options
-        --config)
-            shift; pacconf_args+=(--config "$1") ;;
         --pacman-conf)
             shift; pacman_conf=$1 ;;
         --dump-options)
@@ -203,6 +202,11 @@ elif ! [[ -w $db_path ]]; then
     exit 13
 fi
 
+# Custom makepkg command
+if [[ $MAKEPKG ]]; then
+    makepkg() { command -- "$MAKEPKG" "$@"; }
+fi
+
 # Write successfully built packages to file (#437)
 if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
@@ -227,21 +231,25 @@ if (( chroot )); then
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --update "${chroot_args[@]}"
 else
-    # makepkg -s does not support setting pacman.conf
+    # makepkg -s does not support setting pacman.conf. Use a pacman --config
+    # wrapper and propagate it with the PACMAN environment variable to makepkg.
+    PACMAN=${PACMAN:-pacman}
+
     if [[ -v pacman_conf ]]; then
         mkdir -p "$runtime_dir"
 
         { printf '#!/bin/sh --\n'
-          printf 'pacman --config "%s" "$@"\n' "$pacman_conf"
+          printf '%s --config "%s" "$@"\n' "$PACMAN" "$pacman_conf"
         } > "$runtime_dir"/pacman_cfg
 
         chmod +x "$runtime_dir"/pacman_cfg
-        PACMAN=$runtime_dir/pacman_cfg
+        makepkg_pacman=$runtime_dir/pacman_cfg
+    else
+        makepkg_pacman=$PACMAN
     fi
-    PACMAN=${PACMAN:-pacman}
 
     packagelist() {
-        PACMAN="$PACMAN" run_msg makepkg --packagelist "${makepkg_conf[@]}"
+        run_msg makepkg --packagelist "${makepkg_conf[@]}"
     }
 
     # Configuration for host builds.
@@ -250,7 +258,7 @@ else
 
       printf '[%s]\n' "$db_name"
       pacconf "${pacconf_args[@]}" --raw --repo="$db_name"
-    } > "$tmp"/custom.conf
+    } > "$tmp"/local.conf
 fi
 
 if [[ -v queue ]]; then
@@ -281,7 +289,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        PACMAN="$PACMAN" run_msg makepkg -od \
+        PACMAN="$makepkg_pacman" run_msg makepkg -od \
               "${makepkg_common_args[@]}" "${makepkg_conf[@]}"
     fi
 
@@ -308,7 +316,7 @@ while IFS= read -ru "$fd" path; do
                -- "${makechrootpkg_args[@]}" \
                -- "${makechrootpkg_makepkg_args[@]}"
     else
-        PKGDEST="$var_tmp" PACMAN="$PACMAN" run_msg makepkg \
+        PKGDEST="$var_tmp" PACMAN="$makepkg_pacman" run_msg makepkg \
                "${makepkg_common_args[@]}" "${makepkg_args[@]}" "${makepkg_conf[@]}"
     fi
 
@@ -349,8 +357,8 @@ while IFS= read -ru "$fd" path; do
     else
         replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
 
-        sudo pacman -Fy  --config="$tmp"/custom.conf
-        sudo pacman -Syu --config="$tmp"/custom.conf --ignore="$replaces" --noconfirm
+        sudo pacman -Fy  --config="$tmp"/local.conf
+        sudo pacman -Syu --config="$tmp"/local.conf --ignore="$replaces" --noconfirm
     fi
 done
 
