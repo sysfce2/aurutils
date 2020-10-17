@@ -6,6 +6,7 @@ argv0=chroot
 PATH=/bin:/usr/bin
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 machine=$(uname -m)
+startdir=$(pwd -P)
 
 # default arguments
 directory=/var/lib/aurbuild/$machine
@@ -21,11 +22,14 @@ usage() {
     exit 1
 }
 
+source /usr/share/makepkg/util/config.sh
+source /usr/share/makepkg/util/option.sh
+source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:BU'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
-          'prefix:' 'bind:' 'bind-rw:' 'packagelist')
+          'prefix:' 'bind:' 'bind-rw:' 'packagelist' 'buildscript:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -33,13 +37,15 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset bindmounts_ro bindmounts_rw pacman_conf
+unset bindmounts_ro bindmounts_rw buildscript pacman_conf
 while true; do
     case "$1" in
         -B|--build)
             build=1 ;;
         -U|--update)
             update=1 ;;
+        --buildscript)
+            shift; buildscript=$1 ;;
         --packagelist)
             packagelist=1 ;;
         --prefix)
@@ -97,7 +103,11 @@ while read -r key _ value; do
 done < <(pacman-conf --config "$pacman_conf")
 
 if (( packagelist )); then
-    makepkg --config "$makepkg_conf" --packagelist
+    ( load_makepkg_config "$makepkg_conf"
+      source_safe "${buildscript-PKGBUILD}"
+
+      PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
+    )
     exit $?
 fi
 
