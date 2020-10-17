@@ -7,7 +7,7 @@ tmp2=$(mktemp -d)
 tmp2_uid=custom-$RANDOM-2
 tmp3=$(mktemp -d)
 tmp3_uid=custom-$RANDOM-3
-trap 'rm -rf -- "$tmp1" "$tmp2" "$tmp3"' EXIT
+#trap 'rm -rf -- "$tmp1" "$tmp2" "$tmp3"' EXIT
 
 cat >"$tmp1"/pacman.conf <<EOF
 [options]
@@ -37,11 +37,7 @@ repo-add "$tmp2/$tmp2_uid".db.tar
 repo-add "$tmp3/$tmp3_uid".db.tar
 
 # issue 378: repository selection with AUR_REPO
-config=(--config "$tmp1"/pacman.conf --pacman-conf "$tmp1"/pacman.conf)
-AUR_REPO="$tmp1_uid" aur sync "${config[@]}" -rn --no-view aurutils
-pacman -Si --config "$tmp1"/pacman.conf "$tmp1_uid"/aurutils
-AUR_REPO="$tmp2_uid" aur sync "${config[@]}" -rn --no-view aurutils
-pacman -Si --config "$tmp1"/pacman.conf "$tmp2_uid"/aurutils
-AUR_REPO="$tmp3_uid" aur sync "${config[@]}" -rn --no-view aurutils
-pacman -Si --config "$tmp1"/pacman.conf "$tmp3_uid"/aurutils
+AUR_REPO="$tmp1_uid" aur repo --path --config "$tmp1"/pacman.conf
+AUR_REPO="$tmp2_uid" aur repo --path --config "$tmp1"/pacman.conf
+AUR_REPO="$tmp3_uid" aur repo --path --config "$tmp1"/pacman.conf
 
