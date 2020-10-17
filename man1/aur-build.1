@@ -26,7 +26,6 @@ prefix in
 .BR pacman.conf (5).
 .
 .SH OPTIONS
-.SY Note:
 The following options require root privileges:
 .BR \-\-syncdeps ,
 .BR \-\-rmdeps ,
@@ -280,7 +279,13 @@ The
 .BR pacman.conf (5)
 file used for
 .BR makepkg (8)
-invocations.
+invocations. As this file cannot be forwarded to
+.B makepkg
+directly, a wrapper script in
+.I $XDG_RUNTIME_DIR/aurutils/pacman
+is created and set inside the
+.B PACMAN
+environment variable.
 .
 .TP
 .BI \-\-makepkg\-conf= FILE
