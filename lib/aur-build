@@ -47,9 +47,12 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/util.sh
+source /usr/share/makepkg/util/config.sh
 source /usr/share/makepkg/util/message.sh
+source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
+source /usr/share/makepkg/util/pkgbuild.sh
+source /usr/share/makepkg/util/util.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
@@ -130,8 +133,9 @@ while true; do
         -s|--syncdeps)
             makepkg_common_args+=(--syncdeps) ;;
         --makepkg-conf)
-            shift; makepkg_conf+=(--config "$1")
-            chroot_args+=(--makepkg-conf "$1") ;;
+            shift; chroot_args+=(--makepkg-conf "$1")
+            makepkg_conf=$1
+            makepkg_common_args+=(--config "$1") ;;
         # makepkg options
         -C|--clean)
             makepkg_args+=(--clean) ;;
@@ -230,9 +234,13 @@ if (( chroot )); then
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --update "${chroot_args[@]}"
 else
-    packagelist() {
-        run_msg makepkg --packagelist "${makepkg_conf[@]}"
-    }
+    # XXX: ignores makepkg -p option (--margs)
+    packagelist() (
+        load_makepkg_config "${makepkg_conf-}"
+        source_safe PKGBUILD
+
+        PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
+    )
 
     # Configuration for host builds.
     { printf '[options]\n'
@@ -271,7 +279,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        run_msg makepkg -od "${makepkg_common_args[@]}" "${makepkg_conf[@]}"
+        run_msg makepkg -od "${makepkg_common_args[@]}"
     fi
 
     if (( ! overwrite )); then
@@ -297,8 +305,8 @@ while IFS= read -ru "$fd" path; do
                -- "${makechrootpkg_args[@]}" \
                -- "${makechrootpkg_makepkg_args[@]}"
     else
-        PKGDEST="$var_tmp" run_msg makepkg "${makepkg_common_args[@]}" \
-               "${makepkg_args[@]}" "${makepkg_conf[@]}"
+        PKGDEST="$var_tmp" run_msg makepkg \
+               "${makepkg_common_args[@]}" "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
