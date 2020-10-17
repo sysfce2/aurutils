@@ -240,12 +240,11 @@ else
 
         { printf '#!/bin/sh --\n'
           printf '%s --config "%s" "$@"\n' "$PACMAN" "$pacman_conf"
-        } > "$runtime_dir"/pacman_cfg
+        } > "$runtime_dir"/pacman
 
-        chmod +x "$runtime_dir"/pacman_cfg
-        makepkg_pacman=$runtime_dir/pacman_cfg
-    else
-        makepkg_pacman=$PACMAN
+        chmod +x "$runtime_dir"/pacman
+        # environment variables can be specified on the makepkg command line
+        makepkg_common_args+=("PACMAN=$runtime_dir")
     fi
 
     packagelist() {
@@ -289,8 +288,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        PACMAN="$makepkg_pacman" run_msg makepkg -od \
-              "${makepkg_common_args[@]}" "${makepkg_conf[@]}"
+        run_msg makepkg -od "${makepkg_common_args[@]}" "${makepkg_conf[@]}"
     fi
 
     if (( ! overwrite )); then
@@ -316,8 +314,8 @@ while IFS= read -ru "$fd" path; do
                -- "${makechrootpkg_args[@]}" \
                -- "${makechrootpkg_makepkg_args[@]}"
     else
-        PKGDEST="$var_tmp" PACMAN="$makepkg_pacman" run_msg makepkg \
-               "${makepkg_common_args[@]}" "${makepkg_args[@]}" "${makepkg_conf[@]}"
+        PKGDEST="$var_tmp" run_msg makepkg "${makepkg_common_args[@]}" \
+               "${makepkg_args[@]}" "${makepkg_conf[@]}"
     fi
 
     cd_safe "$var_tmp"
