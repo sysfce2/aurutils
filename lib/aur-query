@@ -129,6 +129,7 @@ if (( AUR_QUERY_PARALLEL )); then
 
     # curl --parallel does not exit >0 on failed transfers, thus
     # stderr has to be checked manually
+    # shellcheck disable=SC2181
     if (( $? )) || [[ -s $tmp/error ]]; then
         sort "$tmp"/error | uniq -c >&2
         exit 1
@@ -136,7 +137,8 @@ if (( AUR_QUERY_PARALLEL )); then
         cat "$tmp"/out/*
     fi
 else
-    curl "${curl_args[@]}" -K "$tmp"/config
+    # XXX: discard exit codes to match curl --parallel logic
+    curl "${curl_args[@]}" -K "$tmp"/config || exit 1
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
