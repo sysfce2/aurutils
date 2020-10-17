@@ -47,11 +47,11 @@ EOF
 
 cat "$tmp"/PKGBUILD
 # TODO: add test with pkgver bumps (no CacheDir)
-config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
 i=0
 
 while [ $((i < 10)) -eq 1 ]; do
-    env -C "$tmp" aur build -Nfd "$tmp_uid" "${config[@]}"
+    env -C "$tmp" aur build -Nfd "$tmp_uid" --config "$tmp"/pacman.conf
+
     fakeroot pacsync --config "$tmp"/pacman.conf --dbpath "$tmp"/pacman
     # XXX: results in "could not change the root directory", however
     # this does not seem to affect the result of the test

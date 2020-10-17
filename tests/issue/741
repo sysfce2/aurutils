@@ -24,7 +24,7 @@ EOF
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
 
-config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
+config=(--config "$tmp"/pacman.conf)
 pkg=aurutils
 rev=0f3cbf98ded15a6088f1e3f9ebfe0de20c854f24
 ver=2.3.1

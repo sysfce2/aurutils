@@ -36,7 +36,7 @@ EOF
 repo-add "$tmp/$tmp_uid".db.tar
 
 # issue 513: PKGDEST (environment) should be ignored
-config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
-env -C "$tmp" PKGDEST=/does/not/exist aur build -d "$tmp_uid" "${config[@]}"
+env -C "$tmp" PKGDEST=/does/not/exist aur build -d "$tmp_uid" \
+    --config "$tmp"/pacman.conf
 
 # vim: set et sw=4 sts=4 ft=sh:\n

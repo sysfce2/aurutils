@@ -32,12 +32,17 @@ package() {
 }
 EOF
 
+# create pacman wrapper for makepkg -s operations
+{ printf '#!/bin/sh --\n'
+  printf 'pacman --config "%s" "$@"\n' "$tmp"/pacman.conf
+} >"$tmp"/pacman
+chmod +x "$tmp"/pacman
+
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
 
 # issue 714: select repository without -d or --root
-config=(--config "$tmp"/pacman.conf --pacman-conf "$tmp"/pacman.conf)
-env -C "$tmp" aur build "${config[@]}"
-pacman -Si --config "$tmp"/pacman.conf "$tmp_uid"/foo
+env -C "$tmp" PACMAN="$tmp"/pacman aur build --config "$tmp"/pacman.conf
+"$tmp"/pacman -Si "$tmp_uid"/foo
 
 # vim: set et sw=4 sts=4 ft=sh:\n

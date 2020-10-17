@@ -4,7 +4,6 @@
 set -o errexit
 shopt -s extglob
 argv0=build
-runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$UID}/aurutils
 startdir=$PWD
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -108,6 +107,8 @@ while true; do
             shift; makechrootpkg_args+=(-D "$1") ;;
         --bind-rw)
             shift; makechrootpkg_args+=(-d"$1") ;;
+        --pacman-conf)
+            shift; pacman_conf=$1 ;;
         --prefix)
             shift; prefix=$1 ;;
         -N|--namcap)
@@ -150,8 +151,6 @@ while true; do
         --prevent-downgrade)
             repo_add_args+=(-p) ;;
         # other options
-        --pacman-conf)
-            shift; pacman_conf=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -231,22 +230,6 @@ if (( chroot )); then
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --update "${chroot_args[@]}"
 else
-    # makepkg -s does not support setting pacman.conf. Use a pacman --config
-    # wrapper and propagate it with the PACMAN environment variable to makepkg.
-    PACMAN=${PACMAN:-pacman}
-
-    if [[ -v pacman_conf ]]; then
-        mkdir -p "$runtime_dir"
-
-        { printf '#!/bin/sh --\n'
-          printf '%s --config "%s" "$@"\n' "$PACMAN" "$pacman_conf"
-        } > "$runtime_dir"/pacman
-
-        chmod +x "$runtime_dir"/pacman
-        # environment variables can be specified on the makepkg command line
-        makepkg_common_args+=("PACMAN=$runtime_dir")
-    fi
-
     packagelist() {
         run_msg makepkg --packagelist "${makepkg_conf[@]}"
     }
