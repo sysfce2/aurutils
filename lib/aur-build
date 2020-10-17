@@ -67,11 +67,13 @@ fi
 
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
-opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'config:' 'pacman-conf:' 'results:' 'remove'
-          'pkgver' 'prefix:' 'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'new'
-          'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
-          'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:')
+opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:'
+          'sign' 'verify' 'directory:' 'no-sync' 'config:'
+          'pacman-conf:' 'results:' 'remove' 'pkgver' 'prefix:'
+          'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'new'
+          'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade'
+          'temp' 'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:'
+          'makepkg-args:' 'buildscript:')
 opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync' 'margs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -79,7 +81,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
+unset buildscript db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
     case "$1" in
         # build options
@@ -93,6 +95,9 @@ while true; do
             shift; db_name=$1 ;;
         --config)
             shift; pacconf_args+=(--config "$1") ;;
+        --buildscript)
+            shift; buildscript=$1
+            makepkg_common_args+=(-p "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
         --pkgver)
@@ -223,8 +228,9 @@ if (( chroot )); then
         chroot_args+=(--prefix "$prefix")
     fi
 
-    # makepkg --packagelist includes the package extension, but makechrootpkg
-    # ignores PKGEXT set on the host. Retrieve it seperately.
+    # makepkg --packagelist includes the package extension, but
+    # makechrootpkg ignores PKGEXT set on the host. Retrieve it
+    # seperately.
     packagelist() {
         run_msg aur chroot --packagelist "${chroot_args[@]}"
     }
@@ -234,10 +240,11 @@ if (( chroot )); then
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --update "${chroot_args[@]}"
 else
-    # XXX: ignores makepkg -p option (--margs)
+    # Use libmakepkg to avoid a performance hit from linting the
+    # PKGBUILD twice (in both makepkg and makepkg --packagelist)
     packagelist() (
         load_makepkg_config "${makepkg_conf-}"
-        source_safe PKGBUILD
+        source_safe "${buildscript-PKGBUILD}"
 
         PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
     )
@@ -293,6 +300,8 @@ while IFS= read -ru "$fd" path; do
         wait $!
 
         if [[ ${exists[*]} ]]; then
+            # XXX: use lint_pkgbuild in this case as no lint from a
+            # makepkg invocation may take place
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
 
             printf '%q\n' >&2 "${exists[@]}"
