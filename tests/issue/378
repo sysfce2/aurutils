@@ -1,14 +1,13 @@
 #!/bin/bash
 set -e
 
-tmp0=$(mktemp)
 tmp1=$(mktemp -d)
 tmp1_uid=custom-$RANDOM-1
 tmp2=$(mktemp -d)
 tmp2_uid=custom-$RANDOM-2
 tmp3=$(mktemp -d)
 tmp3_uid=custom-$RANDOM-3
-trap 'rm -rf -- "$tmp0" "$tmp1" "$tmp2" "$tmp3"' EXIT
+#trap 'rm -rf -- "$tmp1" "$tmp2" "$tmp3"' EXIT
 
 cat >"$tmp1"/pacman.conf <<EOF
 [options]
@@ -37,18 +36,8 @@ repo-add "$tmp1/$tmp1_uid".db.tar
 repo-add "$tmp2/$tmp2_uid".db.tar
 repo-add "$tmp3/$tmp3_uid".db.tar
 
-# create pacman wrapper for makepkg -s operations
-{ printf '#!/bin/sh --\n'
-  printf 'pacman --config "%s" "$@"\n' "$tmp0"/pacman.conf
-} >"$tmp0"/pacman
-chmod +x "$tmp0"/pacman
-
 # issue 378: repository selection with AUR_REPO
-sync_args=(-rn --no-view aurutils --config "$tmp0"/pacman.conf)
+AUR_REPO="$tmp1_uid" aur repo --path --config "$tmp1"/pacman.conf
+AUR_REPO="$tmp2_uid" aur repo --path --config "$tmp1"/pacman.conf
+AUR_REPO="$tmp3_uid" aur repo --path --config "$tmp1"/pacman.conf
 
-AUR_REPO="$tmp_uid1" PACMAN="$tmp0"/pacman aur sync "${sync_args[@]}"
-"$tmp0"/pacman -Si "$tmp1_uid"/aurutils
-AUR_REPO="$tmp_uid2" PACMAN="$tmp0"/pacman aur sync "${sync_args[@]}"
-"$tmp0"/pacman -Si "$tmp2_uid"/aurutils
-AUR_REPO="$tmp_uid3" PACMAN="$tmp0"/pacman aur sync "${sync_args[@]}"
-"$tmp0"/pacman -Si "$tmp3_uid"/aurutils
