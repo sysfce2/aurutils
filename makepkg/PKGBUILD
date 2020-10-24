@@ -1,32 +1,37 @@
 # Maintainer: Alad Wenter <https://github.com/AladW>
-pkgname=aurutils-git
-pkgver=2.3.1.r40.g660748b
+pkgname=aurutils
+pkgver=2.3.7
 pkgrel=1
 pkgdesc='helper tools for the arch user repository'
 url='https://github.com/AladW/aurutils'
 arch=('any')
 license=('custom:ISC')
-source=('git+https://github.com/AladW/aurutils')
-sha256sums=('SKIP')
-conflicts=('aurutils')
-provides=("aurutils=${pkgver%%.r*}")
+source=("$pkgname-$pkgver.tar.gz::$url/archive/$pkgver.tar.gz"
+        "$pkgname-$pkgver.tar.gz.signify::$url/releases/download/$pkgver/$pkgver.tar.gz.sig")
 depends=('git' 'jq' 'expac' 'diffstat' 'pacutils' 'wget')
-makedepends=('git')
+makedepends=('git' 'signify')
 optdepends=('bash-completion: bash completion'
             'devtools: aur-chroot'
             'vifm: build file interaction')
+sha256sums=('34bb5fb53cdfd2c15c3274f5ffa63c21e2109237e1ebb877b6ca02ebe8bd2d89'
+            '3c7ee12b00ca50a0713ceca9b0fe6a4b47683f6b3485677e2996339af1de869e')
+_validsignifykey='RWQawitEue1JU2SxUyRD8LXP8m36QsbaHOkKfvZBfhj00EXBYiDZilp0'
 
-pkgver() {
-    cd aurutils
-    git describe --long --tags | sed 's/\([^-]*-g\)/r\1/; s/-/./g'
+prepare() {
+    cat >aurutils.pub <<EOF
+untrusted comment: signify public key
+$_validsignifykey
+EOF
+    signify -V -p aurutils.pub -m "$pkgname-$pkgver".tar.gz \
+            -x "$pkgname-$pkgver".tar.gz.signify
 }
 
 build() {
-    cd aurutils
+    cd "$pkgname-$pkgver"
     make DESTDIR="$pkgdir"
 }
 
 package() {
-    cd aurutils
+    cd "$pkgname-$pkgver"
     make DESTDIR="$pkgdir" install
 }
