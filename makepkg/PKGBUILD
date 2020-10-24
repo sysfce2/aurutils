@@ -13,8 +13,8 @@ makedepends=('git' 'signify')
 optdepends=('bash-completion: bash completion'
             'devtools: aur-chroot'
             'vifm: build file interaction')
-sha256sums=('34bb5fb53cdfd2c15c3274f5ffa63c21e2109237e1ebb877b6ca02ebe8bd2d89'
-            '3c7ee12b00ca50a0713ceca9b0fe6a4b47683f6b3485677e2996339af1de869e')
+sha256sums=('bae2f7211cb80626f260e1ebcb2c061751407a03f1ab8898bc80182888502bef'
+            'SKIP')
 _validsignifykey='RWQawitEue1JU2SxUyRD8LXP8m36QsbaHOkKfvZBfhj00EXBYiDZilp0'
 
 prepare() {
@@ -28,7 +28,7 @@ EOF
 
 build() {
     cd "$pkgname-$pkgver"
-    make DESTDIR="$pkgdir"
+    make
 }
 
 package() {
