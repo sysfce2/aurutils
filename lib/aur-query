@@ -2,20 +2,20 @@
 # aur-query - interface with AurJson
 [[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=query
-AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 AUR_QUERY_PARALLEL=${AUR_QUERY_PARALLEL:-0}
 AUR_QUERY_PARALLEL_MAX=${AUR_QUERY_PARALLEL_MAX:-15}
+AUR_QUERY_RPC=${AUR_QUERY_RPC:-https://aur.archlinux.org/rpc/?v=5}
+AUR_QUERY_RPC_SPLITNO=${AUR_QUERY_RPC_SPLITNO:-150}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
 curl_args=(-fgLsS --tcp-fastopen)
 
 uri_info() {
-    #global rpc_url
-    awk -v rpc="$rpc_url&type=info" '{
+    awk -v rpc="$AUR_QUERY_RPC&type=info" splitno="$AUR_QUERY_RPC_SPLITNO" '{
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
-        else if (NR % 150 == 0)
+        else if (NR % splitno == 0)
             printf "\n%s&arg[]=%s", rpc, $0
         else if (NR > 1)
             printf "&arg[]=%s", $0
@@ -26,8 +26,7 @@ uri_info() {
 }
 
 uri_search() {
-    #global rpc_url
-    awk -v rpc="$rpc_url&type=search&by=$1&arg" '{
+    awk -v rpc="$AUR_QUERY_RPC&type=search&by=$1&arg" '{
         printf "%s=%s\n", rpc, $0
     }'
 }
@@ -48,7 +47,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='b:t:'
-opt_long=('by:' 'type:' 'rpc-ver:' 'rpc-url:')
+opt_long=('by:' 'type:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -56,17 +55,13 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset arg_by arg_type rpc_url rpc_ver
+unset arg_by arg_type
 while true; do
     case "$1" in
         -b|--by)
             shift; arg_by=$1 ;;
         -t|--type)
             shift; arg_type=$1 ;;
-        --rpc-ver)
-            shift; rpc_ver=$1 ;;
-        --rpc-url)
-            shift; rpc_url=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -78,10 +73,6 @@ done
 
 tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
-
-# set AUR remote
-rpc_ver=${rpc_ver:-5}
-rpc_url=${rpc_url:-$AUR_LOCATION/rpc/?v=$rpc_ver}
 
 # set filters
 case $arg_type in
@@ -127,7 +118,7 @@ if (( AUR_QUERY_PARALLEL )); then
     curl "${curl_args[@]}" -K "$tmp"/config --stderr "$tmp"/error \
          --parallel --parallel-max "$AUR_QUERY_PARALLEL_MAX"
 
-    # curl --parallel does not exit >0 on failed transfers, thus
+    # XXX: curl --parallel does not exit >0 on failed transfers, thus
     # stderr has to be checked manually
     # shellcheck disable=SC2181
     if (( $? )) || [[ -s $tmp/error ]]; then
