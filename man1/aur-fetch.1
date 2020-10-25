@@ -104,8 +104,15 @@ are
 .BR reset ,
 and
 .BR fetch .
-.I path
-is the absolute path to the processed package repository.
+If
+.I action
+is set to
+.BR clone ,
+.I <head_from>
+is set to
+.BR 0 .
+.I <path>
+is the absolute path to the corresponding git repository.
 .IP
 Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
