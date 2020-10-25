@@ -1,4 +1,4 @@
-.TH AUR-QUERY 1 2020-10-15 AURUTILS
+.TH AUR-QUERY 1 2020-10-25 AURUTILS
 .SH NAME
 aur\-query \- send GET requests to the aurweb RPC interface
 .
@@ -6,8 +6,6 @@ aur\-query \- send GET requests to the aurweb RPC interface
 .SY "aur query"
 .OP \-t type
 .OP \-b by
-.OP \-\-rpc\-url URI
-.OP \-\-rpc\-ver NUM
 .YS
 .
 .SH DESCRIPTION
@@ -19,23 +17,26 @@ aur\-query \- send GET requests to the aurweb RPC interface
 .TP
 .BR \-t ", " \-\-type
 .
-.TP
-.BI \-\-rpc\-ver= NUM
-.
-.TP
-.BI \-\-rpc\-url= URI
-.
 .SH ENVIRONMENT
 .TP
-.B AUR_LOCATION
+.B AUR_DEBUG
 .
+.TP
 .B AUR_QUERY_PARALLEL
 .
+.TP
 .B AUR_QUERY_PARALLEL_MAX
+.
+.TP
+.B AUR_QUERY_RPC
+.
+.TP
+.B AUR_QUERY_RPC_SPLITNO
 .
 .SH NOTES
 As the AUR RPC is limited to GET requests, queries are split by 150
-arguments to avoid HTTP 414 errors (\fIFS#49089\fR).
+arguments to avoid HTTP 414 errors
+.RI ( FS#49089 ).
 .
 .SH SEE ALSO
 .ad l
