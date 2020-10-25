@@ -1,21 +1,120 @@
-## 2.4.0
+## 3.0.0
+
+* `aur`
+  + add `AUR_EXEC_PATH` environment variable
+  + add example `aur-gc`, `aur-remove` scripts to `aur.1`
 
 * `aur-build`
-  + add `--ignorearch` to `makepkg --noprepare -od` (`--pkgver`)
+  + add `AUR_DEBUG`, `NO_COLOR`, `MAKEPKG` environment variables
+  + add mollyguard for running as the `root` user
+  + add `build:` prefix to `--results` output
+    - `build:file:///path/to/package.tar.xz`
+  + add `--new`, `--prevent-downgrade` (`repo-add` options)
+  + add `Running` message for all `makepkg` invocations
+  + replace `--build-command` with `--margs` and `$MAKEPKG`
+  + remove default `makepkg` arguments (#635)
+    - specify common `makepkg` options as `aur-build` arguments (`--syncdeps`, `--rmdeps`, `--ignorearch`, `--log`, `--noconfirm`)
+    - pass `--syncdeps`, `--rmdeps` to `--pkgver` makepkg command (#716)
+    - make `-r` an alias for `--rmdeps` (was: alias for `--root`)
+  + use `--margs` to set makepkg options instead of EOF seperator (`--`)
+  + `--makepkg-conf` now sets the makepkg configuration for host builds (avoid quoting issues with setting `--config` in `--margs`)
+  + use `makepkg --noextract` if `--pkgver` is specified (#708)
+  + use `print_all_package_names` (`/usr/share/makepkg/util/pkgbuild.sh`) instead of `makepkg --packagelist` (#755)
+  + pass pacman.conf (`--config`) to `aur-repo` (#654)
+  + only remove intermediary package directory if empty (#602)
   + remove `--delta`
+  + use `PKGDEST` instead of `makepkg.conf` to set package destination
+
 * `aur-chroot`
-  + add `--host-conf` (experimental)
+  + add `AUR_DEBUG` environment variable
+  + add `--packagelist`
+    - use `print_all_package_names` (`/usr/share/makepkg/util/pkgbuild.sh`)
+  + replace `--no-prepare` and `--no-build` (disable steps) with `--update` and `--build` (enable steps) respectively
+  + remove `--database`
+  + use static pacman configuration (defaults to `/usr/share/devtools/pacman-extra.conf`)
+    - `--suffix` to override `extra` in the default path
+    - if `--suffix` begins in `multilib`, install `multilib-devel` (instead of `base-devel`)
+
 * `aur-fetch`
-  + do not print diffs to `stdout` unless `--verbose` is specified
+  + add `AUR_DEBUG`, `NO_COLOR` environment variables
+  + add `--results` (colon-delimited output)
+  + add `--sync`
+    - only run `git fetch` by default;
+    - run `git reset` if `--sync=reset` is specified;
+    - run `git rebase` if `--sync=rebase` is specified;
+    - run either `git reset` or `git rebase` if `--sync=auto` is specified
+  + exit `1` if `git clone` or `git fetch` failed
   + remove support for `tar` archives
-  + rename `--log-dir` to `--write-log`
+  + remove diff output (`--log-dir`, `--verbose`, `--format`)
+    - diffs can be generated from the extended --results output (done in `aur-sync`)      
+  + remove setting `orderfile` (done in `aur-sync`)
+  + use `git -C` for `git` calls
+
+* `aur-jobs` (removed)
+  - remove script
+
+* `aur-pkglist`
+  + add `AUR_DEBUG` environment variable
+  + use `curl` for transfers instead of `wget`
+
+* `aur-rpc` (`aur-query`)
+  + add `AUR_DEBUG` environment variable
+  + rename to `aur-query`
+  + remove `--rpc-url`, `--rpc-ver`, `$AUR_LOCATION`
+	- replaced with `$AUR_QUERY_RPC`
+  + add `$AUR_QUERY_RPC_SPLITNO` to set of number of packages for splitting URIs
+  + add `$NO_COLOR`, `$AUR_DEBUG`
+  + use `curl` for transfers instead of `wget`
+    - support parallel transfers with `curl --parallel` (disabled by default)
+	- add `$AUR_QUERY_PARALLEL`, `$AUR_QUERY_PARALLEL_MAX`
+  + exit `1` if a transfer failed
+
 * `aur-repo-filter`
-  + remove `expac` dependency
+  + add `AUR_DEBUG` environment variable
+  + add `--sysroot` (`pacsift --sysroot`, `pacinfo --sysroot`)
+  + use `pacinfo` for package information instead of `expac`
+
 * `aur-repo`
-  + add `--pacman-conf`
+  + add `AUR_DEBUG` environment variable
+  + add `--config`
+  + add `--ini`
+  + add `--quiet`/`-q` (`aur-vercmp -q`)
+  + add `--table`
+  + add pacman configuration to `--status-format` (colon-delimited)
+  + print fully resolved path to local repository
+  + require `--path` to print the local repository path
   + remove `expac` dependency
-* `aur.1`
-  + add example `aur-gc`, `aur-remove` scripts
+
+* `aur-search`
+  + add `AUR_DEBUG`, `NO_COLOR` environment variables
+  + unset `LC_ALL` when printing `Popularity`
+
+* `aur-srcver`
+  + add `AUR_DEBUG` environment variable
+  + add `--jobs`
+  + do not use `makepkg --log`
+  + remove `parallel` dependency
+  
+* `aur-sync`
+  + add `AUR_DEBUG`, `NO_COLOR`, `AUR_CONFIRM_PAGER` environment variables
+    - use confirmation prompt after package review if `AUR_CONFIRM_PAGER` is set
+  + add `--rebuild-all`
+  + add mollyguard for running as the `root` user
+  + add default `--ignore-file` location
+  + do not fallback to `PAGER` or `less` (`AUR_PAGER` must be set or `vifm` installed)
+  + enable `--provides` by default
+    - disable with `--no-provides`
+    - specify repositories with `--provides-from` (comma-delimited)
+  + remove additional `aur-build` arguments after EOF separator (`--`) (#678)
+  + remove `parallel` dependency
+  + rename `--print` to `--no-build`/`-o`
+  + rename `--no-ver-shallow` to `--no-ver-argv`
+  + store commits viewed by the user (#379, #711)
+  + use `aur-fetch --sync=auto`
+
+* `aur-vercmp`
+  + add `AUR_DEBUG`, `NO_COLOR` environment variables
+  
 * `Makefile`
   + allow overriding `AUR_LIB_DIR` at build time
 
