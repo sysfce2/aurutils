@@ -37,7 +37,7 @@ repo-add "$tmp2/$tmp2_uid".db.tar
 repo-add "$tmp3/$tmp3_uid".db.tar
 
 # issue 378: repository selection with AUR_REPO
-AUR_REPO="$tmp1_uid" aur repo --path --config "$tmp1"/pacman.conf
-AUR_REPO="$tmp2_uid" aur repo --path --config "$tmp1"/pacman.conf
-AUR_REPO="$tmp3_uid" aur repo --path --config "$tmp1"/pacman.conf
+env - AUR_REPO="$tmp1_uid" aur repo --path --config "$tmp1"/pacman.conf
+env - AUR_REPO="$tmp2_uid" aur repo --path --config "$tmp1"/pacman.conf
+env - AUR_REPO="$tmp3_uid" aur repo --path --config "$tmp1"/pacman.conf
 

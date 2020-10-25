@@ -2,7 +2,7 @@
 tmp=$(mktemp -d) || exit
 trap 'rm -rf -- "$tmp"' EXIT
 
-out=$(env -C "$tmp" aur fetch aurutils aurutils-git)
+out=$(env -C "$tmp" - HOME=$HOME USER=$USER PATH=$PATH aur fetch aurutils aurutils-git)
 err=$?
 
 # expected: cloned repositories (x2), exit 0
