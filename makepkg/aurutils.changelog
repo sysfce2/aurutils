@@ -58,15 +58,14 @@
   + use `curl` for transfers instead of `wget`
 
 * `aur-rpc` (`aur-query`)
-  + add `AUR_DEBUG` environment variable
+  + add `AUR_DEBUG`, `AUR_QUERY_RPC`, `AUR_QUERY_RPC_SPLITNO`, `AUR_QUERY_PARALLEL`, `AUR_QUERY_PARALLEL_MAX` environment variables
   + rename to `aur-query`
-  + remove `--rpc-url`, `--rpc-ver`, `$AUR_LOCATION`
-	- replaced with `$AUR_QUERY_RPC`
-  + add `$AUR_QUERY_RPC_SPLITNO` to set of number of packages for splitting URIs
-  + add `$NO_COLOR`, `$AUR_DEBUG`
+  + set AUR RPC address with `AUR_QUERY_RPC` instead of a combination of `--rpc-url`, `--rpc-ver` and `AUR_LOCATION`
+  + set number of packages for splitting URIs with `AUR_QUERY_RPC_SPLITINFO`
+  + set `AUR_QUERY_RPC_SPLITNO` to set of number of packages for splitting URIs
   + use `curl` for transfers instead of `wget`
-    - support parallel transfers with `curl --parallel` (disabled by default)
-	- add `$AUR_QUERY_PARALLEL`, `$AUR_QUERY_PARALLEL_MAX`
+    - enable parallel transfers (`curl --parallel`) with `AUR_QUERY_PARALLEL=1`
+    - set maximum amount of parallel transfers (`curl --parallel-max`) with `AUR_QUERY_PARALLEL_MAX`
   + exit `1` if a transfer failed
 
 * `aur-repo-filter`
