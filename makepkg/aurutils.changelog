@@ -99,13 +99,15 @@
     - use confirmation prompt after package review if `AUR_CONFIRM_PAGER` is set
   + add `--rebuild-all`
   + add mollyguard for running as the `root` user
-  + add default `--ignore-file` location
+  + add default ignore file in `$XDG_CONFIG_HOME/aurutils/sync/ignore`
   + do not fallback to `PAGER` or `less` (`AUR_PAGER` must be set or `vifm` installed)
   + enable `--provides` by default
     - disable with `--no-provides`
     - specify repositories with `--provides-from` (comma-delimited)
   + remove additional `aur-build` arguments after EOF separator (`--`) (#678)
   + remove `parallel` dependency
+  + remove `AURDEST_SNAPSHOT` environment variable
+  + remove `--git`, `--tar`
   + rename `--print` to `--no-build`/`-o`
   + rename `--no-ver-shallow` to `--no-ver-argv`
   + store commits viewed by the user (#379, #711)
