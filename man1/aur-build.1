@@ -65,7 +65,7 @@ configuration for the container is placed in
 A different location can be chosen with the
 .BR \-\-pacman\-conf
 or
-.BR \-\-prefix
+.BR \-\-suffix
 options.
 .RE
 .
@@ -162,7 +162,7 @@ sync operations regardless of this setting. See also
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
 The base directory for containers. Defaults to
-.BI /var/lib/archbuild/ <chroot\-prefix> \- <arch> \fR.
+.BI /var/lib/archbuild/ <chroot\-suffix> \- <arch> \fR.
 .IP
 .RS
 .B Note:
@@ -222,12 +222,12 @@ file used inside the container.
 .RB ( aur\-chroot " " \-\-pacman\-conf )
 .
 .TP
-.BI \-\-prefix= PREFIX
+.BI \-\-suffix= SUFFIX
 The path component
-.B <prefix>
+.B <suffix>
 in the pacman configuration
-.BR /usr/share/devtools/pacman\-<prefix>.conf .
-.RB ( aur\-chroot " " \-\-prefix )
+.BR /usr/share/devtools/pacman\-<suffix>.conf .
+.RB ( aur\-chroot " " \-\-suffix )
 Defaults to
 .BR aur .
 .

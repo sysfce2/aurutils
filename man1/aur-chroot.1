@@ -10,7 +10,7 @@ aur\-chroot \- build packages with systemd-nspawn
 .OP \-\-build
 .OP \-\-update
 .OP \-\-packagelist
-.OP \-\-prefix
+.OP \-\-suffix
 .OP \-\-
 .RI [ "makechrootpkg args" ]
 .YS
@@ -93,11 +93,11 @@ file specified with
 .BR \-\-makepkg\-conf .
 .
 .TP
-.B \-\-prefix
+.B \-\-suffix
 The path component
-.B <prefix>
+.B <suffix>
 in the pacman configuration
-.BR /usr/share/devtools/pacman\-<prefix>.conf .
+.BR /usr/share/devtools/pacman\-<suffix>.conf .
 Defaults to
 .BR extra .
 .
