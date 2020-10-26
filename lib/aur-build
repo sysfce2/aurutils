@@ -138,10 +138,9 @@ while true; do
         -s|--syncdeps)
             makepkg_common_args+=(--syncdeps) ;;
         --makepkg-conf)
-            shift; chroot_args+=(--makepkg-conf "$1")
-            makepkg_conf=$1
+            shift; makepkg_conf=$1
             makepkg_common_args+=(--config "$1") ;;
-        # makepkg options
+        # makepkg options (build)
         -C|--clean)
             makepkg_args+=(--clean) ;;
         -L|--log)
@@ -221,6 +220,9 @@ if [[ -v results_file ]]; then
 fi
 
 if (( chroot )); then
+    if [[ -v makepkg_conf ]]; then
+        chroot_args+=(--makepkg-conf "$makepkg_conf")
+    fi
     if [[ -v pacman_conf ]]; then
         chroot_args+=(--pacman-conf "$pacman_conf")
     else

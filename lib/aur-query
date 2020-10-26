@@ -12,7 +12,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 curl_args=(-fgLsS --tcp-fastopen)
 
 uri_info() {
-    awk -v rpc="$AUR_QUERY_RPC&type=info" splitno="$AUR_QUERY_RPC_SPLITNO" '{
+    awk -v rpc="$AUR_QUERY_RPC&type=info" -v splitno="$AUR_QUERY_RPC_SPLITNO" '{
         if (NR == 1)
             printf "%s&arg[]=%s", rpc, $0
         else if (NR % splitno == 0)

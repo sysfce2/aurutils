@@ -23,16 +23,20 @@ SigLevel = Optional TrustAll
 Server = file://$var_tmp
 EOF
 
+# create pacman wrapper for makepkg -s operations
+{ printf '#!/bin/sh --\n'
+  printf 'pacman --config "%s" "$@"\n' "$var_tmp"/pacman.conf
+} >"$var_tmp"/pacman
+chmod +x "$var_tmp"/pacman
+
 # create local repository
 repo-add "$var_tmp/$tmp_uid".db.tar
 
 # test package candidates
 source ./package
-config=(--config "$var_tmp"/pacman.conf --pacman-conf "$var_tmp"/pacman.conf)
 
 for pkg in "${test_package[@]}"; do
-    AURDEST="$var_tmp" aur sync "${config[@]}" -rnd "$tmp_uid" --no-view \
-           --margs --skippgpcheck "$pkg"
-
-    pacman -Si --config "$var_tmp"/pacman.conf "$tmp_uid/$pkg"
+    env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$var_tmp" PACMAN="$var_tmp"/pacman aur sync \
+        --config "$var_tmp"/pacman.conf -rnd "$tmp_uid" --no-view --margs --skippgpcheck "$pkg"
+    "$var_tmp"/pacman -Si "$tmp_uid/$pkg"
 done

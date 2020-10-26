@@ -31,16 +31,18 @@ ver=2.3.1
 
 # checkout and build previous revision
 cd "$tmp"
-aur fetch "$pkg"
+env - HOME=$HOME USER=$USER PATH=$PATH aur fetch "$pkg"
 
 cd "$pkg"
 git reset --hard "$rev"
-aur build -rnsd "$tmp_uid" --margs --skippgpcheck "${config[@]}"
+env - HOME=$HOME USER=$USER PATH=$PATH aur build \
+     -rnsd "$tmp_uid" --margs --skippgpcheck "${config[@]}"
 pacsift --config "$tmp"/pacman.conf --repo="$tmp_uid" --satisfies="$pkg=$ver"
 
 # update to latest revision
 cd -
-AURDEST="$tmp" aur sync -rnd "$tmp_uid" --margs --skippgpcheck --no-view "${config[@]}" "$pkg"
+env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync \
+    -rnd "$tmp_uid" --margs --skippgpcheck --no-view "${config[@]}" "$pkg"
 pacsift --config "$tmp"/pacman.conf --repo="$tmp_uid" --satisfies="$pkg>$ver"
 
 # vim: set et sw=4 sts=4 ft=sh:\n
