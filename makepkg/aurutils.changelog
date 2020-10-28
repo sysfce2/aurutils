@@ -1,4 +1,4 @@
-## 3.0.0
+## 3.0.0 - 2020-10-26
 
 * `aur`
   + add `AUR_EXEC_PATH` environment variable
@@ -16,6 +16,7 @@
     - specify common `makepkg` options as `aur-build` arguments (`--syncdeps`, `--rmdeps`, `--ignorearch`, `--log`, `--noconfirm`)
     - pass `--syncdeps`, `--rmdeps` to `--pkgver` makepkg command (#716)
     - make `-r` an alias for `--rmdeps` (was: alias for `--root`)
+    - make `-S` an alias for `--sign` (was: `-s`)
   + use `--margs` to set makepkg options instead of EOF seperator (`--`)
   + `--makepkg-conf` now sets the makepkg configuration for host builds (avoid quoting issues with setting `--config` in `--margs`)
   + use `makepkg --noextract` if `--pkgver` is specified (#708)
@@ -46,7 +47,7 @@
   + exit `1` if `git clone` or `git fetch` failed
   + remove support for `tar` archives
   + remove diff output (`--log-dir`, `--verbose`, `--format`)
-    - diffs can be generated from the extended --results output (done in `aur-sync`)      
+    - diffs can be generated from the extended --results output (done in `aur-sync`)
   + remove setting `orderfile` (done in `aur-sync`)
   + use `git -C` for `git` calls
 
@@ -93,7 +94,7 @@
   + add `--jobs`
   + do not use `makepkg --log`
   + remove `parallel` dependency
-  
+
 * `aur-sync`
   + add `AUR_DEBUG`, `NO_COLOR`, `AUR_CONFIRM_PAGER` environment variables
     - use confirmation prompt after package review if `AUR_CONFIRM_PAGER` is set
@@ -115,9 +116,21 @@
 
 * `aur-vercmp`
   + add `AUR_DEBUG`, `NO_COLOR` environment variables
-  
+
 * `Makefile`
   + allow overriding `AUR_LIB_DIR` at build time
+
+## 2.3.7
+
+## 2.3.6
+
+## 2.3.5
+
+## 2.3.4
+
+## 2.3.3
+
+## 2.3.2
 
 ## 2.3.1 - 2019-02-21
 
@@ -149,7 +162,7 @@
 * `completions`
   + group options by type (#520)
   + complete `aur-depends` options (#526)
-  
+
 ## 2.2.1 - 2019-01-25
 
 * `aur-build`
