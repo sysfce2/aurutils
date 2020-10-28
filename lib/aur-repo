@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-modifier=local table_format=0
+db_query=local table_format=0 ini_format=0
 
 # default arguments
 conf_args=()
@@ -64,14 +64,14 @@ db_table() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-d repo] [-r path] [-alSu]\n' "$argv0"
+    printf >&2 'usage: %s [-d repo] [-r path] [-alpqtuS]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:alpquS'
+opt_short='c:d:r:alpqtuS'
 opt_long=('database:' 'repo:' 'config:' 'root:' 'path' 'all' 'list'
           'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'ini')
 opt_hidden=('dump-options' 'status-file:')
@@ -92,24 +92,24 @@ while true; do
             shift; pacman_conf=$1 ;;
         -l|--list)
             mode=packages ;;
-        -a|--all)
-            mode=upgrades; vercmp_args+=(-a) ;;
+        -t|--table)
+            mode=packages; table_format=1 ;;
         -p|--path)
             mode=path ;;
+        -a|--all)
+            mode=upgrades; vercmp_args+=(-a) ;;
         -q|--quiet)
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
         --repo-list)
             mode=repo_list ;;
+        --ini)
+            mode=repo_list; ini_format=1 ;;
         -S|--sync)
-            modifier=sync ;;
-        --table)
-            table_format=1 ;;
+            db_query=sync ;;
         --status-file)
             shift; status_file=$1 ;;
-        --ini)
-            modifier=ini ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -159,25 +159,25 @@ while read -r key _ value; do
 done < <(pacman-conf "${conf_args[@]}")
 
 # exclusive modes
-if [[ $mode == repo_list ]]; then
-    if ! [[ ${conf_file_repo[*]} ]]; then
-        printf >&2 '%s: no file:// repository configured\n' "$argv0"
-        exit 2
-    fi
+case $mode in
+    repo_list)
+        if ! [[ ${conf_file_repo[*]} ]]; then
+            printf >&2 '%s: no file:// repository configured\n' "$argv0"
+            exit 2
+        fi
 
-    # XXX: add SigLevel in output
-    case $modifier in
-        ini)
+        if (( ini_format )); then
+            # XXX: add SigLevel in output
             for i in "${!conf_file_repo[@]}"; do
                 printf '[%s]\n' "${conf_file_repo[$i]}"
                 printf 'Server = %s\n' "${conf_file_serv[$i]}"
-            done ;;
-        *)
+            done
+        else
             printf '%q\n' "${conf_file_repo[@]}"
-            ;;
-    esac
-    exit 0
-fi
+        fi
+
+        exit 0 ;;
+esac
 
 # other modes
 if ! [[ $db_name ]]; then
@@ -204,9 +204,7 @@ if [[ -v status_file ]]; then
     } > "$status_file"
 fi
 
-case $modifier in
-    #requires
-    # - $db_root/$db_name (path)
+case $db_query in
     local)
         if ! [[ $db_root ]]; then
             printf >&2 '%s: %s: repository path not found\n' "$argv0" "$db_name"
@@ -217,25 +215,20 @@ case $modifier in
         elif ! [[ -d $db_root ]]; then
             printf >&2 '%s: %s: not a directory\n' "$argv0" "$db_root"
             exit 20
-        else
-            contents() {
-                db_table "$table_format" "$db_root/$db_name".db
-            }
-        fi ;;
-    #requires
-    # - [$db_name] (pacman.conf)
+        fi
+        db_path=$db_root/$db_name.db
+        ;;
     sync)
-        contents() {
-            db_table "$table_format" "$pacman_dbpath/sync/$db_name".db
-        } ;;
+        db_path=$pacman_dbpath/sync/$db_name.db
+        ;;
 esac
 
 case $mode in
     upgrades)
-        contents | aur vercmp "${vercmp_args[@]}"
+        db_table "$table_format" "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
     packages)
-        contents
+        db_table "$table_format" "$db_path"
         ;;
     path)
         readlink -f -- "$db_root/$db_name".db
