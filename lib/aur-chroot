@@ -12,7 +12,7 @@ startdir=$(pwd -P)
 directory=/var/lib/aurbuild/$machine
 makechrootpkg_args=(-c) # sync /root container to /$USER copy
 makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
-prefix=extra
+suffix=extra
 
 # default options
 update=0 build=0 packagelist=0
@@ -29,7 +29,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:BU'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
-          'prefix:' 'bind:' 'bind-rw:' 'packagelist' 'buildscript:')
+          'suffix:' 'bind:' 'bind-rw:' 'packagelist' 'buildscript:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -48,8 +48,8 @@ while true; do
             shift; buildscript=$1 ;;
         --packagelist)
             packagelist=1 ;;
-        --prefix)
-            shift; prefix=$1 ;;
+        --suffix)
+            shift; suffix=$1 ;;
         # arch-nspawn options
         -C|--pacman-conf)
             shift; pacman_conf=$1 ;;
@@ -78,13 +78,13 @@ if (( $# )); then
 fi
 
 # base container configuration
-case $prefix in
+case $suffix in
     multilib*)
         base_packages=('multilib-devel') ;;
     *)
         base_packages=('base-devel') ;;
 esac
-pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$prefix.conf}
+pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$suffix.conf}
 
 if [[ ! -r $pacman_conf ]]; then
     printf >&2 '%s: config file %q could not be read\n' "$argv0" "$pacman_conf"
