@@ -170,7 +170,7 @@ case $mode in
             # XXX: add SigLevel in output
             for i in "${!conf_file_repo[@]}"; do
                 printf '[%s]\n' "${conf_file_repo[$i]}"
-                printf 'Server = %s\n' "${conf_file_serv[$i]}"
+                printf 'Server = file://%s\n' "${conf_file_serv[$i]}"
             done
         else
             printf '%q\n' "${conf_file_repo[@]}"
