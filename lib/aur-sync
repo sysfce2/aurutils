@@ -309,7 +309,7 @@ cut -f2 --complement depends | sort -u >pkginfo
   if (( ${#repo_p[@]} )); then
       cut -f1 pkginfo | complement argv | aur-repo-filter "${repo_p[@]/#/--database=}"
   elif (( provides )); then
-      cut -f1 pkginfo | complement argv | aur repo-filter
+      cut -f1 pkginfo | complement argv | aur repo-filter --sync
   fi
 } >filter
 
