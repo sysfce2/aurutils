@@ -1,4 +1,13 @@
-## 3.0.0 - 2020-10-26
+## 3.0.1 - 2020-10-29
+
+The commits:
+
++ aur-sync: use XDG_RUNTIME_DIR for view directory (5341c059736d3eff59daea5cb52b7d35c98d0824)
++ aur-repo: simplify command line (57c1b2157806e645e7de85bf24e2c28b7d5f4458)
+
+were part of the 3.0.0 release tarball, but not the 3.0.0 tag. The 3.0.1 tag now includes these commits.
+
+## 3.0.0 - 2020-10-29
 
 * `aur`
   + add `AUR_EXEC_PATH` environment variable
