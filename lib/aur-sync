@@ -6,6 +6,7 @@ argv0=sync
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
+XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$UID}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -205,9 +206,11 @@ while true; do
     shift
 done
 
-tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
-tmp_view=$(mktemp -d --tmpdir "aurutils-$argv0-view.XXXXXXXX") || exit
+# Directory for package symlinks
+mkdir -p "$XDG_RUNTIME_DIR"/aurutils
 
+tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
+tmp_view=$(mktemp -d "$XDG_RUNTIME_DIR/aurutils/view.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 # Directory for git checksums (revisions viewed by the user, #379)
