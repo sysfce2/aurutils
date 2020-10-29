@@ -1,13 +1,13 @@
-.TH AUR-REPO 1 2020-10-02 AURUTILS
+.TH AUR-REPO 1 2020-10-28 AURUTILS
 .SH NAME
 aur\-repo \- manage local repositories
 .
 .SH SYNOPSIS
 .SY "aur repo"
 .OP \-c config
-.OP \-d database
-.OP \-r root
-.OP \-aquS
+.OP \-d repo
+.OP \-r path
+.OP \-alpqtuS
 .OP \-\-repo\-list
 .YS
 .
@@ -41,12 +41,29 @@ location, or any other location when using
 .BI \-r " PATH" "\fR,\fP \-\-root=" PATH
 The path to the root of a local repository. 
 .
-.SS Modes
 .TP
 .BR \-l ", " \-\-list
 List the contents of a local repository in the following format:
 .IP
 .BI pkgname \et pkgver \en
+.
+.TP
+.BR \-t ", " \-\-table
+List the contents of a local repository in the following format:
+.IP
+.BI pkgname \et depends \et pkgbase \et pkgver \en\c
+\&.
+.IP
+If a package has no dependencies
+.B pkgname
+is used as
+.BR depends ,
+otherwise missing values are represented by
+.IR \- .
+See also
+.BR \-\-table
+in
+.BR aur\-depends (1)
 .
 .TP
 .BR \-p ", " \-\-path
@@ -63,17 +80,25 @@ List all local
 .BR pacman (8)
 repositories.
 .
-.SS Modifiers
+.TP
+.BR \-\-ini
+List all local
+.BR pacman (8)
+repositories and their path in a
+.BR pacman.conf (5)
+like format.
+.
 .TP
 .BR \-a ", " \-\-all
 Use
 .B "aur\-vercmp \-\-all"
-when checking for updates. Implies
+when checking for upgrades. Implies
 .BR \-\-upgrades .
 .
 .TP
 .BR \-q ", " \-\-quiet
-Only print package names.
+Only print package names when checking for upgrades. Implies
+.BR \-\-upgrades .
 .
 .TP
 .BR \-S ", " \-\-sync
@@ -84,26 +109,6 @@ Query repositories in
 instead of by their
 .B file://
 path.
-.
-.TP
-.B \-\-table
-Change the format used by
-.B \-\-list
-to
-.IP
-.BI pkgname \et depends \et pkgbase \et pkgver \en\c
-\&.
-.IP
-If a package has no dependencies
-.B pkgname
-is used as
-.BR depends ,
-otherwise missing values are represented by
-.IR \- .
-See also
-.BR \-\-table
-in
-.BR aur\-depends (1)
 .
 .SH ENVIRONMENT
 .TP
