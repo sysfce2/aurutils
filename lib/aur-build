@@ -168,8 +168,10 @@ while true; do
     shift
 done
 
+# shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
+# shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$UID"
 var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXXXX")
 

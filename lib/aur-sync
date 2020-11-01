@@ -208,7 +208,7 @@ while true; do
     shift
 done
 
-# Directory for package symlinks
+# shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
 tmp_view=$(mktemp -d --tmpdir "aurutils-$UID/view.XXXXXXX")
