@@ -18,7 +18,6 @@ cat <<'EOF'
     _arguments -C \
         '1: :(${(k)default_cmds})' \
         '2: :(${(@s/ /)default_cmds[${words[2]}]})' \
-
         '*: :->options'
 
     case $state in
