@@ -173,7 +173,9 @@ done
 if ! (( $# )); then
     usage
 fi
-tmp=$(mktemp --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
+
+mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+tmp=$(mktemp --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 # XXX union is done by the AUR for info, but not search
