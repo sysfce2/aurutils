@@ -61,12 +61,12 @@ The prerequisites for this option are that the
 package is installed, and the a
 .BR pacman (8)
 configuration for the container is placed in
-.BI /usr/share/devtools/pacman \-aur.conf \fR.
+.BI /etc/aurutils/pacman-<database>.conf \fR
+where <database> is specified with
+.BR \-\-database .
 A different location can be chosen with the
 .BR \-\-pacman\-conf
-or
-.BR \-\-suffix
-options.
+option.
 .RE
 .
 .TP
@@ -220,16 +220,6 @@ The
 .BR pacman.conf (5)
 file used inside the container.
 .RB ( aur\-chroot " " \-\-pacman\-conf )
-.
-.TP
-.BI \-\-suffix= SUFFIX
-The path component
-.B <suffix>
-in the pacman configuration
-.BR /usr/share/devtools/pacman\-<suffix>.conf .
-.RB ( aur\-chroot " " \-\-suffix )
-Defaults to
-.BR aur .
 .
 .SS makepkg options
 Additional options may be passed to

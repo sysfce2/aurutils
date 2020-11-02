@@ -17,7 +17,6 @@ chroot_args=() pacconf_args=() repo_add_args=() makepkg_args=() makechrootpkg_ma
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-c -u)
-suffix=aur
 
 db_replaces() {
     bsdcat "$1" | awk '
@@ -69,11 +68,11 @@ fi
 opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:'
           'sign' 'verify' 'directory:' 'no-sync' 'config:'
-          'pacman-conf:' 'results:' 'remove' 'pkgver' 'suffix:'
-          'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'new'
-          'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade'
-          'temp' 'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:'
-          'makepkg-args:' 'buildscript:')
+          'pacman-conf:' 'results:' 'remove' 'pkgver' 'rmdeps'
+          'no-confirm' 'ignore-arch' 'log' 'new' 'makepkg-conf:'
+          'bind:' 'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps'
+          'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:'
+          'buildscript:')
 opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync' 'margs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -117,8 +116,6 @@ while true; do
             shift; makechrootpkg_args+=(-d"$1") ;;
         --pacman-conf)
             shift; pacman_conf=$1 ;;
-        --suffix)
-            shift; suffix=$1 ;;
         -N|--namcap)
             makechrootpkg_args+=(-n) ;;
         --checkpkg)
@@ -230,8 +227,7 @@ if (( chroot )); then
     if [[ -v pacman_conf ]]; then
         chroot_args+=(--pacman-conf "$pacman_conf")
     else
-        # Defaults to /usr/share/devtools/pacman-<suffix>.conf
-        chroot_args+=(--suffix "$suffix")
+        chroot_args+=(--pacman-conf "/etc/aurutils/pacman-$db_name.conf")
     fi
 
     # makepkg --packagelist includes the package extension, but

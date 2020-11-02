@@ -3,6 +3,7 @@ PREFIX ?= /usr
 SHRDIR ?= $(PREFIX)/share
 BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
+ETCDIR ?= /etc
 AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
 
 .PHONY: shellcheck install build completion aur
@@ -26,4 +27,5 @@ install: install-aur
 	@install -Dm644 man1/*    -t '$(DESTDIR)$(SHRDIR)/man/man1'
 	@install -Dm644 man7/*    -t '$(DESTDIR)$(SHRDIR)/man/man7'
 	@install -Dm644 LICENSE   -t '$(DESTDIR)$(SHRDIR)/licenses/$(PROGNM)'
+	@install -dm755 aurutils '$(DESTDIR)$(ETCDIR)/$(PROGNM)'
 	@$(MAKE) -C completions DESTDIR='$(DESTDIR)' install-bash install-zsh
