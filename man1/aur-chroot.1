@@ -1,41 +1,81 @@
-.TH AUR-CHROOT 2020-10-12 AURUTILS
+.TH AUR-CHROOT 2020-11-01 AURUTILS
 .SH NAME
-aur\-chroot \- build packages with systemd-nspawn
+aur\-chroot \- build pacman packages with systemd-nspawn
 .
 .SH SYNOPSIS
 .SY "aur chroot"
+.OP \-\-build
+.OP \-\-update
 .OP \-D directory
 .OP \-C pacman_conf
 .OP \-M makepkg_conf
-.OP \-\-build
-.OP \-\-update
-.OP \-\-packagelist
-.OP \-\-suffix
 .OP \-\-
 .RI [ "makechrootpkg args" ]
+.
+.SY "aur chroot"
+.OP \-\-create
+.OP \-D directory
+.OP \-C pacman_conf
+.OP \-M makepkg_conf
+.RI [ "package..." ]
+.
+.SY "aur chroot"
+.OP \-\-packagelist
+.OP \-D directory
 .YS
 .
 .SH DESCRIPTION
-Build packages inside a
+Build
+.BR pacman (8)
+packages inside a
 .BR systemd\-nspawn (1)
 container.
 .
-.SH OPTIONS
-All arguments after
+.SH OPERATIONS
+.TP
+.BR \-B ", " \-\-build
+Build a package inside the container. Arguments after
 .B \-\-
 are passed to
 .BR makechrootpkg .
-.
-.TP
-.BR \-B ", " \-\-build
-Build a package inside the container.
+If none are specified,
+.B makechrootpkg \-c
+is run.
 .
 .TP
 .BR \-U ", " \-\-update
 Update or create the
 .B /root
-copy of the container.
+copy of the container with
+.BR arch\-nspawn .
 .
+.TP
+.BR \-\-create
+Create a new container with
+.BR mkarchroot .
+.IP
+By default,
+.B base\-devel
+or
+.B multilib\-devel
+are installed to the container, depending if the host architecture is
+.B x86_64
+and
+.B [multilib]
+is set in the pacman configuration. (see
+.BR \-\-pacman\-conf )
+If packages or package groups are listed on the command-line, these
+are installed instead.
+.
+.TP
+.B \-\-packagelist
+List the package filenames that would be produced without
+building using the
+.BR makepkg.conf (5)
+file inside the container. (see
+.BR \-\-makepkg\-conf )
+.
+.SH OPTIONS
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
 The base directory for containers. This directory usually contains a
@@ -61,11 +101,12 @@ The
 file used inside the container. Defaults to
 .IR /usr/share/devtools/pacman\-extra.conf .
 .IP
-This file is processed with
+This file is read with
 .B pacman\-conf
-to bind-mount listed
+to retrieve listed
 .B file://
-repositories.
+repositories for bind mounting. (see
+.BR "Accessing a local repository")
 .
 .TP
 .BI \-M " FILE" "\fR,\fP \-\-makepkg\-conf=" FILE
@@ -73,6 +114,17 @@ The
 .BR makepkg.conf (5)
 file used inside the container. Defaults to devtools'
 .IR makepkg\-<machine>.conf .
+.
+.TP
+.BR \-x ", " \-\-suffix
+The path component
+.B <suffix>
+in the pacman configuration
+.BR /usr/share/devtools/pacman\-<suffix>.conf .
+Defaults to
+.BR extra .
+A full path may be specified with
+.BR \-\-pacman\-conf .
 .
 .TP
 .B \-\-bind
@@ -84,30 +136,15 @@ Bind a directory read-only to the container.
 Bind a directory read-write to the container.
 .RB ( makechrootpkg " " \-d )
 .
-.TP
-.B \-\-packagelist
-List the package filenames that would be produced without
-building using the
-.BR makepkg.conf (5)
-file specified with
-.BR \-\-makepkg\-conf .
-.
-.TP
-.B \-\-suffix
-The path component
-.B <suffix>
-in the pacman configuration
-.BR /usr/share/devtools/pacman\-<suffix>.conf .
-Defaults to
-.BR extra .
-.
 .SH ENVIRONMENT
-Packages are placed in the directory specified in
+Packages are placed in the directory set in
 .BR PKGDEST .
 If unset, the current directory
 .RB ( $PWD )
 is used. See also
-.BR makepkg.conf (5).
+.BR makepkg.conf (5)
+and
+.BR "makechrootpkg \-h" .
 .
 .SH NOTES
 .SS Building with makechrootpkg
@@ -134,8 +171,20 @@ To install packages from the local repository (for example, on
 dependency resolution with
 .BR "makepkg \-s" ,
 the container requires read access to the host directory where it is
-located. This is ensured through a
+located. This is ensured through a (read-write)
 .IR "bind mount" .
+In particular, paths to
+.B file://
+repositories are passed to
+.B arch\-nspawn
+and
+.B makechrootpkg
+with
+.BR \-\-bind
+and
+.BR \-d ,
+respectively.
+.PP
 .
 .SS Avoiding password prompts
 .BR makepkg (8)
@@ -159,14 +208,15 @@ user, create the following sudoers policy:
   archie ALL = (root) NOPASSWD: /usr/bin/mkarchroot, /usr/bin/arch-nspawn
 
 .EE
-.SY Note:
 Should the rule only apply to specific hosts, replace
 .B ALL
 with the respective
 .IR hostname .
-
+.
 .SS Using ccache and distcc
-As in the example above, install the required packages:
+As in
+.BR "Building with makechrootpkg" ,
+install the required packages:
 .EX
 
   # arch-nspawn /var/lib/aurbuild/root pacman \-S ccache distcc
@@ -192,7 +242,7 @@ To build packages for a different architecture, prepend
 to the
 .B aur\-build
 command line.
-.
+.PP
 The target architecture must be supported both by the host (run
 .B "setarch \-\-list"
 for an approximation), and have a matching
@@ -203,11 +253,12 @@ file available in
 .I /usr/share/devtools/makepkg\-i686.conf
 for
 .IR i686 ).
-.TP
-.B Note:
+.PP
 Building for other CPU architectures may be done through
-QEMU, for example with
-.BR proot (1).
+QEMU user mode. See
+.UR https://www.qemu.org/docs/master/user/index.html
+.UE
+for details.
 .
 .SH SEE ALSO
 .BR aur (1),

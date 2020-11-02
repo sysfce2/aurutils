@@ -10,15 +10,18 @@ startdir=$(pwd -P)
 
 # default arguments
 directory=/var/lib/aurbuild/$machine
-makechrootpkg_args=(-c) # sync /root container to /$USER copy
-makepkg_conf=/usr/share/devtools/makepkg-$machine.conf
 suffix=extra
 
 # default options
-update=0 build=0 packagelist=0
+update=0 build=0 packagelist=0 create=0
 
 usage() {
-    printf >&2 'usage: %s [-BU] [-CDM path] -- <makechrootpkg args>\n' "$argv0"
+    cat <<EOF
+Usage:
+  $argv0 [-BU] [-CDM path] -- <makechrootpkg args>
+  $argv0 --create [-CDM path] [package...]
+  $argv0 --packagelist [-D path]
+EOF
     exit 1
 }
 
@@ -27,9 +30,10 @@ source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='C:D:M:BU'
+opt_short='C:D:M:x:BU'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
-          'suffix:' 'bind:' 'bind-rw:' 'packagelist' 'buildscript:')
+          'create' 'suffix:' 'bind:' 'bind-rw:' 'packagelist'
+          'buildscript:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -37,7 +41,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset bindmounts_ro bindmounts_rw buildscript pacman_conf
+unset bindmounts_ro bindmounts_rw buildscript makepkg_conf pacman_conf
 while true; do
     case "$1" in
         -B|--build)
@@ -48,16 +52,17 @@ while true; do
             shift; buildscript=$1 ;;
         --packagelist)
             packagelist=1 ;;
-        --suffix)
+        --create)
+            create=1 ;;
+        -x|--suffix)
             shift; suffix=$1 ;;
-        # arch-nspawn options
+        # devtools options
         -C|--pacman-conf)
             shift; pacman_conf=$1 ;;
         -D|--directory)
             shift; directory=$1 ;;
         -M|--makepkg-conf)
             shift; makepkg_conf=$1 ;;
-        # makechrootpkg options
         --bind)
             shift; bindmounts_ro+=("$1") ;;
         --bind-rw)
@@ -72,46 +77,54 @@ while true; do
     shift
 done
 
-# Reset makechrootpkg command-line if specified
-if (( $# )); then
-    makechrootpkg_args=("$@")
+# required for chroot creation and update
+makepkg_conf=${makepkg_conf:-/usr/share/devtools/makepkg-$machine.conf}
+
+if [[ ! -f $makepkg_conf ]]; then
+    printf >&2 '%s: %q is not a file\n' "$argv0" "$makepkg_conf"
+    exit 2
+elif [[ ! -r $makepkg_conf ]]; then
+    printf >&2 '%s: %q could not be read\n' "$argv0" "$makepkg_conf"
+    exit 1
 fi
 
-# base container configuration
-case $suffix in
-    multilib*)
-        base_packages=('multilib-devel') ;;
-    *)
-        base_packages=('base-devel') ;;
-esac
+# required for chroot creation and update
 pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$suffix.conf}
 
-if [[ ! -r $pacman_conf ]]; then
-    printf >&2 '%s: config file %q could not be read\n' "$argv0" "$pacman_conf"
-    exit 1
-elif [[ ! -r $makepkg_conf ]]; then
-    printf >&2 '%s: config file %q could not be read\n' "$argv0" "$makepkg_conf"
+if [[ ! -f $pacman_conf ]]; then
+    printf >&2 '%s: %q is not a file\n' "$argv0" "$pacman_conf"
+    exit 2
+elif [[ ! -r $pacman_conf ]]; then
+    printf >&2 '%s: %q could not be read\n' "$argv0" "$pacman_conf"
     exit 1
 fi
 
 # bind mount file:// paths to container (#461)
+# required for update/build steps
 while read -r key _ value; do
     case $key=$value in
         Server=file://*)
             bindmounts_rw+=("${value#file://}") ;;
     esac
 done < <(pacman-conf --config "$pacman_conf")
+wait $!
 
-if (( packagelist )); then
-    ( load_makepkg_config "$makepkg_conf"
-      source_safe "${buildscript-PKGBUILD}"
+# create new container, required for packagelist/update/build steps
+if (( create )); then
+    # default to base-devel or multilib-devel, unless packages are
+    # specified on the command-line.
+    # available packages depend on the configured pacman configuration
+    if (( $# )); then
+        base_packages=("$@")
 
-      PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
-    )
-    exit $?
-fi
+    # XXX: use pacini to not process Include directives in pacman.conf
+    # (not supported by devtools)
+    elif [[ $(pacini --section=multilib "$pacman_conf") ]] && [[ $machine == "x86_64" ]]; then
+        base_packages=('multilib-devel')
+    else
+        base_packages=('base-devel')
+    fi
 
-if (( update )); then
     # parent path is not created by mkarchroot (#371)
     if [[ ! -d $directory ]]; then
         sudo install -d "$directory" -m 755 -v
@@ -121,6 +134,32 @@ if (( update )); then
         sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
              "$directory"/root "${base_packages[@]}"
     fi
+    exit $?
+fi
+
+# use libmakepkg to print full package names
+if (( packagelist )); then
+    if [[ ! -r $directory/root/etc/makepkg.conf ]]; then
+        printf >&2 '%s --packagelist: %q: could not be read\n' "$argv0" "$directory"/root/etc/makepkg.conf
+        exit 1
+    fi
+
+    ( load_makepkg_config "$directory"/root/etc/makepkg.conf
+      source_safe "${buildscript-PKGBUILD}"
+
+      PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
+    )
+    exit $?
+fi
+
+if (( update )); then
+    # arch-nspawn makes no distinction between a missing working directory
+    # and one which does not exist
+    if [[ ! -d $directory/root ]]; then
+        printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
+        printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
+        exit 20
+    fi    
 
     # locking is done by systemd-nspawn
     sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
@@ -129,9 +168,11 @@ if (( update )); then
 fi
 
 if (( build )); then
+    # use makechrootpkg -c as default build command (sync /root container)
+    # arguments after -- (if present) are used as makechrootpkg arguments
     sudo --preserve-env=GNUPGHOME,PKGDEST makechrootpkg -r "$directory" \
          "${bindmounts_ro[@]/#/-D}" \
-         "${bindmounts_rw[@]/#/-d}" "${makechrootpkg_args[@]}"
+         "${bindmounts_rw[@]/#/-d}" "${@:--c}"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
