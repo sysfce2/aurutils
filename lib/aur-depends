@@ -110,7 +110,9 @@ while true; do
     shift
 done
 
-tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
+# shellcheck disable=SC2174
+mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
 rings=0

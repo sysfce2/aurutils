@@ -208,11 +208,10 @@ while true; do
     shift
 done
 
-# Directory for package symlinks
-mkdir -p "$XDG_RUNTIME_DIR"/aurutils
-
-tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
-tmp_view=$(mktemp -d "$XDG_RUNTIME_DIR/aurutils/view.XXXXXXXX") || exit
+# shellcheck disable=SC2174
+mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
+tmp_view=$(mktemp -d --tmpdir "aurutils-$UID/view.XXXXXXX")
 trap 'trap_exit' EXIT
 
 # Directory for git checksums (revisions viewed by the user, #379)
