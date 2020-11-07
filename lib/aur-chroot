@@ -120,7 +120,7 @@ if (( create )); then
     # XXX: use pacini to not process Include directives in pacman.conf
     # (not supported by devtools)
     elif [[ $(pacini --section=multilib "$pacman_conf") ]] && [[ $machine == "x86_64" ]]; then
-        base_packages=('multilib-devel')
+        base_packages=('base-devel' 'multilib-devel')
     else
         base_packages=('base-devel')
     fi
