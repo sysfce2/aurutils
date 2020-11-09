@@ -24,9 +24,10 @@ repository configured with a
 .I file://
 prefix in
 .BR pacman.conf (5).
-.
-.SH OPTIONS
-The following options require root privileges:
+.PP
+.B aur\-build
+runs as a regular user, unless for the following options which require
+root privileges:
 .BR \-\-syncdeps ,
 .BR \-\-rmdeps ,
 .BR \-\-chroot .
@@ -44,6 +45,7 @@ See the
 .B Repository updates
 section for details.
 .
+.SH OPTIONS
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A text file describing directories containing a PKGBUILD relative to
@@ -67,6 +69,19 @@ where <database> is specified with
 A different location can be chosen with the
 .BR \-\-pacman\-conf
 option.
+.IP
+Care should be taken when copying (or using)
+.B /etc/pacman.conf
+for this configuration file, as certain directives (e.g.
+.BR IgnorePkg )
+may cause issues in the container. It is recommended to instead copy
+the template in
+.B /usr/share/devtools/pacman-extra.conf
+or
+.B /usr/share/devtools/pacman-multilib.conf
+and make the necessary adjustments. Due to devtools limitations, any
+desired repositories should be configured explicitly in this copy.
+.
 .RE
 .
 .TP
