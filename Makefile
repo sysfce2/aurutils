@@ -6,7 +6,7 @@ LIBDIR ?= $(PREFIX)/lib
 ETCDIR ?= /etc
 AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
 AURUTILS_GIT_VER := $(shell git describe --tags || true)
-AURUTILS_REL_VER := 3.1.0
+AURUTILS_REL_VER := 3.1.1
 
 .PHONY: shellcheck install build completion aur
 
