@@ -1,5 +1,6 @@
 #!/bin/bash -
 readonly argv0=aur
+readonly aur_version='AURUTILS_VERSION'
 readonly lib_dir=${AUR_EXEC_PATH:-'AURUTILS_LIB_DIR'}
 shopt -s nullglob
 
@@ -23,7 +24,7 @@ if [[ -z $1 ]]; then
 fi
 
 if [[ $1 == '--version' ]]; then
-    printf >&2 'aur version %s\n' 'AURUTILS_VERSION'
+    printf >&2 'aur version %s\n' "$aur_version"
     exit 0
 fi
 
