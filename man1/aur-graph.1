@@ -1,59 +1,65 @@
-.TH AUR-GRAPH 1 2018-05-05 AURUTILS
+.TH AUR-GRAPH 1 2020-11-08 AURUTILS
 .SH NAME
 aur\-graph \- print package/dependency directed graph
 .
 .SH SYNOPSIS
 .SY "aur graph"
-.B .SRCINFO
 .RB [ .SRCINFO ...]
 .YS
 .
 .SH DESCRIPTION
 .B aur\-graph
-takes package information from
+prints out a partial ordering of packages (tab-seperated)
+.RB ( pkgbase )
+from
 .B .SRCINFO
-files and prints them as
-.I pkgbase<TAB>dependency
-pairs. Any dependencies are converted from
-.B pkgname
-to
-.BR pkgbase ,
-or skipped if absent from the input.
-.
-.SH EXAMPLES
-The paired output is suitable as input for
-.BR tsort (1),
-provided no cycles are present. For example:
+files provided on the command-line. If no files are specified, input
+is taken from
+.BR stdin .
 .PP
-.EX
-    $ cd ~/.cache/aurutils/sync
-    $ aur graph */.SRCINFO | tsort | tac
-.EE
-.PP
+To improve performance,
 .B .SRCINFO
-files may be concatenated before processing to improve performance:
+files may be concatenated before processing:
 .PP
 .EX
     $ cat */.SRCINFO | aur graph | tsort | tac
 .EE
-.PP
+.
+.SH EXAMPLES
+.B aur\-graph
+supports
 .B provides
-and versioned dependencies are fully supported. This
-may be used to verify dependency chains from
-.BR aur\-depends (1).
-For example:
+and versioned dependencies. This can be used to verify output from
+tools with no or limited support for such dependencies, for example
+.BR aur\-depends (1):
 .PP
 .EX
-    aur sync \-\-print <package> | xargs printf \(aq%s/.SRCINFO\en\(aq | xargs aur graph
+    $ mkdir build; cd build
+    $ aur depends <package> | xargs -d '\\n' aur fetch
+    $ aur graph */.SRCINFO >/dev/null
 .EE
+.PP
+.B aur\-graph
+output is suitable as input for
+.BR tsort (1),
+provided no cycles are present. The resulting topologically ordered
+list can be used to build packages in the correct order. For example:
+.PP
+.EX
+    $ cd build
+    $ aur graph */.SRCINFO | tsort | tac > deps.txt
+    $ aur build -a deps.txt
+.EE
+.PP
 .
 .SH SEE ALSO
 .ad l
 .nh
 .BR aur (1),
+.BR aur\-build (1),
 .BR aur\-depends (1),
-.BR aur\-sync (1),
 .BR awk (1),
+.BR tac (1),
 .BR tsort (1)
 .
 .SH AUTHORS
