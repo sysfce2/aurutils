@@ -31,6 +31,7 @@ chmod +x "$var_tmp"/pacman
 
 # create local repository
 repo-add "$var_tmp/$tmp_uid".db.tar
+sudo pacsync --config "$var_tmp"/pacman.conf "$tmp_uid"
 
 # test package candidates
 source ./package
