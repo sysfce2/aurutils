@@ -1,3 +1,36 @@
+## 3.1.0 - 2020-11-09
+
+* `aur`
+  + fix example `aur-remove` script (#785)
+
+* `aur-build`
+  + change default pacman-conf for chroot builds to /etc/aurutils/pacman-<dbname>.conf
+  + clarify conditions on pacman-conf for chroot builds in `aur-build.1`
+
+* `aur-chroot`
+  + add `--create`
+    - seperate mode which runs `mkarchroot` with packages taken from the command-line
+    - defaults to base-devel (and multilib-devel, if applicable) if no packages are specified
+    - `--update` no longer runs `mkarchroot`
+  + `--packagelist` now uses `makepkg.conf` inside the container
+  + add `Devtools limitations` section to `aur-chroot.1` (#782)
+  + add additional error messages for missing pacman configuration
+
+* `aur-repo`
+  + add `--path-list`
+  + update man page for new arguments (#784)
+  + remove `--ini` (only offered pacman.conf information)
+
+## 3.0.3 - 2020-11-02
+
+* fix broken `zsh` completion (#776)
+* use `/tmp/aurutils-$UID` as default temporary directory (#775)
+
+## 3.0.2 - 2020-10-30
+
+* `aur-sync`
+  + add missing `--suffix` option (#773)
+
 ## 3.0.1 - 2020-10-29
 
 The commits:

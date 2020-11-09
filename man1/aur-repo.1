@@ -1,46 +1,42 @@
-.TH AUR-REPO 1 2020-10-28 AURUTILS
+.TH AUR-REPO 1 2020-11-08 AURUTILS
 .SH NAME
 aur\-repo \- manage local repositories
 .
 .SH SYNOPSIS
 .SY "aur repo"
-.OP \-c config
-.OP \-d repo
-.OP \-r path
-.OP \-alpqtuS
+.OP \-\-path
+.OP \-\-list
+.OP \-\-table
+.OP \-\-upgrades
 .OP \-\-repo\-list
+.SY "aur repo"
+.OP \-c file
+.OP \-d name
+.OP \-r path
+.OP \-aqS
 .YS
 .
 .SH DESCRIPTION
-When run without arguments,
-.BR aur\-repo
-prints the path of a local (file://) repository to standard
-output. For other modes, see the
-.B OPTIONS
-section.
-.
-.SH OPTIONS
-.TP
-.BI \-c " FILE" "\fR,\fP \-\-config=" FILE
-Specify an alternate
+.B aur\-repo
+helps manage local
+.RI ( file:// )
 .BR pacman (8)
-configuration file.
+repositories. In particular, it serves to parse repository contents
+.RI ( \-\-list ", " \-\-table ),
+compare package versions to the AUR
+.RI ( \-\-upgrades ),
+and list local repository file paths
+.RI ( \-\-path ", " \-\-path\-list ).
+.PP
+If
+.BR pacman.conf (5)
+contains only a single local repository,
+.B aur\-repo
+selects it automatically. If multiple local repositories are
+configured, they must specified explicitely with the
+.BR \-d option.
 .
-.TP
-.BI \-d " NAME" "\fR,\fP \-\-database=" NAME
-The name of a
-.BR pacman (8)
-repository.
-.IP
-The repository should have a
-.B file://
-location, or any other location when using
-.BR \-\-sync .
-.
-.TP
-.BI \-r " PATH" "\fR,\fP \-\-root=" PATH
-The path to the root of a local repository. 
-.
+.SH OPERATIONS
 .TP
 .BR \-l ", " \-\-list
 List the contents of a local repository in the following format:
@@ -66,27 +62,47 @@ in
 .BR aur\-depends (1)
 .
 .TP
-.BR \-p ", " \-\-path
-Print the (resolved) path to the local repository.
-.
-.TP
 .BR \-u ", " \-\-upgrades
 Check package updates with
 .BR aur\-vercmp (1)
 .
 .TP
 .BR \-\-repo\-list
-List all local
+List the names of configured local
 .BR pacman (8)
 repositories.
 .
 .TP
-.BR \-\-ini
-List all local
+.BR \-\-path\-list
+List the resolved paths of configured local
 .BR pacman (8)
-repositories and their path in a
-.BR pacman.conf (5)
-like format.
+repositories.
+
+.TP
+.BR \-p ", " \-\-path
+Print the (resolved) path to the specified local repository.
+.
+.SH OPTIONS
+.TP
+.BI \-c " FILE" "\fR,\fP \-\-config=" FILE
+Specify an alternate
+.BR pacman (8)
+configuration file.
+.
+.TP
+.BI \-d " NAME" "\fR,\fP \-\-database=" NAME
+The name of a
+.BR pacman (8)
+repository.
+.IP
+The repository should have a
+.B file://
+location, or any other location when using
+.BR \-\-sync .
+.
+.TP
+.BI \-r " PATH" "\fR,\fP \-\-root=" PATH
+The path to the root of a local repository. 
 .
 .TP
 .BR \-a ", " \-\-all
@@ -103,7 +119,7 @@ Only print package names when checking for upgrades. Implies
 .TP
 .BR \-S ", " \-\-sync
 Query repositories in
-.BR DBPATH /sync
+.BI DBPATH /sync
 (defaults to
 .BR /var/lib/pacman/sync )
 instead of by their

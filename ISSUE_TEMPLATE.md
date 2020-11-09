@@ -8,7 +8,8 @@ is the issue reproducible from the master branch?
 3) Does the package provide the correct metadata on the 
 [AUR RPC interface](https://aur.archlinux.org/rpc.php)?
 4) Does the package build with `makepkg -s` or `extra-x86_64-build` ?
-5) Is the problem reproducible, and not due to a misconfiguration of
+5) Does the package use internal `makepkg` functions? (see [FS#43502](https://bugs.archlinux.org/task/43502))
+6) Is the problem reproducible, and not due to a misconfiguration of
 `pacman`, `makepkg`, `sudoers`, `gpg` or others?
 
 __If yes to all, create a debug log:__

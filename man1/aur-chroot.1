@@ -53,19 +53,22 @@ copy of the container with
 .BR \-\-create
 Create a new container with
 .BR mkarchroot .
-.IP
-By default,
+By default, the
 .B base\-devel
-or
-.B multilib\-devel
-are installed to the container, depending if the host architecture is
+package group is installed to the container.
+.IP
+If the host architecture is
 .B x86_64
 and
 .B [multilib]
-is set in the pacman configuration. (see
-.BR \-\-pacman\-conf )
+is set in the pacman configuration (see
+.BR \-\-pacman\-conf ),
+the
+.B multilib\-devel
+package group is also installed.
+.IP
 If packages or package groups are listed on the command-line, these
-are installed instead.
+are installed instead of the above.
 .
 .TP
 .B \-\-packagelist
@@ -105,7 +108,7 @@ This file is read with
 .B pacman\-conf
 to retrieve listed
 .B file://
-repositories for bind mounting. (see
+repositories for bind mounting. (See
 .BR "Accessing a local repository")
 .
 .TP
@@ -259,6 +262,53 @@ QEMU user mode. See
 .UR https://www.qemu.org/docs/master/user/index.html
 .UE
 for details.
+.
+.SS Devtools limitations
+.B PKGDEST
+is not checked for existing packages when building with
+.BR makechrootpkg .
+This happens because packages are built to the
+.B /build
+path inside the container, and moved afterward to
+.B PKGDEST
+on the host. Checking for existing packages must thus be done
+manually, e.g.  with
+.B makepkg \-\-packagelist
+or
+.BR "aur\-chroot \-\-packagelist" .
+.PP
+GPG signing packages with
+.B makepkg \-\-sign
+is not possible inside the container as the necessary environment
+variables are not set (see
+.UR https://lists.archlinux.org/pipermail/arch-projects/2016-May/004341.html
+.UE
+for details.)
+Signing packages should thus be done in the host environment e.g. with
+.BR "aur\-build \-\-sign" .
+.PP
+Default
+.B makepkg
+arguments used in
+.B makechrootpkg
+(as listed in
+.BR "makechrootpkg \-h" )
+can be extended but not overriden. In particular, package conflicts
+can not solved interactively.
+.RB ( "makepkg \-\-noconfirm" )
+.PP
+.B arch\-nspawn
+will unconditionally modify the supplied
+.BR pacman.conf (5)
+to copy mirrors (and other settings) from the host (see
+.B FS#27544
+and
+.B FS#38641
+for details.) Furthermore, repositories must be configured explicitly
+in this configuration file, and not part of a separate file configured
+with the
+.B Include
+directive.
 .
 .SH SEE ALSO
 .BR aur (1),
