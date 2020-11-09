@@ -22,6 +22,11 @@ if [[ -z $1 ]]; then
     exit 1
 fi
 
+if [[ $1 == '--version' ]]; then
+    printf >&2 'aur version %s\n' 'AURUTILS_VERSION'
+    exit 0
+fi
+
 if [[ "$PATH" != "$lib_dir:"* ]]; then
     readonly PATH=$lib_dir:$PATH
 fi
