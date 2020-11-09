@@ -5,7 +5,8 @@ BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
 ETCDIR ?= /etc
 AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
-AURUTILS_GIT_VER := $(shell git describe --tags)
+AURUTILS_GIT_VER := $(shell git describe --tags || true)
+AURUTILS_REL_VER := 3.1.0
 
 .PHONY: shellcheck install build completion aur
 
@@ -13,7 +14,11 @@ build: aur completion
 
 aur: aur.in
 	sed 's|AURUTILS_LIB_DIR|$(AURUTILS_LIB_DIR)|' $< >$@
-	sed 's|AURUTILS_GIT_VER|$(AURUTILS_GIT_VER)|' $< >$@
+ifneq ($(AURUTILS_GIT_VER),)
+	sed 's|AURUTILS_VERSION|$(AURUTILS_GIT_VER)|' $< >$@
+else
+	sed 's|AURUTILS_VERSION|$(AURUTILS_REL_VER)|' $< >$@
+endif
 
 completion:
 	@$(MAKE) -C completions bash zsh

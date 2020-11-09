@@ -23,7 +23,7 @@ if [[ -z $1 ]]; then
 fi
 
 if [[ $1 == '--version' ]]; then
-    printf >&2 'aur version %s\n' 'AURUTILS_GIT_VER'
+    printf >&2 'aur version %s\n' 'AURUTILS_VERSION'
     exit 0
 fi
 
