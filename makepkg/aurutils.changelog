@@ -1,3 +1,8 @@
+## 3.1.2 - 2020-11-09
+
+This releases fixes a regression in 3.1.1 where `AUR_LIB_DIR` was not
+subsituted in `aur`.
+
 ## 3.1.1 - 2020-11-09
 
 * `aur`
