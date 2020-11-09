@@ -6,7 +6,6 @@ argv0=sync
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
-XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$UID}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -19,7 +18,7 @@ log_fmt='diff'
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1
 
 # default options (disabled)
-rotate=0 update=0 repo_targets=0
+rotate=0 update=0 repo_targets=0 provides_deep=0
 
 lib32() {
     awk -v arch="$(uname -m)" '{
@@ -96,7 +95,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'results:' 'makepkg-args:' 'format:' 'config:')
+          'results:' 'makepkg-args:' 'format:' 'config:' 'provides-deep')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:')
@@ -135,7 +134,11 @@ while true; do
             provides=0 ;;
         --provides-from)
             shift; IFS=, read -a repo -r <<< "$1"
-            repo_p+=("${repo[@]}") ;;
+            repo_p+=("${repo[@]}")
+            provides=1 ;;
+        --provides-deep)
+            provides_deep=1
+            provides=1 ;;
         --rebuild)
             build_args+=(-f); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
@@ -307,11 +310,27 @@ cut -f2 --complement depends | sort -u >pkginfo
       esac
   fi
 
-  # Note: this uses pacman's copy of the repo (as used by makepkg -s)
-  if (( ${#repo_p[@]} )); then
-      cut -f1 pkginfo | complement argv | aur-repo-filter "${repo_p[@]/#/--database=}"
-  elif (( provides )); then
-      cut -f1 pkginfo | complement argv | aur repo-filter --sync
+  if (( provides )); then
+      # Note: this uses pacman's copy of the repo (as used by makepkg -s)
+      provs() {
+          cut -f1 pkginfo | aur repo-filter "$@"
+      }
+
+      if (( ${#repo_p[@]} )); then
+          sift_args=("${repo_p[@]/#/--repo=}")
+      else
+          sift_args=(--sync)
+      fi
+
+      # Filter transitive dependencies (#592)
+      if (( provides_deep )); then
+          provs "${sift_args[@]}" | while IFS= read -r virt; do
+              awk -v v="^$virt$" '$1 ~ v { print $2 }' depends
+          done | grep -Fxf <(cut -f1 depends)
+      else
+          provs "${sift_args[@]}"
+      fi | complement argv # cmd arguments may appear anywhere in the
+                           # dependency graph; take complement lastly
   fi
 } >filter
 
