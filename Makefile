@@ -5,6 +5,7 @@ BINDIR ?= $(PREFIX)/bin
 LIBDIR ?= $(PREFIX)/lib
 ETCDIR ?= /etc
 AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
+AURUTILS_GIT_VER := $(shell git describe --tags)
 
 .PHONY: shellcheck install build completion aur
 
@@ -12,6 +13,7 @@ build: aur completion
 
 aur: aur.in
 	sed 's|AURUTILS_LIB_DIR|$(AURUTILS_LIB_DIR)|' $< >$@
+	sed 's|AURUTILS_GIT_VER|$(AURUTILS_GIT_VER)|' $< >$@
 
 completion:
 	@$(MAKE) -C completions bash zsh
