@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0 ini_format=0
+db_query=local table_format=0 list_path=0
 
 # default arguments
 conf_args=()
@@ -73,7 +73,7 @@ source /usr/share/makepkg/util/parseopts.sh
 ## option parsing
 opt_short='c:d:r:alpqtuS'
 opt_long=('database:' 'repo:' 'config:' 'root:' 'path' 'all' 'list'
-          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'ini')
+          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'path-list')
 opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -104,8 +104,8 @@ while true; do
             mode=upgrades ;;
         --repo-list)
             mode=repo_list ;;
-        --ini)
-            mode=repo_list; ini_format=1 ;;
+        --path-list)
+            mode=repo_list; list_path=1 ;;
         -S|--sync)
             db_query=sync ;;
         --status-file)
@@ -127,7 +127,7 @@ fi
 : "${db_name=$AUR_REPO}"
 : "${db_root=$AUR_DBROOT}"
 
-unset conf_file_repo server
+unset conf_file_repo conf_file_serv server
 
 while read -r key _ value; do
     case $key=$value in
@@ -166,12 +166,13 @@ case $mode in
             exit 2
         fi
 
-        if (( ini_format )); then
-            # XXX: add SigLevel in output
+        if (( list_path )); then
+            paths=()
             for i in "${!conf_file_repo[@]}"; do
-                printf '[%s]\n' "${conf_file_repo[$i]}"
-                printf 'Server = file://%s\n' "${conf_file_serv[$i]}"
+                paths+=("${conf_file_serv[$i]}/${conf_file_repo[$i]}".db)
             done
+
+            readlink -f -- "${paths[@]}"
         else
             printf '%q\n' "${conf_file_repo[@]}"
         fi
