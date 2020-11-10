@@ -242,7 +242,7 @@ if (( rotate )); then
     fi
 fi
 
-if ! (( $# + update + repo_targets )); then
+if (( $# + update + repo_targets == 0 )); then
     error '%s: no targets specified' "$argv0"
     exit 1
 fi
