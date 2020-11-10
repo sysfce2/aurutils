@@ -49,6 +49,32 @@ select_pkgbase() {
     }' "$@"
 }
 
+# files: $2 pkgname\tdepends
+select_transitive_deps() {
+    awk -v pat="^$1$" -v virt="$1" '
+        $1 {
+            ++pkg_counts[$1]
+        }
+        $1 ~ pat {
+            pkg_deps[$1, ++dep_counts[$1]] = $2
+        }
+        END {
+            for (d = 1; d <= dep_counts[virt]; d++) {
+                p = pkg_deps[virt, d]
+
+                if (p in pkg_counts && p != virt) {
+                    printf("%s transitive dependency of %s\n",
+                           pkg_deps[virt, d], virt) > "/dev/stderr"
+                    printf("%s\n", pkg_deps[virt, d])
+                } else if (p in pkg_counts) {
+                    printf("%s\n", pkg_deps[virt, d])
+                }
+            }
+            close("/dev/stderr")
+        }
+    ' "$2"
+}
+
 # fields: $1 pkgname, $2 depends[<>=]
 tr_ver() {
     awk -F'[<>=]' '{print $1}'
@@ -325,8 +351,8 @@ cut -f2 --complement depends | sort -u >pkginfo
       # Filter transitive dependencies (#592)
       if (( provides_deep )); then
           provs "${sift_args[@]}" | while IFS= read -r virt; do
-              awk -v v="^$virt$" '$1 ~ v { print $2 }' depends
-          done | grep -Fxf <(cut -f1 depends)
+              select_transitive_deps "$virt" depends
+          done
       else
           provs "${sift_args[@]}"
       fi | complement argv # cmd arguments may appear anywhere in the
