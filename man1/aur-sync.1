@@ -101,25 +101,16 @@ as targets. May be used together with
 to repopulate source directories in
 .BR $AURDEST .
 .
-.SS Dependency options
-By default, virtual dependencies
+.TP
+.BR \-\-noprovides ", " \-\-no\-provides
+Do not take virtual dependencies
 .RB ( provides )
 in pacman
 .I sync
-repositories are taken into account when resolving
-package dependencies. If packages are specified on the command-line or
-available as an upgrade
+repositories into account to resolve package dependencies.  Packages
+specified on the command-line or available as an upgrade
 .RB ( "aur\-sync \-u" ),
-they are taken as target regardless of the settings below.
-.
-.TP
-.BR \-\-noprovides ", " \-\-no\-provides
-Disable checking of virtual dependencies.
-.
-.TP
-.B \-\-provides\-deep
-Include transitive dependencies when checking virtual
-dependencies.
+are taken as targets regardless of this setting.
 .
 .TP
 .BI \-\-provides\-from= DIR1,...
@@ -133,6 +124,9 @@ is equivalent to
 .IR \-\-provides\-from=b,a )
 and dependencies are installed according to the order defined in
 .BR pacman.conf (5).
+Packages specified on the command-line or available as an upgrade
+.B ( "aur\-sync \-u" ),
+are taken as targets regardless of this setting.
 .
 .SS Database options
 Values for the following options are automatically selected, if a
