@@ -77,23 +77,6 @@ Version checks for package dependencies remain enabled.
 Do not present build files for inspection.
 .
 .TP
-.BR \-\-noprovides ", " \-\-no\-provides
-Do not take virtual dependencies
-.RB ( provides )
-in pacman sync repositories into account. Packages specified on the
-command line or available upgrades are taken as target regardless of
-this setting.
-.
-.TP
-.BI \-\-provides\-from= DIR1,...
-Only take specified (comma-separated) repositories into acount for
-virtual dependencies. If the same package is provided in multiple
-repositories, ordering is ignored (for example, \-\-provides\-from=a,b
-is equivalent to \-\-provides\-from=b,a) and dependencies are
-installed according to the order defined in
-.BR pacman.conf (5).
-.
-.TP
 .BR \-u ", " \-\-upgrades
 Update all obsolete AUR packages in a local repository.
 .
@@ -117,6 +100,33 @@ as targets. May be used together with
 .B \-o
 to repopulate source directories in
 .BR $AURDEST .
+.
+.TP
+.BR \-\-noprovides ", " \-\-no\-provides
+Do not take virtual dependencies
+.RB ( provides )
+in pacman
+.I sync
+repositories into account to resolve package dependencies.  Packages
+specified on the command-line or available as an upgrade
+.RB ( "aur\-sync \-u" ),
+are taken as targets regardless of this setting.
+.
+.TP
+.BI \-\-provides\-from= DIR1,...
+Only take specified (comma-separated)
+.BR pacman (8)
+repositories into account when checking virtual dependencies. If the
+same package is provided in multiple repositories, ordering is ignored
+(for example,
+.I \-\-provides\-from=a,b
+is equivalent to
+.IR \-\-provides\-from=b,a )
+and dependencies are installed according to the order defined in
+.BR pacman.conf (5).
+Packages specified on the command-line or available as an upgrade
+.B ( "aur\-sync \-u" ),
+are taken as targets regardless of this setting.
 .
 .SS Database options
 Values for the following options are automatically selected, if a
