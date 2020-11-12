@@ -217,6 +217,7 @@ fi
 
 # Write successfully built packages to file (#437)
 if [[ -v results_file ]]; then
+    results_file=$(realpath -- "$results_file")
     : >"$results_file" # truncate file
 fi
 
