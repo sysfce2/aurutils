@@ -12,7 +12,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 # default arguments (empty)
-chroot_args=() pacconf_args=() repo_add_args=() makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
+chroot_args=() pacconf_args=() repo_add_args=() repo_args=() makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
@@ -91,12 +91,13 @@ while true; do
         -c|--chroot)
             chroot=1 ;;
         -d|--database|--repo)
-            shift; db_name=$1 ;;
-        --config)
-            shift; pacconf_args+=(--config "$1") ;;
+            shift; db_name=$1
+            repo_args+=(--repo "$1") ;;
         --buildscript)
             shift; buildscript=$1
             makepkg_common_args+=(-p "$1") ;;
+        --config)
+            shift; pacconf_args+=(--config "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
         --pkgver)
@@ -104,7 +105,8 @@ while true; do
         --results)
             shift; results_file=$1 ;;
         --root)
-            shift; db_root=$1 ;;
+            shift; db_root=$1
+            repo_args+=(--root "$1") ;;
         -S|--sign|--gpg-sign)
             sign_pkg=1; repo_add_args+=(-s) ;;
         # chroot options
@@ -175,36 +177,27 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-# Automatically choose repository root and name based on pacman
-# configuration and user environment.
-case ${db_name=$AUR_REPO} in
-    "")
-        case ${db_root=$AUR_DBROOT} in
-            "") db_path=$(aur repo "${pacconf_args[@]}" --path)
-                db_root=$(dirname "$db_path")
-                ;;
-             *) error '%s: root specified without database name' "$argv0"
-                exit 1 ;;
-        esac
+# assign environment variables
+: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
-        # Strip archive file extension (tar.gz, #714)
-        db_name=$(basename "$db_path")
-        db_name=${db_name%.db*}
-        ;;
-    *)
-        case ${db_root=$AUR_DBROOT} in
-            "") db_path=$(aur repo "${pacconf_args[@]}" --path -d "$db_name")
-                db_root=$(dirname "$db_path")
-                ;;
-             *) db_path=$(readlink -f -- "$db_root/$db_name".db)
-                ;;
-        esac ;;
-esac
+if [[ $db_name ]] && [[ $db_root ]]; then
+    db_path=$db_name/$db_root.${db_ext:-db}
+    db_path=$(realpath -- "$db_path")
+else
+    # Automatically choose repository root and name based on pacman
+    # configuration and user environment.
+    { IFS=: read -r _ db_name
+      IFS=: read -r _ db_root
+      IFS=: read -r _ db_path
+    } < <(aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
+    wait $!
+fi
 
 # Resolve symbolic link to database.
 if ! [[ -f $db_path ]]; then
     error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
+
 elif ! [[ -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13

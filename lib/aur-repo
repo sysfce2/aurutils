@@ -64,16 +64,16 @@ db_table() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-d repo] [-r path] [-alpqtuS]\n' "$argv0"
+    printf >&2 'usage: %s [-d repo] [-r path] [-alqtuS]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:alpqtuS'
-opt_long=('database:' 'repo:' 'config:' 'root:' 'path' 'all' 'list'
-          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'path-list')
+opt_short='c:d:r:alqtuS'
+opt_long=('database:' 'repo:' 'config:' 'root:' 'all' 'list' 'repo-list'
+          'sync' 'upgrades' 'table' 'quiet' 'path-list' 'status')
 opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -94,8 +94,6 @@ while true; do
             mode=packages ;;
         -t|--table)
             mode=packages; table_format=1 ;;
-        -p|--path)
-            mode=path ;;
         -a|--all)
             mode=upgrades; vercmp_args+=(-a) ;;
         -q|--quiet)
@@ -106,10 +104,12 @@ while true; do
             mode=repo_list ;;
         --path-list)
             mode=repo_list; list_path=1 ;;
-        -S|--sync)
-            db_query=sync ;;
+        --status)
+            mode=status; status_file=/dev/fd/1 ;;
         --status-file)
             shift; status_file=$1 ;;
+        -S|--sync)
+            db_query=sync ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -126,7 +126,7 @@ fi
 # assign environment variables
 : "${db_ext=$AUR_DBEXT}" "${db_name=$AUR_REPO}" "${db_root=$AUR_DBROOT}"
 
-unset conf_file_repo conf_file_serv server
+unset conf_file_repo conf_file_serv conf_file_path server
 while read -r key _ value; do
     case $key=$value in
         \[*\]*)
@@ -229,9 +229,8 @@ case $mode in
     packages)
         db_table "$table_format" "$db_path"
         ;;
-    path)
-        readlink -f -- "$db_path"
-        ;;
+    status)
+        ;; # status information printed to /dev/fd/1
     *)
         usage
         ;;

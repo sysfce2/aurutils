@@ -4,11 +4,10 @@ aur\-repo \- manage local repositories
 .
 .SH SYNOPSIS
 .SY "aur repo"
-.OP \-\-path
 .OP \-\-list
 .OP \-\-table
 .OP \-\-upgrades
-.OP \-\-repo\-list
+.OP \-\-status
 .SY "aur repo"
 .OP \-c file
 .OP \-d name
@@ -77,10 +76,6 @@ repositories.
 List the resolved paths of configured local
 .BR pacman (8)
 repositories.
-
-.TP
-.BR \-p ", " \-\-path
-Print the (resolved) path to the specified local repository.
 .
 .SH OPTIONS
 .TP
