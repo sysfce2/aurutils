@@ -224,7 +224,7 @@ fi
 
 case $mode in
     upgrades)
-        db_table "$table_format" "$db_path" | aur vercmp "${vercmp_args[@]}"
+        db_table '0' "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
     packages)
         db_table "$table_format" "$db_path"
