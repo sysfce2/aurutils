@@ -124,11 +124,9 @@ if [[ -v pacman_conf ]]; then
 fi
 
 # assign environment variables
-: "${db_name=$AUR_REPO}"
-: "${db_root=$AUR_DBROOT}"
+: "${db_ext=$AUR_DBEXT}" "${db_name=$AUR_REPO}" "${db_root=$AUR_DBROOT}"
 
 unset conf_file_repo conf_file_serv server
-
 while read -r key _ value; do
     case $key=$value in
         \[*\]*)
@@ -169,7 +167,7 @@ case $mode in
         if (( list_path )); then
             paths=()
             for i in "${!conf_file_repo[@]}"; do
-                paths+=("${conf_file_serv[$i]}/${conf_file_repo[$i]}".db)
+                paths+=("${conf_file_serv[$i]}/${conf_file_repo[$i]}.${db_ext:-db}")
             done
 
             readlink -f -- "${paths[@]}"
@@ -198,13 +196,6 @@ if ! [[ $db_name ]]; then
     esac
 fi
 
-if [[ -v status_file ]]; then
-    { printf 'repo:%s\n' "$db_name"
-      printf 'root:%s\n' "$db_root"
-      printf 'conf:%s\n' "$pacman_conf"
-    } > "$status_file"
-fi
-
 case $db_query in
     local)
         if ! [[ $db_root ]]; then
@@ -217,12 +208,19 @@ case $db_query in
             printf >&2 '%s: %s: not a directory\n' "$argv0" "$db_root"
             exit 20
         fi
-        db_path=$db_root/$db_name.db
+        db_path=$db_root/$db_name.${db_ext:-db}
         ;;
     sync)
-        db_path=$pacman_dbpath/sync/$db_name.db
+        db_path=$pacman_dbpath/sync/$db_name.${db_ext:-db}
         ;;
 esac
+
+if [[ -v status_file ]]; then
+    { printf 'repo:%s\n' "$db_name"
+      printf 'root:%s\n' "$db_root"
+      printf 'path:%s\n' "$db_path"
+    } > "$status_file"
+fi
 
 case $mode in
     upgrades)
@@ -232,7 +230,7 @@ case $mode in
         db_table "$table_format" "$db_path"
         ;;
     path)
-        readlink -f -- "$db_root/$db_name".db
+        readlink -f -- "$db_path"
         ;;
     *)
         usage
