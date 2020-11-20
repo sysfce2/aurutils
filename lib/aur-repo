@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0 list_path=0
+db_query=local table_format=0
 
 # default arguments
 conf_args=()
@@ -81,7 +81,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset mode db_name db_root status_file pacman_conf vercmp_args
+unset mode list db_name db_root status_file pacman_conf vercmp_args
 while true; do
     case $1 in
         -d|--database|--repo)
@@ -91,7 +91,7 @@ while true; do
         -c|--config)
             shift; pacman_conf=$1 ;;
         -l|--list)
-            mode=packages ;;
+            mode=packages; table_format=0 ;;
         -t|--table)
             mode=packages; table_format=1 ;;
         -a|--all)
@@ -100,10 +100,10 @@ while true; do
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
-        --repo-list)
-            mode=repo_list ;;
         --path-list)
-            mode=repo_list; list_path=1 ;;
+            list=path ;;
+        --repo-list)
+            list=repo ;;
         --status)
             mode=status; status_file=/dev/fd/1 ;;
         --status-file)
@@ -137,8 +137,9 @@ while read -r key _ value; do
             ;;
         Server=file://*)
             server=${value#file://}
-            conf_file_serv+=("$server")
             conf_file_repo+=("$section")
+            conf_file_serv+=("$server")
+            conf_file_path+=("$server/$section.${db_ext:-db}")
 
             if [[ $section == "$db_name" ]]; then
                 if ! [[ $db_root ]]; then
@@ -156,29 +157,26 @@ while read -r key _ value; do
     esac
 done < <(pacman-conf "${conf_args[@]}")
 
-# exclusive modes
-case $mode in
-    repo_list)
+# list information on available local repositories
+case $list in
+    path|repo)
         if ! [[ ${conf_file_repo[*]} ]]; then
             printf >&2 '%s: no file:// repository configured\n' "$argv0"
             exit 2
         fi
-
-        if (( list_path )); then
-            paths=()
-            for i in "${!conf_file_repo[@]}"; do
-                paths+=("${conf_file_serv[$i]}/${conf_file_repo[$i]}.${db_ext:-db}")
-            done
-
-            readlink -f -- "${paths[@]}"
-        else
-            printf '%q\n' "${conf_file_repo[@]}"
-        fi
-
-        exit 0 ;;
+        ;;&
+    path)
+        realpath -- "${conf_file_path[@]}" # resolve repo-add symlink
+        exit 0
+        ;;
+    repo)
+        printf '%s\n' "${conf_file_repo[@]}"
+        exit 0
+        ;;
 esac
 
-# other modes
+# select local repository from pacman configuration, if no repository
+# was specified on the command-line
 if ! [[ $db_name ]]; then
     case ${#conf_file_repo[@]} in
         1) db_root=${conf_file_serv[0]}
@@ -189,8 +187,8 @@ if ! [[ $db_name ]]; then
            ;;
         *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
            for i in "${!conf_file_repo[@]}"; do
-               printf '%q\t%q\n' "${conf_file_repo[$i]}" "${conf_file_serv[$i]}"
-           done | column -t >&2
+               printf '%q\t%q\n' "${conf_file_repo[$i]}" "${conf_file_path[$i]}"
+           done | column -d $'\t' -t >&2
            exit 1
            ;;
     esac
