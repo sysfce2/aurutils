@@ -207,6 +207,7 @@ case $db_query in
             exit 20
         fi
         db_path=$db_root/$db_name.${db_ext:-db}
+        db_path=$(realpath -- "$db_path") # resolve repo-add symlink
         ;;
     sync)
         db_path=$pacman_dbpath/sync/$db_name.${db_ext:-db}
