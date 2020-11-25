@@ -75,6 +75,7 @@ if ! (( $# )); then
 fi
 
 if [[ -v results_file ]]; then
+    results_file=$(realpath -- "$results_file")
     : >"$results_file" || exit 1 # truncate file
 fi
 

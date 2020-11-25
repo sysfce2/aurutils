@@ -276,15 +276,16 @@ cd_safe "$tmp"
 # db_info: $1 pkgname $2 pkgver
 aur repo "${repo_args[@]}" --list --status-file=db >db_info
 
-# Retrieve path to local repo (#448)
+# Retrieve path to local repo (#448, #700)
 { IFS=: read -r _ db_name
   IFS=: read -r _ db_root
+  IFS=: read -r _ db_path
 } <db
 
-if [[ -w $db_root/$db_name.db ]]; then
+if [[ -w $db_path ]]; then
     msg >&2 'Using [%s] repository' "$db_name"
 else
-    error '%s: %s: permission denied' "$argv0" "$db_root/$db_name.db"
+    error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
 fi
 

@@ -1,7 +1,19 @@
 ## 3.2.0
 
+* `aur-build`
+  + retrieve database extension from `AUR_DBEXT` (defaults to .db) (#700)
+  + resolve path argument to `--results`
+  + use `aur repo --status` for repository selection
+    - allows specifying `--root` without `--database`
+
+* `aur-repo`
+  + retrieve database extension from `AUR_DBEXT` (defaults to .db) (#700)
+  + add `--status`
+    - colon-delimited output (`repo:`, `root:`, `path:`)
+    - replaces `--path`
+
 * `aur-sync`
-  + Take transitive dependencies into account (#592)
+  + take transitive dependencies into account (#592)
 
 ## 3.1.2 - 2020-11-09
 
