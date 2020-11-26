@@ -181,7 +181,7 @@ trap 'exit' INT
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
 if [[ $db_name ]] && [[ $db_root ]]; then
-    db_path=$db_name/$db_root.${db_ext:-db}
+    db_path=$db_root/$db_name.${db_ext:-db}
     db_path=$(realpath -- "$db_path")
 else
     # Automatically choose repository root and name based on pacman
