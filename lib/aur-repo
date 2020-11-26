@@ -180,6 +180,7 @@ esac
 if ! [[ $db_name ]]; then
     case ${#conf_file_repo[@]} in
         1) db_name=${conf_file_repo[0]}
+           db_root=${conf_file_serv[0]}
            ;;
         0) printf >&2 '%s: no file:// repository configured\n' "$argv0"
            exit 2
