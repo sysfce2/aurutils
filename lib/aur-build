@@ -25,6 +25,21 @@ db_replaces() {
     }'
 }
 
+diag_moved_packages() {
+    # Print diagnostic on non-moved packages (#794)
+    cat <<EOF >&2
+Note:
+    aur-build encountered an error before moving packages to the local repository.
+    This may happen when signing built packages with gpg (aur build --sign),
+    or with certain makepkg errors.
+
+    The following files were preserved:
+EOF
+    realpath -z -- "$@" | while read -rd ''; do
+        printf '%8s%s\n' ' ' "$REPLY"
+    done
+}
+
 run_msg() {
     printf >&2 'Running %s\n' "$*"
     "$@"
@@ -33,8 +48,11 @@ run_msg() {
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
+
         # Only remove package directory if all files were moved (#593)
-        rm -df -- "$var_tmp"
+        if ! rm -df -- "$var_tmp"; then
+            diag_moved_packages "$var_tmp"/*
+        fi
     else
         printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
         printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$var_tmp"
