@@ -1,0 +1,207 @@
+#!/bin/bash -
+# aur-chroot - build packages with systemd-nspawn
+[[ -v AUR_DEBUG ]] && set -o xtrace
+set -o errexit
+argv0=chroot
+PATH=/bin:/usr/bin
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+AUR_CHROOT_BOOTSTRAP=${AUR_CHROOT_BOOTSTRAP:-"https://mirror.rackspace.com/archlinux/iso/latest"}
+AUR_CHROOT_BOOTSTRAP_RELEASES=${AUR_CHROOT_BOOTSTRAP_RELEASES:-"https://www.archlinux.org/feeds/releases"}
+
+# default arguments
+machine=$(uname -m)
+startdir=$(pwd -P)
+directory=/var/lib/aurbuild/$machine
+makepkg_user=build
+
+# default options
+update=0 create=0 host_binds=1 bootstrap=0 clean=0 overlay=0
+
+is_btrfs() {
+    local directory=$1
+    [[ $(stat -f --format=%T "$directory") == "btrfs" ]]
+}
+
+is_btrfs_subvol() {
+    local directory=$1
+    is_btrfs "$directory" && [[ $(stat --format=%i "$directory") == 256 ]]
+}
+
+usage() {
+    cat <<EOF
+Usage:
+  $argv0 [-cu] [-D path] [command...]
+  $argv0 --create [-D path] [package...]
+EOF
+    exit 1
+}
+
+# parse arguments
+opt_short=D:U:Hcu
+opt_long=config:,directory:,build,update,create,no-host-binds,bind:,bind-rw:,user:
+opt_hidden=dump-options
+
+# XXX add getopt -T to check getopt(1) implementation
+args=$(getopt -o "$opt_short" -l "$opt_long","$opt_hidden" -n "$argv0" -- "$@") || usage
+eval set -- "$args"
+
+# XXX: support makepkg/pacman config for container
+#      pass arbitrary systemd-nspawn options? (i.e. --private-network, resource limits)
+#      possible with "--nargs" or seperate -e option for chrooted command
+unset bindmounts_ro bindmounts_rw pacstrap_args pacconf_args nspawn_args
+while true; do
+    case "$1" in
+        -D|--directory)
+            shift; directory=$1 ;;
+        -c|--clean) # XXX: short option?
+            clean=1 ;;
+        --create)
+            create=1 ;;
+        -u|--update)
+            update=1 ;;
+        -H|--no-host-binds)
+            host_bind=0 ;;
+        -U|--user)
+            # XXX: check if passed argument is "root" ("running makepkg as root is not allowed")
+            shift; makepkg_user=$1 ;;
+        --config)
+            shift; pacconf_args+=(--config "$1")
+            pacstrap_args+=(-C "$1") ;;
+        --bind)
+            shift; bindmounts_ro+=(--bind-ro "$1") ;;
+        --bind-rw)
+            shift; bindmounts_rw+=(--bind "$1") ;;
+        --dump-options)
+            # XXX: adjust to comma-delimited options
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
+        --) shift; break ;;
+    esac
+    shift
+done
+# resolve relative path
+directory=$(realpath -- "$directory")
+
+# optional root check
+if (( ! EUID == 0 )); then
+    warning >&2 '%s: expects root privileges, none provided' "$argv0"
+fi
+
+if (( create )); then
+    # define base set of packages to install
+    if (( $# )); then
+        base_packages=("$@")
+    else
+        base_packages=('base-devel')
+    fi
+
+    # build arch container
+    if [[ ! -d $directory ]]; then
+        install -d "$directory" -m 755 -v
+    fi
+
+    if [[ ! -d $directory/root ]]; then
+        if is_btrfs "$directory"; then
+            btrfs subvolume create "$directory"/root
+        else
+            install -d "$directory"/root -m 755 -v
+        fi
+
+        if (( bootstrap )); then
+            release=$(curl -sSf "$AUR_CHROOT_BOOTSTRAP_RELEASES" | xmllint --xpath 'string(//item[1]//title)' -)
+            release=archlinux-bootstrap-$release-$machine
+
+            curl -sS -o "$directory" "$AUR_CHROOT_BOOTSTRAP/$release".tar.gz.sig
+            curl -sS -o "$directory" "$AUR_CHROOT_BOOTSTRAP/$release".tar.gz
+
+            if [[ -f $release.tar.gz.sig ]]; then
+                gpg --verify "$release".tar.gz.sig
+            else
+                # XXX: add hint on outdated mirror ($AUR_CHROOT_BOOTSTRAP)
+                error "%s: bootstrap archive signature not found" "$argv0"            
+                exit 1
+            fi
+
+            if [[ -f $release.tar.gz ]]; then
+                tar xvf "$release".tar.gz -C "$directory"/root
+            else
+                error "%s: bootstrap archive not found" "$argv0"
+                exit 1
+            fi
+
+            # install base packages with systemd-nspawn
+            cat > "$directory"/root/bootstrap <<EOF
+archlinux-keyring --init
+archlinux-keyring --populate
+pacman -Sy "${base_packages[@]}" --noconfirm
+EOF
+            systemd-nspawn -D "$directory"/root "${nspawn_args[@]}" sh /bootstrap
+        
+        else
+            # install base packages with pacman
+            pacstrap -Mc "${pacstrap_args[@]}" "${base_packages[@]}" "$directory"/root
+        fi
+    fi
+    exit 0
+fi
+
+# bind mount file:// paths to container (#461)
+if (( host_binds )); then
+    while read -r key _ value; do
+        case $key in
+            Server)
+                if [[ $value == file://* ]]; then
+                    bindmounts_rw+=("${value#file://}")
+                fi ;;
+            CacheDir)
+                bindmounts_ro+=("$value") ;;
+        esac
+    done < <(pacman-conf "${pacconf_args[@]}")
+
+    wait $!
+fi
+
+# an existing container is required past this point
+if [[ ! -d $directory/root ]]; then
+    printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
+    printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
+    exit 20
+fi
+
+if (( update )); then
+    # XXX: use user-specified pacman conf for updates and package installs
+    systemd-nspawn -D "$directory"/root "${bindmounts_ro[@]}" "${bindmounts_rw[@]}" \
+                   "${nspawn_args[@]}" -- pacman -Syu --noconfirm
+fi
+
+if (( clean )); then
+    if is_btrfs_subvol "$directory"/root; then
+        nspawn_args+=(--template "$directory"/root)
+    # XXX: add case if overlayfs is used
+    else
+        # XXX: run rsync to sync root to user copy (/root, /$SUDO_USER)
+    fi
+fi
+
+if (( $# )); then
+    # set up environment for build user
+    # XXX: technically wider scope as makechrootpkg (exported variables, instead of set in makepkg.conf)
+    # XXX: add bind-ro to "$GNUPGHOME"/pubring.kbx and "$GNUPGHOME"/pubring.gpg
+    nspawn_args+=(--bind "$PWD":/startdir
+                  --setenv=PKGDEST="${PKGDEST:-/startdir}" # XXX: chown, bind mount
+                  --setenv=LOGDEST="${LOGDEST:-/startdir}" # XXX: chown, bind mount, /logdest
+                  --setenv=SRCDEST=/srcdest
+                  --setenv=BUILDDIR=/build
+                  --setenv=SRCPKGDEST=/srcpkgdest
+                  --setenv=SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}")
+
+    # set up build user
+    # XXX: copy user-specified makepkg conf to /build/.makepkg.conf
+    printf 'u %q - "makepkg user" /build /bin/bash\n' "$makepkg_user" | \
+        systemd-sysusers --root "$directory"/root --replace=/usr/lib/sysusers.d/build.conf -
+
+    # XXX: use template/overlay, end-of-options? (with --nargs as alternative)
+    systemd-nspawn -D "$directory"/root --user "$makepkg_user" --chdir /startdir \
+                   "${bindmounts_ro[@]}" "${bindmounts_rw[@]}" "${nspawn_args[@]}" -- "$@"
+fi
