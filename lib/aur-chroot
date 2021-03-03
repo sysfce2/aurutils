@@ -125,7 +125,9 @@ if (( create )); then
 
         # populate machine-id(5)
         systemd-firstboot --root="$directory"/root --setup-machine-id --locale="en_US.UTF-8"
+
         # XXX use localedef to generate locales directly (without nspawn)
+        systemd-nspawn -D "$directory"/root "${nspawn_args[@]}" locale-gen
     fi
     exit 0
 fi
