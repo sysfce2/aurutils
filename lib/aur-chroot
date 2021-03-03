@@ -1,39 +1,48 @@
-#!/bin/bash
+#!/bin/bash -
 # aur-chroot - build packages with systemd-nspawn
 [[ -v AUR_DEBUG ]] && set -o xtrace
 set -o errexit
 argv0=chroot
 PATH=/bin:/usr/bin
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-machine=$(uname -m)
-startdir=$(pwd -P)
 
 # default arguments
+machine=$(uname -m)
+startdir=$(pwd -P)
 directory=/var/lib/aurbuild/$machine
-suffix=extra
+makepkg_user=build
 
 # default options
-update=0 build=0 packagelist=0 create=0
+update=0 create=0 host_binds=0 clean=0 overlay=0
+
+is_btrfs() {
+    local directory=$1
+    [[ $(stat -f --format=%T "$directory") == "btrfs" ]]
+}
+
+is_btrfs_subvol() {
+    local directory=$1
+    is_btrfs "$directory" && [[ $(stat --format=%i "$directory") == 256 ]]
+}
 
 usage() {
     cat <<EOF
 Usage:
-  $argv0 [-BU] [-CDM path] -- <makechrootpkg args>
-  $argv0 --create [-CDM path] [package...]
-  $argv0 --packagelist [-D path]
+  $argv0 [-cu] [-D path] [command...]
+  $argv0 --create [-D path] [package...]
 EOF
     exit 1
 }
 
+
 source /usr/share/makepkg/util/config.sh
 source /usr/share/makepkg/util/option.sh
-source /usr/share/makepkg/util/pkgbuild.sh
+#source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='C:D:M:x:BU'
-opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
-          'create' 'suffix:' 'bind:' 'bind-rw:' 'packagelist'
-          'buildscript:')
+opt_short='D:U:Hcu'
+opt_long=('pacman-conf:' 'makepkg-conf:' 'directory:' 'build' 'update'
+          'create' 'no-host-binds' 'bind:', 'bind-rw:' 'user:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -41,34 +50,35 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset bindmounts_ro bindmounts_rw buildscript makepkg_conf pacman_conf
+# XXX: pass arbitrary systemd-nspawn options (i.e. --private-network, resource limits)
+#      possible with "--nargs" or seperate -e option for chrooted command
+unset bindmounts_ro bindmounts_rw pacstrap_args pacconf_args nspawn_args
 while true; do
     case "$1" in
-        -B|--build)
-            build=1 ;;
-        -U|--update)
-            update=1 ;;
-        --buildscript)
-            shift; buildscript=$1 ;;
-        --packagelist)
-            packagelist=1 ;;
-        --create)
-            create=1 ;;
-        -x|--suffix)
-            shift; suffix=$1 ;;
-        # devtools options
-        -C|--pacman-conf)
-            shift; pacman_conf=$1 ;;
         -D|--directory)
             shift; directory=$1 ;;
-        -M|--makepkg-conf)
-            shift; makepkg_conf=$1 ;;
+        -c|--clean) # XXX: short option?
+            clean=1 ;;
+        --create)
+            create=1 ;;
+        -u|--update)
+            update=1 ;;
+        -H|--no-host-binds)
+            host_binds=1 ;;
+        -U|--user)
+            shift; makepkg_user=$1 ;;
+        --pacman-conf)
+            shift; pacconf_args+=(--config "$1")
+            pacstrap_args+=(-C "$1") ;;
+        --makepkg-conf)
+            # XXX: support makepkg/pacman config for container
+            ;;
         --bind)
-            shift; bindmounts_ro+=("$1") ;;
+            shift; bindmounts_ro+=(--bind-ro "$1") ;;
         --bind-rw)
-            shift; bindmounts_rw+=("$1") ;;
-        # other options
+            shift; bindmounts_rw+=(--bind "$1") ;;
         --dump-options)
+            # XXX: adjust to comma-delimited options
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
             exit ;;
@@ -76,103 +86,106 @@ while true; do
     esac
     shift
 done
+# resolve relative path
+directory=$(realpath -- "$directory")
 
-# required for chroot creation and update
-makepkg_conf=${makepkg_conf:-/usr/share/devtools/makepkg-$machine.conf}
+# optional root check
+if (( ! EUID == 0 )); then
+    warning >&2 '%s: expects root privileges, none provided' "$argv0"
+fi
 
-if [[ ! -f $makepkg_conf ]]; then
-    printf >&2 '%s: %q is not a file\n' "$argv0" "$makepkg_conf"
-    exit 2
-elif [[ ! -r $makepkg_conf ]]; then
-    printf >&2 '%s: %q could not be read\n' "$argv0" "$makepkg_conf"
+if (( ! $(id -u "$makepkg_user") )); then
+    error >&2 '%s: running makepkg as root is not allowed' "$argv0"
     exit 1
 fi
 
-# required for chroot creation and update
-pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$suffix.conf}
-
-if [[ ! -f $pacman_conf ]]; then
-    printf >&2 '%s: %q is not a file\n' "$argv0" "$pacman_conf"
-    exit 2
-elif [[ ! -r $pacman_conf ]]; then
-    printf >&2 '%s: %q could not be read\n' "$argv0" "$pacman_conf"
-    exit 1
-fi
-
-# bind mount file:// paths to container (#461)
-# required for update/build steps
-while read -r key _ value; do
-    case $key=$value in
-        Server=file://*)
-            bindmounts_rw+=("${value#file://}") ;;
-    esac
-done < <(pacman-conf --config "$pacman_conf")
-wait $!
-
-# create new container, required for packagelist/update/build steps
 if (( create )); then
-    # default to base-devel or multilib-devel, unless packages are
-    # specified on the command-line.
-    # available packages depend on the configured pacman configuration
+    # define base set of packages to install
     if (( $# )); then
         base_packages=("$@")
-
-    # XXX: use pacini to not process Include directives in pacman.conf
-    # (not supported by devtools)
-    elif [[ $(pacini --section=multilib "$pacman_conf") ]] && [[ $machine == "x86_64" ]]; then
-        base_packages=('base-devel' 'multilib-devel')
     else
         base_packages=('base-devel')
     fi
 
-    # parent path is not created by mkarchroot (#371)
+    # build arch container
     if [[ ! -d $directory ]]; then
-        sudo install -d "$directory" -m 755 -v
+        install -d "$directory" -m 755 -v
     fi
 
+    # XXX: add any required locking for chroot setup (systemd-nspawn already implements locks)
     if [[ ! -d $directory/root ]]; then
-        sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
-             "$directory"/root "${base_packages[@]}"
+        if is_btrfs "$directory"; then
+            btrfs subvolume create "$directory"/root
+        else
+            install -d "$directory"/root -m 755 -v
+        fi
+    
+        # install base packages with pacman
+        pacstrap -Mc "${pacstrap_args[@]}" "${base_packages[@]}" "$directory"/root
+
+        # populate machine-id(5)
+        systemd-firstboot --root="$directory"/root --setup-machine-id --locale="en_US.UTF-8"
+        # XXX use localedef to generate locales directly (without nspawn)
     fi
-    exit $?
+    exit 0
 fi
 
-# use libmakepkg to print full package names
-if (( packagelist )); then
-    if [[ ! -r $directory/root/etc/makepkg.conf ]]; then
-        printf >&2 '%s --packagelist: %q: could not be read\n' "$argv0" "$directory"/root/etc/makepkg.conf
-        exit 1
-    fi
+# bind mount file:// paths to container (#461)
+if (( host_binds )); then
+    while read -r key _ value; do
+        case $key in
+            Server)
+                if [[ $value == file://* ]]; then
+                    bindmounts_rw+=("${value#file://}")
+                fi ;;
+            CacheDir)
+                # XXX: write access on /var/cache/pacman/pkg (ro on others?)
+                bindmounts_rw+=("$value") ;;
+        esac
+    done < <(pacman-conf "${pacconf_args[@]}")
+    wait $!
+fi
 
-    ( load_makepkg_config "$directory"/root/etc/makepkg.conf
-      source_safe "${buildscript-PKGBUILD}"
-
-      PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
-    )
-    exit $?
+# an existing container is required past this point
+# if ! cd "$directory"/root; then
+if [[ ! -d $directory/root ]]; then
+    printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
+    printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
+    exit 20
 fi
 
 if (( update )); then
-    # arch-nspawn makes no distinction between a missing working directory
-    # and one which does not exist
-    if [[ ! -d $directory/root ]]; then
-        printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
-        printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
-        exit 20
-    fi    
-
-    # locking is done by systemd-nspawn
-    sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
-         "${bindmounts_ro[@]/#/--bind-ro=}" \
-         "${bindmounts_rw[@]/#/--bind=}" pacman -Syu --noconfirm
+    # XXX: use user-specified pacman conf for updates and package installs
+    systemd-nspawn -D "$directory"/root "${bindmounts_ro[@]}" "${bindmounts_rw[@]}" \
+                   "${nspawn_args[@]}" -- pacman -Syu --noconfirm
 fi
 
-if (( build )); then
-    # use makechrootpkg -c as default build command (sync /root container)
-    # arguments after -- (if present) are used as makechrootpkg arguments
-    sudo --preserve-env=GNUPGHOME,PKGDEST makechrootpkg -r "$directory" \
-         "${bindmounts_ro[@]/#/-D}" \
-         "${bindmounts_rw[@]/#/-d}" "${@:--c}"
+if (( clean )); then
+    if is_btrfs_subvol "$directory"/root; then
+        nspawn_args+=(--template "$directory"/root)
+    # XXX: add case if overlayfs is used
+    else
+        # XXX: run rsync to sync root to user copy (/root, /$SUDO_USER)
+    fi
 fi
 
-# vim: set et sw=4 sts=4 ft=sh:
+if (( $# )); then
+    # set up environment for build user
+    # XXX: technically wider scope as makechrootpkg (exported variables, instead of set in makepkg.conf)
+    nspawn_args+=(--bind "$PWD":/startdir
+                  --setenv=PKGDEST="${PKGDEST:-/startdir}" # XXX: chown, bind mount
+                  --setenv=LOGDEST="${LOGDEST:-/startdir}" # XXX: chown, bind mount, /logdest
+                  --setenv=SRCDEST="${SRCDEST:-/srcdest}"  # XXX: bind mount
+                  --setenv=BUILDDIR=/build
+                  --setenv=SRCPKGDEST=/srcpkgdest
+                  --setenv=SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}")
+
+    # set up build user
+    # XXX: copy user-specified makepkg conf to /build/.makepkg.conf
+    printf 'u %q - "makepkg user" /build /bin/bash\n' "$makepkg_user" | \
+        systemd-sysusers --root "$directory"/root --replace=/usr/lib/sysusers.d/build.conf -
+
+    # XXX: use template/overlay (user container), end-of-options? (with --nargs as alternative)
+    systemd-nspawn -D "$directory"/root --user "$makepkg_user" --chdir /startdir \
+                   "${bindmounts_ro[@]}" "${bindmounts_rw[@]}" "${nspawn_args[@]}" -- "$@"
+fi
