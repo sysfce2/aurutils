@@ -68,11 +68,9 @@ while true; do
         -U|--user)
             shift; makepkg_user=$1 ;;
         --pacman-conf)
-            shift; pacconf_args+=(--config "$1")
-            pacstrap_args+=(-C "$1") ;;
+            shift; pacman_conf=$1 ;;
         --makepkg-conf)
-            # XXX: support makepkg/pacman config for container
-            ;;
+            shift; makepkg_conf=$1 ;;
         --bind)
             shift; bindmounts_ro+=(--bind-ro "$1") ;;
         --bind-rw)
@@ -112,6 +110,11 @@ if (( create )); then
         install -d "$directory" -m 755 -v
     fi
 
+    # XXX: copy specified pacman.conf to container (post creation)
+    if [[ -v pacman_conf ]]; then
+        pacstrap_args+=(-C "$pacman_conf")
+    fi
+    
     # XXX: add any required locking for chroot setup (systemd-nspawn already implements locks)
     if [[ ! -d $directory/root ]]; then
         if is_btrfs "$directory"; then
@@ -126,7 +129,7 @@ if (( create )); then
         # populate machine-id(5)
         systemd-firstboot --root="$directory"/root --setup-machine-id --locale="en_US.UTF-8"
 
-        # XXX use localedef to generate locales directly (without nspawn)
+        # XXX: use localedef to generate locales directly (without nspawn)
         systemd-nspawn -D "$directory"/root "${nspawn_args[@]}" locale-gen
     fi
     exit 0
@@ -134,15 +137,19 @@ fi
 
 # bind mount file:// paths to container (#461)
 if (( host_binds )); then
+    if [[ -v pacman_conf ]]; then
+        pacconf_args+=(--config "$pacman_conf")
+    fi
+
     while read -r key _ value; do
         case $key in
             Server)
-                if [[ $value == file://* ]]; then
+                if [[ $value == "file://*" ]]; then
                     bindmounts_rw+=("${value#file://}")
                 fi ;;
             CacheDir)
-                # XXX: write access on /var/cache/pacman/pkg (ro on others?)
-                bindmounts_rw+=("$value") ;;
+                bindmounts_rw+=("$value")
+                ;;
         esac
     done < <(pacman-conf "${pacconf_args[@]}")
     wait $!
@@ -157,7 +164,12 @@ if [[ ! -d $directory/root ]]; then
 fi
 
 if (( update )); then
-    # XXX: use user-specified pacman conf for updates and package installs
+    # copy user-specified pacman conf for updates and package installs
+    if [[ -v pacman_conf ]]; then
+        cp -v "$pacman_conf" "$directory"/root/etc/pacman.conf
+    fi
+
+    # XXX: support command-line arguments (additional packages, cf. create)
     systemd-nspawn -D "$directory"/root "${bindmounts_ro[@]}" "${bindmounts_rw[@]}" \
                    "${nspawn_args[@]}" -- pacman -Syu --noconfirm
 fi
@@ -183,9 +195,13 @@ if (( $# )); then
                   --setenv=SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}")
 
     # set up build user
-    # XXX: copy user-specified makepkg conf to /build/.makepkg.conf
     printf 'u %q - "makepkg user" /build /bin/bash\n' "$makepkg_user" | \
         systemd-sysusers --root "$directory"/root --replace=/usr/lib/sysusers.d/build.conf -
+
+    # copy user-specified makepkg.conf
+    if [[ -v makepkg_conf ]]; then
+        cp -v "$makepkg_conf" "$directory"/root/build/.makepkg.conf
+    fi
 
     # XXX: use template/overlay (user container), end-of-options? (with --nargs as alternative)
     systemd-nspawn -D "$directory"/root --user "$makepkg_user" --chdir /startdir \
