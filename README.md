@@ -56,4 +56,4 @@ several examples.
 ## TROUBLESHOOTING
 
 See [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md). For informal discussion, see the
-`#aurutils` channel on [freenode](https://freenode.net/kb/answer/chat).
+`#aurutils` channel on [Libera Chat](https://libera.chat/).
