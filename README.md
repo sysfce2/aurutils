@@ -57,3 +57,5 @@ several examples.
 
 See [ISSUE_TEMPLATE.md](ISSUE_TEMPLATE.md). For informal discussion, see the
 `#aurutils` channel on [Libera Chat](https://libera.chat/).
+
+Project registration: libera-C8cDHgAEiAYHBoxXbi7j2rRp
