@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     container: archlinux
     steps:
-      - run: pacman -Syu --noconfirm base base-devel shellcheck
+      - run: pacman -Syu --noconfirm base base-devel shellcheck git
       - uses: actions/checkout@v2
 
       - name: Option parsing consistency
