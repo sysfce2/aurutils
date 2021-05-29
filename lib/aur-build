@@ -35,6 +35,7 @@ Note:
 
     The following files were preserved:
 EOF
+    #shellcheck disable=SC2030
     realpath -z -- "$@" | while read -rd ''; do
         printf '%8s%s\n' ' ' "$REPLY"
     done
