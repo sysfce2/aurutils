@@ -12,7 +12,8 @@ sync_repo=0
 # spread arguments with xargs (and printf, as a shell built-in).
 satisfies() {
     #global sift_args
-    xargs -a <(printf -- '--satisfies=%s\n' "$@") pacsift "${sift_args[@]}" <&-
+    unbuffer xargs -a <(printf -- "--satisfies=%s\n" "$@") \
+             pacsift "${sift_args[@]}"
 }
 
 provides() {
