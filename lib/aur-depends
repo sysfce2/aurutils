@@ -13,12 +13,24 @@ count() {
 }
 
 tabulate() {
-    jq -r '.results[]
-        | .Name         as $name
-        | .PackageBase  as $base
-        | .Version      as $ver
-        | ([$name] + .Depends + .MakeDepends + .CheckDepends)[]?
-        | [$name, ., $base, $ver] | @tsv' "$1"
+    jq -r -f /dev/stdin "$1" <<'EOF'
+.results[]
+  | . as $result
+
+  # the package itself
+  | [[$result.Name, $result.Name, $result.PackageBase, $result.Version, "Self"]]
+    +
+    # enumerate dependencies per kind
+      [
+        "Depends", "MakeDepends", "CheckDepends"
+        | . as $kind
+
+        | $result[$kind][]?
+        | [$result.Name, ., $result.PackageBase, $result.Version, $kind]
+      ]
+  | .[]
+  | @tsv
+EOF
 }
 
 tr_ver() {
