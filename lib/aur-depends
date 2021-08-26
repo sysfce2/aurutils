@@ -39,6 +39,7 @@ EOF
 # $1 pkgname $2 depends $3 pkgbase $4 pkgver $5 depends_type
 select_deps() {
     awk -v deps="$1" -v mdeps="$2" -v cdeps="$3" '
+        $5 ~ /^Self$/                  {print}
         $5 ~ /^Depends$/      && deps  {print}
         $5 ~ /^MakeDepends$/  && mdeps {print}
         $5 ~ /^CheckDepends$/ && cdeps {print}
