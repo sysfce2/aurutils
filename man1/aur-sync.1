@@ -198,6 +198,18 @@ Sign built packages with
 .BR gpg (1).
 .RB ( "aur build \-S" )
 .
+.SS Dependency options
+Build dependencies are resolved with
+.BR aur\-depends (1).
+The options
+.BR \-\-no\-depends ,
+.BR \-\-no\-makedepends ,
+and
+.BR \-\-no\-checkdepends
+are supported and appended to the
+.B aur\-depends
+command-line.
+.
 .SH ENVIRONMENT
 .TP
 .B AURDEST

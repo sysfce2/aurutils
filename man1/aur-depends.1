@@ -37,6 +37,22 @@ in total order. All dependencies are printed.
 Output dependency information in the following format:
 .BR \%pkgname\etdepends\etpkgbase\etpkgver .
 .
+.SS Dependency options
+When resolving dependencies,
+.B aur\-depends
+considers all types (
+.IR depends ,
+.IR makedepends ,
+and
+.IR checkdepends )
+of dependencies by default. Types can be removed selectively with
+the
+.BR \-\-no\-depends ,
+.BR \-\-no\-makedepends ,
+and
+.B \-\-no\-checkdepends
+options. In particular, these options may be used to bypass cycles between dependencies of differing types.
+.
 .SH NOTES
 Version information is ignored for dependencies. See
 .B FS#54906
