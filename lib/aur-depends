@@ -62,6 +62,11 @@ chain() {
         exit 1
     fi
 
+    # In the below, all intermediary results are stored (originally done to
+    # simplify debugging). Strictly speaking, only the current and previous
+    # step are required. With a limited amount of requests (e.g. ~7 total
+    # for large meta-packages such as ros-indigo-desktop and ~250 AUR
+    # dependencies) the difference is unlikely to be noticeable.
     for (( a = 1; a <= max_request; ++a )); do
         sub=$(( a - 1 ))
         tabulate json/$sub | tee -a tsv/n > tsv/$sub
