@@ -85,12 +85,11 @@ fi
 
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
-opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:'
-          'sign' 'verify' 'directory:' 'no-sync' 'config:'
-          'pacman-conf:' 'results:' 'remove' 'pkgver' 'rmdeps'
-          'no-confirm' 'ignore-arch' 'log' 'new' 'makepkg-conf:'
-          'bind:' 'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps'
-          'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:'
+opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
+          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:' 'remove'
+          'pkgver' 'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'new'
+          'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
+          'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:'
           'buildscript:')
 opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync' 'margs:')
 
@@ -115,10 +114,12 @@ while true; do
         --buildscript)
             shift; buildscript=$1
             makepkg_common_args+=(-p "$1") ;;
-        --config)
-            shift; pacconf_args+=(--config "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
+        --makepkg-conf)
+            shift; makepkg_conf=$1 ;;
+        --pacman-conf)
+            shift; pacman_conf=$1 ;;
         --pkgver)
             run_pkgver=1; makepkg_args+=(--noextract) ;;
         --results)
@@ -135,8 +136,6 @@ while true; do
             shift; makechrootpkg_args+=(-D "$1") ;;
         --bind-rw)
             shift; makechrootpkg_args+=(-d"$1") ;;
-        --pacman-conf)
-            shift; pacman_conf=$1 ;;
         -N|--namcap)
             makechrootpkg_args+=(-n) ;;
         --checkpkg)
@@ -155,9 +154,6 @@ while true; do
             makepkg_common_args+=(--rmdeps) ;;
         -s|--syncdeps)
             makepkg_common_args+=(--syncdeps) ;;
-        --makepkg-conf)
-            shift; makepkg_conf=$1
-            makepkg_common_args+=(--config "$1") ;;
         # makepkg options (build)
         -C|--clean)
             makepkg_args+=(--clean) ;;
@@ -196,15 +192,31 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
+if [[ -v makepkg_conf ]]; then
+    chroot_args+=(--makepkg-conf "$makepkg_conf")
+    makepkg_common_args+=(--config "$1")
+    # further used for load_makepkg_config (packagelist)
+fi
+
+if [[ -v pacman_conf ]]; then
+    chroot_args+=(--pacman-conf "$pacman_conf")
+    pacconf_args+=(--config "$pacman_conf")
+
+# pacman.conf fallback for chroot builds (#824, #808)
+elif (( chroot )); then
+    chroot_args+=(--pacman-conf "/etc/aurutils/pacman-$db_name.conf")
+    pacconf_args+=(--config "/etc/aurutils/pacman-$db_name.conf")
+fi
+
 # assign environment variables
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
+# Automatically choose repository root and name based on pacman
+# configuration and user environment.
 if [[ $db_name ]] && [[ $db_root ]]; then
     db_path=$db_root/$db_name.${db_ext:-db}
     db_path=$(realpath -- "$db_path")
 else
-    # Automatically choose repository root and name based on pacman
-    # configuration and user environment.
     { IFS=: read -r _ db_name
       IFS=: read -r _ db_root
       IFS=: read -r _ db_path
@@ -234,15 +246,6 @@ if [[ -v results_file ]]; then
 fi
 
 if (( chroot )); then
-    if [[ -v makepkg_conf ]]; then
-        chroot_args+=(--makepkg-conf "$makepkg_conf")
-    fi
-    if [[ -v pacman_conf ]]; then
-        chroot_args+=(--pacman-conf "$pacman_conf")
-    else
-        chroot_args+=(--pacman-conf "/etc/aurutils/pacman-$db_name.conf")
-    fi
-
     # makepkg --packagelist includes the package extension, but
     # makechrootpkg ignores PKGEXT set on the host. Retrieve it
     # seperately.
