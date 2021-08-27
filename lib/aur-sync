@@ -11,6 +11,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
 build_args=(--clean --syncdeps)
+depends_args=()
 repo_args=()
 log_fmt='diff'
 
@@ -121,10 +122,12 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'results:' 'makepkg-args:' 'format:' 'config:')
+          'results:' 'makepkg-args:' 'format:' 'config:' 'no-depends'
+          'no-makedepends' 'no-checkdepends')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:')
+            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:'
+            'nodepends' 'nomakedepends' 'nocheckdepends')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -148,6 +151,12 @@ while true; do
             shift; ignore_file=$1 ;;
         -o|--nobuild|--no-build)
             build=0 ;;
+        --nodepends|--no-depends)
+            depends_args+=(--no-depends) ;;
+        --nomakedepends|--no-makedepends)
+            depends_args+=(--no-makedepends) ;;
+        --nocheckdepends|--no-checkdepends)
+            depends_args+=(--no-checkdepends) ;;
         --nograph|--no-graph)
             graph=0 ;;
         --nover|--no-ver)
@@ -305,15 +314,15 @@ fi
 
 if [[ -s argv ]]; then
     # shellcheck disable=SC2094
-    # depends: $1 pkgname $2 depends $3 pkgbase $4 pkgver
-    xargs -a argv -d'\n' aur depends --table -- >depends
+    # depends: $1 pkgname $2 depends $3 pkgbase $4 pkgver $5 depends_type
+    xargs -a argv -d'\n' aur depends --table "${depends_args[@]}" -- >depends
 else
     plain >&2 "there is nothing to do"
     exit
 fi
 
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
-cut -f2 --complement depends | sort -u >pkginfo
+cut -f2,5 --complement depends | sort -u >pkginfo
 
 { if (( ${#pkg_i[@]} )); then
       warning "$argv0: ignoring %s package" "${pkg_i[@]}"
