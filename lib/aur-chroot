@@ -170,7 +170,7 @@ fi
 if (( build )); then
     # use makechrootpkg -c as default build command (sync /root container)
     # arguments after -- (if present) are used as makechrootpkg arguments
-    sudo --preserve-env=GNUPGHOME,PKGDEST makechrootpkg -r "$directory" \
+    sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,PKGDEST makechrootpkg -r "$directory" \
          "${bindmounts_ro[@]/#/-D}" \
          "${bindmounts_rw[@]/#/-d}" "${@:--c}"
 fi
