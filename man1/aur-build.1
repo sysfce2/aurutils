@@ -105,15 +105,6 @@ To use another key than the default, the
 environment variable can be set to the appropriate key identifier.
 .
 .TP
-.BI \-\-config= FILE
-The
-.BR pacman.conf (5)
-file to use for syncing and retrieving local repositories. This option
-does not affect
-.BR makepkg (8)
-calls.
-.
-.TP
 .BR \-\-no\-sync
 Do not sync the local repository after building.
 .
@@ -226,15 +217,18 @@ on the built package.
 .BI \-\-makepkg\-conf= FILE
 The
 .BR makepkg.conf (5)
-file used inside the container.
-.RB ( aur\-chroot " " \-\-makepkg\-conf )
+file used for
+.BR makepkg (8)
+operations. For chroot builds, the file is also used inside the container.
+.RB ( aur\-chroot " " \-\-makepkg\-conf ).
 .
 .TP
 .BI \-\-pacman\-conf= FILE
-The
-.BR pacman.conf (5)
-file used inside the container.
-.RB ( aur\-chroot " " \-\-pacman\-conf )
+The file used for syncing and retrieving local repositories. For chroot
+builds, the file is also used inside the container
+.RB ( aur\-chroot " " \-\-pacman\-conf ).
+.BR makepkg (8)
+calls are unaffected by this option.
 .
 .SS makepkg options
 Additional options may be passed to
