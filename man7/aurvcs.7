@@ -105,7 +105,7 @@ inspection.
 .PP
 .EX
     $ mapfile \-t packages < <(aur repo \-\-list | cut \-f1 | grep \-E "$AURVCS")
-    $ aur sync "${packages[@]}" \-\-no\-ver \-\-print
+    $ aur sync "${packages[@]}" \-\-no\-ver \-\-no\-build
 .EE
 .
 \" The last pipeline will also show any non-VCS dependencies.  Since
