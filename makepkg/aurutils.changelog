@@ -6,6 +6,9 @@
   + use `aur repo --status` for repository selection
     - allows specifying `--root` without `--database`
 
+* `aur-chroot`
+  + preserve `SSH_AUTH_SOCK` to support ssh-based operations (#832)
+
 * `aur-repo`
   + retrieve database extension from `AUR_DBEXT` (defaults to .db) (#700)
   + add `--status`
