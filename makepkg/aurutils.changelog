@@ -18,6 +18,9 @@
 * `aur-sync`
   + take transitive dependencies into account (#592)
 
+* `aur-vercmp`
+  + remove colon from `checkupdates` and `equal_or_newer` format (#833)
+
 ## 3.1.2 - 2020-11-09
 
 This releases fixes a regression in 3.1.1 where `AUR_LIB_DIR` was not
