@@ -5,8 +5,10 @@
   + resolve path argument to `--results`
   + use `aur repo --status` for repository selection
     - allows specifying `--root` without `--database`
-  + merge `--config` and `--pacman-conf` (#808, #824)
   + print diagnostic if packages were not moved to local repository (#794)
+  + merge `--config` and `--pacman-conf` (#808, #824)
+  + fallback to /etc/aurutils/pacman-<arch>.conf if --chroot is used without --database (#846)
+  + add diagnostic if chroot pacman.conf is non-existing (#783)
 
 * `aur-depends`
   + add `--no-depends`, `--no-makedepends`, `--no-checkdepends` (#826)
