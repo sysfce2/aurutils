@@ -4,6 +4,7 @@
 set -o errexit
 shopt -s extglob
 argv0=build
+machine=$(uname -m)
 startdir=$PWD
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -203,9 +204,10 @@ if [[ -v pacman_conf ]]; then
     pacconf_args+=(--config "$pacman_conf")
 
 # pacman.conf fallback for chroot builds (#824, #808)
+# fallback to uname when autodetecting db_name (#846)
 elif (( chroot )); then
-    chroot_args+=(--pacman-conf "/etc/aurutils/pacman-$db_name.conf")
-    pacconf_args+=(--config "/etc/aurutils/pacman-$db_name.conf")
+    chroot_args+=(--pacman-conf "/etc/aurutils/pacman-${db_name:-$machine}.conf")
+    pacconf_args+=(--config "/etc/aurutils/pacman-${db_name:-$machine}.conf")
 fi
 
 # assign environment variables
