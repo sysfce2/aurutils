@@ -13,7 +13,8 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 # default arguments (empty)
-chroot_args=() pacconf_args=() repo_add_args=() repo_args=() makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
+chroot_args=() pacconf_args=() repo_add_args=() repo_args=()
+makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
@@ -40,6 +41,15 @@ EOF
     realpath -z -- "$@" | while read -rd ''; do
         printf '%8s%s\n' ' ' "$REPLY"
     done
+}
+
+diag_pacman_conf() {
+	cat <<EOF >&2
+Note:
+	aur-build could not find a pacman.conf(5) file for container usage. Before
+	using --chroot, make sure this file is created and valid. See OPTIONS in
+	aur-build(1) for configuration details.
+EOF
 }
 
 run_msg() {
@@ -209,8 +219,16 @@ if [[ -v pacman_conf ]]; then
 # pacman.conf fallback for chroot builds (#824, #808)
 # fallback to uname when autodetecting db_name (#846)
 elif (( chroot )); then
-    chroot_args+=(--pacman-conf "/etc/aurutils/pacman-${db_name:-$machine}.conf")
-    pacconf_args+=(--config "/etc/aurutils/pacman-${db_name:-$machine}.conf")
+    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
+
+    chroot_args+=(--pacman-conf "$pacman_conf")
+    pacconf_args+=(--config "$pacman_conf")
+fi
+
+# Early check for availability of pacman.conf (#783)
+if ! [[ -f $pacman_conf ]]; then
+	error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
+	(( chroot )) && diag_pacman_conf
 fi
 
 # Automatically choose repository root and name based on pacman
