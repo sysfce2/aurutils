@@ -183,6 +183,9 @@ while true; do
     shift
 done
 
+# assign environment variables
+: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
@@ -209,9 +212,6 @@ elif (( chroot )); then
     chroot_args+=(--pacman-conf "/etc/aurutils/pacman-${db_name:-$machine}.conf")
     pacconf_args+=(--config "/etc/aurutils/pacman-${db_name:-$machine}.conf")
 fi
-
-# assign environment variables
-: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
 # Automatically choose repository root and name based on pacman
 # configuration and user environment.
