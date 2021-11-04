@@ -227,8 +227,12 @@ fi
 
 # Early check for availability of pacman.conf (#783)
 if ! [[ -f $pacman_conf ]]; then
-	error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
-	(( chroot )) && diag_pacman_conf
+    error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
+
+    if (( chroot )); then
+        diag_pacman_conf
+    fi
+    exit 2
 fi
 
 # Automatically choose repository root and name based on pacman
