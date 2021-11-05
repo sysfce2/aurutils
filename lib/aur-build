@@ -327,6 +327,7 @@ while IFS= read -ru "$fd" path; do
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
 
             printf '%q\n' >&2 "${exists[@]}"
+            pkglist=("${exists[@]}")
             _build=0
         fi
     fi
