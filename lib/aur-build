@@ -50,7 +50,7 @@ Error:
     using --chroot, make sure this file is created and valid. See OPTIONS in
     aur-build(1) for configuration details.
 
-    The following path was used for lookup:
+    The following file path was checked:
 EOF
     printf '%8s%s\n' ' ' "$1"
 }
