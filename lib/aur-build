@@ -44,12 +44,15 @@ EOF
 }
 
 diag_pacman_conf() {
-	cat <<EOF >&2
-Note:
-	aur-build could not find a pacman.conf(5) file for container usage. Before
-	using --chroot, make sure this file is created and valid. See OPTIONS in
-	aur-build(1) for configuration details.
+    cat <<EOF >&2
+Error:
+    aur-build could not find a pacman.conf(5) file for container usage. Before
+    using --chroot, make sure this file is created and valid. See OPTIONS in
+    aur-build(1) for configuration details.
+
+    The following path was used for lookup:
 EOF
+    printf '%8s%s\n' ' ' "$1"
 }
 
 run_msg() {
@@ -227,10 +230,10 @@ fi
 
 # Early check for availability of pacman.conf (#783)
 if ! [[ -f $pacman_conf ]]; then
-    error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
-
     if (( chroot )); then
-        diag_pacman_conf
+        diag_pacman_conf "$pacman_conf"
+    else
+        error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
     fi
     exit 2
 fi
