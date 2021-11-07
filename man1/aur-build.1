@@ -66,6 +66,14 @@ configuration for the container is placed in
 .BI /etc/aurutils/pacman-<database>.conf \fR
 where <database> is specified with
 .BR \-\-database .
+If this option is not provided,
+.B aur\-build
+falls back to
+.B /etc/aurutils/pacman-<arch>.conf
+where
+.I <arch>
+is the output from
+.BR "uname \-m" .
 A different location can be chosen with the
 .BR \-\-pacman\-conf
 option.
