@@ -51,7 +51,7 @@ i=0
 
 while [ $((i < 10)) -eq 1 ]; do
     env -C "$tmp" - HOME=$HOME USER=$USER PATH=$PATH aur build \
-        -Nfd "$tmp_uid" --config "$tmp"/pacman.conf
+        --no-sync -fd "$tmp_uid" --pacman-conf "$tmp"/pacman.conf
 
     fakeroot pacsync --config "$tmp"/pacman.conf --dbpath "$tmp"/pacman
     # XXX: results in "could not change the root directory", however

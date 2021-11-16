@@ -7,7 +7,7 @@ tmp2=$(mktemp -d)
 tmp2_uid=custom-$RANDOM-2
 tmp3=$(mktemp -d)
 tmp3_uid=custom-$RANDOM-3
-#trap 'rm -rf -- "$tmp1" "$tmp2" "$tmp3"' EXIT
+trap 'rm -rf -- "$tmp1" "$tmp2" "$tmp3"' EXIT
 
 cat >"$tmp1"/pacman.conf <<EOF
 [options]
@@ -37,7 +37,20 @@ repo-add "$tmp2/$tmp2_uid".db.tar
 repo-add "$tmp3/$tmp3_uid".db.tar
 
 # issue 378: repository selection with AUR_REPO
-env - AUR_REPO="$tmp1_uid" aur repo --path --config "$tmp1"/pacman.conf
-env - AUR_REPO="$tmp2_uid" aur repo --path --config "$tmp1"/pacman.conf
-env - AUR_REPO="$tmp3_uid" aur repo --path --config "$tmp1"/pacman.conf
+{ read -r repo
+  read -r root
+  read -r path
+} < <(env - AUR_REPO="$tmp1_uid" aur repo --status --config "$tmp1"/pacman.conf)
+[[ $repo == "$tmp1_uid" ]]
 
+{ read -r repo
+  read -r root
+  read -r path
+} < <(env - AUR_REPO="$tmp2_uid" aur repo --status --config "$tmp1"/pacman.conf)
+[[ $repo == "$tmp2_uid" ]]
+
+{ read -r repo
+  read -r root
+  read -r path
+} < <(env - AUR_REPO="$tmp3_uid" aur repo --status --config "$tmp1"/pacman.conf)
+[[ $repo == "$tmp3_uid" ]]

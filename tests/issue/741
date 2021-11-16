@@ -35,6 +35,7 @@ env - HOME=$HOME USER=$USER PATH=$PATH aur fetch "$pkg"
 
 cd "$pkg"
 git reset --hard "$rev"
+# TODO: use --dbpath to avoid privilege escalation
 env - HOME=$HOME USER=$USER PATH=$PATH aur build \
      -rnsd "$tmp_uid" --margs --skippgpcheck "${config[@]}"
 pacsift --config "$tmp"/pacman.conf --repo="$tmp_uid" --satisfies="$pkg=$ver"
