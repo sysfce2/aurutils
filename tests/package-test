@@ -38,6 +38,6 @@ source ./package
 
 for pkg in "${test_package[@]}"; do
     env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$var_tmp" PACMAN="$var_tmp"/pacman aur sync \
-        --config "$var_tmp"/pacman.conf -rnd "$tmp_uid" --no-view --margs --skippgpcheck "$pkg"
+        --pacman-conf "$var_tmp"/pacman.conf -rnd "$tmp_uid" --no-view --margs --skippgpcheck "$pkg"
     "$var_tmp"/pacman -Si "$tmp_uid/$pkg"
 done
