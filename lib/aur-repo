@@ -75,8 +75,8 @@ source /usr/share/makepkg/util/parseopts.sh
 ## option parsing
 opt_short='c:d:r:alqtuS'
 opt_long=('database:' 'repo:' 'config:' 'root:' 'all' 'list' 'list-repo' 'list-path'
-          'sync' 'upgrades' 'table' 'quiet' 'status')
-opt_hidden=('dump-options' 'status-file:')
+          'sync' 'upgrades' 'table' 'quiet' 'status' 'status-file:')
+opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
