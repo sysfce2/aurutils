@@ -18,17 +18,19 @@ db_table() {
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
 
-        if (table && length(dependencies) > 0) {
+        ## Add reference to self (packages with no dependencies)
+        printf format, pkgname, pkgname, pkgbase, pkgver
+
+        if (table) {
             for (i in dependencies) {
                 printf format, pkgname, dependencies[i], pkgbase, pkgver
             }
-        } else {
-            printf format, pkgname, pkgname, pkgbase, pkgver
         }
     }
 
     BEGIN {
         pkgname = pkgbase = pkgver = "-"
+        dependencies[0] = ""
     }
 
     /^%FILENAME%$/ && FNR > 1 {
