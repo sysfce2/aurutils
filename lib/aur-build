@@ -213,29 +213,36 @@ if [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
     makepkg_common_args+=(--config "$1")
     # further used for load_makepkg_config (packagelist)
+
+    if [[ ! -f $makepkg_conf ]]; then
+        error '%s: %s: no such file or directory' "$argv0" "$makepkg_conf"
+        exit 2
+    fi
 fi
 
 if [[ -v pacman_conf ]]; then
     chroot_args+=(--pacman-conf "$pacman_conf")
     pacconf_args+=(--config "$pacman_conf")
 
-# pacman.conf fallback for chroot builds (#824, #808)
-# fallback to uname when autodetecting db_name (#846)
-elif (( chroot )); then
-    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
-
-    chroot_args+=(--pacman-conf "$pacman_conf")
-    pacconf_args+=(--config "$pacman_conf")
+    # Early check for availability of pacman.conf (#783)
+    if [[ ! -f $pacman_conf ]]; then
+        error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
+        exit 2
+    fi
 fi
 
-# Early check for availability of pacman.conf (#783)
-if ! [[ -f $pacman_conf ]]; then
-    if (( chroot )); then
+# pacman.conf fallback for chroot builds (#824, #808)
+# fallback to uname when autodetecting db_name (#846)
+if (( chroot )) && [[ ! -v pacman_conf ]]; then
+    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
+    chroot_args+=(--pacman-conf "$pacman_conf")
+    pacconf_args+=(--config "$pacman_conf")
+
+    # Early check for availability of pacman.conf (#783)
+    if [[ ! -f $pacman_conf ]]; then
         diag_pacman_conf "$pacman_conf"
-    else
-        error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
+        exit 2
     fi
-    exit 2
 fi
 
 # Automatically choose repository root and name based on pacman
