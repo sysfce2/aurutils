@@ -18,7 +18,7 @@ db_table() {
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
 
-        ## Add reference to self (packages with no dependencies)
+        ## Add dependency to self (packages with no dependencies)
         printf format, pkgname, pkgname, pkgbase, pkgver
 
         if (table) {
@@ -74,8 +74,8 @@ source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
 opt_short='c:d:r:alqtuS'
-opt_long=('database:' 'repo:' 'config:' 'root:' 'all' 'list' 'repo-list'
-          'sync' 'upgrades' 'table' 'quiet' 'path-list' 'status')
+opt_long=('database:' 'repo:' 'config:' 'root:' 'all' 'list' 'list-repo' 'list-path'
+          'sync' 'upgrades' 'table' 'quiet' 'status')
 opt_hidden=('dump-options' 'status-file:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -102,9 +102,9 @@ while true; do
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
-        --path-list)
+        --list-path)
             list=path ;;
-        --repo-list)
+        --list-repo)
             list=repo ;;
         --status)
             mode=status; status_file=/dev/fd/1 ;;
