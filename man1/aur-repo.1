@@ -25,7 +25,7 @@ repositories. In particular, it serves to parse repository contents
 compare package versions to the AUR
 .RI ( \-\-upgrades ),
 and list local repository file paths
-.RI ( \-\-path ", " \-\-path\-list ).
+.RI ( \-\-list\-path ).
 .PP
 If
 .BR pacman.conf (5)
@@ -41,6 +41,18 @@ configured, they must specified explicitely with the
 List the contents of a local repository in the following format:
 .IP
 .BI pkgname \et pkgver \en
+.
+.TP
+.BR \-\-list\-path
+List the resolved paths of configured local
+.BR pacman (8)
+repositories.
+.
+.TP
+.BR \-\-list\-repo
+List the names of configured local
+.BR pacman (8)
+repositories.
 .
 .TP
 .BR \-t ", " \-\-table
@@ -64,18 +76,6 @@ in
 .BR \-u ", " \-\-upgrades
 Check package updates with
 .BR aur\-vercmp (1)
-.
-.TP
-.BR \-\-repo\-list
-List the names of configured local
-.BR pacman (8)
-repositories.
-.
-.TP
-.BR \-\-path\-list
-List the resolved paths of configured local
-.BR pacman (8)
-repositories.
 .
 .SH OPTIONS
 .TP
@@ -120,6 +120,19 @@ Query repositories in
 instead of by their
 .B file://
 path.
+.
+.TP
+.BR \-\-status
+Print status information to standard output, in the following format:
+.EX
+repo:<repository name>
+root:<root of repository>
+path:<path of repository>
+.EE
+.
+.BR \-\-status\-file FILE
+As \-\-status, but prints to a user-specified file. Can be combined
+with other operations.
 .
 .SH ENVIRONMENT
 .TP

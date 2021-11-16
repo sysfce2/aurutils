@@ -20,8 +20,10 @@
 * `aur-repo`
   + retrieve database extension from `AUR_DBEXT` (defaults to .db) (#700)
   + add `--status`
-    - colon-delimited output (`repo:`, `root:`, `path:`)
+    - `repo:<NAME>\nroot:<PATH>\npath:<PATH/NAME.DBEXT>` output format
     - replaces `--path`
+  + rename `--repo-list` to `--list-repo`
+  + rename `--path-list` to `--list-path`
 
 * `aur-repo-filter`
   + run `pacsift` with `unbuffer` (#804)
