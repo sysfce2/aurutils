@@ -1,4 +1,4 @@
-.TH AUR-QUERY 1 2020-10-25 AURUTILS
+.TH AUR-QUERY 1 2021-11-27 AURUTILS
 .SH NAME
 aur\-query \- send GET requests to the aurweb RPC interface
 .
@@ -9,38 +9,86 @@ aur\-query \- send GET requests to the aurweb RPC interface
 .YS
 .
 .SH DESCRIPTION
+.B aur\-query
+retrieves package information from an AUR endpoint by sending HTTP GET
+requests to the
+.UR https://\:aur.archlinux.org/\:rpc.php
+RPC interface
+.UE
+with
+.BR curl(1).
+Parallel transfers and URI splitting are supported.
 .
 .SH OPTIONS
-.TP
-.BR \-b ", " \-\-by
+The request type and arguments must be compatible to the chosen RPC version (see the
+.B AUR_QUERY_RPC
+environment variable). The options below assume
+.BR "RPC v5" .
 .
 .TP
-.BR \-t ", " \-\-type
+.BR \-b ", " \-\-by=\fR<KIND>
+Arguments for package search
+.RB ( \-\-type=search ).
+Can be one of
+.BR name ,
+.BR name\-desc ,
+.BR maintainer ,
+.BR depends ,
+.BR makedepends ,
+.BR optdepends ,
+or
+.BR checkdepends .
 .
+.TP
+.BR \-t ", " \-\-type=\fR<NAME>
+Type of request. Can be one of
+.B search
+or
+.BR info .
+.B \
+
 .SH ENVIRONMENT
 .TP
-.B AUR_DEBUG
+.B AUR_LOCATION
+The URI of the AUR endpoint. Defaults to
+.IR https://\:aur.archlinux.org .
 .
 .TP
 .B AUR_QUERY_PARALLEL
+If set to a positive value, transfers are done with
+.BR "curl \-\-parallel" .
+This requires
+.BR curl (1)
+version >=7.77.0.
 .
 .TP
 .B AUR_QUERY_PARALLEL_MAX
+The amount of maximal parallel transfers (defaults to 15). Translates to
+.BR "curl \-\-parallel\-max" .
 .
 .TP
 .B AUR_QUERY_RPC
+The URI of the RPC interface. Defaults to
+.IR "$AUR_LOCATION/rpc/?v=5" .
 .
 .TP
 .B AUR_QUERY_RPC_SPLITNO
-.
-.SH NOTES
-As the AUR RPC is limited to GET requests, queries are split by 150
-arguments to avoid HTTP 414 errors
+The amount of packages per GET request. Defaults to 150. Used to avoid
+HTTP 414 errors with large amounts of packages
 .RI ( FS#49089 ).
 .
+.SH NOTES
+The default set of options for
+.BR curl (1)
+are
+.BR "\-fgLsS \-\-tcp\-fastopen" .
+
 .SH SEE ALSO
 .ad l
 .nh
+.BR aur\-depends (1),
+.BR aur\-search (1),
+.BR aur\-vercmp (1),
 .BR curl (1),
 .BR jq (1)
 .
