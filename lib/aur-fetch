@@ -7,7 +7,7 @@ XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # default options
-recurse=0 sync=no
+clone=1 recurse=0 sync=no
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -34,7 +34,7 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='rS'
-opt_long=('recurse' 'sync:' 'results:')
+opt_long=('recurse' 'sync:' 'results:' 'existing')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -45,6 +45,8 @@ set -- "${OPTRET[@]}"
 unset results_file
 while true; do
     case "$1" in
+        --existing)
+            clone=0 ;;
         -r|--recurse)
             recurse=1 ;;
         -S)
@@ -139,13 +141,14 @@ fi | while read -r pkg; do
         fi
 
     # Otherwise, try to clone anew
-    elif git clone "$AUR_LOCATION/$pkg"; then
+    elif (( clone )) && git clone "$AUR_LOCATION/$pkg"; then
         head=$(git -C "$pkg" rev-parse HEAD)
 
         if [[ -v results_file ]]; then
             results 'clone' '0' "$head" "$PWD/$pkg" "$results_file"
         fi
-    else
+
+    elif (( clone )); then
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"
         exit 1
     fi
