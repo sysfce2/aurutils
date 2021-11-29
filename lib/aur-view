@@ -1,0 +1,145 @@
+#!/bin/bash
+# aur-view - inspect package files
+[[ -v AUR_DEBUG ]] && set -o xtrace
+set -o errexit
+argv0=view
+XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# default options
+log_fmt='diff'
+
+trap_exit() {
+    if [[ ! -v AUR_DEBUG ]]; then
+        rm -rf -- "$tmp"
+    else
+        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
+    fi
+}
+
+usage() {
+    plain >&2 'usage: %s [--format] <package...>' "$argv0"
+}
+
+source /usr/share/makepkg/util/util.sh
+source /usr/share/makepkg/util/message.sh
+source /usr/share/makepkg/util/parseopts.sh
+
+if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
+    [[ -t 2 ]] && colorize
+fi
+
+opt_short=''
+opt_long=('format:') # TODO: add --confirm? (overrides AUR_CONFIRM_PAGER)
+opt_hidden=('dump-options')
+
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
+while true; do
+    case "$1" in
+        --format)
+            shift; log_fmt=$1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
+        --) shift; break ;;
+    esac
+    shift
+done
+
+# shellcheck disable=SC2174
+mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXX")
+trap 'trap_exit' EXIT
+
+# Directory for git checksums (revisions viewed by the user, #379)
+view_db=$XDG_DATA_HOME/aurutils/view
+mkdir -p "$view_db"
+
+# Single hyphen to denote input taken from stdin
+if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
+    # Array for multiple iterations (symlink, diff, inspection, update)
+    readarray -t packages
+else
+    packages=("$@")
+    set --
+fi
+
+if (( ! $# )); then
+    plain >&2 "there is nothing to do"
+    exit
+fi
+
+# Link build files in the queue (absolute links)
+for pkg in "${packages[@]}"; do
+    [[ $pkg ]] && printf '%s\0' "$(pwd -P)/$pkg"
+done | xargs -0 ln -t "$tmp" -s --
+
+# Retrieve last viewed revisions
+declare -A heads
+
+for pkg in "${packages[@]}"; do
+    git() { command git -C "$pkg" "$@"; }
+
+    # Ensure every directory is a git repository (--continue)
+    if head=$(git rev-parse HEAD); then
+        heads[$pkg]=$head
+    else
+        error '%s: %s: not a git repository' "$argv0" "$pkg"
+        exit 22
+    fi
+
+    if [[ -f $view_db/$pkg ]] && read -r view < "$view_db/$pkg"; then
+        # Check if hash points to a valid object
+        if ! git cat-file -e "$view"; then
+            error '%s: %s: invalid revision' "$argv0" "$pkg"
+            exit 22
+        fi
+
+        if [[ $view != "$head" ]]; then
+            git --no-pager "$log_fmt" --patch --stat \
+                "$view..$head" > "$tmp/$pkg.$log_fmt"
+        fi
+
+    elif [[ -f $view_db/$pkg ]]; then
+        error '%s: %s: failed to read revision' "$argv0" "$pkg"
+        exit 1
+    fi
+done
+unset -f git
+
+# Begin file inspection
+if [[ -v AUR_PAGER ]]; then
+    # shellcheck disable=SC2086
+    command -- $AUR_PAGER "$tmp"
+
+    # Use an additional prompt for file managers with no support
+    # for exit codes greater 0 (#673)
+    if [[ -v AUR_CONFIRM_PAGER ]]; then
+        read -rp $'Press Return to continue or Ctrl+d to abort\n'
+    fi
+
+elif type -P vifm >/dev/null; then
+    # Avoid directory prefix in printed paths (#452)
+    cd "$tmp"
+
+    { # Print patch files
+      find -maxdepth 1 -type f
+
+      # Print build directories in dependency order
+      find -L "$@" -maxdepth 1
+    } | vifm -c 'set vifminfo=' -c 'view!' -c '0' -
+
+else
+    error '%s: no viewer found, please install vifm or set AUR_PAGER' "$argv0"
+    exit 1
+fi
+
+# Update gitsums (viewer exited successfully)
+for pkg in "${packages[@]}"; do
+    printf '%s\n' "${heads[$pkg]}" > "$view_db/$pkg"
+done

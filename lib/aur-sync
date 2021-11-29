@@ -10,12 +10,9 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=(--clean --syncdeps)
-depends_args=()
-repo_args=()
-log_fmt='diff'
+build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=()
 
-# default options (enabled)
+# default options
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1
 
 # default options (disabled)
@@ -62,10 +59,9 @@ complement() {
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
-        rm -rf -- "$tmp" "$tmp_view"
+        rm -rf -- "$tmp"
     else
         printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
-        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp_view"
     fi
 }
 
@@ -117,7 +113,7 @@ while true; do
         --continue)
             download=0 ;;
         --format)
-            shift; log_fmt=$1 ;;
+            shift; view_args+=(--format "$1") ;;
         --ignore)
             shift; IFS=, read -a pkg -r <<< "$1"
             pkg_i+=("${pkg[@]}") ;;
@@ -216,12 +212,7 @@ done
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
-tmp_view=$(mktemp -d --tmpdir "aurutils-$UID/view.XXXXXXX")
 trap 'trap_exit' EXIT
-
-# Directory for git checksums (revisions viewed by the user, #379)
-view_db=$XDG_DATA_HOME/aurutils/view
-mkdir -p "$view_db"
 
 # Default to showing PKGBUILD first in patch. (#399)
 orderfile=$XDG_CONFIG_HOME/aurutils/$argv0/orderfile
@@ -271,15 +262,16 @@ else
 fi
 
 { if (( $# )); then
+      # append command-line arguments
       printf '%s\n' "$@"
   fi
 
-  # append repository packages (all)
   if (( repo_targets )); then
+      # append repository packages (all)
       cut -f1 <db_info
 
-  # append repository packages (updated)
   elif (( update )); then
+      # append repository packages (updated)
       aur vercmp --quiet <db_info
   fi
 } >argv
@@ -363,78 +355,19 @@ if (( download )); then
     done < "$tmp"/fetch_results
 fi
 
-# Link build files in the queue (absolute links)
-while read -r pkg; do
-    [[ $pkg ]] && printf '%s\0' "$(pwd -P)/$pkg"
-done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
+# Verify dependency tree (#20)
+if (( graph )); then
+    readarray -t queue_a < "$tmp"/queue
 
-# Check AUR metadata for validity (#20)
-if (( graph )) && ! find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
-    error '%s: failed to verify dependency graph' "$argv0"
-    exit 1
-fi
-
-if (( view )); then
-    declare -A heads
-
-    while read -r pkg; do
-        git() { command git -C "$pkg" "$@"; }
-
-        # Ensure every directory is a git repository (--continue)
-        if head=$(git rev-parse HEAD); then
-            heads[$pkg]=$head
-        else
-            error '%s: %s: not a git repository' "$argv0" "$pkg"
-            exit 22
-        fi
-
-        if [[ -f $view_db/$pkg ]] && read -r view < "$view_db/$pkg"; then
-            # Check if hash points to a valid object
-            if ! git cat-file -e "$view"; then
-                error '%s: %s: invalid revision' "$argv0" "$pkg"
-                exit 22
-            fi
-
-            if [[ $view != "$head" ]]; then
-                git --no-pager "$log_fmt" --patch --stat \
-                    "$view..$head" > "$tmp_view/$pkg.$log_fmt"
-            fi
-
-        elif [[ -f $view_db/$pkg ]]; then
-            error '%s: %s: failed to read revision' "$argv0" "$pkg"
-            exit 1
-        fi
-    done < "$tmp"/queue
-    unset -f git
-
-    if [[ -v AUR_PAGER ]]; then
-        # shellcheck disable=SC2086
-        command -- $AUR_PAGER "$tmp_view"
-
-        # Use an additional prompt for file managers with no support
-        # for exit codes greater 0 (#673)
-        if [[ -v AUR_CONFIRM_PAGER ]]; then
-            read -rp $'Press Return to continue or Ctrl+d to abort\n'
-        fi
-    elif type -P vifm >/dev/null; then
-        # Avoid directory prefix in printed paths (#452)
-        viewer() ( cd "$1"; vifm -c 'set vifminfo=' -c 'view!' -c '0' - )
-
-        { # Print patch files
-          find "$tmp_view" -maxdepth 1 -type f
-
-          # Print build directories in dependency order
-          xargs -a "$tmp"/queue -I{} find -L "$tmp_view"/{} -maxdepth 1
-        } | viewer "$tmp_view"
-    else
-        error '%s: no viewer found, please install vifm or set AUR_PAGER' "$argv0"
+    if ! env -C "$AURDEST" find "${queue_a[@]}" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
+        error '%s: failed to verify dependency graph' "$argv0"
         exit 1
     fi
+fi
 
-    # Update gitsums (viewer exited successfully)
-    while read -r pkg; do
-        printf '%s\n' "${heads[$pkg]}" > "$view_db/$pkg"
-    done < "$tmp"/queue
+# Inspect package files
+if (( view )); then
+    aur view "${view_args[@]}" - < "$tmp"/queue
 fi
 
 if (( build )); then
