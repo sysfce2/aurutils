@@ -1,4 +1,4 @@
-.TH AUR-FETCH 1 2020-03-14 AURUTILS
+.TH AUR-FETCH 1 2021-11-28 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
@@ -15,6 +15,11 @@ downloads packages specified on the command-line from the AUR using
 .BR git (1).
 .
 .SH OPTIONS
+.TP
+.BR \-\-existing
+If a git repository is not found for a given package, ignore it instead of running
+.BR git\-clone (1).
+.
 .TP
 .BR \-r ", " \-\-recurse
 Download packages and their dependencies with
