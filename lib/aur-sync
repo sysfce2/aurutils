@@ -357,12 +357,14 @@ fi
 
 # Verify dependency tree (#20)
 if (( graph )); then
-    readarray -t queue_a < "$tmp"/queue
-
-    if ! env -C "$AURDEST" find "${queue_a[@]}" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
+    if ! { while read -r pkg; do
+               [[ $pkg ]] && printf '%s\0' "$pkg/.SRCINFO"
+           done | xargs -0 cat -- | aur graph >/dev/null
+         }
+    then
         error '%s: failed to verify dependency graph' "$argv0"
         exit 1
-    fi
+    fi < "$tmp"/queue
 fi
 
 # Inspect package files
