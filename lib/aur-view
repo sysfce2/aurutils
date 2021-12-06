@@ -128,7 +128,7 @@ elif type -P vifm >/dev/null; then
     cd "$tmp"
 
     { # Print patch files
-      find -maxdepth 1 -type f
+      find . -maxdepth 1 -type f
 
       # Print build directories in dependency order
       find -L "$@" -maxdepth 1
