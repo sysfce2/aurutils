@@ -21,15 +21,6 @@ If a git repository is not found for a given package, ignore it instead of runni
 .BR git\-clone (1).
 .
 .TP
-.BR \-r ", " \-\-recurse
-Download packages and their dependencies with
-.BR aur\-depends (1).
-If this option is specified, arguments must be supplied by
-.B pkgname
-instead of by
-.BR pkgbase .
-.
-.TP
 .BI \-\-sync= MODE
 If
 .I MODE
@@ -121,6 +112,15 @@ is the absolute path to the corresponding git repository.
 .IP
 Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
+.
+.SH EXAMPLES
+Packages can be retrieved recursively by piping
+.BR aur\-depends :
+.EX
+
+  aur depends --pkgbase "$@" | aur fetch -
+
+.EE
 .
 .SH SEE ALSO
 .ad l

@@ -285,7 +285,7 @@ fi
 if [[ -s argv ]]; then
     # shellcheck disable=SC2094
     # depends: $1 pkgname $2 depends $3 pkgbase $4 pkgver $5 depends_type
-    xargs -a argv -d'\n' aur depends --table "${depends_args[@]}" -- >depends
+    aur depends --table "${depends_args[@]}" - <argv >depends
 else
     plain >&2 "there is nothing to do"
     exit
@@ -346,7 +346,7 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    xargs -a "$tmp"/queue -d'\n' aur fetch -S --results "$tmp"/fetch_results
+    aur fetch -S --results "$tmp"/fetch_results - < "$tmp"/queue
 
     # shellcheck disable=SC2034
     while IFS=: read -r mode rev_old rev path; do
