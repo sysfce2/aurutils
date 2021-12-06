@@ -296,7 +296,7 @@ repository that are unavailable in the AUR:
 As above, but for orphaned packages:
 .PP
 .EX
-    $ pacman \-Slq custom | aur query \-t info | \e
+    $ pacman \-Slq custom | aur query \-t info - | \e
           jq \-r \(aq.[].results[] | select(.Maintainer == null)\(aq
 .EE
 .PP
