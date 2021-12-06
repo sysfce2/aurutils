@@ -1,4 +1,4 @@
-.TH AUR 1 2019-03-03 AURUTILS
+.TH AUR 1 2021-12-06 AURUTILS
 .SH NAME
 aur \- helper tool for the arch user repository
 .
@@ -243,7 +243,13 @@ is the interactive shell.
 Run actions on the dependency tree of an AUR package:
 .PP
 .EX
-    $ echo foo | aur depends | while read \-r pkg; do ... done
+    $ aur depends foo | while read \-r pkg; do ... done
+.EE
+.PP
+Retrieve AUR packages and their dependencies recursively:
+.PP
+.EX
+    $ aur depends --pkgbase foo | aur fetch -
 .EE
 .PP
 Build
@@ -296,7 +302,7 @@ repository that are unavailable in the AUR:
 As above, but for orphaned packages:
 .PP
 .EX
-    $ pacman \-Slq custom | aur query \-t info | \e
+    $ pacman \-Slq custom | aur query \-t info - | \e
           jq \-r \(aq.[].results[] | select(.Maintainer == null)\(aq
 .EE
 .PP
@@ -316,7 +322,7 @@ and
 in the name:
 .PP
 .EX
-    $ aur pkglist \-P \(aq(?=.*wm)(?=.*git)\(aq | xargs aur search \-i
+    $ aur pkglist \-P \(aq(?=.*wm)(?=.*git)\(aq | aur search \-i \-
 .EE
 .PP
 Select an AUR package with name matching

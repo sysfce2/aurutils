@@ -1,4 +1,4 @@
-.TH AUR-FETCH 1 2021-11-28 AURUTILS
+.TH AUR-FETCH 1 2021-12-06 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
@@ -13,21 +13,17 @@ aur\-fetch \- download packages from the AUR
 .B aur\-fetch
 downloads packages specified on the command-line from the AUR using
 .BR git (1).
+If the first argument is
+.B \-
+or
+.BR /dev/stdin ,
+packages are taken from standard input.
 .
 .SH OPTIONS
 .TP
 .BR \-\-existing
 If a git repository is not found for a given package, ignore it instead of running
 .BR git\-clone (1).
-.
-.TP
-.BR \-r ", " \-\-recurse
-Download packages and their dependencies with
-.BR aur\-depends (1).
-If this option is specified, arguments must be supplied by
-.B pkgname
-instead of by
-.BR pkgbase .
 .
 .TP
 .BI \-\-sync= MODE
@@ -121,6 +117,14 @@ is the absolute path to the corresponding git repository.
 .IP
 Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
+.
+.SH EXAMPLES
+Retrieve packages recursively:
+.PP
+.EX
+  $ aur depends --pkgbase "$@" | aur fetch -
+.EE
+.PP
 .
 .SH SEE ALSO
 .ad l

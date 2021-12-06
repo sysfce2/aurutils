@@ -6,6 +6,7 @@ aur\-query \- send GET requests to the aurweb RPC interface
 .SY "aur query"
 .OP \-t type
 .OP \-b by
+.IR pkgname " [" pkgname... ]
 .YS
 .
 .SH DESCRIPTION
@@ -17,7 +18,12 @@ RPC interface
 .UE
 with
 .BR curl(1).
-Parallel transfers and URI splitting are supported.
+.PP
+Arguments are taken from the command-line. If the first argument is
+.B \-
+or
+.BR /dev/stdin ,
+they are taken from standard input.
 .
 .SH OPTIONS
 The request type and arguments must be compatible to the chosen RPC version (see the
