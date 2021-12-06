@@ -60,19 +60,19 @@ trap 'trap_exit' EXIT
 view_db=$XDG_DATA_HOME/aurutils/view
 mkdir -p "$view_db"
 
+if (( ! $# )); then
+    plain >&2 "there is nothing to do"
+    exit
+fi
+
 # Single hyphen to denote input taken from stdin
 if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
     # Array for multiple iterations (symlink, diff, inspection, update)
     readarray -t packages
 else
     packages=("$@")
-    set --
 fi
-
-if (( ! $# )); then
-    plain >&2 "there is nothing to do"
-    exit
-fi
+set --
 
 # Link build files in the queue (absolute links)
 for pkg in "${packages[@]}"; do
@@ -131,7 +131,7 @@ elif type -P vifm >/dev/null; then
       find . -maxdepth 1 -type f
 
       # Print build directories in dependency order
-      find -L "$@" -maxdepth 1
+      find -L "${packages[@]}" -maxdepth 1
     } | vifm -c 'set vifminfo=' -c 'view!' -c '0' -
 
 else
