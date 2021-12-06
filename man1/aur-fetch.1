@@ -1,4 +1,4 @@
-.TH AUR-FETCH 1 2021-11-28 AURUTILS
+.TH AUR-FETCH 1 2021-12-06 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
@@ -13,6 +13,11 @@ aur\-fetch \- download packages from the AUR
 .B aur\-fetch
 downloads packages specified on the command-line from the AUR using
 .BR git (1).
+If the first argument is
+.B \-
+or
+.BR /dev/stdin ,
+packages are taken from standard input.
 .
 .SH OPTIONS
 .TP
@@ -114,13 +119,12 @@ Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
 .
 .SH EXAMPLES
-Packages can be retrieved recursively by piping
-.BR aur\-depends :
+Retrieve packages recursively:
+.PP
 .EX
-
-  aur depends --pkgbase "$@" | aur fetch -
-
+  $ aur depends --pkgbase "$@" | aur fetch -
 .EE
+.PP
 .
 .SH SEE ALSO
 .ad l
