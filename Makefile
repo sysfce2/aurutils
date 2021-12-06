@@ -7,7 +7,7 @@ ETCDIR ?= /etc
 AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
 AURUTILS_VERSION := $(shell git describe --tags || true)
 ifeq ($(AURUTILS_VERSION),)
-AURUTILS_VERSION := 3.2.0
+AURUTILS_VERSION := 3.2.1
 endif
 
 .PHONY: shellcheck install build completion aur
