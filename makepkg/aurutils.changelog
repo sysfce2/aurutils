@@ -12,6 +12,9 @@
 * `aur-fetch`
   + add `--existing`
 
+* `aur-view`
+  + new script that includes the package inspection logic from `aur-sync`
+
 ## 3.2.0
 
 * `aur-build`
