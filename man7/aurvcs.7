@@ -70,7 +70,7 @@ as follows:
 .PP
 .EX
     $ mapfile \-t packages < <(aur vercmp\-devel | cut \-d" " \-f1)
-    $ aur sync "${packages[@]}" \-\-no\-ver\-shallow
+    $ aur sync "${packages[@]}" \-\-no\-ver\-argv
 .EE
 .PP
 Version-control packages typically have
