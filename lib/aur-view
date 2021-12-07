@@ -45,7 +45,14 @@ while true; do
         -a|--arg-file)
             shift; queue=$1 ;;
         --format)
-            shift; log_fmt=$1 ;;
+            shift
+            case $1 in
+                diff|log)
+                    log_fmt=$1 ;;
+                *)
+                    error '%s: invalid --format opiton: %s' "$argv0" "$1"
+                    usage ;;
+            esac ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
