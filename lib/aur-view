@@ -20,6 +20,7 @@ trap_exit() {
 
 usage() {
     plain >&2 'usage: %s [--format] <package...>' "$argv0"
+    exit 1
 }
 
 source /usr/share/makepkg/util/util.sh
