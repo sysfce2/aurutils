@@ -29,8 +29,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
-opt_short=''
-opt_long=('format:') # TODO: add --confirm? (overrides AUR_CONFIRM_PAGER)
+opt_short='a:'
+opt_long=('format:' 'arg-file:') # TODO: add --confirm? (overrides AUR_CONFIRM_PAGER)
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -38,8 +38,11 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
+unset queue
 while true; do
     case "$1" in
+        -a|--arg-file)
+            shift; queue=$1 ;;
         --format)
             shift; log_fmt=$1 ;;
         --dump-options)
@@ -60,19 +63,23 @@ trap 'trap_exit' EXIT
 view_db=$XDG_DATA_HOME/aurutils/view
 mkdir -p "$view_db"
 
-if (( ! $# )); then
+# Take input from a file instead of redirecting stdin (#871)
+packages=()
+if [[ -v queue ]]; then
+    exec {fd}< "$queue"
+
+    while read -ru "$fd"; do
+        [[ $REPLY ]] && packages+=("$REPLY")
+    done
+else
+    packages=("$@")
+    set --
+fi
+
+if (( ! ${#packages[@]} )); then
     plain >&2 "there is nothing to do"
     exit
 fi
-
-# Single hyphen to denote input taken from stdin
-if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
-    # Array for multiple iterations (symlink, diff, inspection, update)
-    readarray -t packages
-else
-    packages=("$@")
-fi
-set --
 
 # Link build files in the queue (absolute links)
 for pkg in "${packages[@]}"; do
