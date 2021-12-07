@@ -58,27 +58,6 @@ Do not present build files for inspection.
 .BR \-u ", " \-\-upgrades
 Update all obsolete AUR packages in a local repository.
 .
-.TP
-.BR \-\-rebuild
-Alias for
-.BR "\-f \-\-nover\-argv" .
-.
-.TP
-.BR \-\-rebuildtree ", " \-\-rebuild\-tree
-Alias for
-.BR "\-f \-\-nover" .
-.
-.TP
-.BR \-\-rebuildall ", " \-\-rebuild\-all
-As
-.BR \-\-rebuild\-tree ,
-but append all packages in the repository (see
-.BR \-d )
-as targets. May be used together with
-.B \-o
-to repopulate source directories in
-.BR $AURDEST .
-.
 .SS Dependency options
 Build dependencies are resolved with
 .BR aur\-depends (1).
@@ -223,6 +202,28 @@ The
 .BR pacman.conf (5)
 file for chroot and local repository operations.
 .RB ( "aur\-build \-\-pacman\-conf" ", " "aur-repo \-\-config" )
+.
+.SS Aliases
+.TP
+.BR \-\-rebuild
+Alias for
+.BR "\-f \-\-nover\-argv" .
+.
+.TP
+.BR \-\-rebuildtree ", " \-\-rebuild\-tree
+Alias for
+.BR "\-f \-\-nover" .
+.
+.TP
+.BR \-\-rebuildall ", " \-\-rebuild\-all
+As
+.BR \-\-rebuild\-tree ,
+but append all packages in the repository (see
+.BR \-d )
+as targets. May be used together with
+.B \-o
+to repopulate source directories in
+.BR $AURDEST .
 .
 .SH ENVIRONMENT
 Environment variables for other
