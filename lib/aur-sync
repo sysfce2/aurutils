@@ -98,12 +98,10 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'results:' 'makepkg-args:' 'format:' 'no-depends'
-          'no-makedepends' 'no-checkdepends')
+          'results:' 'makepkg-args:' 'format:' 'no-check')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:'
-            'nodepends' 'nomakedepends' 'nocheckdepends')
+            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:' 'nocheck')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -127,12 +125,9 @@ while true; do
             shift; ignore_file=$1 ;;
         -o|--nobuild|--no-build)
             build=0 ;;
-        --nodepends|--no-depends)
-            depends_args+=(--no-depends) ;;
-        --nomakedepends|--no-makedepends)
-            depends_args+=(--no-makedepends) ;;
-        --nocheckdepends|--no-checkdepends)
-            depends_args+=(--no-checkdepends) ;;
+        --nocheck|--no-check)
+            depends_args+=(--no-checkdepends)
+            build_args+=(--no-check) ;;
         --nograph|--no-graph)
             graph=0 ;;
         --nover|--no-ver)

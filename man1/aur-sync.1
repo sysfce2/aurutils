@@ -61,14 +61,11 @@ Update all obsolete AUR packages in a local repository.
 .SS Dependency options
 Build dependencies are resolved with
 .BR aur\-depends (1).
-The options
-.BR \-\-no\-depends ,
-.BR \-\-no\-makedepends ,
-and
-.BR \-\-no\-checkdepends
-are supported and appended to the
-.B aur\-depends
-command-line.
+.
+.TP
+.BR \-\-nocheck ", " \-\-no\-check
+Do not handle checkdepends.
+.RB ( "aur\-build \-\-no-\check" ", " "aur\-depends \-\-no\-checkdepends" )
 .
 .TP
 .BR \-\-nograph ", " \-\-no\-graph

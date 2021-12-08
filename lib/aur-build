@@ -101,11 +101,12 @@ fi
 opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:' 'remove'
-          'pkgver' 'rmdeps' 'no-confirm' 'ignore-arch' 'log' 'new'
+          'pkgver' 'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:'
           'buildscript:')
-opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nosync' 'margs:')
+opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck'
+            'nosync' 'margs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -173,6 +174,8 @@ while true; do
             makepkg_args+=(--clean) ;;
         -L|--log)
             makepkg_args+=(--log) ;;
+        --nocheck|--no-check)
+            makepkg_args+=(--nocheck) ;;
         --makepkg-args|--margs)
             shift; IFS=, read -a arg -r <<< "$1"
             makepkg_args+=("${arg[@]}")
