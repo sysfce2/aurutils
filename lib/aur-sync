@@ -369,7 +369,7 @@ fi
 
 # Inspect package files
 if (( view )); then
-    aur view "${view_args[@]}" - < "$tmp"/queue
+    aur view -a "$tmp"/queue "${view_args[@]}"
 fi
 
 if (( build )); then
