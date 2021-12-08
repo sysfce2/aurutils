@@ -57,6 +57,10 @@ complement() {
     grep -Fxvf "$@" || return $(( $? - 1 ))
 }
 
+complement_pattern() {
+    grep -Evf "$@" || return $(( $? - 1 ))
+}
+
 srcinfo_graph() {
     while read -r pkg; do
         [[ $pkg ]] && printf '%s\0' "$pkg/.SRCINFO"
@@ -230,6 +234,10 @@ if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
     done < "$ignore_file"
 fi
 
+if (( ${#pkg_i[@]} )); then
+    printf >&2 '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
+fi
+
 if (( rotate )); then
     if { hash rot13 && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
         exec bash -c "{ aur \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
@@ -247,7 +255,8 @@ mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
 # db_info: $1 pkgname $2 pkgver
-aur repo "${repo_args[@]}" --list --status-file=db >db_info
+aur repo "${repo_args[@]}" --list --status-file=db | \
+    complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") >db_info
 
 # Retrieve path to local repo (#448, #700)
 { IFS=: read -r _ db_name
@@ -290,7 +299,6 @@ fi
 cut -f2,5 --complement depends | sort -u >pkginfo
 
 { if (( ${#pkg_i[@]} )); then
-      warning "$argv0: ignoring %s package" "${pkg_i[@]}"
       printf '%s\n' "${pkg_i[@]}"
   fi
 
