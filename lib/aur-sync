@@ -132,7 +132,8 @@ while true; do
         --nomakedepends|--no-makedepends)
             depends_args+=(--no-makedepends) ;;
         --nocheckdepends|--no-checkdepends)
-            depends_args+=(--no-checkdepends) ;;
+            depends_args+=(--no-checkdepends)
+            build_args+=(--no-check) ;;
         --nograph|--no-graph)
             graph=0 ;;
         --nover|--no-ver)
