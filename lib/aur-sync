@@ -57,8 +57,8 @@ complement() {
     grep -Fxvf "$@" || return $(( $? - 1 ))
 }
 
-complement_word() {
-    grep -Fwvf "$@" || return $(( $? - 1 ))
+complement_pattern() {
+    grep -Evf "$@" || return $(( $? - 1 ))
 }
 
 srcinfo_graph() {
@@ -261,7 +261,7 @@ cd_safe "$tmp"
 
 # db_info: $1 pkgname $2 pkgver
 aur repo "${repo_args[@]}" --list --status-file=db | \
-    complement_word <(printf '%s\n' "${pkg_i[@]}") >db_info
+    complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") >db_info
 
 # Retrieve path to local repo (#448, #700)
 { IFS=: read -r _ db_name
