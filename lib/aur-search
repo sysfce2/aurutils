@@ -122,7 +122,7 @@ fi
 
 opt_short='k:adimnqrsv'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
-          'makedepends' 'optdepends' 'checkdepends' 'key:' 'raw' 'short')
+          'makedepends' 'optdepends' 'checkdepends' 'key:' 'raw' 'short' 'table')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -157,6 +157,8 @@ while true; do
             format=short ;;
         -v|--verbose)
             format=long ;;
+        --table)
+            format=table ;;
         -r|--raw)
             output=raw ;;
         -k|--key)
@@ -194,6 +196,7 @@ esac
 case $format in
      long) info() { info_long | column -ts $'\t' | sed -E 's/^-//; $d'; } ;;
     short) info() { info_short; } ;;
+    table) info() { tee; } ;;
 esac
 
 # set filters (2)
