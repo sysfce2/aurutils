@@ -1,3 +1,16 @@
+## 3.4.0
+
+* `aur-build`
+  + add `--no-check` (`makepkg --nocheck`)
+
+* `aur-search`
+  + add `--table`
+
+* `aur-sync`
+  + remove `--no-depends`, `--no-makedepends`
+  + rename `--no-checkdepends` to `--no-check`, implies `aur build -no-check`
+  + apply `--ignore` to local repository targets
+
 ## 3.3.0
 
 `aur-query` and `aur-fetch` now take arguments from the command-line

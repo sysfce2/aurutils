@@ -252,6 +252,12 @@ Retrieve AUR packages and their dependencies recursively:
     $ aur depends --pkgbase foo | aur fetch -
 .EE
 .PP
+Retrieve all AUR packages from a given maintainer:
+.PP
+.EX
+    $ aur search -m mcaur --table | cut -f2 | uniq -u | aur fetch -
+.EE
+.PP
 Build
 .I plasma\-desktop\-git
 and its dependencies with
