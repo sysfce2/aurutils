@@ -99,21 +99,9 @@ if (( stdin )); then
     tee # noop
 else
     printf '%s\n' "$@"
-fi | jq -R -r '@uri' | uri_write | if (( AUR_QUERY_PARALLEL )); then
-    mkdir "$tmp"/out
-    unset i
-
-    while IFS= read -r uri; do
-        i=$((i+1))
-
-        printf 'url %s\n' "$uri"
-        printf 'output %q\n' "$tmp/out/$i"
-    done
-else
-    while IFS= read -r uri; do
-        printf 'url "%s"\n' "$uri"
-    done
-fi > "$tmp"/config
+fi | jq -R -r '@uri' | uri_write | while IFS= read -r uri; do
+    printf 'url "%s"\n' "$uri"
+done > "$tmp"/config
 
 # exit cleanly on empty input (#706)
 if [[ ! -s $tmp/config ]]; then
@@ -123,9 +111,8 @@ fi
 # support parallel transfers (curl >7.66.0)
 if (( AUR_QUERY_PARALLEL )); then
     # curl 7.77.0: tool_operate: don't discard failed parallel transfer result
-    curl "${curl_args[@]}" -K "$tmp"/config --stderr "$tmp"/error \
+    curl "${curl_args[@]}" -K "$tmp"/config \
          --parallel --parallel-max "$AUR_QUERY_PARALLEL_MAX"
-
 else
     curl "${curl_args[@]}" -K "$tmp"/config
 fi
