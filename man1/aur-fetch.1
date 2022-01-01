@@ -127,7 +127,8 @@ Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
 .
 .SH EXAMPLES
-Retrieve packages recursively:
+.B \-\-recurse
+can be written as the pipeline:
 .PP
 .EX
   $ aur depends --pkgbase "$@" | aur fetch -
