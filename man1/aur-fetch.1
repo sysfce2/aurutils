@@ -90,6 +90,15 @@ Alias for
 .BR \-\-sync=auto .
 .
 .TP
+.BR \-r ", " \-\-recurse
+Download packages and their dependencies with
+.BR aur\-depends (1).
+If this option is specified, arguments must be supplied by
+.B pkgname
+instead of by
+.BR pkgbase .
+.
+.TP
 .BI \-\-results= FILE
 Write colon-delimited output in the following form to
 .IR FILE :
