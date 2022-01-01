@@ -7,7 +7,6 @@ aur\-repo \- manage local repositories
 .OP \-\-list
 .OP \-\-table
 .OP \-\-upgrades
-.OP \-\-status
 .SY "aur repo"
 .OP \-c file
 .OP \-d name
@@ -43,18 +42,6 @@ List the contents of a local repository in the following format:
 .BI pkgname \et pkgver \en
 .
 .TP
-.BR \-\-list\-path
-List the resolved paths of configured local
-.BR pacman (8)
-repositories.
-.
-.TP
-.BR \-\-list\-repo
-List the names of configured local
-.BR pacman (8)
-repositories.
-.
-.TP
 .BR \-t ", " \-\-table
 List the contents of a local repository in the following format:
 .IP
@@ -77,6 +64,20 @@ in
 Check package updates with
 .BR aur\-vercmp (1)
 .
+.TP
+.BR \-\-list\-path
+List the paths of configured local repositories.
+.
+.TP
+.BR \-\-list\-repo
+List the names of configured local repositories.
+.
+.TP
+.BR \-\-path
+List the resolved path of the selected
+.BR pacman (8)
+repository.
+.
 .SH OPTIONS
 .TP
 .BI \-c " FILE" "\fR,\fP \-\-config=" FILE
@@ -85,7 +86,7 @@ Specify an alternate
 configuration file.
 .
 .TP
-.BI \-d " NAME" "\fR,\fP \-\-database=" NAME
+.BI \-d " NAME" "\fR,\fP \-\-database=" NAME "\fR,\fP \-\-repo=" NAME
 The name of a
 .BR pacman (8)
 repository.
@@ -122,17 +123,16 @@ instead of by their
 path.
 .
 .TP
-.BR \-\-status
-Print status information to standard output, in the following format:
+.BR \-\-status\-file FILE
+Print status information to a specified file, in the following format:
 .EX
+.PP
 repo:<repository name>
 root:<root of repository>
 path:<path of repository>
+.PP
 .EE
-.
-.BR \-\-status\-file FILE
-As \-\-status, but prints to a user-specified file. Can be combined
-with other operations.
+Can be combined with other operations.
 .
 .SH ENVIRONMENT
 .TP

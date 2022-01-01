@@ -105,7 +105,8 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'results:' 'makepkg-args:' 'format:' 'no-check')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:' 'nocheck')
+            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:' 'nocheck' 
+            'no-checkdepends' 'nocheckdepends')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -129,7 +130,7 @@ while true; do
             shift; ignore_file=$1 ;;
         -o|--nobuild|--no-build)
             build=0 ;;
-        --nocheck|--no-check)
+        --nocheck|--no-check|--nocheckdepends|--no-checkdepends)
             depends_args+=(--no-checkdepends)
             build_args+=(--no-check) ;;
         --nograph|--no-graph)

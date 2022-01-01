@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0
+db_query=local table_format=0 mode=none
 
 # default arguments
 conf_args=()
@@ -74,9 +74,10 @@ source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
 opt_short='c:d:r:alqtuS'
-opt_long=('database:' 'repo:' 'config:' 'root:' 'all' 'list' 'list-repo' 'list-path'
-          'sync' 'upgrades' 'table' 'quiet' 'status' 'status-file:')
-opt_hidden=('dump-options')
+opt_long=('config:' 'database:' 'repo:' 'root:' 'all' 'list' 'path'
+          'path-list' 'repo-list' 'sync' 'upgrades' 'table' 'quiet'
+          'status-file:')
+opt_hidden=('dump-options' 'list-repo' 'list-path' 'status')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -102,16 +103,19 @@ while true; do
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
-        --list-path)
-            list=path ;;
-        --list-repo)
-            list=repo ;;
-        --status)
-            mode=status; status_file=/dev/fd/1 ;;
         --status-file)
             shift; status_file=$1 ;;
         -S|--sync)
             db_query=sync ;;
+        ## deprecated options
+        --path)
+            mode=path ;;
+        --path-list|--list-path)
+            list=path ;;
+        --repo-list|--list-repo)
+            list=repo ;;
+        --status)
+            status_file=/dev/stdout ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -230,10 +234,10 @@ case $mode in
     packages)
         db_table "$table_format" "$db_path"
         ;;
-    status)
-        ;; # status information printed to /dev/fd/1
+    path)
+        printf '%s\n' -- "$db_path"
+        ;;
     *)
-        usage
         ;;
 esac
 
