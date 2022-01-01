@@ -1,4 +1,4 @@
-## 3.4.0
+## 4
 
 * `aur-build`
   + add `--no-check` (`makepkg --nocheck`)
@@ -6,10 +6,18 @@
 * `aur-search`
   + add `--table`
 
+* `aur-fetch`
+  + add compatibility options (`--recurse`)
+
+* `aur-repo`
+  + add compatibility options (`--path`, `--path-list`, `--repo-list`)
+  + fix regression with `AUR_QUERY_PARALLEL`
+
 * `aur-sync`
-  + remove `--no-depends`, `--no-makedepends`
-  + rename `--no-checkdepends` to `--no-check`, implies `aur build -no-check`
+  + add `--no-check` (short for `--no-checkdepends`)
+    - implies `aur-build --no-check`
   + apply `--ignore` to local repository targets
+  + remove `--no-depends`, `--no-makedepends`
 
 ## 3.3.0
 
