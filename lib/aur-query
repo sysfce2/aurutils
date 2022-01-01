@@ -111,10 +111,8 @@ fi
 # support parallel transfers (curl >7.66.0)
 if (( AUR_QUERY_PARALLEL )); then
     # curl 7.77.0: tool_operate: don't discard failed parallel transfer result
-    curl "${curl_args[@]}" -K "$tmp"/config \
-         --parallel --parallel-max "$AUR_QUERY_PARALLEL_MAX"
-else
-    curl "${curl_args[@]}" -K "$tmp"/config
+    curl_args+=(--parallel --parallel-max "$AUR_QUERY_PARALLEL_MAX")
 fi
+curl "${curl_args[@]}" -K "$tmp"/config
 
 # vim: set et sw=4 sts=4 ft=sh:
