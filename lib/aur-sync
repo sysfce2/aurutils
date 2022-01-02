@@ -228,10 +228,12 @@ if [[ ! -s $orderfile ]]; then
     printf 'PKGBUILD\n' > "$orderfile"
 fi
 
-# Append contents of ignore file
-if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
-    while IFS='#' read -r i _; do
-        [[ $i ]] && pkg_i+=("$i")
+# Append contents of file or shell substitution (#880)
+: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
+
+if [[ -r $ignore_file && ! -d $ignore_file ]]; then
+    while IFS='#' read -r pkg _; do
+        [[ $pkg ]] && pkg_i+=("$pkg")
     done < "$ignore_file"
 fi
 
