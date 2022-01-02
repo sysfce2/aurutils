@@ -17,6 +17,7 @@
   + add `--no-check` (short for `--no-checkdepends`)
     - implies `aur-build --no-check`
   + apply `--ignore` to local repository targets
+  + `--ignore-file` now works with process substitution (#880)
   + remove `--no-depends`, `--no-makedepends`
 
 ## 3.3.0
