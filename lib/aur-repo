@@ -30,7 +30,7 @@ db_table() {
 
     BEGIN {
         pkgname = pkgbase = pkgver = "-"
-        dependencies[0] = ""
+        delete dependencies[0]
     }
 
     /^%FILENAME%$/ && FNR > 1 {
