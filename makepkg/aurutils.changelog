@@ -1,3 +1,11 @@
+## 4.1
+
+* `aur-build`
+  + handle absolute paths in `--arg-file`
+
+* `aur-repo`
+  + fix formatting for `--table` and packages with no dependencies
+
 ## 4
 
 * `aur-build`
