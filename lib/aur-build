@@ -338,7 +338,9 @@ else
 fi
 
 while IFS= read -ru "$fd" path; do
-    cd_safe "$startdir/$path"
+    # Use two cd calls to handle absolute paths in --arg-file
+    cd_safe "$startdir"
+    cd_safe "$path"
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
