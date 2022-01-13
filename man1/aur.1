@@ -228,6 +228,20 @@ as follows:
     CleanMethod = KeepCurrent
 .EE
 .PP
+In addition,
+.B SigLevel
+should be set to
+.B Never
+or
+.BR Always ,
+if package signing is disabled or enabled, respectively. This avoids
+.B pacman
+copying over packages to the main
+.BR CacheDir ,
+if signature files are missing and
+.B SigLevel = Optional
+is set. (FS#71109)
+.PP
 Note that
 .BR "pacman \-Scc"
 will remove packages regardless of the
