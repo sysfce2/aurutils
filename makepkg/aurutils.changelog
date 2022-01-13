@@ -3,6 +3,10 @@
 * `aur-build`
   + handle absolute paths in `--arg-file`
 
+* `aur-pkglist`
+  + add `--users` (`-U`) to retrieve a list of AUR users
+  + update aur-pkglist(1) man page
+
 * `aur-repo`
   + fix formatting for `--table` and packages with no dependencies
 
