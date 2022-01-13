@@ -2,7 +2,7 @@
 set -e
 
 tmp=$(mktemp -d)
-trap 'rm -rf -- "$tmp"' EXIT
+#trap 'rm -rf -- "$tmp"' EXIT
 tmp_uid=custom-$RANDOM
 
 cat >"$tmp"/pacman.conf <<EOF
@@ -24,7 +24,7 @@ EOF
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
 
-config=(--config "$tmp"/pacman.conf)
+config=(--pacman-conf "$tmp"/pacman.conf)
 pkg=aurutils
 rev=0f3cbf98ded15a6088f1e3f9ebfe0de20c854f24
 ver=2.3.1
@@ -35,15 +35,26 @@ env - HOME=$HOME USER=$USER PATH=$PATH aur fetch "$pkg"
 
 cd "$pkg"
 git reset --hard "$rev"
-# TODO: use --dbpath to avoid privilege escalation
-env - HOME=$HOME USER=$USER PATH=$PATH aur build \
-     -rnsd "$tmp_uid" --margs --skippgpcheck "${config[@]}"
-pacsift --config "$tmp"/pacman.conf --repo="$tmp_uid" --satisfies="$pkg=$ver"
+
+env - HOME=$HOME USER=$USER PATH=$PATH aur build --no-sync \
+     -rnd "$tmp_uid" --margs --skippgpcheck --pacman-conf "$tmp"/pacman.conf
+
+fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy
+pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" \
+    --repo="$tmp_uid" --satisfies="$pkg=$ver"
 
 # update to latest revision
 cd -
-env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync \
-    -rnd "$tmp_uid" --margs --skippgpcheck --no-view "${config[@]}" "$pkg"
-pacsift --config "$tmp"/pacman.conf --repo="$tmp_uid" --satisfies="$pkg>$ver"
+env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync --no-build \
+    -d "$tmp_uid" --no-view --pacman-conf "$tmp"/pacman.conf "$pkg"
+
+# build new version
+cd "$pkg"
+env - HOME=$HOME USER=$USER PATH=$PATH aur build --no-sync  \
+     -rnd "$tmp_uid" --margs --skippgpcheck --pacman-conf "$tmp"/pacman.conf
+
+fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy
+pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" \
+    --repo="$tmp_uid" --satisfies="$pkg>$ver"
 
 # vim: set et sw=4 sts=4 ft=sh:\n
