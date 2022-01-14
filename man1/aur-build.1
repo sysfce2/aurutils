@@ -361,6 +361,14 @@ options if
 .B aur\-build \-\-pkgver
 is used.
 .
+.B PACMAN_AUTH
+A command prefix for running
+.BR pacman (8)
+as root. If unset,
+.BR sudo (8)
+is used. See also
+.BR makepkg.conf (5).
+.
 .TP
 .B TMPDIR
 The directory for temporary files. (This includes intermediary storage
