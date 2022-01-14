@@ -235,7 +235,7 @@ case $mode in
         db_table "$table_format" "$db_path"
         ;;
     path)
-        printf '%s\n' -- "$db_path"
+        printf '%s\n' "$db_path"
         ;;
     *)
         ;;
