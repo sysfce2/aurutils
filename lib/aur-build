@@ -276,6 +276,11 @@ if [[ $MAKEPKG ]]; then
     makepkg() { command -- "$MAKEPKG" "$@"; }
 fi
 
+# Custom elevation command
+if [[ $PACMAN_AUTH ]]; then
+    sudo() { command -- "$PACMAN_AUTH" "$@"; }
+fi
+
 # Write successfully built packages to file (#437)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")

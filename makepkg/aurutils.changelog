@@ -1,3 +1,8 @@
+## 4.2
+
+* `aur-build`
+  + support PACMAN_AUTH environment variable for custom elevation command
+
 ## 4.1
 
 * `aur-build`
