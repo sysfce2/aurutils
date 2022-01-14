@@ -162,6 +162,7 @@ while read -r key _ value; do
             ;;
     esac
 done < <(pacman-conf "${conf_args[@]}")
+wait $! || exit
 
 # list information on available local repositories
 case $list in
@@ -219,6 +220,11 @@ case $db_query in
         db_path=$pacman_dbpath/sync/$db_name.${db_ext:-db}
         ;;
 esac
+
+if [[ ! -f $db_path ]]; then
+    printf >&2 '%s: %s: not a file\n' "$argv0" "$db_path"
+    exit 2
+fi
 
 if [[ -v status_file ]]; then
     { printf 'repo:%s\n' "$db_name"
