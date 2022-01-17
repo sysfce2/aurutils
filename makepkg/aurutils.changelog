@@ -3,6 +3,10 @@
 * `aur-build`
   + support PACMAN_AUTH environment variable for custom elevation command
 
+* `aur-repo`
+  + improve error handling
+  + remove extraneous `--` on `--path` output
+
 ## 4.1
 
 * `aur-build`
