@@ -273,12 +273,14 @@ fi
 
 # Custom makepkg command
 if [[ $MAKEPKG ]]; then
-    makepkg() { command -- "$MAKEPKG" "$@"; }
+    # shellcheck disable=SC2086
+    makepkg() { command -- $MAKEPKG "$@"; }
 fi
 
 # Custom elevation command
 if [[ $PACMAN_AUTH ]]; then
-    sudo() { command -- "$PACMAN_AUTH" "$@"; }
+    # shellcheck disable=SC2086
+    sudo() { command -- $PACMAN_AUTH "$@"; }
 fi
 
 # Write successfully built packages to file (#437)
