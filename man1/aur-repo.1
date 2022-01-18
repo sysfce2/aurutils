@@ -123,8 +123,10 @@ instead of by their
 path.
 .
 .TP
-.BR \-\-status\-file FILE
+.BI \-\-status\-file= FILE
 Print status information to a specified file, in the following format:
+.IP
+.RS
 .EX
 .PP
 repo:<repository name>
@@ -133,6 +135,18 @@ path:<path of repository>
 .PP
 .EE
 Can be combined with other operations.
+.RE
+.
+.SH EXAMPLES
+List information on configured local repositories:
+.PP
+.EX
+  $ aur repo --repo-list | while read -r repo; do 
+        printf '[%s]\\n' "$repo"
+        pacconf --repo="$repo"
+    done
+.EE
+.PP
 .
 .SH ENVIRONMENT
 .TP
