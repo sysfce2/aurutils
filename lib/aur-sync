@@ -253,16 +253,13 @@ mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
 # db_info: $1 pkgname $2 pkgver
-aur repo "${repo_args[@]}" --list --status-file=db >db_full
+aur repo "${repo_args[@]}" --list --status-file=db >db_info_0
 
 # Retrieve path to local repo (#448, #700)
 { IFS=: read -r _ db_name
   IFS=: read -r _ db_root
   IFS=: read -r _ db_path
 } <db
-
-# Remove ignore targets from local repo contents
-complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") <db_full >db_info
 
 if (( $# + update + repo_targets == 0 )); then
     error '%s: no targets specified' "$argv0"
@@ -275,6 +272,9 @@ else
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
 fi
+
+# Remove ignore targets from local repo contents
+complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") <db_info_0 >db_info
 
 { if (( $# )); then
       # append command-line arguments
