@@ -249,11 +249,6 @@ if (( rotate )); then
     fi
 fi
 
-if (( $# + update + repo_targets == 0 )); then
-    error '%s: no targets specified' "$argv0"
-    exit 1
-fi
-
 mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
@@ -268,6 +263,11 @@ aur repo "${repo_args[@]}" --list --status-file=db >db_full
 
 # Remove ignore targets from local repo contents
 complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") <db_full >db_info
+
+if (( $# + update + repo_targets == 0 )); then
+    error '%s: no targets specified' "$argv0"
+    exit 1
+fi
 
 if [[ -w $db_path ]]; then
     msg >&2 'Using [%s] repository' "$db_name"
