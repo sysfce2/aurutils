@@ -47,6 +47,17 @@ select_pkgbase() {
     }' "$@"
 }
 
+# files: $1 pkgname $2 pkgname\tpkgver
+select_ignores() {
+    awk 'NR == FNR {
+        map[$1] = 1
+        next
+    }
+    !($1 in map) {
+        printf("%s\t%s\n", $1, $2)
+    }' "$@"
+}
+
 # fields: $1 pkgname, $2 depends[<>=]
 tr_ver() {
     awk -F'[<>=]' '{print $1}'
@@ -55,10 +66,6 @@ tr_ver() {
 complement() {
     # empty set should not return 1
     grep -Fxvf "$@" || return $(( $? - 1 ))
-}
-
-complement_pattern() {
-    grep -Evf "$@" || return $(( $? - 1 ))
 }
 
 srcinfo_graph() {
@@ -237,10 +244,6 @@ if [[ -r $ignore_file && ! -d $ignore_file ]]; then
     done < "$ignore_file"
 fi
 
-if (( ${#pkg_i[@]} )); then
-    printf >&2 '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
-fi
-
 if (( rotate )); then
     if { hash rot13 && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
         exec bash -c "{ aur \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
@@ -273,8 +276,12 @@ else
     exit 13
 fi
 
-# Remove ignore targets from local repo contents
-complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") <db_info_0 >db_info
+if (( ${#pkg_i[@]} )); then
+    printf >&2 '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
+fi
+
+# Remove ignored packages from local repository targets
+printf '%s\n' "${pkg_i[@]}" | select_ignores - db_info_0 >db_info_1
 
 { if (( $# )); then
       # append command-line arguments
@@ -283,11 +290,11 @@ complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") <db_info_0 >db_info
 
   if (( repo_targets )); then
       # append repository packages (all)
-      cut -f1 <db_info
+      cut -f1 <db_info_1
 
   elif (( update )); then
       # append repository packages (updated)
-      aur vercmp --quiet <db_info
+      aur vercmp --quiet <db_info_1
   fi
 } >argv
 
@@ -312,7 +319,7 @@ cut -f2,5 --complement depends | sort -u >pkginfo
   # command-line are excluded from this complement.
   if (( chkver_depth )); then
       # note: AUR cannot be queried by pkgbase (FS#57230)
-      cut -f1,3 pkginfo | aur vercmp -p db_info -c >current
+      cut -f1,3 pkginfo | aur vercmp -p db_info_1 -c >current
 
       # shellcheck disable=SC2002
       case $chkver_depth in
