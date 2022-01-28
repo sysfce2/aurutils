@@ -235,15 +235,6 @@ if [[ ! -s $orderfile ]]; then
     printf 'PKGBUILD\n' > "$orderfile"
 fi
 
-# Append contents of file or shell substitution (#880)
-: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
-
-if [[ -r $ignore_file && ! -d $ignore_file ]]; then
-    while IFS='#' read -r pkg _; do
-        [[ $pkg ]] && pkg_i+=("$pkg")
-    done < "$ignore_file"
-fi
-
 if (( rotate )); then
     if { hash rot13 && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
         exec bash -c "{ aur \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
@@ -255,8 +246,24 @@ fi
 mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
+# Concatenate ignores from file and command-line arguments
+: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
+
+{ if [[ -r $ignore_file && ! -d $ignore_file ]]; then
+      while IFS='#' read -r pkg _; do
+          [[ $pkg ]] && printf '%s\n' "$pkg"
+      done < "$ignore_file"
+  fi
+
+  if (( ${#pkg_i[@]} )); then
+      printf '%s\n' "$@"
+  fi
+} >igni
+
 # db_info: $1 pkgname $2 pkgver
-aur repo "${repo_args[@]}" --list --status-file=db >db_info_0
+select_ignores igni \
+    <(aur repo "${repo_args[@]}" --list --status-file=db) >db_info
+wait "$!" # propagate aur-repo exit status
 
 # Retrieve path to local repo (#448, #700)
 { IFS=: read -r _ db_name
@@ -276,12 +283,9 @@ else
     exit 13
 fi
 
-if (( ${#pkg_i[@]} )); then
-    printf >&2 '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
+if [[ -s igni ]]; then
+    xargs -a igni -d '\n' printf >&2 '%s: packages ignored: %s\n' "$argv0"
 fi
-
-# Remove ignored packages from local repository targets
-printf '%s\n' "${pkg_i[@]}" | select_ignores - db_info_0 >db_info_1
 
 { if (( $# )); then
       # append command-line arguments
@@ -290,11 +294,11 @@ printf '%s\n' "${pkg_i[@]}" | select_ignores - db_info_0 >db_info_1
 
   if (( repo_targets )); then
       # append repository packages (all)
-      cut -f1 <db_info_1
+      cut -f1 <db_info
 
   elif (( update )); then
       # append repository packages (updated)
-      aur vercmp --quiet <db_info_1
+      aur vercmp --quiet <db_info
   fi
 } >argv
 
@@ -310,16 +314,14 @@ fi
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
 cut -f2,5 --complement depends | sort -u >pkginfo
 
-{ if (( ${#pkg_i[@]} )); then
-      printf '%s\n' "${pkg_i[@]}"
-  fi
+{ cat igni
 
   # Packages with equal or newer versions are taken as complement
   # for the queue. If chkver_argv is enabled, packages on the
   # command-line are excluded from this complement.
   if (( chkver_depth )); then
       # note: AUR cannot be queried by pkgbase (FS#57230)
-      cut -f1,3 pkginfo | aur vercmp -p db_info_1 -c >current
+      cut -f1,3 pkginfo | aur vercmp -p db_info -c >current
 
       # shellcheck disable=SC2002
       case $chkver_depth in
