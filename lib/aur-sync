@@ -284,7 +284,8 @@ else
 fi
 
 if [[ -s igni ]]; then
-    xargs -a igni -d '\n' printf >&2 '%s: packages ignored: %s\n' "$argv0"
+    printf '%s: packages ignored: ' "$argv0"
+    awk -v ORS=' ' '{print} END {printf("\n")}' igni
 fi
 
 { if (( $# )); then
