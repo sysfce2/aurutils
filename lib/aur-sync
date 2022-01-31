@@ -47,6 +47,17 @@ select_pkgbase() {
     }' "$@"
 }
 
+# files: $1 pkgname $2 pkgname\tpkgver
+select_ignores() {
+    awk 'NR == FNR {
+        map[$1] = 1
+        next
+    }
+    !($1 in map) {
+        printf("%s\t%s\n", $1, $2)
+    }' "$@"
+}
+
 # fields: $1 pkgname, $2 depends[<>=]
 tr_ver() {
     awk -F'[<>=]' '{print $1}'
@@ -55,10 +66,6 @@ tr_ver() {
 complement() {
     # empty set should not return 1
     grep -Fxvf "$@" || return $(( $? - 1 ))
-}
-
-complement_pattern() {
-    grep -Evf "$@" || return $(( $? - 1 ))
 }
 
 srcinfo_graph() {
@@ -228,19 +235,6 @@ if [[ ! -s $orderfile ]]; then
     printf 'PKGBUILD\n' > "$orderfile"
 fi
 
-# Append contents of file or shell substitution (#880)
-: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
-
-if [[ -r $ignore_file && ! -d $ignore_file ]]; then
-    while IFS='#' read -r pkg _; do
-        [[ $pkg ]] && pkg_i+=("$pkg")
-    done < "$ignore_file"
-fi
-
-if (( ${#pkg_i[@]} )); then
-    printf >&2 '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
-fi
-
 if (( rotate )); then
     if { hash rot13 && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
         exec bash -c "{ aur \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
@@ -252,8 +246,24 @@ fi
 mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
+# Concatenate ignores from file and command-line arguments
+: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
+
+{ if [[ -r $ignore_file && ! -d $ignore_file ]]; then
+      while IFS='#' read -r pkg _; do
+          [[ $pkg ]] && printf '%s\n' "$pkg"
+      done < "$ignore_file"
+  fi
+
+  if (( ${#pkg_i[@]} )); then
+      printf '%s\n' "$@"
+  fi
+} >igni
+
 # db_info: $1 pkgname $2 pkgver
-aur repo "${repo_args[@]}" --list --status-file=db >db_info_0
+select_ignores igni \
+    <(aur repo "${repo_args[@]}" --list --status-file=db) >db_info
+wait "$!" # propagate aur-repo exit status
 
 # Retrieve path to local repo (#448, #700)
 { IFS=: read -r _ db_name
@@ -273,8 +283,10 @@ else
     exit 13
 fi
 
-# Remove ignore targets from local repo contents
-complement_pattern <(printf '^%s\t\n' "${pkg_i[@]}") <db_info_0 >db_info
+if [[ -s igni ]]; then
+    printf '%s: packages ignored: ' "$argv0"
+    awk -v ORS=' ' '{print} END {printf("\n")}' igni
+fi
 
 { if (( $# )); then
       # append command-line arguments
@@ -303,9 +315,7 @@ fi
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
 cut -f2,5 --complement depends | sort -u >pkginfo
 
-{ if (( ${#pkg_i[@]} )); then
-      printf '%s\n' "${pkg_i[@]}"
-  fi
+{ cat igni
 
   # Packages with equal or newer versions are taken as complement
   # for the queue. If chkver_argv is enabled, packages on the

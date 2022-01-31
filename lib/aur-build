@@ -258,7 +258,7 @@ else
       IFS=: read -r _ db_root
       IFS=: read -r _ db_path
     } < <(aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
-    wait $!
+    wait "$!"
 fi
 
 # Resolve symbolic link to database.
@@ -365,7 +365,7 @@ while IFS= read -ru "$fd" path; do
         done < <(PKGDEST="$db_root" packagelist)
 
         # Preserve the exit status from makepkg --packagelist (#671)
-        wait $!
+        wait "$!"
 
         if [[ ${exists[*]} ]]; then
             # XXX: use lint_pkgbuild in this case as no lint from a
