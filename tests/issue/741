@@ -26,8 +26,8 @@ repo-add "$tmp/$tmp_uid".db.tar
 
 config=(--pacman-conf "$tmp"/pacman.conf)
 pkg=aurutils
-rev=0f3cbf98ded15a6088f1e3f9ebfe0de20c854f24
-ver=2.3.1
+rev=5da2a05501a8f822bcea95ce4c39f1357bf730fe
+ver=4
 
 # checkout and build previous revision
 cd "$tmp"

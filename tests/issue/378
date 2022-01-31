@@ -37,20 +37,20 @@ repo-add "$tmp2/$tmp2_uid".db.tar
 repo-add "$tmp3/$tmp3_uid".db.tar
 
 # issue 378: repository selection with AUR_REPO
-{ read -r repo
-  read -r root
-  read -r path
+{ IFS=: read -r _ repo
+  IFS=: read -r _ root
+  IFS=: read -r _ path
 } < <(env - AUR_REPO="$tmp1_uid" aur repo --status --config "$tmp1"/pacman.conf)
 [[ $repo == "$tmp1_uid" ]]
 
-{ read -r repo
-  read -r root
-  read -r path
+{ IFS=: read -r _ repo
+  IFS=: read -r _ root
+  IFS=: read -r _ path
 } < <(env - AUR_REPO="$tmp2_uid" aur repo --status --config "$tmp1"/pacman.conf)
 [[ $repo == "$tmp2_uid" ]]
 
-{ read -r repo
-  read -r root
-  read -r path
+{ IFS=: read -r _ repo
+  IFS=: read -r _ root
+  IFS=: read -r _ path
 } < <(env - AUR_REPO="$tmp3_uid" aur repo --status --config "$tmp1"/pacman.conf)
 [[ $repo == "$tmp3_uid" ]]
