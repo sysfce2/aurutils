@@ -249,7 +249,7 @@ cd_safe "$tmp"
 # Concatenate ignores from file and command-line arguments
 : "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
 
-{ if [[ -r $ignore_file && ! -d $ignore_file ]]; then
+{ if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
       while IFS='#' read -r pkg _; do
           [[ $pkg ]] && printf '%s\n' "$pkg"
       done < "$ignore_file"
