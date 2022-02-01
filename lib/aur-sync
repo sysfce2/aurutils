@@ -261,8 +261,7 @@ cd_safe "$tmp"
 } >igni
 
 # db_info: $1 pkgname $2 pkgver
-select_ignores igni \
-    <(aur repo "${repo_args[@]}" --list --status-file=db) >db_info
+select_ignores igni <(aur repo "${repo_args[@]}" --list --status-file=db) >db_info
 wait "$!" # propagate aur-repo exit status
 
 # Retrieve path to local repo (#448, #700)
@@ -315,7 +314,7 @@ fi
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
 cut -f2,5 --complement depends | sort -u >pkginfo
 
-{ cat igni
+{ cat igni # ignored packages
 
   # Packages with equal or newer versions are taken as complement
   # for the queue. If chkver_argv is enabled, packages on the
