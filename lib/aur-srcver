@@ -6,7 +6,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 srcver_pkgbuild_info() {
     # shellcheck disable=SC2016
-    env -C "$1" -i bash -c '
+    env -C "$1" -i "${@:2}" bash -c '
         PATH= source PKGBUILD
 
         if [[ -v epoch ]]; then
@@ -34,8 +34,8 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short=j:
-opt_long=('no-prepare' 'jobs:')
+opt_short=j:E:
+opt_long=('no-prepare' 'jobs:' 'env:')
 opt_hidden=('dump-options' 'noprepare')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -46,10 +46,13 @@ set -- "${OPTRET[@]}"
 makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
 num_procs=$(( "$(nproc)" + 2 ))
 
+unset extra_env
 while true; do
     case "$1" in
         --noprepare|--no-prepare)
             makepkg_args+=(--noprepare) ;;
+        -E|--env)
+            shift; extra_env+=("$1=${!1@Q}") ;;
         -j|--jobs)
             shift; num_procs=$1 ;;
         --dump-options)
@@ -91,7 +94,7 @@ for n in "$@"; do
     if [[ -e $tmp/$n/failed ]]; then
         failed+=("$n")
     else
-        srcver_pkgbuild_info "$n"
+        srcver_pkgbuild_info "$n" "${extra_env[@]}"
     fi
 done
 
