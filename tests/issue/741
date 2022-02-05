@@ -45,7 +45,7 @@ found_package=$(pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" --repo="$tmp
 
 # update to latest revision
 cd -
-env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync --no-build --upgrades \
+env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync --no-build --upgrades --ignore-file=/dev/null \
     -d "$tmp_uid" --no-view --pacman-conf "$tmp"/pacman.conf
 
 # build new version
