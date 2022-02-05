@@ -40,13 +40,13 @@ env - HOME=$HOME USER=$USER PATH=$PATH aur build --no-sync \
      -rnd "$tmp_uid" --margs --skippgpcheck --pacman-conf "$tmp"/pacman.conf
 
 fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy
-pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" \
-    --repo="$tmp_uid" --satisfies="$pkg=$ver"
+found_package=$(pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" --repo="$tmp_uid" --satisfies="$pkg=$ver")
+[[ -n $found_package ]]
 
 # update to latest revision
 cd -
-env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync --no-build \
-    -d "$tmp_uid" --no-view --pacman-conf "$tmp"/pacman.conf "$pkg"
+env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync --no-build --upgrades \
+    -d "$tmp_uid" --no-view --pacman-conf "$tmp"/pacman.conf
 
 # build new version
 cd "$pkg"
@@ -54,7 +54,7 @@ env - HOME=$HOME USER=$USER PATH=$PATH aur build --no-sync  \
      -rnd "$tmp_uid" --margs --skippgpcheck --pacman-conf "$tmp"/pacman.conf
 
 fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy
-pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" \
-    --repo="$tmp_uid" --satisfies="$pkg>$ver"
+found_package=$(pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" --repo="$tmp_uid" --satisfies="$pkg>$ver")
+[[ -n $found_package ]]
 
 # vim: set et sw=4 sts=4 ft=sh:\n

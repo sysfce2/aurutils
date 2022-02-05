@@ -30,7 +30,7 @@ lib32() {
 
 # files: $1 pkgname\tpkgbase $2 pkgname (order by $2)
 select_pkgbase() {
-    awk 'NR == FNR {
+    awk 'ARGV[1] == FILENAME {
         map[$1] = $2
         next
     }
@@ -49,12 +49,12 @@ select_pkgbase() {
 
 # files: $1 pkgname $2 pkgname\tpkgver
 select_ignores() {
-    awk 'NR == FNR {
+    awk 'ARGV[1] == FILENAME {
         map[$1] = 1
         next
     }
     !($1 in map) {
-        printf("%s\t%s\n", $1, $2)
+        print
     }' "$@"
 }
 
