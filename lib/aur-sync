@@ -256,7 +256,7 @@ cd_safe "$tmp"
   fi
 
   if (( ${#pkg_i[@]} )); then
-      printf '%s\n' "$@"
+      printf '%s\n' "${pkg_i[@]}"
   fi
 } >igni
 
