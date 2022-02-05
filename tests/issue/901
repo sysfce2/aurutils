@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+
+tmp=$(mktemp -d)
+#trap 'rm -rf -- "$tmp"' EXIT
+tmp_uid=custom-$RANDOM
+
+cat >"$tmp"/pacman.conf <<EOF
+[options]
+HoldPkg = pacman glibc
+Architecture = auto
+CheckSpace
+[core]
+Include = /etc/pacman.d/mirrorlist
+[extra]
+Include = /etc/pacman.d/mirrorlist
+[community]
+Include = /etc/pacman.d/mirrorlist
+[$tmp_uid]
+SigLevel = Optional TrustAll
+Server = file://$tmp
+EOF
+
+# create local repository
+repo-add "$tmp/$tmp_uid".db.tar
+pkg=aurutils
+
+# check ignores on the command-line
+env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync -d "$tmp_uid" --no-build \
+	--no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg" "$pkg"
+[[ ! -d $tmp/$pkg ]]
+[[ ! -f $tmp/$pkg ]]
