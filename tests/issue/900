@@ -27,6 +27,6 @@ pkg=aurutils
 
 # check ignores on the command-line
 env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync -d "$tmp_uid" --no-build \
-	--no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg" "$pkg"
+	--no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg" --ignore-file=/dev/null "$pkg"
 [[ ! -d $tmp/$pkg ]]
 [[ ! -f $tmp/$pkg ]]
