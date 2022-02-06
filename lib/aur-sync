@@ -261,8 +261,9 @@ cd_safe "$tmp"
 } >igni
 
 # db_info: $1 pkgname $2 pkgver
-select_ignores igni <(aur repo "${repo_args[@]}" --list --status-file=db) >db_info
-wait "$!" # propagate aur-repo exit status
+( set -o pipefail
+  aur repo "${repo_args[@]}" --list --status-file=db | select_ignores igni -
+) >db_info
 
 # Retrieve path to local repo (#448, #700)
 { IFS=: read -r _ db_name
