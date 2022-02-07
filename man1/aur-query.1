@@ -1,6 +1,6 @@
 .TH AUR-QUERY 1 2021-11-27 AURUTILS
 .SH NAME
-aur\-query \- send GET requests to the aurweb RPC interface
+aur\-query \- send requests to the aurweb RPC interface
 .
 .SH SYNOPSIS
 .SY "aur query"
@@ -12,7 +12,7 @@ aur\-query \- send GET requests to the aurweb RPC interface
 .SH DESCRIPTION
 .B aur\-query
 retrieves package information from an AUR endpoint by sending HTTP GET
-requests to the
+or POST requests to the
 .UR https://\:aur.archlinux.org/\:rpc.php
 RPC interface
 .UE
@@ -78,17 +78,35 @@ The URI of the RPC interface. Defaults to
 .IR "$AUR_LOCATION/rpc/?v=5" .
 .
 .TP
+.B AUR_QUERY_RPC_POST
+If set to a positive value, use HTTP POST for info-type requests.
+Defaults to
+.IR 1 .
+HTTP GET results in a significantly higher number of requests
+(potentially leading to rate limiting), so HTTP POST should be preferred
+in most cases. Due to FastAPI limitations, the maximum number of
+packages queried with HTTP POST is around 27k.
+.
+.TP
 .B AUR_QUERY_RPC_SPLITNO
-The amount of packages per GET request. Defaults to 150. Used to avoid
-HTTP 414 errors with large amounts of packages
+This variable sets the amount of packages listed per URI when using HTTP
+GET for info-type requests. This is used to avoid HTTP 414 errors with
+larger sets (>200) of packages
 .RI ( FS#49089 ).
+Defaults to
+.IR 150 .
+.
+.TP
+.B AUR_QUERY_RPC_VERSION
+The version for the RPC endpoint. Defaults to
+.IR 5 .
 .
 .SH NOTES
 The default set of options for
 .BR curl (1)
 are
 .BR "\-fgLsS \-\-tcp\-fastopen" .
-
+.
 .SH SEE ALSO
 .ad l
 .nh
