@@ -8,6 +8,7 @@ AUR_QUERY_PARALLEL_MAX=${AUR_QUERY_PARALLEL_MAX:-15}
 AUR_QUERY_RPC=${AUR_QUERY_RPC:-$AUR_LOCATION/rpc}
 AUR_QUERY_RPC_POST=${AUR_QUERY_RPC_POST:-1}
 AUR_QUERY_RPC_SPLITNO=${AUR_QUERY_RPC_SPLITNO:-150}
+AUR_QUERY_RPC_SPLITNO_POST=${AUR_QUERY_RPC_POST_SPLITNO:-2000}
 AUR_QUERY_RPC_VERSION=${AUR_QUERY_RPC_VERSION:-5}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -37,15 +38,19 @@ rpc_info() {
 # URL length with GET requests. The difference is that all data is now included
 # in the message body, instead of in the URI.
 rpc_info_post() {
-    # TODO: This could potentially be split into multiple url sections for use
-    # with curl --parallel (benchmarks?)
-    printf 'url "%s"\n' "$AUR_QUERY_RPC"
-    printf 'data "v=%s"\n' "$AUR_QUERY_RPC_VERSION"
-    printf 'data "type=info"\n'
+    local rpc_url="$AUR_QUERY_RPC"
+    local rpc_ver="$AUR_QUERY_RPC_VERSION"
+    local splitno="$AUR_QUERY_RPC_SPLITNO_POST"
 
-    while IFS= read -r pkg; do
-        printf 'data-urlencode "arg[]=%s"\n' "$pkg"
-    done
+    # Write opening and closing quotes with \x22 (hexadecimal)
+    awk -v rpc="$rpc_url" -v version="$rpc_ver" -v splitno="$splitno" '{
+        if (NR % splitno == 1) {
+            printf "url \x22%s\x22\n", rpc
+            printf "data \x22v=%s\x22\n", version
+            printf "data \x22type=info\x22\n"
+        }
+        printf "data-urlencode \x22arg[]=%s\x22\n", $0
+    }'
 }
 
 # Search-type requests can only contain one package argument, and GET requests

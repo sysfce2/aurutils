@@ -89,12 +89,18 @@ packages queried with HTTP POST is around 27k.
 .
 .TP
 .B AUR_QUERY_RPC_SPLITNO
-This variable sets the amount of packages listed per URI when using HTTP
-GET for info-type requests. This is used to avoid HTTP 414 errors with
-larger sets (>200) of packages
+The amount of packages listed per URI when using HTTP GET for info-type
+requests. This is used to avoid HTTP 414 errors with larger sets (>200)
+of packages
 .RI ( FS#49089 ).
 Defaults to
 .IR 150 .
+.
+.TP
+.B AUR_QUERY_RPC_SPLITNO_POST
+The amount of packages in the message body when using HTTP POST for
+info-type requests. Defaults to
+.IR 2000 .
 .
 .TP
 .B AUR_QUERY_RPC_VERSION
