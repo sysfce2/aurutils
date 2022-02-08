@@ -5,9 +5,12 @@ argv0=srcver
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 srcver_pkgbuild_info() {
+    # Unset PATH before invocation, because it can not be modified in bash's
+    # restricted mode. If PATH is taken from the environment (-E PATH), it will
+    # override the empty value.
     # shellcheck disable=SC2016
-    env -C "$1" -i "${@:2}" bash -c '
-        PATH= source PKGBUILD
+    env -C "$1" -i PATH= "${@:2}" /usr/bin/bash -rc '
+        source PKGBUILD
 
         if [[ -v epoch ]]; then
             fullver=$epoch:$pkgver-$pkgrel
@@ -52,7 +55,7 @@ while true; do
         --noprepare|--no-prepare)
             makepkg_args+=(--noprepare) ;;
         -E|--env)
-            shift; extra_env+=("$1=${!1@Q}") ;;
+            shift; extra_env+=("$1=${!1}") ;;
         -j|--jobs)
             shift; num_procs=$1 ;;
         --dump-options)
