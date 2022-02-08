@@ -12,7 +12,7 @@ AUR_QUERY_RPC_VERSION=${AUR_QUERY_RPC_VERSION:-5}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-curl_args=(-fgLsSq --tcp-fastopen)
+curl_args=(-A aurutils -fgLsSq --tcp-fastopen)
 
 # Filters for generating curl configuration
 rpc_info() {

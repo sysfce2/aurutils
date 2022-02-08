@@ -14,11 +14,11 @@ http_last_modified() {
 }
 
 list_update() {
-    curl -f "$1" --compressed --output "$2" --dump-header "$3"
+    curl -A aurutils -f "$1" --compressed --output "$2" --dump-header "$3"
 }
 
 list_headers() {
-    curl -f "$1" --head -Ss
+    curl -A aurutils -f "$1" --head -Ss
 }
 
 usage() {
