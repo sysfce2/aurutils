@@ -1,3 +1,13 @@
+## 5
+
+* `aur-srcver`
+  + add `-E` / `--env` (#898)
+
+## 4.4
+
+* `aur-sync`
+  + fix regressions with `--ignore` from 4.3 release
+
 ## 4.3
 
 * `aur-build`
