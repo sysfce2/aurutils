@@ -3,6 +3,13 @@
 * `aur-srcver`
   + add `-E` / `--env` (#898)
 
+* `aur-query`
+  + support HTTP POST for info-type requests
+  + use `aurutils` user agent (`curl -A`)
+
+* `aur-pkglist`
+  + use `aurutils` user agent (`curl -A`)
+
 ## 4.4
 
 * `aur-sync`
