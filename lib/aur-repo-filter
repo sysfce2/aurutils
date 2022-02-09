@@ -17,7 +17,8 @@ satisfies() {
 }
 
 provides() {
-    pacinfo | awk -F'[:<=>]' '
+    #global info_args
+    pacinfo "${info_args[@]}" | awk -F'[:<=>]' '
         /Name:/     { pkgname=$2; print $2, $2; }
         /Provides:/ { print pkgname, $2; }
         /Replaces:/ { print pkgname, $2; }
@@ -32,7 +33,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:a'
-opt_long=('all' 'sync' 'database:' 'repo:' 'sysroot:')
+opt_long=('all' 'sync' 'config:' 'database:' 'repo:' 'sysroot:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -40,15 +41,19 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset argv_repo sift_args
+unset argv_repo sift_args info_args
 while true; do
     case "$1" in
         -a|--all|--sync)
             sync_repo=1 ;;
         -d|--database|--repo)
             shift; argv_repo+=("$1") ;;
+        --config)
+            shift; sift_args+=(--config="$1")
+            info_args+=(--config="$1") ;;
         --sysroot)
-            shift; sift_args+=("--sysroot=$1") ;;
+            shift; sift_args+=(--sysroot="$1")
+            info_args+=(--sysroot="$1") ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
