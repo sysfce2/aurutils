@@ -3,7 +3,7 @@ test_package=(
     'fasm-linux-git' 'hnwatch' # split packages - pkgbase does not match pkgname
     'ros-build-tools' # empty make/depends
     'curr' # dependency order (#414)
-    'gimp-plugin-separate+' # Special characters
+    'c++utilities' # special characters
 )
 
 test_package_big=(
