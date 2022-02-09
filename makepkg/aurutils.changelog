@@ -10,6 +10,9 @@
 * `aur-pkglist`
   + use `aurutils` user agent (`curl -A`)
 
+* `aur-repo-filter`
+  + add `--config` to set pacman configuration
+
 ## 4.4
 
 * `aur-sync`
