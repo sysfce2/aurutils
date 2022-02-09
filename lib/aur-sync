@@ -10,7 +10,7 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=()
+build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=() filter_args=()
 
 # default options
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1
@@ -178,7 +178,8 @@ while true; do
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
             shift; build_args+=(--pacman-conf "$1")
-            repo_args+=(--config "$1") ;;
+            repo_args+=(--config "$1")
+            filter_args+=(--config "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
         --results)
@@ -333,9 +334,9 @@ cut -f2,5 --complement depends | sort -u >pkginfo
 
   if (( provides )); then
       if (( ${#repo_p[@]} )); then
-          filter_args=("${repo_p[@]/#/--repo=}")
+          filter_args+=("${repo_p[@]/#/--repo=}")
       else
-          filter_args=(--sync)
+          filter_args+=(--sync)
       fi
 
       # Note: this uses pacman's copy of the repo (as used by makepkg -s)
