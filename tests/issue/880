@@ -2,7 +2,7 @@
 set -e
 
 tmp=$(mktemp -d)
-#trap 'rm -rf -- "$tmp"' EXIT
+trap 'rm -rf -- "$tmp"' EXIT
 tmp_uid=custom-$RANDOM
 
 cat >"$tmp"/pacman.conf <<EOF
