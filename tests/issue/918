@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e -o pipefail
+tmp=$(mktemp -d)
+trap 'rm -rf -- "$tmp"' EXIT
+
+term1=mkdocs
+term2=material
+cd "$tmp"
+
+# RPC query (set intersection)
+aur search --raw "$term1" "$term2" | jq -r '.results[].Name' | sort >"$tmp"/a
+# mkdocs-material
+# mkdocs-material-extensions
+# mkdocs-material-pymdownx-extras
+
+# Website query
+curl -s "https://aur.archlinux.org/packages?K=$term1+$term2" | hq 'tbody > tr > td:first-child > a' text | sort >"$tmp"/b
+
+# Identity required
+[[ -z $(grep -Fvxf "$tmp"/a "$tmp"/b) ]]
