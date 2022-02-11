@@ -48,6 +48,7 @@ rpc_info_post() {
     # Write opening and closing quotes with \x22 (hexadecimal)
     awk -v rpc="$rpc_url" -v version="$rpc_ver" -v splitno="$splitno" '{
         if ((NR-1) % splitno == 0) {
+            printf "next\n"
             printf "url \x22%s\x22\n", rpc
             printf "data \x22v=%s\x22\n", version
             printf "data \x22type=info\x22\n"
