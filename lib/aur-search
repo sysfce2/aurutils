@@ -208,10 +208,20 @@ esac
 aur query -t "$type" -b "$search_by" "$@" > "$tmp" || exit
 
 # exit early on raw output (#187)
-case $output in
-    raw) cat "$tmp"
-         exit ;;
-esac
+if [[ $output == raw ]]; then
+    case $multiple in
+        section) jq -Mjcs '
+                    (length - 1) as $n
+                    | [map(.results | unique[]) | group_by(.)[][$n] | objects] as $r
+                    | {
+                        "resultcount": ($r | length),
+                        "results": $r
+                    }' "$tmp" ;;
+          union) cat -- "$tmp"
+    esac
+
+    exit
+fi
 
 # check results (#257)
 count=$(jq -r '.resultcount' "$tmp" | awk '{s += $1} END {print s}')
