@@ -8,7 +8,7 @@ AUR_QUERY_PARALLEL_MAX=${AUR_QUERY_PARALLEL_MAX:-15}
 AUR_QUERY_RPC=${AUR_QUERY_RPC:-$AUR_LOCATION/rpc}
 AUR_QUERY_RPC_POST=${AUR_QUERY_RPC_POST:-1}
 AUR_QUERY_RPC_SPLITNO=${AUR_QUERY_RPC_SPLITNO:-150}
-AUR_QUERY_RPC_SPLITNO_POST=${AUR_QUERY_RPC_POST_SPLITNO:-2000}
+AUR_QUERY_RPC_SPLITNO_POST=${AUR_QUERY_RPC_SPLITNO_POST:-2000}
 AUR_QUERY_RPC_VERSION=${AUR_QUERY_RPC_VERSION:-5}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -47,7 +47,7 @@ rpc_info_post() {
 
     # Write opening and closing quotes with \x22 (hexadecimal)
     awk -v rpc="$rpc_url" -v version="$rpc_ver" -v splitno="$splitno" '{
-        if (NR % splitno == 1) {
+        if ((NR-1) % splitno == 0) {
             printf "url \x22%s\x22\n", rpc
             printf "data \x22v=%s\x22\n", version
             printf "data \x22type=info\x22\n"
