@@ -30,8 +30,14 @@ interface, and the intersection of results is displayed in a brief format.
 Only display package name, version and description.
 .
 .TP
-.BR \-r ", " \-\-raw
-Display results as JSON.
+.BR \-r ", " \-\-raw ", " \-\-json
+Display results as JSON. Implies
+.BR "aur\-query --all" ,
+or
+.BR "aur\-query --any"
+if the
+.B \-\-any
+option is specified.
 .
 .TP
 .BR \-v ", " \-\-verbose

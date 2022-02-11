@@ -12,6 +12,9 @@ AUR_QUERY_RPC_SPLITNO_POST=${AUR_QUERY_RPC_POST_SPLITNO:-2000}
 AUR_QUERY_RPC_VERSION=${AUR_QUERY_RPC_VERSION:-5}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+# default options
+multiple=none
+
 # default arguments
 curl_args=(-A aurutils -fgLsSq --tcp-fastopen)
 
@@ -79,7 +82,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='b:t:'
-opt_long=('by:' 'type:')
+opt_long=('by:' 'type:' 'all' 'any')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -90,6 +93,10 @@ set -- "${OPTRET[@]}"
 unset arg_by arg_type
 while true; do
     case "$1" in
+        --all) # set intersection
+            multiple=section ;;
+        --any) # set union
+            multiple=union ;;
         -b|--by)
             shift; arg_by=$1 ;;
         -t|--type)
@@ -108,12 +115,6 @@ mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
-# Single hyphen to denote input taken from stdin
-stdin=0
-if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
-    stdin=1
-fi
-
 if (( ! $# )); then
     usage
 fi
@@ -129,12 +130,39 @@ elif [[ $arg_type == "info" ]]; then
     curl_config() { jq -R -r '@uri' | rpc_info; }
 fi
 
-# main pipeline
-if (( stdin )); then
+# Set intersection only applies to search queries, where one search term
+# leads to multiple results. Set union can apply to info queries, if more
+# terms are requested than the POST or GET limit (AUR_QUERY_RPC_SPLITNO*).
+# However, jq can already deal with jsonlines output, and it otherwise only 
+# serves to remove duplicate arguments.
+if [[ $arg_type == "info" ]] && [[ $multiple != "none" ]]; then
+    printf >&2 'error: set operation was specified with type info\n'
+    exit 1
+fi
+
+# set operations on search output
+case $multiple in
+    section)
+        combine() { jq -Mjcs '
+            (length - 1) as $n
+            | [map(.results | unique[]) | group_by(.)[][$n] | objects] as $r
+            | {
+                "resultcount": ($r | length),
+                "results": $r
+            }'
+        } ;;
+    union)
+        combine() { jq -Mjcs 'add'; } ;;
+    none)
+        combine() { tee; } ;; # noop
+esac
+
+# generate curl configuration
+if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
     tee # noop
 else
     printf '%s\n' "$@"
-fi | curl_config > "$tmp"/config
+fi | curl_config >"$tmp"/config
 
 # exit cleanly on empty input (#706)
 if [[ ! -s $tmp/config ]]; then
@@ -146,6 +174,11 @@ if (( AUR_QUERY_PARALLEL )); then
     # curl 7.77.0: tool_operate: don't discard failed parallel transfer result
     curl_args+=(--parallel --parallel-max "$AUR_QUERY_PARALLEL_MAX")
 fi
-curl "${curl_args[@]}" -K "$tmp"/config
+
+# PIPESTATUS[0] > 0: network errors
+# PIPESTATUS[1] > 0: aurweb response errors
+( set -o pipefail
+  curl "${curl_args[@]}" -K "$tmp"/config | combine
+)
 
 # vim: set et sw=4 sts=4 ft=sh:
