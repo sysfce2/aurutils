@@ -80,8 +80,7 @@ info_short() {
     while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes Popularity OutOfDate _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
-            *) # FIXME move date command to jq (must only be run if OutOfDate is set)
-               OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
+            *) printf -v OutOfDate '(Out-of-date: %(%d %B %Y)T)' "$OutOfDate"
         esac
 
         case $Maintainer in
