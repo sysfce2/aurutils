@@ -144,12 +144,14 @@ fi
 # set operations on search output
 case $multiple in
     section)
-        combine() { jq -Mjcs '
-            (length - 1) as $n
+        combine() { jq -Mjcs '.[0].type as $t | .[0].version as $v
+            | (length - 1) as $n
             | [map(.results | unique[]) | group_by(.)[][$n] | objects] as $r
             | {
                 "resultcount": ($r | length),
-                "results": $r
+                "results": $r,
+                "type": $t,
+                "version": $v
             }'
         } ;;
     union)
