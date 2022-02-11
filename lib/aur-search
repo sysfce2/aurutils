@@ -202,7 +202,7 @@ esac
 # set filters (2)
 case $multiple in
     section) combine() { sort | uniq -d; } ;;
-      union) combine() { sort | uniq -u; } ;;
+      union) combine() { sort -u; } ;;
 esac
 
 # check results
