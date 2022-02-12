@@ -198,8 +198,8 @@ esac
 
 # set filters (2)
 case $multiple in
-    section) query_args+=('--any') ;;
-      union) query_args+=('--all') ;;
+    section) query_args+=('--all') ;;
+      union) query_args+=('--any') ;;
 esac
 
 # check results
