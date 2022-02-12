@@ -198,7 +198,7 @@ esac
 
 # set filters (2)
 case $multiple in
-    section) query_args+=('--all') ;;
+    section) ;; # aur-query default
       union) query_args+=('--any') ;;
 esac
 

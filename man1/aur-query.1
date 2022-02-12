@@ -23,15 +23,12 @@ Arguments are taken from the command-line. If the first argument is
 .B \-
 or
 .BR /dev/stdin ,
-they are taken from standard input. Unless
-.B \-\-all
-or
-.B \-\-any
-is specified with
-.BR \-t search ,
-the output format is
-.BR "JSON Lines"
-with one line per request.
+arguments are taken from standard input. JSON responses are delimited by
+newlines (JSON Lines).
+.PP
+For
+.B search
+type requests, the intersection of results is taken by default.
 .
 .SH OPTIONS
 The request type and arguments must be compatible to the chosen RPC version (see the
@@ -61,16 +58,15 @@ or
 .BR info .
 .
 .TP
-.BR \-\-all
-Return the set intersection of results. Applies to
+.BR \-\-any
+Return the set union of results instead of the intersection. Applies to
 .B search
-requests.
+requests. The result is a single JSON structure, delimited by a newline.
 .
 .TP
-.BR \-\-any
-Return the set union of results. Applies to
-.B search
-requests.
+.BR \-\-raw
+Do not process results. Implied by
+.BR \-\-type=info .
 .
 .SH ENVIRONMENT
 .TP
