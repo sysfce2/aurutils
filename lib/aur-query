@@ -155,7 +155,15 @@ case $multiple in
             }'
         } ;;
     union)
-        combine() { jq -Mjcs 'add'; } ;;
+        combine() { jq -Mjcs '.[0].type as $t | .[0].version as $v
+            | map(.results) | unique | add as $r
+            | {
+                "resultcount": ($r | length),
+                "results": $r,
+                "type": $t,
+                "version": $v
+            }'
+        } ;;
     none)
         combine() { tee; } ;; # noop
 esac
