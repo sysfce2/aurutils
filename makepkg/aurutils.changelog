@@ -10,9 +10,10 @@ filtered) with `-a`. This processing is done because the RPC interface (as of
 aurweb 6.0.11) does not expose set operations, and so `aur-search` performs one
 search for each argument.
 
-The implementation is done in `aur-query` with the `--all` (set intersection)
-and `--any` flags (set union). Without these options, `aur-query` returns a
-newline-delimited line per search request (JSON Lines).
+The implementation is done in `aur-query`, which now takes the intersection of
+search results by default. The union can be taken with `--any`, or unprocessed
+results shown with `--raw`. In each case, the output is newline-delimited (JSON
+Lines, `jq -r`).
 
 `AUR_QUERY_RPC_SPLITNO_POST` received bug fixes (#920), and the default has
 been reduced to 500 after experiencing issues with a larger number of

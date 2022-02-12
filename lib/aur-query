@@ -12,12 +12,9 @@ AUR_QUERY_RPC_SPLITNO_POST=${AUR_QUERY_RPC_SPLITNO_POST:-500}
 AUR_QUERY_RPC_VERSION=${AUR_QUERY_RPC_VERSION:-5}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default options
-multiple=none
-
 # default arguments
 # add an extra newline for JSON Lines output (#919)
-curl_args=(-A aurutils -fgLsSq --tcp-fastopen -w '\n')
+curl_args=(-A aurutils -fgLsSq --tcp-fastopen)
 
 # Filters for generating curl configuration
 rpc_info() {
@@ -84,7 +81,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='b:t:'
-opt_long=('by:' 'type:' 'all' 'any')
+opt_long=('by:' 'type:' 'any' 'raw')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -92,13 +89,13 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset arg_by arg_type
+unset arg_by arg_type multiple
 while true; do
     case "$1" in
-        --all) # set intersection
-            multiple=section ;;
         --any) # set union
             multiple=union ;;
+        --raw)
+            multiple=none ;;
         -b|--by)
             shift; arg_by=$1 ;;
         -t|--type)
@@ -132,20 +129,20 @@ elif [[ $arg_type == "info" ]]; then
     curl_config() { jq -R -r '@uri' | rpc_info; }
 fi
 
-# Set intersection only applies to search queries, where one search term
-# leads to multiple results. Set union can apply to info queries, if more
-# terms are requested than the POST or GET limit (AUR_QUERY_RPC_SPLITNO*).
-# However, jq can already deal with jsonlines output, and it otherwise only 
-# serves to remove duplicate arguments.
-if [[ $arg_type == "info" ]] && [[ $multiple != "none" ]]; then
-    printf >&2 'error: set operation was specified with type info\n'
-    exit 1
+# Set intersection only applies to search queries, where one search term leads
+# to multiple results. This is the default, unless --any is specified. Info
+# queries are already implicitly a union of terms (packages), unless duplicate
+# packages were specified, and are so not processed further.
+multiple=${multiple:-section}
+
+if [[ $arg_type == "info" ]]; then
+    multiple=none
 fi
 
 # set operations on search output
 case $multiple in
     section)
-        combine() { jq -Mjcs '.[0].type as $t | .[0].version as $v
+        combine() { jq -Mrcs '.[0].type as $t | .[0].version as $v
             | (length - 1) as $n
             | [map(.results | unique[]) | group_by(.)[][$n] | objects] as $r
             | {
@@ -156,7 +153,7 @@ case $multiple in
             }'
         } ;;
     union)
-        combine() { jq -Mjcs '.[0].type as $t | .[0].version as $v
+        combine() { jq -Mrcs '.[0].type as $t | .[0].version as $v
             | map(.results) | unique | add as $r
             | {
                 "resultcount": ($r | length),
@@ -166,7 +163,7 @@ case $multiple in
             }'
         } ;;
     none)
-        combine() { tee; } ;; # noop
+        combine() { jq -Mrc; } ;; # format to JSON Lines
 esac
 
 # generate curl configuration
