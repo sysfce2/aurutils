@@ -16,7 +16,8 @@ PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 multiple=none
 
 # default arguments
-curl_args=(-A aurutils -fgLsSq --tcp-fastopen)
+# add an extra newline for JSON Lines output (#919)
+curl_args=(-A aurutils -fgLsSq --tcp-fastopen -w '\n')
 
 # Filters for generating curl configuration
 rpc_info() {
