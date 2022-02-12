@@ -11,8 +11,8 @@ aurweb 6.0.11) does not expose set operations, and so `aur-search` performs one
 search for each argument.
 
 The implementation is done in `aur-query` with the `--all` (set intersection)
-and `--any` flags (set union). Without these options, `aur-query` still returns
-a single line per search request as in previous versions.
+and `--any` flags (set union). Without these options, `aur-query` returns a
+newline-delimited line per search request (JSON Lines).
 
 `AUR_QUERY_RPC_SPLITNO_POST` received bug fixes (#920), and the default has
 been reduced to 500 after experiencing issues with a larger number of
