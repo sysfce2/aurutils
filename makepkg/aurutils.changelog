@@ -1,3 +1,13 @@
+## 6
+
+In previous versions, `aur search` would display an intersection of search
+results, `-a` the symmetric difference (bug), and `-r` the union. 
+
+`-a` now correctly returns the union, and the `-r` is processed with jq(1) to
+return the intersection by default. This processing is done because the RPC
+interface (as of aurweb 6.0.9) does not expose set operations, so `aur-search`
+performs one search for each `aur-search` argument.
+
 ## 5
 
 * `aur-srcver`

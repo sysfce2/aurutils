@@ -8,6 +8,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 multiple=section output=hrm search_by=name-desc sort_key=Name type=search
 
+# default arguments
+query_args=()
+
 tabulate() {
     # It is important to have a default value for every field, or
     # parsing of the @tsv result might break.
@@ -80,8 +83,7 @@ info_short() {
     while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes Popularity OutOfDate _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
-            *) # FIXME move date command to jq (must only be run if OutOfDate is set)
-               OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
+            *) printf -v OutOfDate '(Out-of-date: %(%d %B %Y)T)' "$OutOfDate"
         esac
 
         case $Maintainer in
@@ -123,7 +125,7 @@ fi
 opt_short='k:adimnqrsv'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
           'makedepends' 'optdepends' 'checkdepends' 'key:' 'raw' 'short' 'table')
-opt_hidden=('dump-options')
+opt_hidden=('dump-options' 'json')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -159,7 +161,7 @@ while true; do
             format=long ;;
         --table)
             format=table ;;
-        -r|--raw)
+        -r|--raw|--json)
             output=raw ;;
         -k|--key)
             shift; sort_key=$1 ;;
@@ -181,11 +183,6 @@ mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
-# XXX union is done by the AUR for info, but not search
-if (( $# < 2 )) || [[ $type == 'info' ]]; then
-    multiple=none
-fi
-
 # set format depending on query type (#319)
 case $type in
       info) format=${format-long}  ;;
@@ -201,18 +198,18 @@ esac
 
 # set filters (2)
 case $multiple in
-    section) combine() { sort | uniq -d; } ;;
-      union) combine() { sort | uniq -u; } ;;
+    section) query_args+=('--any') ;;
+      union) query_args+=('--all') ;;
 esac
 
 # check results
-aur query -t "$type" -b "$search_by" "$@" > "$tmp" || exit
+aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@" > "$tmp" || exit
 
 # exit early on raw output (#187)
-case $output in
-    raw) cat "$tmp"
-         exit ;;
-esac
+if [[ $output == raw ]]; then
+    cat -- "$tmp"
+    exit
+fi
 
 # check results (#257)
 count=$(jq -r '.resultcount' "$tmp" | awk '{s += $1} END {print s}')
@@ -226,11 +223,8 @@ case $count in
            # no results found
            exit 1
        fi ;;
-    *) if [[ $multiple != 'none' ]]; then
-           tabulate "$sort_key" < "$tmp" | combine | info
-       else
-           tabulate "$sort_key" < "$tmp" | info
-       fi ;;
+    *) tabulate "$sort_key" < "$tmp" | info
+       ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

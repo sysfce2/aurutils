@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e -o pipefail
+tmp=$(mktemp -d)
+trap 'rm -rf -- "$tmp"' EXIT
+
+paste_args() {
+    printf '%s\n' "${@:2}" | jq -R -r '@uri' | paste -s -d "$1"
+}
+
+# randomized test
+n_terms=10
+set -- $(aur pkglist | shuf -n "$n_terms")
+cd "$tmp"
+
+# RPC query (set intersection)
+aur search --raw "$@" | jq -r '.results[].Name' | sort >"$tmp"/a
+
+# Website query
+curl -s "https://aur.archlinux.org/packages?K=$(paste_args '+' "$@")" | \
+    hq 'tbody > tr > td:first-child > a' text | sort >"$tmp"/b
+
+# Identity required
+[[ -z $(grep -Fvxf "$tmp"/a "$tmp"/b) ]]

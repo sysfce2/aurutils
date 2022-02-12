@@ -23,11 +23,19 @@ Arguments are taken from the command-line. If the first argument is
 .B \-
 or
 .BR /dev/stdin ,
-they are taken from standard input.
+they are taken from standard input. Unless
+.B \-\-all
+or
+.B \-\-any
+is specified with
+.BR \-t search ,
+the output format is
+.BR "JSON Lines"
+with one line per request.
 .
 .SH OPTIONS
 The request type and arguments must be compatible to the chosen RPC version (see the
-.B AUR_QUERY_RPC
+.B AUR_QUERY_RPC_VERSION
 environment variable). The options below assume
 .BR "RPC v5" .
 .
@@ -51,8 +59,19 @@ Type of request. Can be one of
 .B search
 or
 .BR info .
-.B \
-
+.
+.TP
+.BR \-\-all
+Return the set intersection of results. Applies to
+.B search
+requests.
+.
+.TP
+.BR \-\-any
+Return the set union of results. Applies to
+.B search
+requests.
+.
 .SH ENVIRONMENT
 .TP
 .B AUR_LOCATION
@@ -82,10 +101,11 @@ The URI of the RPC interface. Defaults to
 If set to a positive value, use HTTP POST for info-type requests.
 Defaults to
 .IR 1 .
-HTTP GET results in a significantly higher number of requests
-(potentially leading to rate limiting), so HTTP POST should be preferred
-in most cases. A maximum of 5k packages can be queried in a single POST
-request.
+.RS
+.PP
+HTTP GET results in a higher number of requests than HTTP POST, so
+latter should be preferred in the general case.
+.RE
 .
 .TP
 .B AUR_QUERY_RPC_SPLITNO
@@ -100,7 +120,7 @@ Defaults to
 .B AUR_QUERY_RPC_SPLITNO_POST
 The amount of packages in the message body when using HTTP POST for
 info-type requests. Defaults to
-.IR 2000 .
+.IR 500 .
 .
 .TP
 .B AUR_QUERY_RPC_VERSION
