@@ -124,8 +124,8 @@ fi
 
 opt_short='k:adimnqrsv'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
-          'makedepends' 'optdepends' 'checkdepends' 'key:' 'raw' 'short' 'table')
-opt_hidden=('dump-options' 'json')
+          'makedepends' 'optdepends' 'checkdepends' 'key:' 'json' 'short' 'table')
+opt_hidden=('dump-options' 'raw')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -162,7 +162,7 @@ while true; do
         --table)
             format=table ;;
         -r|--raw|--json)
-            output=raw ;;
+            output=json ;;
         -k|--key)
             shift; sort_key=$1 ;;
         --dump-options)
@@ -205,8 +205,8 @@ esac
 # check results
 aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@" > "$tmp" || exit
 
-# exit early on raw output (#187)
-if [[ $output == raw ]]; then
+# exit early on json output (#187)
+if [[ $output == "json" ]]; then
     cat -- "$tmp"
     exit
 fi
