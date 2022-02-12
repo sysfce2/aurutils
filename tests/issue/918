@@ -20,4 +20,5 @@ curl -s "https://aur.archlinux.org/packages?K=$(paste_args '+' "$@")" | \
     hq 'tbody > tr > td:first-child > a' text | sort >"$tmp"/b
 
 # Identity required
-[[ -z $(grep -Fvxf "$tmp"/a "$tmp"/b) ]]
+[[ -z $(grep -Fvxf "$tmp"/a "$tmp"/b) ]] # B included in A
+[[ -z $(grep -Fvxf "$tmp"/b "$tmp"/a) ]] # A included in B
