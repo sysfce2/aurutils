@@ -1,12 +1,23 @@
 ## 6
 
 In previous versions, `aur search` would display an intersection of search
-results, `-a` the symmetric difference (bug), and `-r` the union. 
+results, the symmetric difference with `-a` (bug), and the concatenation with
+`-r`. (#918)
 
-`-a` now correctly returns the union, and the `-r` is processed with jq(1) to
-return the intersection by default. This processing is done because the RPC
-interface (as of aurweb 6.0.9) does not expose set operations, so `aur-search`
-performs one search for each `aur-search` argument.
+`-a` now correctly returns the union, and the `-r` output is processed with
+jq(1) to return the intersection by default, or the union (with duplicates
+filtered) with `-a`. This processing is done because the RPC interface (as of
+aurweb 6.0.11) does not expose set operations, and so `aur-search` performs one
+search for each argument.
+
+The implementation is done in `aur-query` with the `--all` (set intersection)
+and `--any` flags (set union). Without these options, `aur-query` still returns
+a single line per search request as in previous versions.
+
+`AUR_QUERY_RPC_SPLITNO_POST` received bug fixes (#920), and the default has
+been reduced to 500 after experiencing issues with a larger number of
+arguments.  Users looking to use `aur-query -t info` with a very large number
+of arguments should instead consider `aur pkglist --info`.
 
 ## 5
 
