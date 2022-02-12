@@ -103,10 +103,8 @@ Defaults to
 .IR 1 .
 .RS
 .PP
-HTTP GET results in a significantly higher number of requests
-(potentially leading to rate limiting), so HTTP POST should be preferred
-in most cases. A maximum of 5k packages can be queried in a single POST
-request.
+HTTP GET results in a higher number of requests than HTTP POST, so
+latter should be preferred in the general case.
 .RE
 .
 .TP
@@ -122,7 +120,7 @@ Defaults to
 .B AUR_QUERY_RPC_SPLITNO_POST
 The amount of packages in the message body when using HTTP POST for
 info-type requests. Defaults to
-.IR 2000 .
+.IR 500 .
 .
 .TP
 .B AUR_QUERY_RPC_VERSION
