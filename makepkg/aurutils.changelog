@@ -12,7 +12,7 @@ search for each argument.
 
 The implementation is done in `aur-query` with the `--all` (set intersection)
 and `--any` flags (set union). Without these options, `aur-query` returns a
-newline-delimited line per search request (JSON Lines).
+`\n`-delimited line per search request (JSON Lines, `jq -r`).
 
 `AUR_QUERY_RPC_SPLITNO_POST` received bug fixes (#920), and the default has
 been reduced to 500 after experiencing issues with a larger number of

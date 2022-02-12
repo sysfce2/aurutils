@@ -17,7 +17,7 @@ multiple=none
 
 # default arguments
 # add an extra newline for JSON Lines output (#919)
-curl_args=(-A aurutils -fgLsSq --tcp-fastopen -w '\n')
+curl_args=(-A aurutils -fgLsSq --tcp-fastopen)
 
 # Filters for generating curl configuration
 rpc_info() {
@@ -145,7 +145,7 @@ fi
 # set operations on search output
 case $multiple in
     section)
-        combine() { jq -Mjcs '.[0].type as $t | .[0].version as $v
+        combine() { jq -Mrcs '.[0].type as $t | .[0].version as $v
             | (length - 1) as $n
             | [map(.results | unique[]) | group_by(.)[][$n] | objects] as $r
             | {
@@ -156,7 +156,7 @@ case $multiple in
             }'
         } ;;
     union)
-        combine() { jq -Mjcs '.[0].type as $t | .[0].version as $v
+        combine() { jq -Mrcs '.[0].type as $t | .[0].version as $v
             | map(.results) | unique | add as $r
             | {
                 "resultcount": ($r | length),
@@ -166,7 +166,7 @@ case $multiple in
             }'
         } ;;
     none)
-        combine() { tee; } ;; # noop
+        combine() { jq -Mrc; } ;; # format to JSON Lines
 esac
 
 # generate curl configuration
