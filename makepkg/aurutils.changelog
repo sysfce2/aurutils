@@ -1,3 +1,9 @@
+## 5.1
+
+* `aur-query`
+  + correctly evaluate `AUR_QUERY_RPC_SPLITNO_POST`
+  + lower default of `AUR_QUERY_RPC_SPLITNO_POST` to 500
+
 ## 5
 
 * `aur-srcver`
