@@ -82,10 +82,8 @@ The URI of the RPC interface. Defaults to
 If set to a positive value, use HTTP POST for info-type requests.
 Defaults to
 .IR 1 .
-HTTP GET results in a significantly higher number of requests
-(potentially leading to rate limiting), so HTTP POST should be preferred
-in most cases. Due to FastAPI limitations, the maximum number of
-packages queried with HTTP POST is around 27k.
+HTTP GET results in a higher number of requests than HTTP POST, so
+latter should be preferred in the general case.
 .
 .TP
 .B AUR_QUERY_RPC_SPLITNO
@@ -100,7 +98,7 @@ Defaults to
 .B AUR_QUERY_RPC_SPLITNO_POST
 The amount of packages in the message body when using HTTP POST for
 info-type requests. Defaults to
-.IR 2000 .
+.IR 500 .
 .
 .TP
 .B AUR_QUERY_RPC_VERSION
