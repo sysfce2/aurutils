@@ -206,25 +206,13 @@ esac
 aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@" > "$tmp" || exit
 
 # exit early on json output (#187)
+# FIXME: print formatted error message, depending on aur-query exit status
 if [[ $output == "json" ]]; then
-    cat -- "$tmp"
-    exit
+    aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@"
+else
+  ( set -o pipefail
+    aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@" | tabulate "$sort_key" | info
+  )
 fi
-
-# check results (#257)
-count=$(jq -r '.resultcount' "$tmp" | awk '{s += $1} END {print s}')
-error=$(jq -r '.error' "$tmp")
-
-case $count in
-    0) if [[ $error != 'null' ]]; then
-           error '%s' "$error"
-           exit 2
-       else
-           # no results found
-           exit 1
-       fi ;;
-    *) tabulate "$sort_key" < "$tmp" | info
-       ;;
-esac
 
 # vim: set et sw=4 sts=4 ft=sh:
