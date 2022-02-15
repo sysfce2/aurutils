@@ -82,14 +82,14 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='b:t:'
 opt_long=('by:' 'type:' 'any' 'raw')
-opt_hidden=('dump-options')
+opt_hidden=('dump-options' 'dump-curl-config')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset arg_by arg_type multiple
+unset arg_by arg_type multiple dump_curl_config
 while true; do
     case "$1" in
         --any) # set union
@@ -100,6 +100,8 @@ while true; do
             shift; arg_by=$1 ;;
         -t|--type)
             shift; arg_type=$1 ;;
+        --dump-curl-config)
+            dump_curl_config=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -135,6 +137,12 @@ if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
 else
     printf '%s\n' "$@"
 fi | curl_config >"$tmp"/config
+
+# easy access to curl config for debugging
+if (( ${dump_curl_config-0} )); then
+    cat "$tmp"/config
+    exit
+fi
 
 # exit cleanly on empty input (#706)
 if [[ ! -s $tmp/config ]]; then
