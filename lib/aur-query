@@ -175,7 +175,7 @@ case $multiple in
             }'
         } ;;
     none)
-        combine() { jq -Mrc; } ;; # format to JSON Lines
+        combine() { tee; } ;; # format to JSON Lines
 esac
 
 # support parallel transfers (curl >7.66.0)
