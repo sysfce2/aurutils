@@ -191,9 +191,9 @@ esac
 
 # exit early on json output (#187)
 if [[ $output == "json" ]]; then
-    aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@"
+    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@"
 else
-    aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@" | tabulate "$sort_key" | info
+    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" | tabulate "$sort_key" | info
     exit "${PIPESTATUS[0]}"
 fi
 

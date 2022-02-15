@@ -88,8 +88,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
-opt_short='b:t:r'
-opt_long=('by:' 'type:' 'any' 'raw')
+opt_short='b:t:er'
+opt_long=('by:' 'type:' 'any' 'raw' 'exit-if-empty')
 opt_hidden=('dump-options' 'dump-curl-config')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -97,11 +97,13 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset arg_by arg_type multiple dump_curl_config
+unset arg_by arg_type multiple dump_curl_config exit_if_empty
 while true; do
     case "$1" in
         --any) # set union
             multiple=union ;;
+        -e|--exit-if-empty)
+            exit_if_empty=1 ;;
         -r|--raw)
             multiple=none ;;
         -b|--by)
@@ -215,8 +217,17 @@ for f in "${files[@]}"; do
         else
             error '%s' "$f_error"
         fi
-
         exit 2
+    fi
+
+    # abort on empty results only if requested (#929)
+    if (( ! f_count )) && (( ${exit_if_empty-0} )); then
+        if [[ $multiple == 'none' ]]; then
+            cat "$f"
+        else
+            error 'No results found.'
+        fi
+        exit 1
     fi
 done
 
