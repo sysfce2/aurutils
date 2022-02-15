@@ -13,7 +13,6 @@ AUR_QUERY_RPC_VERSION=${AUR_QUERY_RPC_VERSION:-5}
 PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-# add an extra newline for JSON Lines output (#919)
 curl_args=(-A aurutils -fgLsSq)
 
 # Filters for generating curl configuration
@@ -81,7 +80,7 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='b:t:'
+opt_short='b:t:r'
 opt_long=('by:' 'type:' 'any' 'raw')
 opt_hidden=('dump-options' 'dump-curl-config')
 
@@ -95,7 +94,7 @@ while true; do
     case "$1" in
         --any) # set union
             multiple=union ;;
-        --raw)
+        -r|--raw)
             multiple=none ;;
         -b|--by)
             shift; arg_by=$1 ;;
@@ -184,7 +183,7 @@ case $multiple in
             }'
         } ;;
     none)
-        combine() { tee; } ;; # format to JSON Lines
+        combine() { tee; } ;;
 esac
 
 # support parallel transfers (curl >7.66.0)
