@@ -148,14 +148,14 @@ else
     printf '%s\n' "$@"
 fi | curl_config >"$tmp"/config
 
-# easy access to curl config for debugging
-if (( ${dump_curl_config-0} )); then
-    cat "$tmp"/config
+# exit cleanly on empty input (#706)
+if [[ ! -s $tmp/config ]]; then
     exit
 fi
 
-# exit cleanly on empty input (#706)
-if [[ ! -s $tmp/config ]]; then
+# easy access to curl config for debugging
+if (( ${dump_curl_config-0} )); then
+    cat "$tmp"/config
     exit
 fi
 
