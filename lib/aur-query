@@ -129,6 +129,18 @@ elif [[ $arg_type == "info" ]]; then
     curl_config() { jq -R -r '@uri' | rpc_info; }
 fi
 
+# generate curl configuration
+if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
+    tee # noop
+else
+    printf '%s\n' "$@"
+fi | curl_config >"$tmp"/config
+
+# exit cleanly on empty input (#706)
+if [[ ! -s $tmp/config ]]; then
+    exit
+fi
+
 # Set intersection only applies to search queries, where one search term leads
 # to multiple results. This is the default, unless --any is specified. Info
 # queries are already implicitly a union of terms (packages), unless duplicate
@@ -165,18 +177,6 @@ case $multiple in
     none)
         combine() { jq -Mrc; } ;; # format to JSON Lines
 esac
-
-# generate curl configuration
-if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
-    tee # noop
-else
-    printf '%s\n' "$@"
-fi | curl_config >"$tmp"/config
-
-# exit cleanly on empty input (#706)
-if [[ ! -s $tmp/config ]]; then
-    exit
-fi
 
 # support parallel transfers (curl >7.66.0)
 if (( AUR_QUERY_PARALLEL )); then
