@@ -205,12 +205,8 @@ for f in "${files[@]}"; do
     f_error=$(jq -r '.error' "$f")
 
     if (( ! f_count )) && [[ $f_error != 'null' ]]; then
-        cat "$f" # response error
+        cat "$f" # type=error
         exit 2
-
-    elif (( ! f_count )); then
-        cat "$f" # no results found
-        exit 1
     fi
 done
 
