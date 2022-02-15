@@ -208,30 +208,23 @@ fi
 
 # check responses for errors (#257)
 for f in "${files[@]}"; do
-    f_count=$(jq -sr 'map(.resultcount) | add' "$f")
     f_error=$(jq -r '.error' "$f")
 
-    if (( ! f_count )) && [[ $f_error != 'null' ]]; then
-        if [[ $multiple == 'none' ]]; then
-            cat "$f"
-        else
-            error '%s' "$f_error"
-        fi
+    if [[ $f_error != 'null' ]] && [[ $multiple == 'none' ]]; then
+        cat "$f"
         exit 2
-    fi
-
-    # abort on empty results only if requested (#929)
-    if (( ! f_count )) && (( ${exit_if_empty-0} )); then
-        if [[ $multiple == 'none' ]]; then
-            cat "$f"
-        else
-            error 'No results found.'
-        fi
-        exit 1
+    elif [[ $f_error != 'null' ]]; then
+        error '%s' "$f_error"
+        exit 2
     fi
 done
 
-# concatenate results
-cat "${files[@]}" | combine
+# abort on empty results only if requested (#929)
+if (( ${exit_if_empty-0} )); then
+    # TODO: print formatted message
+    cat "${files[@]}" | combine | jq -Mrc 'if(.resultcount == 0) then halt_error(1) else . end'
+else
+    cat "${files[@]}" | combine
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:
