@@ -81,12 +81,7 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
-    [[ -t 2 ]] && colorize
-fi
 
 opt_short='b:t:er'
 opt_long=('by:' 'type:' 'any' 'raw' 'exit-if-empty')
@@ -210,18 +205,15 @@ fi
 for f in "${files[@]}"; do
     f_error=$(jq -r '.error' "$f")
 
-    if [[ $f_error != 'null' ]] && [[ $multiple == 'none' ]]; then
-        cat "$f"
-        exit 2
-    elif [[ $f_error != 'null' ]]; then
-        error '%s' "$f_error"
+    if [[ $f_error != 'null' ]]; then
+        cat >&2 "$f"
         exit 2
     fi
 done
 
 # abort on empty results only if requested (#929)
 if (( ${exit_if_empty-0} )); then
-    # TODO: print formatted message
+    # halt_error() prints input to stderr
     cat "${files[@]}" | combine | jq -Mrc 'if(.resultcount == 0) then halt_error(1) else . end'
 else
     cat "${files[@]}" | combine

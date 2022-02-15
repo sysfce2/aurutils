@@ -194,7 +194,13 @@ if [[ $output == "json" ]]; then
     aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@"
 else
     aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" | tabulate "$sort_key" | info
-    exit "${PIPESTATUS[0]}"
+    errno=${PIPESTATUS[0]}
+
+    case $errno in
+        1) error '%s: no results found' "$argv0" ;;
+        2) error '%s: request error' "$argv0" ;;
+    esac
+    exit "$errno"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
