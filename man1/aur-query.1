@@ -64,9 +64,23 @@ Return the set union of results instead of the intersection. Applies to
 requests. The result is a single JSON structure, delimited by a newline.
 .
 .TP
-.BR \-\-raw
+.BR \-e ", " \-\-exit\-if\-empty
+If no results are found, exit with status 1 instead of 0.
+.
+.TP
+.BR \-r ", " \-\-raw
 Do not process results. Implied by
 .BR \-\-type=info .
+.
+.SH EXIT STATUS
+.B aur\-query
+returns 0 if no errors occured, 1 if no results were found
+.I and
+the
+.B \-\-exit\-if\-empty
+option is specified,
+and 2 if a request resulted in an error
+.RB ( type=error ).
 .
 .SH ENVIRONMENT
 .TP

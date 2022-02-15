@@ -99,14 +99,6 @@ info_short() {
     done
 }
 
-trap_exit() {
-    if [[ ! -v AUR_DEBUG ]]; then
-        rm -rf -- "$tmp"
-    else
-        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
-    fi
-}
-
 usage() {
     plain >&2 'usage: %s [-adimnqrsv] [-k key] pkgname...' "$argv0"
     exit 1
@@ -178,11 +170,6 @@ if ! (( $# )); then
     usage
 fi
 
-# shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
-tmp=$(mktemp --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
-trap 'trap_exit' EXIT
-
 # set format depending on query type (#319)
 case $type in
       info) format=${format-long}  ;;
@@ -202,17 +189,18 @@ case $multiple in
       union) query_args+=('--any') ;;
 esac
 
-# check results
-aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@" > "$tmp" || exit
-
 # exit early on json output (#187)
-# FIXME: print formatted error message, depending on aur-query exit status
 if [[ $output == "json" ]]; then
-    aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@"
+    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@"
 else
-  ( set -o pipefail
-    aur query -t "$type" -b "$search_by" "${query_args[@]}" "$@" | tabulate "$sort_key" | info
-  )
+    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" | tabulate "$sort_key" | info
+    errno=${PIPESTATUS[0]}
+
+    case $errno in
+        1) error '%s: no results found' "$argv0" ;;
+        2) error '%s: request error' "$argv0" ;;
+    esac
+    exit "$errno"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
