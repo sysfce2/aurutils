@@ -81,7 +81,12 @@ usage() {
     exit 1
 }
 
+source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
+
+if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
+    [[ -t 2 ]] && colorize
+fi
 
 opt_short='b:t:r'
 opt_long=('by:' 'type:' 'any' 'raw')
@@ -205,7 +210,12 @@ for f in "${files[@]}"; do
     f_error=$(jq -r '.error' "$f")
 
     if (( ! f_count )) && [[ $f_error != 'null' ]]; then
-        cat "$f" # type=error
+        if [[ $multiple == 'none' ]]; then
+            cat "$f"
+        else
+            error '%s' "$f_error"
+        fi
+
         exit 2
     fi
 done
