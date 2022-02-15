@@ -165,25 +165,19 @@ fi
 # set operations on search output
 case $multiple in
     section)
-        combine() { jq -Mrcs '.[0].type as $t | .[0].version as $v
-            | (length - 1) as $n
+        combine() { jq -Mrcs '(length - 1) as $n
             | [map(.results | unique[]) | group_by(.)[][$n] | objects] as $r
-            | {
+            | (.[0] + {
                 "resultcount": ($r | length),
-                "results": $r,
-                "type": $t,
-                "version": $v
-            }'
+                "results": $r
+            })'
         } ;;
     union)
-        combine() { jq -Mrcs '.[0].type as $t | .[0].version as $v
-            | map(.results) | unique | add as $r
-            | {
+        combine() { jq -Mrcs '([.[].results] | add | unique) as $r
+            | (.[0] + {
                 "resultcount": ($r | length),
-                "results": $r,
-                "type": $t,
-                "version": $v
-            }'
+                "results": $r
+            })'
         } ;;
     none)
         combine() { tee; } ;;
