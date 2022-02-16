@@ -206,7 +206,7 @@ for f in "${files[@]}"; do
     f_error=$(jq -r '.error' "$f")
 
     if [[ $f_error != 'null' ]]; then
-        cat >&2 "$f"
+        jq >&2 -Mrc < "$f"
         exit 2
     fi
 done
