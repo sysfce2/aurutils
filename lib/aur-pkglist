@@ -95,7 +95,7 @@ if (( update )); then
         list_fetch "$AUR_LOCATION/$pkglist.gz.sha256"
         sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
     fi
-    gunzip "$pkglist.gz"
+    gunzip -f "$pkglist.gz"
 fi
 
 # pattern match
