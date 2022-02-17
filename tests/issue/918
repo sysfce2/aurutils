@@ -13,7 +13,7 @@ set -- $(aur pkglist | shuf -n "$n_terms")
 cd "$tmp"
 
 # RPC query (set intersection)
-aur search --raw "$@" | jq -r '.results[].Name' | sort >"$tmp"/a
+aur query -t search "$@" | jq -r '.results[].Name' | sort >"$tmp"/a
 
 # Website query
 curl -s "https://aur.archlinux.org/packages?K=$(paste_args '+' "$@")" | \
