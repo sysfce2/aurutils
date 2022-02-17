@@ -116,7 +116,7 @@ satisfies "${strset[@]}" | provides | while read -r repo package virtual; do
     fi
 
     if [[ $virtual != "$package" ]]; then
-        version=${pkgset[$virtual]}
+        version=${pkgset[$virtual]:-1}
     else
         continue
     fi
