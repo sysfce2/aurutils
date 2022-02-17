@@ -127,6 +127,6 @@ satisfies "${strset[@]}" | provides | while read -r repo package virtual; do
         *) printf >&2 'dependency %s%s satisfied by %s/%s\n' "$virtual" "$version" "$repo" "$package"
            printf '%s\n' "$virtual" ;;
     esac
-done
+done | sort | uniq
 
 # vim: set et sw=4 sts=4 ft=sh:
