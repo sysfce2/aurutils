@@ -19,9 +19,11 @@ satisfies() {
 provides() {
     #global info_args
     pacinfo "${info_args[@]}" | awk -F'[:<=>]' '
-        /Name:/     { pkgname=$2; print $2, $2; }
-        /Provides:/ { print pkgname, $2; }
-        /Replaces:/ { print pkgname, $2; }
+        /Name:/       { pkgname=$2; }
+        /Repository:/ { repo=$2
+                        print repo, pkgname, pkgname; }
+        /Provides:/   { print repo, pkgname, $2; }
+        /Replaces:/   { print repo, pkgname, $2; }
     '
 }
 
@@ -108,7 +110,7 @@ fi
 # checks for a package satisfying this condition. Results are printed
 # as "repository/package", and piped to pacinfo to relate the names of
 # the original provides to its corresponding package(s).
-satisfies "${strset[@]}" | provides | while read -r package virtual; do
+satisfies "${strset[@]}" | provides | while read -r repo package virtual; do
     if [[ ${pkgset[$package]} ]]; then
         printf '%s\n' "$package"
     fi
@@ -120,9 +122,9 @@ satisfies "${strset[@]}" | provides | while read -r package virtual; do
     fi
 
     case $version in
-        1) printf >&2 'dependency %s satisfied by %s\n' "$virtual" "$package"
+        1) printf >&2 'dependency %s satisfied by %s/%s\n' "$virtual" "$repo" "$package"
            printf '%s\n' "$virtual" ;;
-        *) printf >&2 'dependency %s%s satisfied by %s\n' "$virtual" "$version" "$package"
+        *) printf >&2 'dependency %s%s satisfied by %s/%s\n' "$virtual" "$version" "$repo" "$package"
            printf '%s\n' "$virtual" ;;
     esac
 done
