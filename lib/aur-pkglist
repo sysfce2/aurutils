@@ -80,7 +80,6 @@ if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
     update=1
 
 elif [[ -s $pkglist ]]; then
-    # TODO: use ETag when aurweb only updates it when required
     sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
     sec_r=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
 
