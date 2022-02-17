@@ -7,14 +7,14 @@ AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-delay=300 mode=plain pkglist=packages update=0
+delay=300 mode=plain pkglist=packages update=0 verify=0
 
 http_last_modified() {
     awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
 }
 
-list_update() {
-    curl -A aurutils -f "$1" --compressed --output "$2" --dump-header "$3"
+list_fetch() {
+    curl -A aurutils -f "$1" "${@:2}" --remote-name
 }
 
 list_headers() {
@@ -28,8 +28,9 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bFPSIU'
-opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain' 'time:' 'users')
+opt_short='t:bvFPSIU'
+opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
+          'time:' 'users' 'verify')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -55,6 +56,8 @@ while true; do
             mode=plain ;;
         -t|--time)
             shift; delay=$1 ;;
+        -v|--verify)
+            verify=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -87,7 +90,13 @@ elif [[ -s $pkglist ]]; then
 fi
 
 if (( update )); then
-    list_update "$AUR_LOCATION/$pkglist.gz" "$pkglist" "headers_$pkglist"
+    list_fetch "$AUR_LOCATION/$pkglist.gz" --dump-header "headers_$pkglist"
+
+    if (( verify )); then
+        list_fetch "$AUR_LOCATION/$pkglist.gz.sha256"
+        sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
+    fi
+    gunzip "$pkglist.gz"
 fi
 
 # pattern match
