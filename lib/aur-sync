@@ -282,7 +282,7 @@ fi
   if (( ${#pkg_i[@]} )); then
       printf '%s\n' "${pkg_i[@]}"
   fi
-} >igni
+} | complement <(printf '%s\n' "$@") >igni
 
 if [[ -s igni ]]; then
     printf '%s: packages ignored: ' "$argv0"
