@@ -247,26 +247,8 @@ fi
 mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
-# Concatenate ignores from file and command-line arguments
-: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
-
-{ if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
-      while IFS='#' read -r pkg _; do
-          [[ $pkg ]] && printf '%s\n' "$pkg"
-      done < "$ignore_file"
-  fi
-
-  if (( ${#pkg_i[@]} )); then
-      printf '%s\n' "${pkg_i[@]}"
-  fi
-} >igni
-
-# db_info: $1 pkgname $2 pkgver
-( set -o pipefail
-  aur repo "${repo_args[@]}" --list --status-file=db | select_ignores igni -
-) >db_info
-
 # Retrieve path to local repo (#448, #700)
+aur repo "${repo_args[@]}" --status-file=db
 { IFS=: read -r _ db_name
   IFS=: read -r _ db_root
   IFS=: read -r _ db_path
@@ -284,10 +266,33 @@ else
     exit 13
 fi
 
+# Concatenate ignores from file and command-line arguments
+: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
+
+{ if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
+      mapfile -t isect < <(pacini "$ignore_file" --section-list)
+
+      if (( ${#isect[@]} )); then
+          pacini "$ignore_file" --section="$db_name"
+      else
+          pacini "$ignore_file"
+      fi
+  fi
+
+  if (( ${#pkg_i[@]} )); then
+      printf '%s\n' "${pkg_i[@]}"
+  fi
+} | complement <(printf '%s\n' "$@") >igni
+
 if [[ -s igni ]]; then
     printf '%s: packages ignored: ' "$argv0"
     awk -v ORS=' ' '{print} END {printf("\n")}' igni
 fi
+
+# db_info: $1 pkgname $2 pkgver
+( set -o pipefail
+  aur repo "${repo_args[@]}" --list -d "$db_name" -r "$db_root" | select_ignores igni -
+) >db_info
 
 { if (( $# )); then
       # append command-line arguments
