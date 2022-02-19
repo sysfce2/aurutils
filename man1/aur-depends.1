@@ -4,7 +4,7 @@ aur\-depends \- retrieve dependencies using aurweb
 .
 .SH SYNOPSIS
 .SY "aur depends"
-.OP \-abnt
+.OP \-abGnt
 .IR "pkgname [pkgname...]"
 .YS
 .
@@ -31,6 +31,15 @@ in total order.
 Print dependency information to stdout as
 .BR pkgname ,
 in total order. All dependencies are printed.
+.
+.TP
+.BR \-G ", " \-\-graph
+Print dependency information to stdout as edges
+.BR \%pkgbase\etdepends ,
+where
+.I depends
+is resolved to
+.BR pkgbase .
 .
 .TP
 .BR \-t ", " \-\-table

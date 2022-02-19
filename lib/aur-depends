@@ -46,6 +46,21 @@ select_deps() {
     ' "$4"
 }
 
+# $1 pkgname $2 depends $3 pkgbase
+package_graph() {
+    awk -v type="$1" 'FNR == NR {
+        map[$1] = $3
+        next
+    }
+    $2 in map {
+        if (type == "pkgname") {
+            printf("%s\t%s\n", $1, $2)
+        } else if (type == "pkgbase") {
+            printf("%s\t%s\n", $3, map[$2])
+        }
+    }' "${@:2}"
+}
+
 tr_ver() {
     sed -r 's/[<>=].*$//g'
 }
@@ -93,10 +108,6 @@ chain() {
     return $max_request
 }
 
-order() {
-    cut -f1,2 "$1" | tsort | tac
-}
-
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -106,15 +117,15 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-abnt]\n' "$argv0"
+    printf >&2 'usage: %s [-abGnt]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='abnt'
-opt_long=('table' 'pkgbase' 'pkgname' 'pkgname-all' 'no-depends'
-          'no-makedepends' 'no-checkdepends')
+opt_short='abGnt'
+opt_long=('table' 'pkgbase' 'pkgname' 'pkgname-all' 'graph'
+          'no-depends' 'no-makedepends' 'no-checkdepends')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -124,12 +135,14 @@ set -- "${OPTRET[@]}"
 
 while true; do
     case "$1" in
-        -a|--pkgname-all)
-            mode=pkgname_all ;;
         -b|--pkgbase)
             mode=pkgbase ;;
         -n|--pkgname)
             mode=pkgname ;;
+        -a|--pkgname-all)
+            mode=pkgname_all ;;
+        -G|--graph)
+            mode=pkgbase_graph ;;
         -t|--table)
             mode=table ;;
         --no-depends)
@@ -174,33 +187,23 @@ if cd "$tmp" && mkdir json tsv; then
     fi
 
     case $mode in
-        # pkgbase (AUR, total order)
-        pkgbase)
-            # associate pkgname to pkgbase
-            declare -A map map_seen
-
-            while read -r pkgname pkgbase; do
-                map[$pkgname]=$pkgbase
-            done < <(cut -f1,3 "$deptable")
-
-            # pkgbase is ignored for repo packages (as unknown)
-            while read -r pkgname; do
-                pkgbase=${map[$pkgname]}
-
-                if [[ $pkgbase ]] && [[ ! ${map_seen[$pkgbase]} ]]; then
-                    printf '%s\n' "${map[$pkgname]}"
-                    map_seen[$pkgbase]=1
-                fi
-            done < <(order "$deptable")
-            ;;
         # pkgname (AUR, total order)
         pkgname)
-            grep -Fxf <(cut -f1 "$deptable") <(order "$deptable")
+            grep -Fxf <(cut -f1 "$deptable") <(cut -f1,2 "$deptable" | tsort | tac)
             ;;
         # pkgname (all, total order)
         pkgname_all)
-            order "$deptable"
+            cut -f1,2 "$deptable" | tsort | tac
             ;;
+        # pkgbase (AUR, total order)
+        pkgbase)
+            package_graph 'pkgbase' "$deptable" "$deptable" | tsort | tac
+            ;;
+        # pkgbase (AUR, graph)
+        pkgbase_graph)
+            package_graph 'pkgbase' "$deptable" "$deptable" | sort -k1b,1
+            ;;
+        # all information
         table)
             cat "$deptable"
             ;;
