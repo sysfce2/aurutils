@@ -1,0 +1,32 @@
+#!/bin/bash
+set -e
+[[ -v AUR_DEBUG ]] && set -o xtrace
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# use quoted expansion (@Q) - heredocs are expanded like double-quoted strings
+cat <<EOF
+rule aurbuild
+    command = env -C \${directory} ${@@Q} && date --rfc-3339=ns > \${out}
+    pool = console
+EOF
+
+# input is assumed to be ordered by pkgbase (e.g. aur-depends --graph)
+current_package=
+while read -r pkgbase depends_pkgbase _; do
+    if [[ $pkgbase != "$current_package" ]] && [[ $current_package ]]; then
+        printf '\n%-4sdirectory = %s\n' ' ' "$current_package"
+    fi
+    if [[ $pkgbase != "$current_package" ]] || [[ ! $current_package ]]; then
+        # TODO: take input file (monitored for changes by ninja) as argument
+        printf 'build %s.stamp: aurbuild %s/PKGBUILD | ' "$pkgbase" "$pkgbase"
+    fi
+    current_package=$pkgbase
+
+    # don't add dependency to self
+    if [[ $pkgbase != "$depends_pkgbase" ]]; then
+        printf '%s.stamp ' "$depends_pkgbase"
+    fi
+done
+printf '\n%-4sdirectory = %s\n' ' ' "$current_package"
+
+# vim: set et sw=4 sts=4 ft=sh:
