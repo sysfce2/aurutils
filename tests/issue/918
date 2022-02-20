@@ -10,6 +10,7 @@ paste_args() {
 # randomized test
 n_terms=10
 set -- $(aur pkglist | shuf -n "$n_terms")
+printf '%s\n' >&2 "$*"
 cd "$tmp"
 
 # RPC query (set intersection)

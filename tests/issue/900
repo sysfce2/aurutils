@@ -23,10 +23,11 @@ EOF
 
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
-pkg=aurutils
+pkg=weston-git
+pkg_ignored=wayland-git
 
 # check ignores on the command-line
 env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync -d "$tmp_uid" --no-build \
-	--no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg" --ignore-file=/dev/null "$pkg"
-[[ ! -d $tmp/$pkg ]]
-[[ ! -f $tmp/$pkg ]]
+	--no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg_ignored" --ignore-file=/dev/null "$pkg"
+[[ ! -d $tmp/$pkg_ignored ]]
+[[ ! -f $tmp/$pkg_ignored ]]
