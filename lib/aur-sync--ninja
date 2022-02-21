@@ -4,6 +4,7 @@ set -e
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # use quoted expansion (@Q) - heredocs are expanded like double-quoted strings
+# shellcheck disable=SC2154
 cat <<EOF
 rule aurbuild
     command = env -C \${directory} ${@@Q} && date --rfc-3339=ns > \${out}
