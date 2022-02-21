@@ -65,12 +65,6 @@ complement() {
     grep -Fxvf "$@" || return $(( $? - 1 ))
 }
 
-srcinfo_graph() {
-    while read -r pkg; do
-        [[ $pkg ]] && printf '%s\0' "$pkg/.SRCINFO"
-    done | xargs -0 cat -- | aur graph >/dev/null
-}
-
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -388,9 +382,15 @@ if (( download )); then
 fi
 
 # Verify dependency tree (#20)
-if (( graph )) && ! srcinfo_graph < "$tmp"/queue; then
-    error '%s: failed to verify dependency graph' "$argv0"
-    exit 1
+if (( graph )); then
+    if ! { while read -r pkg; do
+               [[ $pkg ]] && printf '%s\0' "$pkg/.SRCINFO"
+           done
+         } | xargs -0 cat -- | aur graph >/dev/null
+    then
+        error '%s: failed to verify dependency graph' "$argv0"
+        exit 1
+    fi < "$tmp"/queue
 fi
 
 # Inspect package files
@@ -398,6 +398,8 @@ if (( view )); then
     aur view -a "$tmp"/queue "${view_args[@]}"
 fi
 
+# Build dependency tree with ninja (#908)
+# TODO: expose this file to the user (--save)
 if (( build )); then
     ninja -f "$tmp"/build.ninja -t clean
     ninja -f "$tmp"/build.ninja -k "$keep_going"
