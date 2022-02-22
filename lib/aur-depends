@@ -197,7 +197,7 @@ if cd "$tmp" && mkdir json tsv; then
             ;;
         # pkgbase (AUR, graph)
         pkgbase_graph)
-            package_graph 'pkgbase' "$deptable" "$deptable" | sort -k1b,1
+            package_graph 'pkgbase' "$deptable" "$deptable" | sort -k1b,1 -k1 -u
             ;;
         # all information
         table)

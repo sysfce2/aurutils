@@ -407,7 +407,7 @@ if (( AUR_SYNC_USE_NINJA )); then
     # input:  $AURDEST/pkgbase/PKGBUILD
     # output: $AURDEST/$build_dir/pkgbase.stamp
     cd_safe "$build_dir"
-    aur sync--ninja "$AURDEST" < "$tmp"/graph > build.ninja \
+    sort -k1b,1 -k1 -u "$tmp"/graph | aur sync--ninja "$AURDEST" >build.ninja \
         -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 
     if (( build )) && ninja -k "$keep_going"; then
