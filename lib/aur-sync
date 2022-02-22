@@ -348,7 +348,7 @@ cut -f1-3 depends | tr_ver 2 | select_ignores 2 filter - | lib32 - >graph_0
 
 # XXX a flat file is needed for aur-{graph,fetch,view}. `ninja` requires the
 # build files to be present before dependency resolution (with `ninja -n`) can
-# occur, and `ninja -t targets` has partial output on errors. This implies
+# occur, and `ninja -t targets` sorts in alphabetical order. This implies
 # that dependency cycles cannot be resolved before retrieving files with
 # aur-fetch with `ninja` alone. `tsort` could either be used in this case (with
 # a less nice diagnostic on cycles), or fetches done in an arbitrary order
@@ -411,18 +411,35 @@ if (( AUR_SYNC_USE_NINJA )); then
         -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 
     if (( build )) && ninja -k "$keep_going"; then
+        # remove ninja directory on successful build
         rm -rf "$build_dir"
+
+    elif (( build )); then
+        # print all targets in dependency order
+        NINJA_STATUS='[%f/%t] ' ninja -nC /var/empty -f "$PWD"/build.ninja | \
+            # [\w@\.\-\+]: valid characters for pkgname
+            # alternative: [^\s]+ from rule `env -C ... > pkgbase.stamp`
+            pcregrep -o1 -o3 '(\[\d+/\d+\] )(.+?)([\w@\.\-\+]+)(\.stamp)' | while read -r status pkg
+        do
+            if [[ -f $pkg.stamp ]]; then
+                printf "${BOLD}${BLUE}%s${ALL_OFF} %s\t${BOLD}${GREEN}[OK]${ALL_OFF}\n" "$status" "$pkg"
+            else
+                printf "${BOLD}${BLUE}%s${ALL_OFF} %s\t${BOLD}${RED}[FAIL]${ALL_OFF}\n" "$status" "$pkg"
+            fi
+        done | column -t
+
+        # preserve ninja directory
+        printf '%s: build files at %s\n' "$argv0" "$(pwd -P)"
     else
         printf '%s: build files at %s\n' "$argv0" "$(pwd -P)"
     fi
+
+elif (( build )); then
+    aur build "${build_args[@]}" -a "$tmp"/queue -d "$db_name" --root "$db_root"
 else
-    if (( build )); then
-        aur build "${build_args[@]}" -a "$tmp"/queue -d "$db_name" --root "$db_root"
-    else
-        while read -r pkg; do
-            [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
-        done < "$tmp"/queue
-    fi
+    while read -r pkg; do
+        [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
+    done < "$tmp"/queue
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
