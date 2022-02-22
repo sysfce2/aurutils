@@ -28,7 +28,7 @@ while read -r pkgbase depends_pkgbase _; do
     fi
     if [[ $pkgbase != "$current_package" ]] || [[ ! $current_package ]]; then
         # TODO: take input file (monitored for changes by ninja) as argument
-        printf "build %s.stamp: aurbuild $srcdir%s/PKGBUILD | " "$pkgbase" "$pkgbase"
+        printf 'build %s.stamp: aurbuild %s/PKGBUILD | ' "$pkgbase" "$srcdir/$pkgbase"
     fi
     current_package=$pkgbase
 

@@ -7,6 +7,7 @@ XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
+AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
@@ -396,7 +397,7 @@ if (( view )); then
 fi
 
 # Build dependency tree with ninja (#908)
-if (( build )); then
+if (( AUR_SYNC_USE_NINJA )); then
     # directory for stamp files (concurrent aur-sync processes)
     # XXX: better way to disambiguate (e.g date, uuid)
     build_dir=ninja-$USER-$$
@@ -406,18 +407,22 @@ if (( build )); then
     # input:  $AURDEST/pkgbase/PKGBUILD
     # output: $AURDEST/$build_dir/pkgbase.stamp
     cd_safe "$build_dir"
-    aur sync--ninja "$AURDEST" <"$tmp"/graph >build.ninja \
-        -- aur build -d "$db_name" --root "$db_root"
+    aur sync--ninja "$AURDEST" < "$tmp"/graph > build.ninja \
+        -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 
-    ninja -t clean
-    ninja -k "$keep_going"
-
-    # remove build directory on success
-    rm -rf "$build_dir"
+    if (( build )) && ninja -k "$keep_going"; then
+        rm -rf "$build_dir"
+    else
+        printf '%s: build files at %s\n' "$argv0" "$(pwd -P)"
+    fi
 else
-    while read -r pkg; do
-        [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
-    done < "$tmp"/queue
+    if (( build )); then
+        aur build "${build_args[@]}" -a "$tmp"/queue -d "$db_name" --root "$db_root"
+    else
+        while read -r pkg; do
+            [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
+        done < "$tmp"/queue
+    fi
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
