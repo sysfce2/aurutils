@@ -99,6 +99,12 @@ elif [[ ! -r $pacman_conf ]]; then
     exit 1
 fi
 
+# Custom elevation command
+if [[ $PACMAN_AUTH ]]; then
+    # shellcheck disable=SC2086
+    sudo() { command -- $PACMAN_AUTH "$@"; }
+fi
+
 # bind mount file:// paths to container (#461)
 # required for update/build steps
 while read -r key _ value; do
