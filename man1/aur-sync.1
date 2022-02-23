@@ -66,6 +66,22 @@ Defaults to
 .RE
 .
 .TP
+.BI \-\-keep\-going= NUM
+Keep going until
+.I NUM
+packages fail to build
+.RB ( "ninja -k" ).
+If
+.I NUM
+is set to
+.BR 0 ,
+continue indefinitely. On failure, a summary is printed of failed and
+succeeded builds. Requires
+.B AUR_SYNC_USE_NINJA
+(see
+.BR ENVIRONMENT ).
+.
+.TP
 .BR \-\-noview ", " \-\-no\-view
 Do not present build files for inspection.
 .
@@ -249,6 +265,30 @@ The below are specific to
 Determines where build files will be cloned. This must be an absolute path.
 Defaults to
 .IR $XDG_CACHE_HOME/aurutils/sync .
+.
+.TP
+.B AUR_SYNC_USE_NINJA
+When set to a positive value, run
+.B aur\-build
+command-lines with
+.BR ninja .
+If a package fails to build, this allows
+.B aur\-sync \-\-keep\-going
+to continue with remaining, independent packages.
+.PP
+.RS
+The
+.IR $AURDEST/ninja-$USER-$$
+directory contains the
+.B build.ninja
+file and timestamps
+.IB \fR( \fIpkgbase \fR. stamp \fR)
+for each job. It is removed on successful completion of
+.BR ninja ,
+or if
+.B \-\-no\-build
+is specified.
+.RE
 .
 .SH NOTES
 .SS Standard input
