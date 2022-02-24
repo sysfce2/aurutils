@@ -1,0 +1,4 @@
+#!/bin/bash
+aur query linux
+# if -t [info|search] is not specified, print usage (#938)
+(( $? == 1 ))

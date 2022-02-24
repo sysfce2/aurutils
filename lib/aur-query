@@ -77,7 +77,7 @@ trap_exit() {
 }
 
 usage() {
-    printf 'usage: %s [-t [info|search] ] [-b by] [-aer] <package...>\n' "$argv0" >&2
+    printf 'usage: %s -t [info|search] [-b by] [-aer] <package...>\n' "$argv0" >&2
     exit 1
 }
 
@@ -134,6 +134,8 @@ elif [[ $arg_type == "info" ]] && (( AUR_QUERY_RPC_POST )); then
 
 elif [[ $arg_type == "info" ]]; then
     curl_config() { jq -R -r '@uri' | rpc_info; }
+else
+    usage
 fi
 
 # generate curl configuration
