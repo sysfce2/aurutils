@@ -130,7 +130,11 @@ Defaults to
 .B AUR_QUERY_RPC_SPLITNO_POST
 The amount of packages in the message body when using HTTP POST for
 info-type requests. Defaults to
-.IR 500 .
+.IR 2000 .
+This value should not be set higher than 5000 (the maximum amount of
+package results in an
+.B info
+request).
 .
 .TP
 .B AUR_QUERY_RPC_VERSION
