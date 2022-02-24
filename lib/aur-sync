@@ -416,7 +416,7 @@ if (( AUR_SYNC_USE_NINJA )); then
 
     elif (( build )); then
         # print all targets in dependency order
-        NINJA_STATUS='[%f/%t] ' ninja -nC /var/empty -f "$PWD"/build.ninja | \
+        NINJA_STATUS='[%s/%t] ' ninja -nC /var/empty -f "$PWD"/build.ninja | \
             # [\w@\.\-\+]: valid characters for pkgname
             # alternative: [^\s]+ from rule `env -C ... > pkgbase.stamp`
             pcregrep -o1 -o3 '(\[\d+/\d+\] )(.+?)([\w@\.\-\+]+)(\.stamp)' | while read -r status pkg
