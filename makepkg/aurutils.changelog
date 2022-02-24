@@ -1,3 +1,11 @@
+## 7.1
+
+* `aur-sync`
+  + avoid off-by-one in ninja build summary (#940)
+ 
+* `aur-query`
+  + print usage if `-t` is not specified (#938)
+
 ## 7
 
 This release adds optional support for the `ninja` build system. If the
