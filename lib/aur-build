@@ -175,7 +175,8 @@ while true; do
         -L|--log)
             makepkg_args+=(--log) ;;
         --nocheck|--no-check)
-            makepkg_args+=(--nocheck) ;;
+            makepkg_args+=(--nocheck)
+            makechrootpkg_makepkg_args+=(--nocheck) ;;
         --makepkg-args|--margs)
             shift; IFS=, read -a arg -r <<< "$1"
             makepkg_args+=("${arg[@]}")
