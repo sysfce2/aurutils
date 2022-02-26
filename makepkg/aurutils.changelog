@@ -1,5 +1,8 @@
 ## 7.1
 
+* `aur-build`
+  + pass --nocheck to chroot (#942)
+
 * `aur-sync`
   + avoid off-by-one in ninja build summary (#940)
  
