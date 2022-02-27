@@ -22,8 +22,9 @@ request_get() {
     # Write opening and closing quotes with \x22 (hexadecimal)
     awk -v url="$rpc_url" -v ver="$rpc_ver" -v splitno="$splitno" -v type="$type" -v by="$by" '
     BEGIN {
-        form = sprintf("%s&v=%s&type=%s", url, ver, type)
-        if (by) form = sprintf("%s&by=%s", form, by)
+        form = sprintf("%s?v=%s&type=%s", url, ver, type)
+        if (by) 
+            form = sprintf("%s&by=%s", form, by)
     } {
         if ((NR-1) % splitno == 0) {
             if (NR > 1)
