@@ -1,4 +1,4 @@
-.TH AUR-QUERY 1 2021-11-27 AURUTILS
+.TH AUR-QUERY 1 2022-02-25 AURUTILS
 .SH NAME
 aur\-query \- send requests to the aurweb RPC interface
 .
@@ -108,13 +108,14 @@ The URI of the RPC interface. Defaults to
 .
 .TP
 .B AUR_QUERY_RPC_POST
-If set to a positive value, use HTTP POST for info-type requests.
+If set to a positive value, use HTTP POST for requests.
 Defaults to
 .IR 1 .
 .RS
 .PP
-HTTP GET results in a higher number of requests than HTTP POST, so
-latter should be preferred in the general case.
+For info-type requests, more packages can be queried in a single
+request with HTTP POST than with HTTP GET, and this approach is
+preferable especially when querying large numbers of packages.
 .RE
 .
 .TP
@@ -145,7 +146,7 @@ The version for the RPC endpoint. Defaults to
 The default set of options for
 .BR curl (1)
 are
-.BR "\-A aurutils \-fgLsSq \-\-tcp\-fastopen" .
+.BR "\-A aurutils \-fgLsSq" .
 .
 .SH SEE ALSO
 .ad l

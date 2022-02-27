@@ -5,9 +5,9 @@
 
 * `aur-sync`
   + avoid off-by-one in ninja build summary (#940)
- 
+
 * `aur-query`
-  + print usage if `-t` is not specified (#938)
+  + do not abort if `-t` is unspecified (#938)
 
 ## 7
 

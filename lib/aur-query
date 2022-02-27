@@ -16,18 +16,22 @@ PS4='+(${BASH_SOURCE}:${LINENO}):${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 curl_args=(-A aurutils -fgLsSq)
 
 # Filters for generating curl configuration
-rpc_info() {
-    local rpc_url="$AUR_QUERY_RPC?v=$AUR_QUERY_RPC_VERSION&type=info"
-    local splitno="$AUR_QUERY_RPC_SPLITNO"
+request_get() {
+    local rpc_url=$1 rpc_ver=$2 splitno=$3 type=$4 by=$5
 
     # Write opening and closing quotes with \x22 (hexadecimal)
-    awk -v rpc="$rpc_url" -v splitno="$splitno" '{
+    awk -v url="$rpc_url" -v ver="$rpc_ver" -v splitno="$splitno" -v type="$type" -v by="$by" '
+    BEGIN {
+        form = sprintf("%s&v=%s&type=%s", url, ver, type)
+        if (by) form = sprintf("%s&by=%s", form, by)
+    } {
         if ((NR-1) % splitno == 0) {
             if (NR > 1)
                 printf "\x22\n"
             printf "output \x22args-%s-%s\x22\n", NR-1, (NR-1)+splitno
-            printf "url \x22%s&arg[]=%s", rpc, $0
-        } else if (NR > 1) {
+            printf "url \x22%s&arg[]=%s", form, $0
+        } 
+        else if (NR > 1) {
             printf "&arg[]=%s", $0
         }
     } END {
@@ -39,33 +43,21 @@ rpc_info() {
 # POST requests are useful for info-type requests to circumvent limits on the
 # URL length with GET requests. The difference is that all data is now included
 # in the message body, instead of in the URI.
-rpc_info_post() {
-    local rpc_url="$AUR_QUERY_RPC"
-    local rpc_ver="$AUR_QUERY_RPC_VERSION"
-    local splitno="$AUR_QUERY_RPC_SPLITNO_POST"
+request_post() {
+    local rpc_url=$1 rpc_ver=$2 splitno=$3 type=$4 by=$5
 
     # Write opening and closing quotes with \x22 (hexadecimal)
-    awk -v rpc="$rpc_url" -v version="$rpc_ver" -v splitno="$splitno" '{
+    awk -v url="$rpc_url" -v ver="$rpc_ver" -v splitno="$splitno" -v type="$type" -v by="$by" '{
         if ((NR-1) % splitno == 0) {
             printf "next\n"
             printf "output \x22args-%s-%s\x22\n", NR-1, (NR-1)+splitno
-            printf "url \x22%s\x22\n", rpc
-            printf "data \x22v=%s\x22\n", version
-            printf "data \x22type=info\x22\n"
+            printf "url \x22%s\x22\n", url
+            printf "data \x22v=%s\x22\n", ver
+            printf "data \x22type=%s\x22\n", type
+            if (by) printf "data \x22by=%s\x22\n", by
         }
-        printf "data-urlencode \x22arg[]=%s\x22\n", $0
+        printf "data \x22arg[]=%s\x22\n", $0
     }'
-}
-
-# Search-type requests can only contain one package argument, and GET requests
-# are sufficient for this.
-rpc_search() {
-    local rpc_url="$AUR_QUERY_RPC?v=$AUR_QUERY_RPC_VERSION&type=search&by=$1&arg"
-
-    while IFS= read -r term; do
-        printf 'url "%s=%s"\n' "$rpc_url" "$term"
-        printf 'output "arg-%s"\n' "$term"
-    done
 }
 
 trap_exit() {
@@ -125,17 +117,21 @@ if (( ! $# )); then
     usage
 fi
 
-# set filters
-if [[ $arg_type == "search" ]]; then
-    curl_config() { jq -R -r '@uri' | rpc_search "${arg_by:-name-desc}"; }
+# request parameters
+rpc=$AUR_QUERY_RPC
+ver=$AUR_QUERY_RPC_VERSION
 
-elif [[ $arg_type == "info" ]] && (( AUR_QUERY_RPC_POST )); then
-    curl_config() { rpc_info_post; }  # URI encoding is handled by curl --data-urlencode
-
-elif [[ $arg_type == "info" ]]; then
-    curl_config() { jq -R -r '@uri' | rpc_info; }
+if (( AUR_QUERY_RPC_POST )); then
+    http='post'
+    splitno=$AUR_QUERY_RPC_SPLITNO_POST
 else
-    usage
+    http='get'
+    splitno=$AUR_QUERY_RPC_SPLITNO
+fi
+
+# search requests require 1 argument per URI
+if [[ $arg_type == "search" ]]; then
+    splitno=1
 fi
 
 # generate curl configuration
@@ -143,7 +139,7 @@ if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
     tee # noop
 else
     printf '%s\n' "$@"
-fi | curl_config >"$tmp"/config
+fi | jq -R -r '@uri' | request_"$http" "$rpc" "$ver" "$splitno" "$arg_type" "${arg_by-}" >"$tmp"/config
 
 # exit cleanly on empty input (#706)
 if [[ ! -s $tmp/config ]]; then
@@ -184,7 +180,7 @@ case $multiple in
             })'
         } ;;
     none)
-        combine() { tee; } ;;
+        combine() { jq -Mrc; } ;;
 esac
 
 # support parallel transfers (curl >7.66.0)
