@@ -10,6 +10,7 @@ mode=pkgname
 resolve_depends=1
 resolve_makedepends=1
 resolve_checkdepends=1
+resolve_optdepends=0
 
 count() {
     jq -r '.resultcount' "$1" | awk '{s += $1} END {print s}'
@@ -25,7 +26,7 @@ tabulate() {
     +
     # enumerate dependencies per kind
       [
-        "Depends", "MakeDepends", "CheckDepends"
+        "Depends", "MakeDepends", "CheckDepends", "OptDepends"
         | . as $kind
 
         | $result[$kind][]?
@@ -38,12 +39,13 @@ EOF
 
 # $1 pkgname $2 depends $3 pkgbase $4 pkgver $5 depends_type
 select_deps() {
-    awk -v deps="$1" -v mdeps="$2" -v cdeps="$3" '
+    awk -v deps="$1" -v mdeps="$2" -v cdeps="$3" -v odeps="$4" '
         $5 ~ /^Self$/                  {print}
         $5 ~ /^Depends$/      && deps  {print}
         $5 ~ /^MakeDepends$/  && mdeps {print}
         $5 ~ /^CheckDepends$/ && cdeps {print}
-    ' "$4"
+        $5 ~ /^OptDepends$/   && odeps {print}
+    ' "$5"
 }
 
 # $1 pkgname $2 depends $3 pkgbase
@@ -68,8 +70,8 @@ tr_ver() {
 # shellcheck disable=SC2086
 chain() {
     local a num sub
-    local select_args=("$1" "$2" "$3")
-    shift 3
+    local select_args=("$1" "$2" "$3" "$4")
+    shift 4
 
     aur query -t info "$@" > json/0 || exit
     num=$(count json/0)
@@ -126,7 +128,7 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='abGnt'
-opt_long=('table' 'pkgbase' 'pkgname' 'pkgname-all' 'graph'
+opt_long=('table' 'pkgbase' 'pkgname' 'pkgname-all' 'graph' 'optdepends'
           'no-depends' 'no-makedepends' 'no-checkdepends')
 opt_hidden=('dump-options')
 
@@ -153,6 +155,8 @@ while true; do
             resolve_makedepends=0 ;;
         --no-checkdepends)
             resolve_checkdepends=0 ;;
+        --optdepends)
+            resolve_optdepends=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -170,7 +174,7 @@ trap 'trap_exit' EXIT
 rings=0
 if cd "$tmp" && mkdir json tsv; then
     # tsv/n: pkgname\tdepends\tpkgbase\pkgver
-    chain "$resolve_depends" "$resolve_makedepends" "$resolve_checkdepends" "$@" || rings=$?
+    chain "$resolve_depends" "$resolve_makedepends" "$resolve_checkdepends" "$resolve_optdepends" "$@" || rings=$?
     deptable=tsv/n
 
     # check iteration number

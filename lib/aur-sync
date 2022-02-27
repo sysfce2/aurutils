@@ -105,7 +105,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:' 'nocheck' 
-            'no-checkdepends' 'nocheckdepends')
+            'no-checkdepends' 'nocheckdepends' 'optdepends')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -131,6 +131,8 @@ while true; do
             shift; keep_going=$1 ;;
         -o|--nobuild|--no-build)
             build=0 ;;
+        --optdepends)
+            depends_args+=(--optdepends) ;;
         --nocheck|--no-check|--nocheckdepends|--no-checkdepends)
             depends_args+=(--no-checkdepends)
             build_args+=(--no-check) ;;

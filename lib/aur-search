@@ -38,7 +38,8 @@ tabulate() {
             (.LastModified   | todate),
             (.Depends        | sel_join),
             (.MakeDepends    | sel_join),
-            (.CheckDepends   | sel_join)
+            (.CheckDepends   | sel_join),
+            (.OptDepends     | sel_join)
         ] | @tsv'
 }
 
@@ -61,6 +62,7 @@ info_long() {
         'Depends On'
         'Makedepends'
         'Checkdepends'
+        'Optdepends'
     )
     local -a info
 

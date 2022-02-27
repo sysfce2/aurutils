@@ -1,3 +1,14 @@
+## 7.2
+
+* `aur-search`
+  + add `OptDepends` to `--info` output
+
+* `aur-depends`
+  + add `--optdepends`
+
+* `aur-sync`
+  + add `--optdepends`
+
 ## 7.1
 
 * `aur-build`
