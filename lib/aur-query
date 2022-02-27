@@ -49,12 +49,14 @@ request_post() {
     # Write opening and closing quotes with \x22 (hexadecimal)
     awk -v url="$rpc_url" -v ver="$rpc_ver" -v splitno="$splitno" -v type="$type" -v by="$by" '{
         if ((NR-1) % splitno == 0) {
-            printf "next\n"
+            if (NR > 1)
+                printf "next\n"
             printf "output \x22args-%s-%s\x22\n", NR-1, (NR-1)+splitno
             printf "url \x22%s\x22\n", url
             printf "data \x22v=%s\x22\n", ver
             printf "data \x22type=%s\x22\n", type
-            if (by) printf "data \x22by=%s\x22\n", by
+            if (by)
+                printf "data \x22by=%s\x22\n", by
         }
         printf "data \x22arg[]=%s\x22\n", $0
     }'
