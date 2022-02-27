@@ -1,4 +1,4 @@
-.TH AUR-DEPENDS 1 2019-01-15 AURUTILS
+.TH AUR-DEPENDS 1 2022-02-27 AURUTILS
 .SH NAME
 aur\-depends \- retrieve dependencies using aurweb
 .
@@ -54,7 +54,11 @@ considers all types (
 .IR makedepends ,
 and
 .IR checkdepends )
-of dependencies by default. Types can be removed selectively with
+of dependencies by default.
+.I optdepends
+can be taken into account with the
+.BR \-\-optdepends
+option. Types can be removed selectively with
 the
 .BR \-\-no\-depends ,
 .BR \-\-no\-makedepends ,

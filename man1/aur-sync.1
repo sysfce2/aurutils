@@ -94,9 +94,17 @@ Build dependencies are resolved with
 .BR aur\-depends (1).
 .
 .TP
+.BR \-\-optdepends
+Take
+.B optdepends
+into account when resolving dependencies.
+.RB ( "aur\-depends \-\-optdepends" )
+.
+.TP
 .BR \-\-nocheck ", " \-\-no\-check
-Do not handle checkdepends.
-.RB ( "aur\-build \-\-no-\check" ", " "aur\-depends \-\-no\-checkdepends" )
+Do not handle
+.BR checkdepends .
+.RB ( "aur\-build \-\-no\-check" ", " "aur\-depends \-\-no\-checkdepends" )
 .
 .TP
 .BR \-\-nograph ", " \-\-no\-graph
