@@ -410,7 +410,7 @@ if (( AUR_SYNC_USE_NINJA )); then
     sort -k1b,1 -k1 -u "$tmp"/graph | aur sync--ninja "$AURDEST" >build.ninja \
         -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 
-    if (( build )) && ninja -k "$keep_going"; then
+    if (( build )) && NINJA_STATUS='[%s/%t] ' ninja -k "$keep_going"; then
         # remove ninja directory on successful build
         rm -rf "$build_dir"
 
