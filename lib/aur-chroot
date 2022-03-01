@@ -140,7 +140,6 @@ if (( create )); then
         sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
              "$directory"/root "${base_packages[@]}"
     fi
-    exit $?
 fi
 
 # use libmakepkg to print full package names
@@ -174,6 +173,12 @@ if (( update )); then
 fi
 
 if (( build )); then
+    if [[ ! -d $directory/root ]]; then
+        printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
+        printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
+        exit 20
+    fi
+
     # use makechrootpkg -c as default build command (sync /root container)
     # arguments after -- (if present) are used as makechrootpkg arguments
     sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,PKGDEST makechrootpkg -r "$directory" \

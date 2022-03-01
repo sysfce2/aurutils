@@ -301,8 +301,7 @@ if (( chroot )); then
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
-    run_msg aur chroot --create "${chroot_args[@]}"
-    run_msg aur chroot --update "${chroot_args[@]}"
+    run_msg aur chroot --create --update "${chroot_args[@]}"
 else
     # Use libmakepkg to avoid a performance hit from linting the
     # PKGBUILD twice (in both makepkg and makepkg --packagelist)
