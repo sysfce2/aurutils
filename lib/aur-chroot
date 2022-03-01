@@ -13,7 +13,7 @@ directory=/var/lib/aurbuild/$machine
 suffix=extra
 
 # default options
-update=0 build=0 packagelist=0 create=0
+update=0 build=0 create=0 print_path=0
 
 usage() {
     cat <<EOF
@@ -33,7 +33,7 @@ source /usr/share/makepkg/util/parseopts.sh
 opt_short='C:D:M:x:BU'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
           'create' 'suffix:' 'bind:' 'bind-rw:' 'packagelist'
-          'buildscript:')
+          'buildscript:' 'path')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -54,6 +54,8 @@ while true; do
             packagelist=1 ;;
         --create)
             create=1 ;;
+        --path)
+            print_path=1 ;;
         -x|--suffix)
             shift; suffix=$1 ;;
         # devtools options
@@ -78,6 +80,7 @@ while true; do
 done
 
 # required for chroot creation and update
+# if specified, copied to the container by arch-nspawn
 makepkg_conf=${makepkg_conf:-/usr/share/devtools/makepkg-$machine.conf}
 
 if [[ ! -f $makepkg_conf ]]; then
@@ -89,6 +92,7 @@ elif [[ ! -r $makepkg_conf ]]; then
 fi
 
 # required for chroot creation and update
+# if specified, copied to the container by arch-nspawn
 pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$suffix.conf}
 
 if [[ ! -f $pacman_conf ]]; then
@@ -162,6 +166,12 @@ if (( packagelist )); then
 
       PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
     )
+    exit $?
+fi
+
+# print path for processing by other tools (e.g. makepkg --packagelist)
+if (( print_path )); then
+    realpath -- "$directory"/root
     exit $?
 fi
 

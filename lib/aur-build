@@ -290,28 +290,28 @@ if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
 fi
 
-if (( chroot )); then
-    # makepkg --packagelist includes the package extension, but
-    # makechrootpkg ignores PKGEXT set on the host. Retrieve it
-    # seperately.
-    packagelist() {
-        run_msg aur chroot --packagelist "${chroot_args[@]}"
-    }
+# Use libmakepkg to avoid a performance hit from linting the
+# PKGBUILD twice (in both makepkg and makepkg --packagelist)
+packagelist() (
+    #global buildscript startdir
+    load_makepkg_config "$1"
 
+    source_safe "${buildscript-PKGBUILD}"
+    PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
+)
+
+if (( chroot )); then
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --create --update "${chroot_args[@]}"
+
+    # makepkg --packagelist includes the package extension, but
+    # makechrootpkg ignores PKGEXT set on the host.
+    # Retrieve the path to the container makepkg.conf separately.
+    pkglist_makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
+    pkglist_makepkg_conf+=/etc/makepkg.conf
 else
-    # Use libmakepkg to avoid a performance hit from linting the
-    # PKGBUILD twice (in both makepkg and makepkg --packagelist)
-    packagelist() (
-        load_makepkg_config "${makepkg_conf-}"
-        source_safe "${buildscript-PKGBUILD}"
-
-        PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
-    )
-
     # Configuration for host builds.
     { printf '[options]\n'
       pacconf "${pacconf_args[@]}" --raw --options
@@ -319,6 +319,9 @@ else
       printf '[%s]\n' "$db_name"
       pacconf "${pacconf_args[@]}" --raw --repo="$db_name"
     } > "$tmp"/local.conf
+
+    # Host makepkg configuration
+    pkglist_makepkg_conf=$makepkg_conf
 fi
 
 if [[ -v queue ]]; then
@@ -362,7 +365,7 @@ while IFS= read -ru "$fd" path; do
 
         while IFS= read -r candidate_pkg; do
             [[ -f $candidate_pkg ]] && exists+=("$candidate_pkg")
-        done < <(PKGDEST="$db_root" packagelist)
+        done < <(PKGDEST="$db_root" packagelist "$pkglist_makepkg_conf")
 
         # Preserve the exit status from makepkg --packagelist (#671)
         wait "$!"
