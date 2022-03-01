@@ -142,6 +142,14 @@ if (( create )); then
     fi
 fi
 
+# arch-nspawn makes no distinction between a missing working directory
+# and one which does not exist
+if [[ ! -d $directory/root ]]; then
+    printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
+    printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
+    exit 20
+fi
+
 # use libmakepkg to print full package names
 if (( packagelist )); then
     if [[ ! -r $directory/root/etc/makepkg.conf ]]; then
@@ -158,14 +166,6 @@ if (( packagelist )); then
 fi
 
 if (( update )); then
-    # arch-nspawn makes no distinction between a missing working directory
-    # and one which does not exist
-    if [[ ! -d $directory/root ]]; then
-        printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
-        printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
-        exit 20
-    fi    
-
     # locking is done by systemd-nspawn
     sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
          "${bindmounts_ro[@]/#/--bind-ro=}" \
@@ -173,12 +173,6 @@ if (( update )); then
 fi
 
 if (( build )); then
-    if [[ ! -d $directory/root ]]; then
-        printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
-        printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
-        exit 20
-    fi
-
     # use makechrootpkg -c as default build command (sync /root container)
     # arguments after -- (if present) are used as makechrootpkg arguments
     sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,PKGDEST makechrootpkg -r "$directory" \
