@@ -1,13 +1,14 @@
 ## 7.2
 
 * `aur-search`
-  + add `OptDepends` to `--info` output
+  + add `OptDepends` to `--info` output (#945)
+  + handle empty keywords in `--info` output (#946)
 
 * `aur-depends`
-  + add `--optdepends`
+  + add `--optdepends` (#945)
 
 * `aur-sync`
-  + add `--optdepends`
+  + add `--optdepends` (#945)
 
 ## 7.1
 
