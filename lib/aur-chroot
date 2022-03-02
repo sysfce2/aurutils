@@ -6,54 +6,47 @@ argv0=chroot
 PATH=/bin:/usr/bin
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 machine=$(uname -m)
-startdir=$(pwd -P)
 
 # default arguments
 directory=/var/lib/aurbuild/$machine
 suffix=extra
 
 # default options
-update=0 build=0 packagelist=0 create=0
+update=0 build=0 packagelist=0 create=0 print_path=0
 
 usage() {
     cat <<EOF
 Usage:
   $argv0 [-BU] [-CDM path] -- <makechrootpkg args>
   $argv0 --create [-CDM path] [package...]
-  $argv0 --packagelist [-D path]
 EOF
     exit 1
 }
 
-source /usr/share/makepkg/util/config.sh
 source /usr/share/makepkg/util/option.sh
-source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:x:BU'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
-          'create' 'suffix:' 'bind:' 'bind-rw:' 'packagelist'
-          'buildscript:')
-opt_hidden=('dump-options')
+          'create' 'suffix:' 'bind:' 'bind-rw:' 'path')
+opt_hidden=('dump-options' 'packagelist')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset bindmounts_ro bindmounts_rw buildscript makepkg_conf pacman_conf
+unset bindmounts_ro bindmounts_rw makepkg_conf pacman_conf
 while true; do
     case "$1" in
         -B|--build)
             build=1 ;;
         -U|--update)
             update=1 ;;
-        --buildscript)
-            shift; buildscript=$1 ;;
-        --packagelist)
-            packagelist=1 ;;
         --create)
             create=1 ;;
+        --path)
+            print_path=1 ;;
         -x|--suffix)
             shift; suffix=$1 ;;
         # devtools options
@@ -67,6 +60,9 @@ while true; do
             shift; bindmounts_ro+=("$1") ;;
         --bind-rw)
             shift; bindmounts_rw+=("$1") ;;
+        # deprecated options
+        --packagelist)
+            packagelist=1 ;;
         # other options
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
@@ -78,6 +74,7 @@ while true; do
 done
 
 # required for chroot creation and update
+# if specified, copied to the container by arch-nspawn
 makepkg_conf=${makepkg_conf:-/usr/share/devtools/makepkg-$machine.conf}
 
 if [[ ! -f $makepkg_conf ]]; then
@@ -89,6 +86,7 @@ elif [[ ! -r $makepkg_conf ]]; then
 fi
 
 # required for chroot creation and update
+# if specified, copied to the container by arch-nspawn
 pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$suffix.conf}
 
 if [[ ! -f $pacman_conf ]]; then
@@ -140,33 +138,28 @@ if (( create )); then
         sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
              "$directory"/root "${base_packages[@]}"
     fi
+fi
+
+# arch-nspawn makes no distinction between a missing working directory
+# and one which does not exist
+if [[ ! -d $directory/root ]]; then
+    printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
+    printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
+    exit 20
+fi
+
+# print path for processing by other tools (e.g. makepkg --packagelist)
+if (( print_path )); then
+    realpath -- "$directory"/root
     exit $?
 fi
 
-# use libmakepkg to print full package names
 if (( packagelist )); then
-    if [[ ! -r $directory/root/etc/makepkg.conf ]]; then
-        printf >&2 '%s --packagelist: %q: could not be read\n' "$argv0" "$directory"/root/etc/makepkg.conf
-        exit 1
-    fi
-
-    ( load_makepkg_config "$directory"/root/etc/makepkg.conf
-      source_safe "${buildscript-PKGBUILD}"
-
-      PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
-    )
+    makepkg --packagelist --config="$directory"/root/etc/makepkg.conf
     exit $?
 fi
 
 if (( update )); then
-    # arch-nspawn makes no distinction between a missing working directory
-    # and one which does not exist
-    if [[ ! -d $directory/root ]]; then
-        printf >&2 '%s: %q is not a directory\n' "$argv0" "$directory"/root
-        printf >&2 '%s: did you run aur chroot --create?\n' "$argv0"
-        exit 20
-    fi    
-
     # locking is done by systemd-nspawn
     sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
          "${bindmounts_ro[@]/#/--bind-ro=}" \

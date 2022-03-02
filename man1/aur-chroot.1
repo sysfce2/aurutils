@@ -20,7 +20,6 @@ aur\-chroot \- build pacman packages with systemd-nspawn
 .RI [ "package..." ]
 .
 .SY "aur chroot"
-.OP \-\-packagelist
 .OP \-D directory
 .YS
 .
@@ -70,14 +69,6 @@ package group is also installed.
 If packages or package groups are listed on the command-line, these
 are installed instead of the above.
 .
-.TP
-.B \-\-packagelist
-List the package filenames that would be produced without
-building using the
-.BR makepkg.conf (5)
-file inside the container. (see
-.BR \-\-makepkg\-conf )
-.
 .SH OPTIONS
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
@@ -117,6 +108,11 @@ The
 .BR makepkg.conf (5)
 file used inside the container. Defaults to devtools'
 .IR makepkg\-<machine>.conf .
+.
+.TP
+.B \-\-path
+Print the path to the container template
+.RI ( $directory/root ).
 .
 .TP
 .BR \-x ", " \-\-suffix
@@ -273,9 +269,7 @@ path inside the container, and moved afterward to
 .B PKGDEST
 on the host. Checking for existing packages must thus be done
 manually, e.g.  with
-.B makepkg \-\-packagelist
-or
-.BR "aur\-chroot \-\-packagelist" .
+.BR "makepkg \-\-packagelist" .
 .PP
 GPG signing packages with
 .B makepkg \-\-sign
