@@ -1,3 +1,10 @@
+## 8
+
+* `aur-chroot`
+  + add `--path` to retrieve path to container template
+  + do not exit on chroot creation (`--create`, #950)
+  + deprecate `--packagelist`, remove `--buildscript`
+
 ## 7.2
 
 * `aur-search`
