@@ -5,6 +5,16 @@
   + do not exit on chroot creation (`--create`, #950)
   + deprecate `--packagelist`, remove `--buildscript`
 
+* `aur-srcver`
+  + add `--buildscript`
+  + preserve the environment when sourcing the PKGBUILD (after running makepkg)
+    - the `-E` flag now has no effect
+  + take arguments from `stdin` if `-` is specified
+
+* `aurvcs.7`
+  + rename `aur-vercmp-devel` to `aur-sync-devel`
+    - `aur-sync-devel` runs `aur-fetch` and `aur-view` before `aur-srcver`
+
 ## 7.2
 
 * `aur-search`

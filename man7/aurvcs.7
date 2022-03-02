@@ -1,11 +1,11 @@
-.TH AURVCS 7 2019-10-18 AURUTILS
+.TH AURVCS 7 2022-03-02 AURUTILS
 .SH NAME
 aurvcs \- workflows for VCS packages
 .
 .SH DESCRIPTION
 Workflows for building and managing VCS packages.
 .
-.SH aur\-vercmp\-devel
+.SH aur\-sync\-devel
 Takes the contents of a local repository
 .RB ( "aur\-repo \-\-list" )
 and matches them against a common pattern for VCS packages
@@ -30,6 +30,7 @@ Any option arguments are forwarded to
 .SS Program source
 .EX
     #!/bin/bash
+    set -e
     XDG_CACHE_HOME=${XDG_CACHE_HOME:\-$HOME/.cache}
     AURDEST=${AURDEST:\-$XDG_CACHE_HOME/aurutils/sync}
     AURVCS=${AURVCS:\-.*\-(cvs|svn|git|hg|bzr|darcs)$}
@@ -40,77 +41,45 @@ Any option arguments are forwarded to
 
     # Note that valid PKGBUILDs cannot contain \en in pkgname.
     get_latest_revision() {
-        grep \-Fxf \- <(printf \(aq%s\en\(aq *) | xargs \-r aur srcver
+        grep \-Fxf \- <(printf \(aq%s\en\(aq *) | aur srcver \-
     }
 
-    db_tmp=$(mktemp)
-    trap \(aqrm \-rf "$db_tmp"\(aq EXIT
+    # Scratch space for intermediary results.
+    tmp=$(mktemp \-d)
+    trap \(aqrm \-rf "$tmp"\(aq EXIT
 
     # Retrieve a list of the local repository contents. The repository
     # can be specified with the usual aur\-repo arguments.
-    aur repo \-\-list "$@" >"$db_tmp"
+    aur repo \-\-list "$@" | tee "$tmp"/db | filter_vcs - >"$tmp"/vcs
+
+    # Pull any new AUR revisions (e.g. dependency updates) for VCS packages 
+    # and inspect them with aur-view(1). This is done before running aur\-srcver,
+    # which runs makepkg and sources the PKGBUILD.
+    cd "$AURDEST"
+    aur fetch \- <"$tmp"/vcs
+    aur view \-a "$tmp"/vcs
 
     # Find VCS packages that are outdated according to aur\-srcver.
     # This checks out the latest revision for existing source directories,
     # assuming the PKGBUILD has been viewed priorly.
-    if cd "$AURDEST"; then
-        aur vercmp \-p <(filter_vcs "$db_tmp" | get_latest_revision) <"$db_tmp"
-    fi
+    aur vercmp \-p <(get_latest_revision <"$tmp"/vcs) <"$tmp"/db >"$tmp"/outdated
+
+    # Finally, build the packages.
+    aur build \-a "$tmp"/outdated \-\-syncdeps \-\-rmdeps
 .EE
 .
 .SS Notes
-In the last line, the resulting package versions
-.RB ( "vcs_info" )
+In the penultimate line, the resulting package versions
+.RB ( "get_latest_revision" )
 are compared against the local repository
-.RB ( "db_info" ).
-If the package version is newer, it is printed to stdout. This may be
-combined with
-.BR aur\-sync (1)
-as follows:
-.PP
-.EX
-    $ mapfile \-t packages < <(aur vercmp\-devel | cut \-d" " \-f1)
-    $ aur sync "${packages[@]}" \-\-no\-ver\-argv
-.EE
+.RB ( "aur repo \-\-list" ).
+If the package version is newer, it is built with
+.BR aur\-build (1).
 .PP
 Version-control packages typically have
 .B pkgver
 set to the upstream revision at the time of package submission, making
 the AUR-advertised version older than the latest version.
-.PP
-Here, the
-.B \-\-no\-ver\-shallow
-option ignores the AUR information
-.I only
-for packages from standard input. Further arguments can be appended to
-.BR aur\-sync (1),
-such as
-.I \-\-upgrades
-to update regular and VCS packages in one go.
-.
-.SS Populating the cache
-As described, the above relies on already available
-.BR PKGBUILD (5)
-files. If the
-.BR aur\-sync (1)
-cache is sparse or the package has meanwhile been updated by the AUR
-maintainer (for example, to indicate a new upstream source),
-information reported by
-.B aur\-vercmp\-devel
-may be incomplete.
-.PP
-The following mediates this by downloading all VCS packages in a local
-repository anew, with all build files and their diffs offered for
-inspection.
-.PP
-.EX
-    $ mapfile \-t packages < <(aur repo \-\-list | cut \-f1 | grep \-E "$AURVCS")
-    $ aur sync "${packages[@]}" \-\-no\-ver \-\-no\-build
-.EE
-.
-\" The last pipeline will also show any non-VCS dependencies.  Since
-\" the respective PKGBUILDs are not run by aur\-srcver, they are not of
-\" relevance. Use aur\-fetch manually?
 .
 .SH AUTHORS
 .MT https://github.com/AladW
