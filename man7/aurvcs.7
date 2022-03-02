@@ -30,6 +30,7 @@ Any option arguments are forwarded to
 .SS Program source
 .EX
     #!/bin/bash
+    set -e
     XDG_CACHE_HOME=${XDG_CACHE_HOME:\-$HOME/.cache}
     AURDEST=${AURDEST:\-$XDG_CACHE_HOME/aurutils/sync}
     AURVCS=${AURVCS:\-.*\-(cvs|svn|git|hg|bzr|darcs)$}
@@ -43,50 +44,46 @@ Any option arguments are forwarded to
         grep \-Fxf \- <(printf \(aq%s\en\(aq *) | xargs \-r aur srcver
     }
 
-    db_tmp=$(mktemp)
-    trap \(aqrm \-rf "$db_tmp"\(aq EXIT
+    # Scratch space for intermediary results.
+    tmp=$(mktemp \-d)
+    trap \(aqrm \-rf "$tmp"\(aq EXIT
 
     # Retrieve a list of the local repository contents. The repository
     # can be specified with the usual aur\-repo arguments.
-    aur repo \-\-list "$@" >"$db_tmp"
+    aur repo \-\-list "$@" | tee "$tmp"/db | filter_vcs - >"$tmp"/vcs
+
+    # Pull any new AUR revisions (e.g. dependency updates) for VCS packages 
+    # and inspect them with aur-view(1). This is done before running aur\-srcver,
+    # which runs makepkg and sources the PKGBUILD.
+    cd "$AURDEST"
+    aur fetch \- <"$tmp"/vcs
+    aur view \-a "$tmp"/vcs
 
     # Find VCS packages that are outdated according to aur\-srcver.
     # This checks out the latest revision for existing source directories,
     # assuming the PKGBUILD has been viewed priorly.
-    if cd "$AURDEST"; then
-        aur vercmp \-p <(filter_vcs "$db_tmp" | get_latest_revision) <"$db_tmp"
-    fi
+    aur vercmp \-p <(get_latest_revision <"$tmp"/vcs) <"$tmp"/db
 .EE
 .
 .SS Notes
 In the last line, the resulting package versions
-.RB ( "vcs_info" )
+.RB ( "get_latest_revision" )
 are compared against the local repository
-.RB ( "db_info" ).
-If the package version is newer, it is printed to stdout. This may be
-combined with
-.BR aur\-sync (1)
+.RB ( "aur repo \-\-list" ).
+If the package version is newer, it is printed to stdout. The packages
+can then be built with
+.BR aur\-build (1)
 as follows:
 .PP
 .EX
-    $ mapfile \-t packages < <(aur vercmp\-devel | cut \-d" " \-f1)
-    $ aur sync "${packages[@]}" \-\-no\-ver\-argv
+    $ cd "$AURDEST"
+    $ aur build \-a <(aur vercmp\-devel | cut \-d" " \-f1)
 .EE
 .PP
 Version-control packages typically have
 .B pkgver
 set to the upstream revision at the time of package submission, making
 the AUR-advertised version older than the latest version.
-.PP
-Here, the
-.B \-\-no\-ver\-shallow
-option ignores the AUR information
-.I only
-for packages from standard input. Further arguments can be appended to
-.BR aur\-sync (1),
-such as
-.I \-\-upgrades
-to update regular and VCS packages in one go.
 .
 .SS Populating the cache
 As described, the above relies on already available
