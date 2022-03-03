@@ -7,13 +7,13 @@
 
 * `aur-srcver`
   + add `--buildscript`
-  + preserve the environment when sourcing the PKGBUILD (after running makepkg)
-    - the `-E` flag now has no effect
+  + deprecate `-E` / `--env`
+    - `get_full_version` from `libmakepkg` is now used after running `makepkg`
   + take arguments from `stdin` if `-` is specified
 
 * `aurvcs.7`
-  + rename `aur-vercmp-devel` to `aur-sync-devel`
-    - `aur-sync-devel` runs `aur-fetch` and `aur-view` before `aur-srcver`
+  + run `aur-fetch` and `aur-view` before `aur-srcver`
+  + sample code remaned to `aur-sync-devel`
 
 ## 7.2
 
