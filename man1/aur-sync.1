@@ -4,7 +4,7 @@ aur\-sync \- download and build AUR packages automatically
 .
 .SH SYNOPSIS
 .SY "aur sync"
-.OP \-AcfgkLostTu
+.OP \-cfknorSu
 .IR pkgname ...
 .YS
 .
@@ -71,7 +71,7 @@ Defaults to
 .RE
 .
 .TP
-.BI \-\-keep\-going= NUM
+.BI \-k " NUM" "\fR,\fP \-\-keep\-foing=" NUM
 Keep going until
 .I NUM
 packages fail to build
@@ -205,6 +205,11 @@ Build packages in a systemd\-nspawn container.
 Continue the build process if a package with the same name exists.
 .RB ( "aur build \-f" )
 .
+.TP 
+.BR \-n ", " \-\-noconfirm
+Do not wait for user input when installing or removing build dependencies.
+.BR ( "aur build \-n" )
+.
 .TP
 .BR \-o ", " \-\-nobuild ", " \-\-no\-build
 Print target packages and their paths instead of building them.
@@ -217,10 +222,9 @@ before the build process.
 .RB ( "aur\-build \-\-pkgver" )
 .
 .TP
-.BR \-R ", " \-\-remove
-Remove old package files from disk when updating their entry in the
-database.
-.RB ( "aur build \-R" )
+.BR \-r ", " \-\-rmdeps
+Remove dependencies installed by makepkg.
+.RB ( "aur build \-r" )
 .
 .TP
 .BR \-S ", " \-\-sign ", " \-\-gpg-sign
