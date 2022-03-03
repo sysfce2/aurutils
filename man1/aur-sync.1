@@ -28,6 +28,7 @@ Present build files before their execution with
 .IP \(bu 4
 Build the packages with
 .BR aur-build (1)
+.PP
 Package names serve as arguments.
 .PP
 .B Note:
@@ -58,12 +59,12 @@ a number sign. For example:
 .RS
 .PP
 .EX
-  [custom]
-  package-foo
-  package-bar
+[custom]
+package-foo
+package-bar
 
-  [custom-testing]
-  package-baz
+[custom-testing]
+package-baz
 .EE
 .PP
 Defaults to
@@ -315,7 +316,7 @@ For example, to sync all installed packages in a local repository named
 .IR custom :
 .PP
 .EX
-    $ paclist custom | awk '{print $1}' | xargs \-r aur sync \-\-noconfirm
+    $ paclist custom | awk \(aq{print $1}\(aq | xargs \-r aur sync \-\-noconfirm
 .EE
 .PP
 Note that command output interferes with input from the tty. The
@@ -326,8 +327,8 @@ when installing dependencies. Alternatively, command or process substitution
 can be used:
 .PP
 .EX
-    $ xargs \-a <(paclist custom | awk '{print $1}') aur sync
-    $ aur sync $(paclist custom | awk '{print $1}')
+    $ xargs \-a <(paclist custom | awk \(aq{print $1}\(aq) aur sync
+    $ aur sync $(paclist custom | awk \(aq{print $1}\(aq)
 .EE
 .
 .SS File retrieval
