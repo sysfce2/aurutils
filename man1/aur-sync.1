@@ -4,33 +4,38 @@ aur\-sync \- download and build AUR packages automatically
 .
 .SH SYNOPSIS
 .SY "aur sync"
-.OP \-AcfgkLostTu
+.OP \-cfknorSu
 .IR pkgname ...
 .YS
 .
 .SH DESCRIPTION
 .B aur\-sync
 downloads and builds AUR packages automatically to a local
-repository. Package names serve as arguments.
+repository. It can be seen as a high level composition of
+.B aurutils
+programs.
+.B aur\-sync
+performs the following tasks:
+.IP \(bu 4
+Resolve AUR dependencies with
+.BR aur-depends (1)
+.IP \(bu 4
+Retrieve build files with
+.BR aur-fetch (1)
+.IP \(bu 4
+Present build files before their execution with
+.BR aur\-view (1)
+.IP \(bu 4
+Build the packages with
+.BR aur-build (1)
+Package names serve as arguments.
 .PP
-Downloaded build files are presented to the user
-.I before
-execution with
-.BR aur\-view(1),
-using
-.BR vifm (1)
-or
-.B AUR_PAGER
-if defined.  If the pager exits with status greater 0 (for
-example, through the
-.B :cq
-command in
-.BR vifm ),
+.B Note:
 .B aur\-sync
-terminates immediately. Otherwise, viewed git revisions are
-stored, and used for generating diffs in subsequent
-.B aur\-sync
-calls.
+does not expose all available functionality from
+.B aurutils
+programs. It serves as an example how these programs can interoperate
+for a fully automated AUR workflow.
 .
 .SH OPTIONS
 .TP
@@ -66,7 +71,7 @@ Defaults to
 .RE
 .
 .TP
-.BI \-\-keep\-going= NUM
+.BI \-k " NUM" "\fR,\fP \-\-keep\-foing=" NUM
 Keep going until
 .I NUM
 packages fail to build
@@ -200,6 +205,11 @@ Build packages in a systemd\-nspawn container.
 Continue the build process if a package with the same name exists.
 .RB ( "aur build \-f" )
 .
+.TP 
+.BR \-n ", " \-\-noconfirm
+Do not wait for user input when installing or removing build dependencies.
+.BR ( "aur build \-n" )
+.
 .TP
 .BR \-o ", " \-\-nobuild ", " \-\-no\-build
 Print target packages and their paths instead of building them.
@@ -212,10 +222,9 @@ before the build process.
 .RB ( "aur\-build \-\-pkgver" )
 .
 .TP
-.BR \-R ", " \-\-remove
-Remove old package files from disk when updating their entry in the
-database.
-.RB ( "aur build \-R" )
+.BR \-r ", " \-\-rmdeps
+Remove dependencies installed by makepkg.
+.RB ( "aur build \-r" )
 .
 .TP
 .BR \-S ", " \-\-sign ", " \-\-gpg-sign
