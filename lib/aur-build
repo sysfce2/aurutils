@@ -379,13 +379,11 @@ while IFS= read -ru "$fd" path; do
         wait "$!"
 
         if [[ ${exists[*]} ]]; then
-            # XXX: use lint_pkgbuild in this case as no lint from a
-            # makepkg invocation may take place
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
+            _build=0
 
             printf '%q\n' >&2 "${exists[@]}"
             pkglist=("${exists[@]}")
-            _build=0
         fi
     fi
 
