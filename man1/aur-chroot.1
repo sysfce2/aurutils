@@ -1,4 +1,4 @@
-.TH AUR-CHROOT 2020-11-01 AURUTILS
+.TH AUR-CHROOT 2022-03-04 AURUTILS
 .SH NAME
 aur\-chroot \- build pacman packages with systemd-nspawn
 .
@@ -6,21 +6,12 @@ aur\-chroot \- build pacman packages with systemd-nspawn
 .SY "aur chroot"
 .OP \-\-build
 .OP \-\-update
-.OP \-D directory
-.OP \-C pacman_conf
-.OP \-M makepkg_conf
-.OP \-\-
-.RI [ "makechrootpkg args" ]
-.
-.SY "aur chroot"
 .OP \-\-create
 .OP \-D directory
 .OP \-C pacman_conf
 .OP \-M makepkg_conf
+.OP \-\-
 .RI [ "package..." ]
-.
-.SY "aur chroot"
-.OP \-D directory
 .YS
 .
 .SH DESCRIPTION
@@ -33,13 +24,11 @@ container.
 .SH OPERATIONS
 .TP
 .BR \-B ", " \-\-build
-Build a package inside the container. Arguments after
-.B \-\-
-are passed to
+Build a package inside the container with
 .BR makechrootpkg .
-If none are specified,
-.B makechrootpkg \-c
-is run.
+Assumes
+.B \-\-create
+was run at least once.
 .
 .TP
 .BR \-U ", " \-\-update
@@ -110,6 +99,34 @@ file used inside the container. Defaults to devtools'
 .IR makepkg\-<machine>.conf .
 .
 .TP
+.BI \-\-cargs= ARG
+Arguments (comma-separated) to be passed to
+.B makechrootpkg
+for 
+.BR \-\-build .
+Defaults to
+.BR "makechrootpkg \-c" .
+.
+.TP
+.BI \-\-margs= ARG
+Additional (comma-separated)
+.B makepkg 
+arguments for
+.BR makechrootpkg .
+A default list of arguments can be listed with
+.BR "makechrootpkg \-\-help" .
+.
+.TP
+.B \-\-bind
+Bind a directory read-only to the container.
+.RB ( makechrootpkg " " \-D )
+.
+.TP
+.B \-\-bind\-rw
+Bind a directory read-write to the container.
+.RB ( makechrootpkg " " \-d )
+.
+.TP
 .B \-\-path
 Print the path to the container template
 .RI ( $directory/root ).
@@ -124,16 +141,6 @@ Defaults to
 .BR extra .
 A full path may be specified with
 .BR \-\-pacman\-conf .
-.
-.TP
-.B \-\-bind
-Bind a directory read-only to the container.
-.RB ( makechrootpkg " " \-D )
-.
-.TP
-.B \-\-bind\-rw
-Bind a directory read-write to the container.
-.RB ( makechrootpkg " " \-d )
 .
 .SH ENVIRONMENT
 Packages are placed in the directory set in
@@ -218,7 +225,7 @@ As in
 install the required packages:
 .EX
 
-  # arch-nspawn /var/lib/aurbuild/root pacman \-S ccache distcc
+  # aur chroot --update ccache distcc
 
 .EE
 Ensure write access to
@@ -226,7 +233,7 @@ Ensure write access to
 directories on the host:
 .EX
 
-  # aur chroot -- -d /home/_ccache:/build/.ccache -cu
+  # aur chroot --build --bind /home/_ccache:/build/.ccache
 
 .EE
 Necessary

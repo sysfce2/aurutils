@@ -1,9 +1,16 @@
 ## 8
 
 * `aur-chroot`
-  + add `--path` to retrieve path to container template
-  + do not exit on chroot creation (`--create`, #950)
-  + deprecate `--packagelist`, remove `--buildscript`
+
+The `aur-chroot` command-line was changed so that `--create`, `--build` and
+`--update` can be used in a single command. Command-line arguments are now
+exclusively used for packages passed to `mkarchroot` and `arch-nspawn`.
+To set `makechrootpkg` options, the new `--margs` and `--cargs` options are
+available. As `aur-build --margs`, these take a comma-delimited string and
+can be specified multiple times. (Issues: #950, #807)
+
+The `--packagelist` command is now deprecated. The container path can be
+retrieved with the `--path` option, e.g for use with `makepkg --config`.
 
 * `aur-srcver`
   + add `--buildscript`
