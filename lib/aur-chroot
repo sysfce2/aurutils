@@ -166,6 +166,11 @@ if (( update )); then
          "${bindmounts_rw[@]/#/--bind=}" pacman -Syu --noconfirm
 fi
 
+# XXX: workaround for --build taking seperate command-line arguments (#807)
+if (( create + update )); then
+    exit 0
+fi
+
 if (( build )); then
     # use makechrootpkg -c as default build command (sync /root container)
     # arguments after -- (if present) are used as makechrootpkg arguments
