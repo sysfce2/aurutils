@@ -18,7 +18,7 @@ makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
-makechrootpkg_args=(-cu)
+makechrootpkg_args=(-cu) # -c to clean working copy, -u to sync local repository builds
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -324,8 +324,17 @@ else
     { printf '[options]\n'
       pacconf "${pacconf_args[@]}" --raw --options
 
-      printf '[%s]\n' "$db_name"
-      pacconf "${pacconf_args[@]}" --raw --repo="$db_name"
+      pacconf "${pacconf_args[@]}" --repo-list | while read -r repo; do
+          printf '[%s]\n' "$repo"
+
+          # Allow secondary repositories as targets for -Syu (#956)
+          if [[ $repo == "$db_name" ]]; then
+              printf 'Usage = All\n'
+          else
+              printf 'Usage = Install\n'
+          fi
+          pacconf "${pacconf_args[@]}" --raw --repo="$repo" SigLevel Server
+      done
     } > "$tmp"/local.conf
 
     # Host makepkg configuration
