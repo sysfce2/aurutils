@@ -18,7 +18,7 @@ makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
-makechrootpkg_args=(-cu)
+makechrootpkg_args=(-cu) # -c to clean working copy, -u to sync local repository builds
 
 args_csv() {
     # shellcheck disable=SC2155
