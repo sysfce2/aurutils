@@ -14,11 +14,17 @@ chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 # default arguments (empty)
 chroot_args=() pacconf_args=() repo_add_args=() repo_args=()
-makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
+makepkg_common_args=() makepkg_args=() makechrootpkg_makepkg_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
-makechrootpkg_args=(-c -u)
+makechrootpkg_args=(-c)
+
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
 
 db_replaces() {
     bsdcat "$1" | awk '
@@ -309,6 +315,8 @@ if (( chroot )); then
     # makepkg --packagelist includes the package extension, but
     # makechrootpkg ignores PKGEXT set on the host.
     # Retrieve the path to the container makepkg.conf separately.
+    # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
+    # copies the makepkg configuration to)
     pkglist_makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
     pkglist_makepkg_conf+=/etc/makepkg.conf
 else
@@ -371,24 +379,25 @@ while IFS= read -ru "$fd" path; do
         wait "$!"
 
         if [[ ${exists[*]} ]]; then
-            # XXX: use lint_pkgbuild in this case as no lint from a
-            # makepkg invocation may take place
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
+            _build=0
 
             printf '%q\n' >&2 "${exists[@]}"
             pkglist=("${exists[@]}")
-            _build=0
         fi
     fi
 
     if (( _build )); then
         if (( chroot )); then
-            PKGDEST="$var_tmp" run_msg aur chroot --build "${chroot_args[@]}" \
-                   -- "${makechrootpkg_args[@]}" \
-                   -- "${makechrootpkg_makepkg_args[@]}"
+            if (( ${#makechrootpkg_args[@]} )); then
+                chroot_args+=(--cargs "$(args_csv "${makechrootpkg_args[@]}")")
+            fi
+            if (( ${#makechrootpkg_makepkg_args[@]} )); then
+                chroot_args+=(--margs "$(args_csv "${makechrootpkg_makepkg_args[@]}")")
+            fi
+            PKGDEST="$var_tmp" run_msg aur chroot --build "${chroot_args[@]}"
         else
-            PKGDEST="$var_tmp" run_msg makepkg \
-                   "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            PKGDEST="$var_tmp" run_msg makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd_safe "$var_tmp"

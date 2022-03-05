@@ -10,6 +10,8 @@ machine=$(uname -m)
 # default arguments
 directory=/var/lib/aurbuild/$machine
 suffix=extra
+makechrootpkg_args=()
+makechrootpkg_makepkg_args=()
 
 # default options
 update=0 build=0 packagelist=0 create=0 print_path=0
@@ -17,8 +19,7 @@ update=0 build=0 packagelist=0 create=0 print_path=0
 usage() {
     cat <<EOF
 Usage:
-  $argv0 [-BU] [-CDM path] -- <makechrootpkg args>
-  $argv0 --create [-CDM path] [package...]
+  $argv0 [-BU] [--create] [-CDM path] [package...]
 EOF
     exit 1
 }
@@ -27,9 +28,9 @@ source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:x:BU'
-opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
-          'create' 'suffix:' 'bind:' 'bind-rw:' 'path')
-opt_hidden=('dump-options' 'packagelist')
+opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update' 'create'
+          'suffix:' 'bind:' 'bind-rw:' 'path' 'makepkg-args:' 'makechrootpkg-args:')
+opt_hidden=('dump-options' 'packagelist' 'margs:' 'cargs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -60,6 +61,12 @@ while true; do
             shift; bindmounts_ro+=("$1") ;;
         --bind-rw)
             shift; bindmounts_rw+=("$1") ;;
+        --makechrootpkg-args|--cargs)
+            shift; IFS=, read -a arg -r <<< "$1"
+            makechrootpkg_args+=("${arg[@]}") ;;
+        --makepkg-args|--margs)
+            shift; IFS=, read -a arg -r <<< "$1"
+            makechrootpkg_makepkg_args+=("${arg[@]}") ;;
         # deprecated options
         --packagelist)
             packagelist=1 ;;
@@ -72,6 +79,11 @@ while true; do
     esac
     shift
 done
+
+# additional makechrootpkg arguments if none are specified
+if (( ! ${#makechrootpkg_args[@]} )); then
+    makechrootpkg_args=(-c)
+fi
 
 # required for chroot creation and update
 # if specified, copied to the container by arch-nspawn
@@ -135,8 +147,7 @@ if (( create )); then
     fi
 
     if [[ ! -d $directory/root ]]; then
-        sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" \
-             "$directory"/root "${base_packages[@]}"
+        sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root "${base_packages[@]}"
     fi
 fi
 
@@ -163,20 +174,15 @@ if (( update )); then
     # locking is done by systemd-nspawn
     sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
          "${bindmounts_ro[@]/#/--bind-ro=}" \
-         "${bindmounts_rw[@]/#/--bind=}" pacman -Syu --noconfirm
-fi
-
-# XXX: workaround for --build taking seperate command-line arguments (#807)
-if (( create + update )); then
-    exit 0
+         "${bindmounts_rw[@]/#/--bind=}" pacman -Syu --noconfirm "$@"
 fi
 
 if (( build )); then
     # use makechrootpkg -c as default build command (sync /root container)
     # arguments after -- (if present) are used as makechrootpkg arguments
     sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,PKGDEST makechrootpkg -r "$directory" \
-         "${bindmounts_ro[@]/#/-D}" \
-         "${bindmounts_rw[@]/#/-d}" "${@:--c}"
+         "${bindmounts_ro[@]/#/-D}" "${bindmounts_rw[@]/#/-d}" \
+         "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
