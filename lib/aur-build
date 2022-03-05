@@ -324,8 +324,17 @@ else
     { printf '[options]\n'
       pacconf "${pacconf_args[@]}" --raw --options
 
-      printf '[%s]\n' "$db_name"
-      pacconf "${pacconf_args[@]}" --raw --repo="$db_name"
+      pacconf "${pacconf_args[@]}" --repo-list | while read -r repo; do
+          printf '[%s]\n' "$repo"
+
+          # Allow secondary repositories as targets for -Syu (#956)
+          if [[ $repo == "$db_name" ]]; then
+              printf 'Usage = All\n'
+          else
+              printf 'Usage = Install\n'
+          fi
+          pacconf "${pacconf_args[@]}" --raw --repo="$repo" SigLevel Server
+      done
     } > "$tmp"/local.conf
 
     # Host makepkg configuration
