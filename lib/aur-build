@@ -14,11 +14,11 @@ chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 # default arguments (empty)
 chroot_args=() pacconf_args=() repo_add_args=() repo_args=()
-makepkg_common_args=() makepkg_args=() makechrootpkg_makepkg_args=()
+makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
-makechrootpkg_args=(-c)
+makechrootpkg_args=(-cu)
 
 args_csv() {
     # shellcheck disable=SC2155

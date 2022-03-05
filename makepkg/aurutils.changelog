@@ -12,9 +12,6 @@ can be specified multiple times. (Issues: #950, #807)
 The `--packagelist` command is now deprecated. The container path can be
 retrieved with the `--path` option, e.g for use with `makepkg --config`.
 
-* `aur-build`
-  + use `makechrootpkg -c` instead of `-cu` (`aur-build --chroot`)
-
 * `aur-srcver`
   + add `--buildscript`
   + deprecate `-E` / `--env`
