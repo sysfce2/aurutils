@@ -100,7 +100,7 @@ for d in "$tmp"/*/; do # iterate over directories
         # Precautions when sourcing the PKGBUILD have no effect here,
         # because makepkg already sourced the PKGBUILD above.
         # shellcheck disable=SC1090
-        ( source "${buildscript-PKGBUILD}"
+        ( source "$n/${buildscript-PKGBUILD}"
 
           fullver=$(get_full_version)
           printf '%s\t%s\n' "${pkgbase:-$pkgname}" "$fullver"
