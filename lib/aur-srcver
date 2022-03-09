@@ -115,6 +115,10 @@ for d in "$tmp"/*/; do # iterate over directories
     fi
 done
 
+if (( ${#failed[@]} )); then
+    printf >&2 '8<----\n'
+fi
+
 for f in "${failed[@]}"; do
     printf >&2 '%s: makepkg %s failed for package %s\n' "$argv0" "${makepkg_args[*]}" "$f"
 
