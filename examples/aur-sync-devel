@@ -1,0 +1,56 @@
+#!/bin/bash
+set -e
+argv0=sync-devel
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+AURVCS=${AURVCS:-.*-(cvs|svn|git|hg|bzr|darcs)$}
+
+filter_vcs() {
+    awk -v "mask=$AURVCS" '$1 ~ mask {print $1}' "$@"
+}
+
+# Scratch space for intermediary results.
+tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+
+# Retrieve a list of the local repository contents. The repository
+# can be specified with the usual aur-repo arguments.
+aur repo --list "$@" | tee "$tmp"/db | filter_vcs - >"$tmp"/vcs
+
+# Pull any new AUR revisions (e.g. dependency updates) for VCS packages.
+cd "$AURDEST"
+aur fetch - --results="$tmp"/fetch_results <"$tmp"/vcs
+
+# Only run aur-view on non-empty git repositories.
+targets=()
+while IFS=: read -r mode rev_old rev path; do
+    path=${path#file://} name=${path##*/}
+
+    case $mode in
+        clone|fetch|rebase|reset)
+            if [[ $rev != "HEAD" ]] && [[ $rev != "0" ]]; then
+                targets+=("$name")
+            fi ;;
+    esac
+done < "$tmp"/fetch_results
+
+# Inspect packages with aur-view(1). This is done before running
+# aur-srcver, which runs makepkg and sources the PKGBUILD.
+if (( ! ${#targets[@]} )); then
+    exit
+fi
+aur view "${targets[@]}"
+
+# Find VCS packages that are outdated according to aur-srcver.
+# This checks out the latest revision for existing source directories,
+# assuming the PKGBUILD has been viewed priorly.
+cat "$tmp"/db | aur vercmp -p <(aur srcver "${targets[@]}") | \
+    awk '{print $1}' >"$tmp"/ood
+
+# Build the packages. Arguments are shared between aur-repo and
+# aur-build to specify the repository.
+if [[ -s $tmp/ood ]]; then
+    aur build "$@" -a "$tmp"/ood --syncdeps --rmdeps --noconfirm
+else
+    printf >&2 '%s: all packages up-to-date\n' "$argv0"
+fi
