@@ -71,12 +71,19 @@ mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
-i=0 # package counter
+# A pipeline `foo | bar &` causes `bar` to detach from the script. In
+# this case, aur-srcver returns immediately with `makepkg` processes
+# still running in the background. Read all input into an array to
+# avoid this. (cf. aur-view, #958)
 if (( stdin )); then
-    tee # noop
+    mapfile -t packages
 else
-    printf '%s\n' "$@"
-fi | while read -r n; do
+    packages=("$@")
+    set --
+fi
+
+i=0 # package counter
+for n in "${packages[@]}"; do
     if (( i++ >= num_procs )); then
         wait -n
     fi
