@@ -1,7 +1,7 @@
 This directory contains simple examples which combine `aur(1)` programs. They
 typically have fixed options and are documented line-by-line.
 
-## aur-vcs-devel
+## aur-sync-devel
 
 The aim of this script is to take all VCS (version control) packages in a local
 repository, update the corresponding source files to the latest upstream
