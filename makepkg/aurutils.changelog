@@ -1,3 +1,11 @@
+## 8.2
+
+* `aur-srcver`
+  + add separator before first failed package
+
+* `aur-fetch`
+  + handle empty `git` repositories (#959)
+
 ## 8.1
 
 * `aur-srcver`
