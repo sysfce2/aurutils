@@ -101,6 +101,11 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
+        # Verify if the repository is empty (#959)
+        if ! git log --pretty=reference -1; then
+            continue
+        fi
+
         # Retrieve new upstream revisions
         if git fetch --verbose >&2; then
             fetch_head=$(git rev-parse FETCH_HEAD)
@@ -151,7 +156,12 @@ fi | while read -r pkg; do
 
     # Otherwise, try to clone anew
     elif (( clone )) && git clone "$AUR_LOCATION/$pkg"; then
-        head=$(git -C "$pkg" rev-parse HEAD)
+        # Verify if the repository is empty (#959)
+        if git -C "$pkg" log --pretty=reference -1; then
+            head=$(git -C "$pkg" rev-parse HEAD)
+        else
+            head=0
+        fi
 
         if [[ -v results_file ]]; then
             results 'clone' '0' "$head" "$PWD/$pkg" "$results_file"
