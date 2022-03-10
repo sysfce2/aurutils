@@ -6,6 +6,9 @@
 * `aur-fetch`
   + handle empty `git` repositories (#959)
 
+* `man7`
+  + remove `aurvcs.7`, move `aur-sync-devel` to `examples`
+
 ## 8.1
 
 * `aur-srcver`
