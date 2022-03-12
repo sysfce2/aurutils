@@ -1,5 +1,9 @@
 ## 8.3
 
+* `aur-fetch`
+  + add `--revision`
+  + add `--no-patch`
+
 * `aur-repo`
   + add `--field`
 
