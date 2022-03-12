@@ -1,0 +1,59 @@
+#!/bin/bash
+set -e
+argv0=sync-devel
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+
+# For the purposes of this example, we assume AURDEST contains both AUR and
+# non-AUR git repositories (e.g. from github or archweb), with corresponding
+# packages in the local repository.
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+
+# Pattern the defines VCS packages. The AUR has no formal definition of a VCS
+# package - here we include the most common version control systems.
+filter_vcs() {
+    awk -v "mask=*-(cvs|svn|git|hg|bzr|darcs)" '$1 ~ mask {print $1}' "$@"
+}
+
+# Scratch space for intermediary results.
+tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
+trap 'rm -rf "$tmp"' EXIT
+
+# Retrieve a list of the local repository contents. The repository
+# can be specified with the usual aur-repo arguments.
+aur repo --list "$@" | tee "$tmp"/db | filter_vcs - >"$tmp"/vcs
+
+# Only AUR repositories can be cloned anew, as the source of non-AUR packages
+# is unknown beforehand. For simplicity, assume all repositories are available
+# in AURDEST. Without arguments, aur-fetch will only retrieve new commits,
+# without merging them. Latter can be done with -S, --rebase or --reset. 
+cd "$AURDEST"
+aur fetch --existing - <"$tmp"/vcs
+
+# Inspect new AUR (downstream) commits with aur-view(1). This is done
+# before running aur-srcver, which runs makepkg and sources the
+# PKGBUILD.  When changes are approved (exit 0), write FETCH_HEAD and
+# proceed with the rest of the script.
+aur view --revision 'FETCH_HEAD' -a "$tmp"/vcs
+
+# Perform potentially destructive changes on the git repository after
+# their approval. If changes are instead merged with `aur fetch
+# --sync`, `--rebase` or `--reset` before running `aur-view`, the
+# final result is available in `aur-view`. Rebase is chosen here
+# because the AUR PKGBUILD may have changed without updating pkgver.
+while read -r target; do
+    env -C "$target" git rebase --verbose # or git-reset, git-merge
+done <"$tmp"/vcs
+
+# Update `epoch:pkgver-pkgrel` for each target with `aur-srcver`.
+# This runs `makepkg`, cloning upstream to the latest revision. The
+# output is then compared with the contents of the local repository.
+cat "$tmp"/db | aur vercmp -p <(xargs -r "$tmp"/vcs aur srcver) | \
+    awk '{print $1}' >"$tmp"/ood
+
+# Build the packages. Arguments are shared between aur-repo and
+# aur-build to specify the local repository.
+if [[ -s $tmp/ood ]]; then
+    aur build "$@" -a "$tmp"/ood --syncdeps --rmdeps --noconfirm
+else
+    printf >&2 '%s: all packages up-to-date\n' "$argv0"
+fi
