@@ -39,37 +39,30 @@ When using `aur-sync(1)` or `aur-build(1)`, packages accumulate in
 of packages can be created such that the local repository only
 contains this list (and any dependencies).
 
-The script `sync-list` achieves this by creating a copy of the
-local repository, removing any packages from it which are not part of
-the list and its dependencies.  Missing packages are then built with
-`aur-build(1)` and added to this copy.  Finally, the copy is moved
-back to the original location.
+The script `sync-list` achieves this by creating a copy of the local
+repository, and extracting all entries which are part of the list and
+their dependencies. The targets are then passed to `aur-sync(1)`, with
+a temporary `pacman.conf` file that points to the copy.  Finally, the
+copy is moved back to the original location.
 
 This only addresses the contents of the local repository
-(i.e. `custom.db`), *not* any obsolete package files. These can be
-removed with e.g. `repoctl update`.
+(i.e. `custom.db`). Obsolete package files can be removed with
+e.g. `repoctl update`.
 
-It is assumed throughout that all build files are retrieved beforehand
-(e.g. with `aur-fetch`) and that their dependency ordering is known
-(e.g. with `aur-depends`). Example usage:
-
-```bash
-$ aur depends --pkgbase "$@" | tee queue | aur fetch --sync -
-$ AUR_REPO=custom sync-list queue
-```
-
-Besides the approach above, one could:
+While `sync-list` demonstrates how to manipulate both package files
+and local repositories, there are often more simple approaches
+available. In particular:
 
 1. Only update the desired targets, e.g. `xargs -a list.txt aur sync`
    instead of `aur sync -u`
 2. Recreate the local repository on every build
-3. Use a "temporary" repository (e.g. `custom-testing`), moving
-   packages within after a certain time.
+3. Use a "secondary" repository (e.g. `custom-testing`), moving
+   packages to the "primary" repository after a certain time.
 
-The second alternative implies running `repo-add` for each package,
-which may be slow for a large set of packages. The first alternative
-is sufficient to avoid unused upgrades with `aur-sync -u`. Cleanups
-can then be done periodically:
+The second appraoch implies running `repo-add` for each package, which
+may be slow for a large set of packages. The first alternative is
+sufficient to avoid unused upgrades with `aur-sync -u`. Cleanups can
+then be done periodically:
 
 ```bash
 $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repoctl rm
