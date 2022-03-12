@@ -329,11 +329,11 @@ else
 
       # Allow secondary repositories as targets for -Syu (#956)
       while IFS= read -r repo; do
-          if [[ $repo != "$db_name" ]]; then
-              printf '[%s]\nUsage = Install\n' "$repo"
-              pacconf "${pacconf_args[@]}" --raw --repo="$repo" SigLevel Server
-          fi
-      done < <(pacconf "${pacconf_args[@]}" --repo-list)
+          printf '[%s]\nUsage = Install\n' "$repo"
+          pacconf "${pacconf_args[@]}" --raw --repo="$repo" SigLevel Server
+      done < <(
+          pacconf "${pacconf_args[@]}" --repo-list | grep -Fxv "$db_name"
+      )
     } > "$tmp"/local.conf
 
     # Host makepkg configuration
