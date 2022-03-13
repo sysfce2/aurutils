@@ -7,6 +7,10 @@
 * `aur-repo`
   + add `--field`
 
+* `examples`
+  + add `vercmp-devel`, `sync-list`
+  + rename `aur-sync-devel` to `sync-devel`
+
 ## 8.2
 
 * `aur-srcver`
