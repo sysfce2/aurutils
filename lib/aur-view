@@ -8,7 +8,7 @@ AUR_VIEW_DB=${AUR_VIEW_DB:-$XDG_DATA_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-log_fmt='diff'
+log_fmt='diff' revision='HEAD' log_args=() patch=1
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
@@ -32,7 +32,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='a:'
-opt_long=('format:' 'arg-file:') # TODO: add --confirm? (overrides AUR_CONFIRM_PAGER)
+# TODO: add --confirm? (overrides AUR_CONFIRM_PAGER)
+opt_long=('format:' 'arg-file:' 'revision:' 'no-patch')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -51,9 +52,13 @@ while true; do
                 diff|log)
                     log_fmt=$1 ;;
                 *)
-                    error '%s: invalid --format opiton: %s' "$argv0" "$1"
+                    error '%s: invalid --format option: %s' "$argv0" "$1"
                     usage ;;
             esac ;;
+        --no-patch)
+            patch=0 ;;
+        --revision)
+            shift; revision=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -62,6 +67,10 @@ while true; do
     esac
     shift
 done
+
+if (( patch )); then
+    log_args+=(--patch)
+fi
 
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
@@ -101,10 +110,10 @@ for pkg in "${packages[@]}"; do
     git() { command git -C "$pkg" "$@"; }
 
     # Ensure every directory is a git repository (--continue)
-    if head=$(git rev-parse HEAD); then
+    if head=$(git rev-parse "$revision"); then
         heads[$pkg]=$head
     else
-        error '%s: %s: not a git repository' "$argv0" "$pkg"
+        error '%s: %s: revision %s not found' "$argv0" "$pkg" "$revision"
         exit 22
     fi
 
@@ -116,7 +125,7 @@ for pkg in "${packages[@]}"; do
         fi
 
         if [[ $view != "$head" ]]; then
-            git --no-pager "$log_fmt" --patch --stat \
+            git --no-pager "$log_fmt" --stat "${log_args[@]}" \
                 "$view..$head" > "$tmp/$pkg.$log_fmt"
         fi
 

@@ -1,4 +1,4 @@
-.TH AUR-VIEW 1 2021-12-07 AURUTILS
+.TH AUR-VIEW 1 2022-03-12 AURUTILS
 .SH NAME
 aur\-view \- inspect git repositories
 .
@@ -35,22 +35,33 @@ revisions are stored in
 .BR $XDG_DATA_HOME/aurutils/view ,
 or the path in the
 .B AUR_VIEW_DB
-environment variable, if set. These revisions are later used to
+environment variable, if set. These revisions are then used to
 generate diffs with
-.BR git\-diff (1).
+.BR git\-diff (1)
+or
+.BR git\-log (1).
 .
 .SH OPTIONS
 .TP
 .B \-\-format
 Can be one of
-.B log
+.B diff
 or
-.BR diff ,
+.BR log ,
 to generate diffs with
-.BR git\-log (1)
+.BR git\-diff (1)
 and
-.BR git\-diff (1),
+.BR git\-log (1),
 respectively.
+.
+.TP
+.B \-\-no\-patch
+Suppress patch output, only showing a summary.
+.
+.TP
+.BI \-\-revision " REV"
+The revision used for comparing changes. Defaults to
+.IR HEAD .
 .
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
