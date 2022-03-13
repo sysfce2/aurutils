@@ -29,7 +29,7 @@ args_csv() {
 db_replaces() {
     bsdcat "$1" | awk '
     /%REPLACES%/ {
-        while(NF != 0) { getline; print; }
+        while(getline && NF != 0) { print; }
     }'
 }
 

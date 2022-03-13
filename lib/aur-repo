@@ -5,10 +5,20 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0 mode=none
+db_query=local table_format=0 mode=none field=none
 
 # default arguments
 conf_args=()
+
+db_field() {
+    # do not extract an empty database (#727)
+    (( $(bsdtar -tf "$2" | wc -l) )) || return 0
+
+    bsdtar -Oxf "$2" '*/desc' | awk -v field="^%$1%$" '
+    $0 ~ field {
+        while (getline && NF != 0) { print; }
+    }'
+}
 
 db_table() {
     # do not extract an empty database (#727)
@@ -73,10 +83,10 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:alqtuS'
+opt_short='c:d:r:F:alqtuS'
 opt_long=('config:' 'database:' 'repo:' 'root:' 'all' 'list' 'path'
           'path-list' 'repo-list' 'sync' 'upgrades' 'table' 'quiet'
-          'status-file:')
+          'status-file:' 'field:')
 opt_hidden=('dump-options' 'list-repo' 'list-path' 'status')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -84,7 +94,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset mode list db_name db_root status_file pacman_conf vercmp_args
+unset mode list db_name db_root status_file pacman_conf vercmp_args field
 while true; do
     case $1 in
         -d|--database|--repo)
@@ -107,6 +117,8 @@ while true; do
             shift; status_file=$1 ;;
         -S|--sync)
             db_query=sync ;;
+        -F|--field)
+            shift; mode=files; field=$1 ;;
         ## deprecated options
         --path)
             mode=path ;;
@@ -234,6 +246,9 @@ if [[ -v status_file ]]; then
 fi
 
 case $mode in
+    files)
+        db_field "${field^^}" "$db_path"
+        ;;
     upgrades)
         db_table '0' "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
