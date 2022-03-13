@@ -1,0 +1,94 @@
+#!/bin/bash
+set -e
+argv0=sync-list
+
+# Function to replace the repository path of a given local repository
+# with a temporary one.
+db_replace_root() {
+    awk -v section="^\\\\[$1\\\\]$" -v dest="$2" '
+    $0 ~ section { 
+        print
+        while (getline && NF != 0 && $0 !~ "^\\[") {
+            if ($0 ~ "^Server") {
+                printf("Server = file://%s\n", dest)
+            } else {
+                print
+            }
+        }
+    } { print }'
+}
+
+db_field() {
+    awk -v prefix="$1" -v field="^%$2%$" '
+    $0 ~ field {
+        while (getline && NF != 0) { 
+            printf("%s/%s\n", prefix, $0)
+        }
+    }'
+}
+
+# Targets are taken from a file or the command-line, to avoid
+# redirecting stdin to aur-view or aur-build.
+if [[ -s $1 ]]; then
+    list=$(realpath -- "$1")
+else
+    printf >&2 '%s: %s: file is empty or does not exist\n' "$argv0" "$1"
+    exit 1
+fi
+
+# Create a scratch space. /var/tmp ensures sufficient space for built
+# packages (not on tmpfs by default)
+var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}")
+trap 'rm -rf "$var_tmp"' EXIT
+
+# 1. Avoid concurrent use
+( flock -n 200 || exit 1
+  cd "$var_tmp"
+
+  # Retrieve all targets and their dependencies available from the
+  # local repository.
+  aur repo --status-file=db --table | tee db_table | \
+      cut -f1,2 | grep -Fwf "$list" >db_deps
+
+  tsort db_deps | grep -Fxf <(cut -f1 db_table)  | awk '{
+      printf("%s-%s\n", $1, $2)
+  }' >db_list
+
+  # Parse repository information
+  { IFS=: read -r _ db_name
+    IFS=: read -r _ db_root
+    IFS=: read -r _ db_path
+  } <db
+
+  # 3. Extract entries from database in $PWD/db_tmp.
+  mkdir -p db_tmp
+  tar -xf "$db_path" -C db_tmp --files-from db_list
+
+  # 4. Create archive in $PWD which only contains these entries.
+  db_copy=$(basename -- "$db_path")
+  ( cd db_tmp
+    tar czf ../"$db_copy" *
+  )
+  ln -s "$db_copy" "$db_name".db
+
+  # 5. Add symlinks to built packages.
+  bsdtar -Oxf "$db_copy" '*/desc' | db_field "$db_root" FILENAME | \
+      xargs -r ln -t "$var_tmp" -s --
+  
+  # 6. Generate pacman.conf, replacing the repository root with the
+  # temporary directory.
+  pacman-conf | db_replace_root "$db_name" "$var_tmp" >tmp_pacman.conf
+
+  # 7. Run aur-sync(1) with the new pacman configuration.
+  # Adjust options to preference.
+  aur sync --pacman-conf="$var_tmp"/tmp_pacman.conf -Rrn $(<"$list")
+
+  # 8. The repository is now in the desired state. Copy it over,
+  # as well as any new package files.
+  cp -bv "$db_name"* "$db_root"
+  find . -type f -iname '*.pkg.tar*' -exec cp -t "$db_root" {} +
+
+  cd ..
+  rm -rf "$var_tmp"
+
+) 200> /tmp/lockfile
