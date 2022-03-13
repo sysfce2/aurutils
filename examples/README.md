@@ -11,7 +11,8 @@ typically have `pkgver` set to the upstream revision at the time of
 AUR package submission, and so are not automatically updated by
 commands such as `aur-sync -u`.
 
-The sample script performs two updates:
+The sample script retrieves the contents of the local repository with
+`aur-repo --list`, and performs two updates:
 
 1. Retrieve new AUR revisions with `aur-fetch(1)` and inspect them
    with `aur-view(1)`
@@ -25,6 +26,11 @@ In the second step, `makepkg -o` is run on each `PKGBUILD`, updating
 `pkgver`.  The full version (`epoch:pkgver-pkgrel`) is then compared
 to the contents of the local repository with `aur-vercmp(1)`. If there
 is an update, the package is built with `aur-build(1)`.
+
+## vercmp-devel
+
+A simplified version of `sync-devel` which does only runs `aur-srcver`
+and `aur-vercmp` on targets in the local repository.
 
 ## sync-list
 
