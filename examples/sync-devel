@@ -7,11 +7,12 @@ XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 # non-AUR git repositories (e.g. from github or archweb), with corresponding
 # packages in the local repository.
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+AURVCS=".*-(cvs|svn|git|hg|bzr|darcs)$"
 
 # Pattern the defines VCS packages. The AUR has no formal definition of a VCS
 # package - here we include the most common version control systems.
 filter_vcs() {
-    awk -v "mask=*-(cvs|svn|git|hg|bzr|darcs)" '$1 ~ mask {print $1}' "$@"
+    awk -v "mask=$AURVCS" '$1 ~ mask {print $1}' "$@"
 }
 
 # Scratch space for intermediary results.
@@ -22,32 +23,35 @@ trap 'rm -rf "$tmp"' EXIT
 # can be specified with the usual aur-repo arguments.
 aur repo --list "$@" | tee "$tmp"/db | filter_vcs - >"$tmp"/vcs
 
-# Only AUR repositories can be cloned anew, as the source of non-AUR packages
-# is unknown beforehand. For simplicity, assume all repositories are available
-# in AURDEST. Without arguments, aur-fetch will only retrieve new commits,
-# without merging them. Latter can be done with -S, --rebase or --reset. 
+# Only AUR repositories can be cloned anew, as the source of non-AUR
+# packages is unknown beforehand. For simplicity, assume all
+# repositories are available in AURDEST. `--sync` is chosen because
+# the AUR PKGBUILD may have changed without modifying pkgver or
+# pkgrel. While this is potentially destructive, it allows to show the
+# final result of the PKGBUILD in `aur-view` later on.
 cd "$AURDEST"
-aur fetch --existing - <"$tmp"/vcs
+aur fetch --existing --sync=auto --results="$tmp"/fetch_results - <"$tmp"/vcs
+
+# Make sure empty repositories are not considered for inspection.
+targets=()
+while IFS=: read -r mode rev_old rev path; do
+    path=${path#file://} name=${path##*/}
+
+    case $mode in
+	clone|fetch|rebase|reset)
+	    [[ $rev != "0" ]] && targets+=("$name") ;;
+    esac
+done <"$tmp"/fetch_results
 
 # Inspect new AUR (downstream) commits with aur-view(1). This is done
 # before running aur-srcver, which runs makepkg and sources the
-# PKGBUILD.  When changes are approved (exit 0), write FETCH_HEAD and
-# proceed with the rest of the script.
-aur view --revision 'FETCH_HEAD' -a "$tmp"/vcs
-
-# Perform potentially destructive changes on the git repository after
-# their approval. If changes are instead merged with `aur fetch
-# --sync`, `--rebase` or `--reset` before running `aur-view`, the
-# final result is available in `aur-view`. Rebase is chosen here
-# because the AUR PKGBUILD may have changed without updating pkgver.
-while read -r target; do
-    env -C "$target" git rebase --verbose # or git-reset, git-merge
-done <"$tmp"/vcs
+# PKGBUILD.
+aur view "${targets[@]}"
 
 # Update `epoch:pkgver-pkgrel` for each target with `aur-srcver`.
 # This runs `makepkg`, cloning upstream to the latest revision. The
 # output is then compared with the contents of the local repository.
-cat "$tmp"/db | aur vercmp -p <(xargs -r "$tmp"/vcs aur srcver) | \
+cat "$tmp"/db | aur vercmp -p <(aur srcver "${targets[@]}") | \
     awk '{print $1}' >"$tmp"/ood
 
 # Build the packages. Arguments are shared between aur-repo and

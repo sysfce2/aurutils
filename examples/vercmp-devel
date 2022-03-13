@@ -2,11 +2,12 @@
 set -e
 argv0=vercmp-devel
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+AURVCS=".*-(cvs|svn|git|hg|bzr|darcs)$"
 
 # Pattern the defines VCS packages. The AUR has no formal definition of a VCS
 # package - here we include the most common version control systems.
 filter_vcs() {
-    awk -v "mask=*-(cvs|svn|git|hg|bzr|darcs)" '$1 ~ mask {print $1}' "$@"
+    awk -v "mask=$AURVCS" '$1 ~ mask {print $1}' "$@"
 }
 
 # For the purposes of this example, we assume AURDEST contains both
@@ -26,4 +27,4 @@ aur repo --list "$@" | tee "$tmp"/db | filter_vcs - >"$tmp"/vcs
 # Update `epoch:pkgver-pkgrel` for each target with `aur-srcver`.
 # This runs `makepkg`, cloning upstream to the latest revision. The
 # output is then compared with the contents of the local repository.
-aur vercmp -p <(xargs -r "$tmp"/vcs aur srcver) <"$tmp"/db
+aur vercmp -p <(xargs -ra "$tmp"/vcs aur srcver) <"$tmp"/db
