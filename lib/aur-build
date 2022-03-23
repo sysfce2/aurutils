@@ -403,11 +403,6 @@ while IFS= read -ru "$fd" path; do
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
         siglist=()
 
-        # pkglist should not be empty (#513)
-        if [[ ${pkglist[*]} == '!(*.sig)' ]]; then
-            error '%s: invalid argument (no packages found)' "$argv0"
-            exit 22
-        fi
 
         for p in "${pkglist[@]}"; do
             if [[ -f $p.sig ]]; then
