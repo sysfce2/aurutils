@@ -251,6 +251,18 @@ if [[ -v makepkg_conf ]]; then
     fi
 fi
 
+# Default pacman configuration for container (#824, #808)
+# Fallback to uname when autodetecting db_name (#846)
+if (( chroot )) && [[ ! -v pacman_conf ]]; then
+    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
+
+    # Early check for availability of pacman.conf (#783)
+    if [[ ! -f $pacman_conf ]]; then
+        diag_pacman_conf "$pacman_conf"
+        exit 2
+    fi
+fi
+
 if [[ -v pacman_conf ]]; then
     chroot_args+=(--pacman-conf "$pacman_conf")
     pacconf_args+=(--config "$pacman_conf")
@@ -258,20 +270,6 @@ if [[ -v pacman_conf ]]; then
     # Early check for availability of pacman.conf (#783)
     if [[ ! -f $pacman_conf ]]; then
         error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
-        exit 2
-    fi
-fi
-
-# pacman.conf fallback for chroot builds (#824, #808)
-# fallback to uname when autodetecting db_name (#846)
-if (( chroot )) && [[ ! -v pacman_conf ]]; then
-    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
-    chroot_args+=(--pacman-conf "$pacman_conf")
-    pacconf_args+=(--config "$pacman_conf")
-
-    # Early check for availability of pacman.conf (#783)
-    if [[ ! -f $pacman_conf ]]; then
-        diag_pacman_conf "$pacman_conf"
         exit 2
     fi
 fi
