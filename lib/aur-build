@@ -203,8 +203,23 @@ while true; do
     shift
 done
 
-# assign environment variables
-: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+# Custom makepkg command
+if [[ $MAKEPKG ]]; then
+    # shellcheck disable=SC2086
+    makepkg() { command -- $MAKEPKG "$@"; }
+fi
+
+# Custom pacman command
+if [[ $PACMAN ]]; then
+    # shellcheck disable=SC2086
+    pacman() { command -- $PACMAN "$@"; }
+fi
+
+# Custom elevation command
+if [[ $PACMAN_AUTH ]] && [[ ! -v AUR_ASROOT ]]; then
+    # shellcheck disable=SC2086
+    sudo() { command -- $PACMAN_AUTH "$@"; }
+fi
 
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
@@ -264,6 +279,8 @@ fi
 
 # Automatically choose repository root and name based on pacman
 # configuration and user environment.
+: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+
 if [[ $db_name ]] && [[ $db_root ]]; then
     db_path=$db_root/$db_name.${db_ext:-db}
     db_path=$(realpath -- "$db_path")
@@ -283,18 +300,6 @@ if ! [[ -f $db_path ]]; then
 elif ! [[ -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
-fi
-
-# Custom makepkg command
-if [[ $MAKEPKG ]]; then
-    # shellcheck disable=SC2086
-    makepkg() { command -- $MAKEPKG "$@"; }
-fi
-
-# Custom elevation command
-if [[ $PACMAN_AUTH ]]; then
-    # shellcheck disable=SC2086
-    sudo() { command -- $PACMAN_AUTH "$@"; }
 fi
 
 # Write successfully built packages to file (#437)
