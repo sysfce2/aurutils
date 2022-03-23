@@ -26,8 +26,7 @@ args_csv() {
 }
 
 db_replaces() {
-    bsdcat "$1" | awk '
-    /%REPLACES%/ {
+    bsdcat "$1" | awk '/%REPLACES%/ {
         while(getline && NF != 0) { print; }
     }'
 }
@@ -314,7 +313,7 @@ if (( chroot )); then
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --create --update "${chroot_args[@]}"
 else
-    # Configuration for host builds.
+    # Generate pacman.conf for isolated upgrade of local repository.
     { printf '[options]\n'
       pacconf "${pacconf_args[@]}" --raw --options
 
@@ -337,14 +336,9 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-if (( sign_pkg )); then
-    if [[ -v GPGKEY ]]; then
-        gpg --list-keys "$GPGKEY"
-        gpg_args+=(-u "$GPGKEY")
-    fi
-else
-    db_sigs=("$db_root/$db_name".sig
-             "$db_root/$db_name".files.sig)
+# Early consistency check for signed database
+if (( ! sign_pkg )); then
+    db_sigs=("$db_root/$db_name".sig "$db_root/$db_name".files.sig)
 
     if [[ -f ${db_sigs[0]} ]]; then
         error '%s: database signature found, but signing is disabled' "$argv0"
@@ -352,6 +346,10 @@ else
         printf '%q\n' >&2 "${db_sigs[@]}"
         exit 1
     fi
+
+elif [[ -v GPGKEY ]]; then
+    gpg --list-keys "$GPGKEY"
+    gpg_args+=(-u "$GPGKEY")
 fi
 
 while IFS= read -ru "$fd" path; do
@@ -359,14 +357,18 @@ while IFS= read -ru "$fd" path; do
     cd_safe "$startdir"
     cd_safe "$path"
 
+    # Allow running repo-add(8) on existing packages (#839)
+    create_package=1
+    pkglist=()
+
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
         run_msg makepkg -od "${makepkg_common_args[@]}"
     fi
 
-    # Allow to perform database operations for existing packages (#838)
-    _build=1
-
+    # Check if the package is already built, but unlike makepkg, do not exit
+    # with an error when so. A warning avoids a queue of builds aborting because
+    # one member already exists.
     if (( ! overwrite )); then
         unset exists
 
@@ -379,14 +381,14 @@ while IFS= read -ru "$fd" path; do
 
         if [[ ${exists[*]} ]]; then
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
-            _build=0
+            create_package=0
 
             printf '%q\n' >&2 "${exists[@]}"
             pkglist=("${exists[@]}")
         fi
     fi
 
-    if (( _build )); then
+    if (( create_package )); then
         if (( chroot )); then
             if (( ${#makechrootpkg_args[@]} )); then
                 chroot_args+=(--cargs "$(args_csv "${makechrootpkg_args[@]}")")
