@@ -401,26 +401,29 @@ while IFS= read -ru "$fd" path; do
 
         cd_safe "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
-        siglist=()
-
-
-        for p in "${pkglist[@]}"; do
-            if [[ -f $p.sig ]]; then
-                warning '%s: existing package signature found' "$argv0"
-                siglist+=("$p".sig)
-
-            elif (( sign_pkg )); then
-                gpg "${gpg_args[@]}" --output "$p".sig "$p"
-                siglist+=("$p".sig)
-            fi
-        done
-
-        # Move build products (relative paths) if previous steps were successful
-        mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
 
         if [[ -v results_file ]]; then
             printf >> "$results_file" "build:file://${db_path%/*}/%s\n" "${pkglist[@]}"
         fi
+    fi
+
+    # Sign any packages without signatures, even if the packages are existing.
+    # In the latter case, $pkglist will contain absolute paths.
+    siglist=()
+
+    for p in "${pkglist[@]}"; do
+        if [[ -f $p.sig ]]; then
+            printf >&2 '%s: existing package signature found\n' "$argv0"
+            siglist+=("$p".sig)
+
+        elif (( sign_pkg )); then
+            gpg "${gpg_args[@]}" --output "$p".sig "$p"
+            siglist+=("$p".sig)
+        fi
+    done
+
+    if (( create_package )); then
+        mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
     fi
 
     # Update database
