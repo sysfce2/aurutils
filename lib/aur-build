@@ -6,14 +6,13 @@ shopt -s extglob
 argv0=build
 machine=$(uname -m)
 startdir=$PWD
-XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 # default arguments (empty)
-chroot_args=() pacconf_args=() repo_add_args=() repo_args=()
+chroot_args=() pacconf_args=() repo_args=() repo_add_args=() pkglist_args=()
 makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
 
 # default arguments
@@ -27,8 +26,7 @@ args_csv() {
 }
 
 db_replaces() {
-    bsdcat "$1" | awk '
-    /%REPLACES%/ {
+    bsdcat "$1" | awk '/%REPLACES%/ {
         while(getline && NF != 0) { print; }
     }'
 }
@@ -85,12 +83,10 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/config.sh
 source /usr/share/makepkg/util/message.sh
-source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
-source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/util.sh
+source /usr/share/makepkg/util/option.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
@@ -119,7 +115,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset buildscript db_name db_path db_root makepkg_conf pacman_conf results_file queue
+unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
     case "$1" in
         # build options
@@ -133,8 +129,8 @@ while true; do
             shift; db_name=$1
             repo_args+=(--repo "$1") ;;
         --buildscript)
-            shift; buildscript=$1
-            makepkg_common_args+=(-p "$1") ;;
+            shift; makepkg_common_args+=(-p "$1")
+            pkglist_args+=(-p "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
         --makepkg-conf)
@@ -206,8 +202,23 @@ while true; do
     shift
 done
 
-# assign environment variables
-: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+# Custom makepkg command
+if [[ $MAKEPKG ]]; then
+    # shellcheck disable=SC2086
+    makepkg() { command -- $MAKEPKG "$@"; }
+fi
+
+# Custom pacman command
+if [[ $PACMAN ]]; then
+    # shellcheck disable=SC2086
+    pacman() { command -- $PACMAN "$@"; }
+fi
+
+# Custom elevation command
+if [[ $PACMAN_AUTH ]] && [[ ! -v AUR_ASROOT ]]; then
+    # shellcheck disable=SC2086
+    sudo() { command -- $PACMAN_AUTH "$@"; }
+fi
 
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
@@ -219,13 +230,35 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
+if (( chroot )) && [[ ! -v makepkg_conf ]]; then
+    # makepkg --packagelist includes the package extension, but
+    # makechrootpkg ignores PKGEXT set on the host.
+    # Retrieve the path to the container makepkg.conf separately.
+    # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
+    # copies the makepkg configuration to)
+    makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
+    makepkg_conf+=/etc/makepkg.conf
+fi
+
 if [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
-    makepkg_common_args+=(--config "$1")
-    # further used for load_makepkg_config (packagelist)
+    makepkg_common_args+=(--config "$makepkg_conf")
+    pkglist_args+=(--config "$makepkg_conf")
 
     if [[ ! -f $makepkg_conf ]]; then
         error '%s: %s: no such file or directory' "$argv0" "$makepkg_conf"
+        exit 2
+    fi
+fi
+
+# Default pacman configuration for container (#824, #808)
+# Fallback to uname when autodetecting db_name (#846)
+if (( chroot )) && [[ ! -v pacman_conf ]]; then
+    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
+
+    # Early check for availability of pacman.conf (#783)
+    if [[ ! -f $pacman_conf ]]; then
+        diag_pacman_conf "$pacman_conf"
         exit 2
     fi
 fi
@@ -241,22 +274,10 @@ if [[ -v pacman_conf ]]; then
     fi
 fi
 
-# pacman.conf fallback for chroot builds (#824, #808)
-# fallback to uname when autodetecting db_name (#846)
-if (( chroot )) && [[ ! -v pacman_conf ]]; then
-    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
-    chroot_args+=(--pacman-conf "$pacman_conf")
-    pacconf_args+=(--config "$pacman_conf")
-
-    # Early check for availability of pacman.conf (#783)
-    if [[ ! -f $pacman_conf ]]; then
-        diag_pacman_conf "$pacman_conf"
-        exit 2
-    fi
-fi
-
 # Automatically choose repository root and name based on pacman
 # configuration and user environment.
+: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+
 if [[ $db_name ]] && [[ $db_root ]]; then
     db_path=$db_root/$db_name.${db_ext:-db}
     db_path=$(realpath -- "$db_path")
@@ -278,49 +299,19 @@ elif ! [[ -w $db_path ]]; then
     exit 13
 fi
 
-# Custom makepkg command
-if [[ $MAKEPKG ]]; then
-    # shellcheck disable=SC2086
-    makepkg() { command -- $MAKEPKG "$@"; }
-fi
-
-# Custom elevation command
-if [[ $PACMAN_AUTH ]]; then
-    # shellcheck disable=SC2086
-    sudo() { command -- $PACMAN_AUTH "$@"; }
-fi
-
 # Write successfully built packages to file (#437)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
     : >"$results_file" # truncate file
 fi
 
-# Use libmakepkg to avoid a performance hit from linting the
-# PKGBUILD twice (in both makepkg and makepkg --packagelist)
-packagelist() (
-    #global buildscript startdir
-    load_makepkg_config "$1"
-
-    source_safe "${buildscript-PKGBUILD}"
-    PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
-)
-
 if (( chroot )); then
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --create --update "${chroot_args[@]}"
-
-    # makepkg --packagelist includes the package extension, but
-    # makechrootpkg ignores PKGEXT set on the host.
-    # Retrieve the path to the container makepkg.conf separately.
-    # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
-    # copies the makepkg configuration to)
-    pkglist_makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
-    pkglist_makepkg_conf+=/etc/makepkg.conf
 else
-    # Configuration for host builds.
+    # Generate pacman.conf for isolated upgrade of local repository.
     { printf '[options]\n'
       pacconf "${pacconf_args[@]}" --raw --options
 
@@ -334,10 +325,7 @@ else
       done < <(
           pacconf "${pacconf_args[@]}" --repo-list | grep -Fxv "$db_name"
       )
-    } > "$tmp"/local.conf
-
-    # Host makepkg configuration
-    pkglist_makepkg_conf=$makepkg_conf
+    } >"$tmp"/local.conf
 fi
 
 if [[ -v queue ]]; then
@@ -346,14 +334,9 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-if (( sign_pkg )); then
-    if [[ -v GPGKEY ]]; then
-        gpg --list-keys "$GPGKEY"
-        gpg_args+=(-u "$GPGKEY")
-    fi
-else
-    db_sigs=("$db_root/$db_name".sig
-             "$db_root/$db_name".files.sig)
+# Early consistency check for signed database
+if (( ! sign_pkg )); then
+    db_sigs=("$db_root/$db_name".sig "$db_root/$db_name".files.sig)
 
     if [[ -f ${db_sigs[0]} ]]; then
         error '%s: database signature found, but signing is disabled' "$argv0"
@@ -361,6 +344,10 @@ else
         printf '%q\n' >&2 "${db_sigs[@]}"
         exit 1
     fi
+
+elif [[ -v GPGKEY ]]; then
+    gpg --list-keys "$GPGKEY"
+    gpg_args+=(-u "$GPGKEY")
 fi
 
 while IFS= read -ru "$fd" path; do
@@ -368,34 +355,38 @@ while IFS= read -ru "$fd" path; do
     cd_safe "$startdir"
     cd_safe "$path"
 
+    # Allow running repo-add(8) on existing packages (#839)
+    create_package=1
+    pkglist=()
+
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
         run_msg makepkg -od "${makepkg_common_args[@]}"
     fi
 
-    # Allow to perform database operations for existing packages (#838)
-    _build=1
-
+    # Check if the package is already built, but unlike makepkg, do not exit
+    # with an error when so. A warning avoids a queue of builds aborting because
+    # one member already exists.
     if (( ! overwrite )); then
         unset exists
 
         while IFS= read -r candidate_pkg; do
             [[ -f $candidate_pkg ]] && exists+=("$candidate_pkg")
-        done < <(PKGDEST="$db_root" packagelist "$pkglist_makepkg_conf")
+        done < <(PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}")
 
         # Preserve the exit status from makepkg --packagelist (#671)
         wait "$!"
 
         if [[ ${exists[*]} ]]; then
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
-            _build=0
+            create_package=0
 
             printf '%q\n' >&2 "${exists[@]}"
             pkglist=("${exists[@]}")
         fi
     fi
 
-    if (( _build )); then
+    if (( create_package )); then
         if (( chroot )); then
             if (( ${#makechrootpkg_args[@]} )); then
                 chroot_args+=(--cargs "$(args_csv "${makechrootpkg_args[@]}")")
@@ -410,31 +401,29 @@ while IFS= read -ru "$fd" path; do
 
         cd_safe "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
-        siglist=()
-
-        # pkglist should not be empty (#513)
-        if [[ ${pkglist[*]} == '!(*.sig)' ]]; then
-            error '%s: invalid argument (no packages found)' "$argv0"
-            exit 22
-        fi
-
-        for p in "${pkglist[@]}"; do
-            if [[ -f $p.sig ]]; then
-                warning '%s: existing package signature found' "$argv0"
-                siglist+=("$p".sig)
-
-            elif (( sign_pkg )); then
-                gpg "${gpg_args[@]}" --output "$p".sig "$p"
-                siglist+=("$p".sig)
-            fi
-        done
-
-        # Move build products (relative paths) if previous steps were successful
-        mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
 
         if [[ -v results_file ]]; then
             printf >> "$results_file" "build:file://${db_path%/*}/%s\n" "${pkglist[@]}"
         fi
+    fi
+
+    # Sign any packages without signatures, even if the packages are existing.
+    # In the latter case, $pkglist will contain absolute paths.
+    siglist=()
+
+    for p in "${pkglist[@]}"; do
+        if [[ -f $p.sig ]]; then
+            printf >&2 '%s: existing package signature found\n' "$argv0"
+            siglist+=("$p".sig)
+
+        elif (( sign_pkg )); then
+            gpg "${gpg_args[@]}" --output "$p".sig "$p"
+            siglist+=("$p".sig)
+        fi
+    done
+
+    if (( create_package )); then
+        mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
     fi
 
     # Update database

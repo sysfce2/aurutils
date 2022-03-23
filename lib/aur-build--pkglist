@@ -1,0 +1,57 @@
+#!/bin/bash
+set -o errexit
+[[ -v AUR_DEBUG ]] && set -o xtrace
+argv0=build--pkglist
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# default options
+lint=0 mode=pkglist
+
+# option parsing
+source /usr/share/makepkg/util/pkgbuild.sh
+source /usr/share/makepkg/util/parseopts.sh
+
+opt_short='p:'
+opt_long='buildscript:,config:,lint,srcinfo'
+
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
+
+unset buildscript makepkg_conf
+while true; do
+    case "$1" in
+        -p|--buildscript)
+            shift; buildscript=$1 ;;
+        --config)
+            shift; makepkg_conf=$1 ;;
+        --srcinfo)
+            mode=srcinfo ;;
+        --lint)
+            lint=1 ;;
+        --) shift; break ;;
+    esac
+    shift
+done
+
+source "${buildscript-PKGBUILD}"
+
+# PKGEXT (packagelist), CARCH (lint)
+if (( lint )) || [[ $mode == "pkglist" ]]; then
+    source /usr/share/makepkg/util/config.sh
+    load_makepkg_config "${makepkg_conf-}"
+fi
+
+if (( lint )); then
+    source /usr/share/makepkg/lint_pkgbuild.sh
+    lint_pkgbuild
+fi
+
+case $mode in
+    pkglist) 
+        PKGDEST=${PKGDEST:-$PWD} print_all_package_names ;;
+    srcinfo) 
+        write_srcinfo_content ;;
+esac
+
