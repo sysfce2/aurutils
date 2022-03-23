@@ -13,7 +13,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0
 
 # default arguments (empty)
-chroot_args=() pacconf_args=() repo_add_args=() repo_args=()
+chroot_args=() pacconf_args=() repo_args=() repo_add_args=() pkglist_args=()
 makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
 
 # default arguments
@@ -85,12 +85,10 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/config.sh
 source /usr/share/makepkg/util/message.sh
-source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
-source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/util.sh
+source /usr/share/makepkg/util/option.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
@@ -119,7 +117,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset buildscript db_name db_path db_root makepkg_conf pacman_conf results_file queue
+unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
     case "$1" in
         # build options
@@ -133,8 +131,8 @@ while true; do
             shift; db_name=$1
             repo_args+=(--repo "$1") ;;
         --buildscript)
-            shift; buildscript=$1
-            makepkg_common_args+=(-p "$1") ;;
+            shift; makepkg_common_args+=(-p "$1")
+            pkglist_args+=(-p "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
         --makepkg-conf)
@@ -219,10 +217,20 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
+if (( chroot )) && [[ ! -v makepkg_conf ]]; then
+    # makepkg --packagelist includes the package extension, but
+    # makechrootpkg ignores PKGEXT set on the host.
+    # Retrieve the path to the container makepkg.conf separately.
+    # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
+    # copies the makepkg configuration to)
+    makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
+    makepkg_conf+=/etc/makepkg.conf
+fi
+
 if [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
-    makepkg_common_args+=(--config "$1")
-    # further used for load_makepkg_config (packagelist)
+    makepkg_common_args+=(--config "$makepkg_conf")
+    pkglist_args+=(--config "$makepkg_conf")
 
     if [[ ! -f $makepkg_conf ]]; then
         error '%s: %s: no such file or directory' "$argv0" "$makepkg_conf"
@@ -296,29 +304,11 @@ if [[ -v results_file ]]; then
     : >"$results_file" # truncate file
 fi
 
-# Use libmakepkg to avoid a performance hit from linting the
-# PKGBUILD twice (in both makepkg and makepkg --packagelist)
-packagelist() (
-    #global buildscript startdir
-    load_makepkg_config "$1"
-
-    source_safe "${buildscript-PKGBUILD}"
-    PKGDEST="${PKGDEST:-$startdir}" print_all_package_names
-)
-
 if (( chroot )); then
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg aur chroot --create --update "${chroot_args[@]}"
-
-    # makepkg --packagelist includes the package extension, but
-    # makechrootpkg ignores PKGEXT set on the host.
-    # Retrieve the path to the container makepkg.conf separately.
-    # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
-    # copies the makepkg configuration to)
-    pkglist_makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
-    pkglist_makepkg_conf+=/etc/makepkg.conf
 else
     # Configuration for host builds.
     { printf '[options]\n'
@@ -334,10 +324,7 @@ else
       done < <(
           pacconf "${pacconf_args[@]}" --repo-list | grep -Fxv "$db_name"
       )
-    } > "$tmp"/local.conf
-
-    # Host makepkg configuration
-    pkglist_makepkg_conf=$makepkg_conf
+    } >"$tmp"/local.conf
 fi
 
 if [[ -v queue ]]; then
@@ -381,7 +368,7 @@ while IFS= read -ru "$fd" path; do
 
         while IFS= read -r candidate_pkg; do
             [[ -f $candidate_pkg ]] && exists+=("$candidate_pkg")
-        done < <(PKGDEST="$db_root" packagelist "$pkglist_makepkg_conf")
+        done < <(PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}")
 
         # Preserve the exit status from makepkg --packagelist (#671)
         wait "$!"
