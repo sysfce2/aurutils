@@ -7,6 +7,11 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 lint=0 mode=pkglist
 
+usage() {
+    printf >&2 'usage: %s [--srcinfo] [--lint] [--config <file>]' "$argv0"
+    exit 1
+}
+
 # option parsing
 source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/parseopts.sh
