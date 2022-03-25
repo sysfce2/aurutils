@@ -17,10 +17,11 @@ source /usr/share/makepkg/util/parseopts.sh
 source /usr/share/makepkg/util/config.sh
 
 # option parsing
-opt_short='bp:'
+opt_short='p:'
 opt_long=('buildscript:' 'config:' 'lint' 'srcinfo' 'full')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -38,11 +39,16 @@ while true; do
             mode=srcinfo ;;
         --lint)
             lint=1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break ;;
     esac
     shift
 done
 
+# shellcheck disable=SC1090
 source "${buildscript-PKGBUILD}"
 pkgbase=${pkgbase:-$pkgname}
 PKGDEST=${PKGDEST:-$PWD}
