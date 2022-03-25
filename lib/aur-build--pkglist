@@ -13,6 +13,7 @@ usage() {
 }
 
 # option parsing
+source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/parseopts.sh
 
