@@ -364,6 +364,7 @@ while IFS= read -ru "$fd" path; do
     # one member already exists.
     if (( ! overwrite )) || (( dry_run )); then
         exists=()
+
         while IFS=':' read -r pkgbase pkgpath; do
             if [[ -f $pkgpath ]]; then
                 (( dry_run )) && printf '%s:%s:%s\n' exist "$pkgbase" "file://$pkgpath"
