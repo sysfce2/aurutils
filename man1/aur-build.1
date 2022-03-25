@@ -1,4 +1,4 @@
-.TH AUR\-BUILD 1 2020-10-02 AURUTILS
+.TH AUR\-BUILD 1 2022-03-25 AURUTILS
 .SH NAME
 aur\-build \- build packages to a local repository
 .
@@ -112,6 +112,21 @@ To use another key than the default, the
 .B GPGKEY
 environment variable can be set to the appropriate key identifier.
 .
+.TP
+.BR \-\-dry\-run
+Display package names in the following format, without building anything:
+.IP
+.I <mode>:<pkgbase>:file://<package_path>
+.IP
+where
+.I mode
+is either
+.B build
+or
+.BR exist ,
+for packages which need to be built and packages which are already in
+the local repository, respectively.
+
 .TP
 .BR \-\-no\-sync
 Do not sync the local repository after building.

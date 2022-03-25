@@ -12,15 +12,16 @@ usage() {
     exit 1
 }
 
-# option parsing
 source /usr/share/makepkg/util/option.sh
-source /usr/share/makepkg/util/pkgbuild.sh
 source /usr/share/makepkg/util/parseopts.sh
+source /usr/share/makepkg/util/config.sh
 
+# option parsing
 opt_short='p:'
-opt_long=('buildscript:' 'config:' 'lint' 'srcinfo')
+opt_long=('buildscript:' 'config:' 'lint' 'srcinfo' 'full')
+opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
@@ -32,22 +33,28 @@ while true; do
             shift; buildscript=$1 ;;
         --config)
             shift; makepkg_conf=$1 ;;
+        --full)
+            mode=pkglist_full ;;
         --srcinfo)
             mode=srcinfo ;;
         --lint)
             lint=1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
         --) shift; break ;;
     esac
     shift
 done
 
+# shellcheck disable=SC1090
 source "${buildscript-PKGBUILD}"
+pkgbase=${pkgbase:-$pkgname}
+PKGDEST=${PKGDEST:-$PWD}
 
 # PKGEXT (packagelist), CARCH (lint)
-if (( lint )) || [[ $mode == "pkglist" ]]; then
-    source /usr/share/makepkg/util/config.sh
-    load_makepkg_config "${makepkg_conf-}"
-fi
+load_makepkg_config "${makepkg_conf-}"
 
 if (( lint )); then
     source /usr/share/makepkg/lint_pkgbuild.sh
@@ -55,9 +62,18 @@ if (( lint )); then
 fi
 
 case $mode in
-    pkglist) 
-        PKGDEST=${PKGDEST:-$PWD} print_all_package_names ;;
+    pkglist)
+        source /usr/share/makepkg/util/pkgbuild.sh
+        print_all_package_names
+        ;;
+    pkglist_full)
+        source /usr/share/makepkg/util/pkgbuild.sh
+        print_all_package_names | while IFS= read -r; do
+            printf '%s:%s\n' "$pkgbase" "$REPLY"
+        done ;;
     srcinfo) 
-        write_srcinfo_content ;;
+        source /usr/share/makepkg/srcinfo.sh
+        write_srcinfo_content
+        ;;
 esac
 
