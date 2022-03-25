@@ -166,7 +166,7 @@ if (( print_path )); then
 fi
 
 if (( packagelist )); then
-    makepkg --packagelist --config="$directory"/root/etc/makepkg.conf
+    aur build--pkglist --config="$directory"/root/etc/makepkg.conf
     exit $?
 fi
 
