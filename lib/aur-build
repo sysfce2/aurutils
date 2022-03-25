@@ -209,12 +209,6 @@ if [[ $MAKEPKG ]]; then
     makepkg() { command -- $MAKEPKG "$@"; }
 fi
 
-# Custom pacman command
-if [[ $PACMAN ]]; then
-    # shellcheck disable=SC2086
-    pacman() { command -- $PACMAN "$@"; }
-fi
-
 # Custom elevation command
 if [[ $PACMAN_AUTH ]] && [[ ! -v AUR_ASROOT ]]; then
     # shellcheck disable=SC2086
