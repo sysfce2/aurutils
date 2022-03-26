@@ -1,0 +1,111 @@
+#!/bin/bash
+[[ -v AUR_DEBUG ]] && set -o xtrace
+set -o errexit
+shopt -s nullglob
+argv0=chroot-batch
+startdir=$PWD
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# assumption: pkgbase == dirname
+queue=$1 db_name=$2 db_root=$3 build_user=${4:-$SUDO_USER} overwrite=${5:-0}
+build_args=(-a "$queue" -d "$db_name" --root "$db_root")
+
+# resolve symlinks
+db_path=$(realpath -e -- "$db_root/$db_name".db)
+files_path=$(realpath -e -- "$db_root/$db_name".files)
+
+# re-exec as root
+if (( EUID != 0 )); then
+    exec sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,AUR_DEBUG "${BASH_SOURCE[0]}" "$@"
+fi
+
+# run user/unpriviliged commands with setpriv(1)
+runas() { 
+    setpriv --reuid "$1" --regid "$1" --init-groups --reset-env -- "${@:2}"
+}
+
+# PKGEXT in container may differ from host
+chroot_makepkg_conf=$(aur chroot --path)/etc/makepkg.conf
+build_args+=(--makepkg-conf "$chroot_makepkg_conf")
+
+# 1. check which packages in the queue need to be built
+mapfile -t build_dry_run < <(
+    runas "$build_user" aur build "${build_args[@]}" --dry-run --pkgver 2>/dev/null)
+wait "$!"
+
+if (( overwrite == 0 )); then
+    printf '%s\n' "${build_dry_run[@]}" | awk '/^exist:/ {print}'
+
+    mapfile -t pkgbase_targets < <(
+        printf '%s\n' "${build_dry_run[@]}" | awk -F: '/^build:/ {print $2}')
+else
+    mapfile -t pkgbase_targets < <(
+        printf '%s\n' "${build_dry_run[@]}" | awk -F: '{print $2}')
+fi
+
+# 2. chroot preparation
+aur chroot --create --update
+
+batch_sign() {
+    local user=$1 passphrase=$2
+    shift 2
+    local gpg_args=(--detach-sign --no-armor --batch --verbose
+                    --pinentry-mode loopback --passphrase-fd 0)
+    [[ -v GNUPGHOME ]] && gpg_args+=(--homedir "$GNUPGHOME")
+
+    printf '%s' "$passphrase" | runas "$user" gpg "${gpg_args[@]}" "$@"
+    return "${PIPESTATUS[1]}"
+}
+
+repo_add_and_sign() {
+    # Ensure the passphrase is not stored as an environment variable
+    # by saving it in a local variable inside a function.  Note that
+    # when the passphrase is cached in gpg-agent (which cannot be
+    # disabled), it will be used regardless of input read here.
+    local passphrase pkglist pkgbase
+    read -s -p 'GPG passphrase for signing packages: ' passphrase
+    echo
+
+    #global var_tmp build_user db_path
+    for pkgbase in "$@"; do
+	cd "$startdir"
+	cd "$pkgbase"
+	PKGDEST="$var_tmp" aur chroot --build --cargs -c,-u,-U,"$build_user"
+
+	cd "$var_tmp"
+	pkglist=(*) siglist=()
+
+	for pkg in "${pkglist[@]}"; do
+	    batch_sign "$build_user" "$passphrase" --output "$pkg".sig "$pkg"
+	    siglist+=("$pkg".sig)
+	done
+
+	# Move to local repository and update database
+	mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
+        runas "$build_user" env -C "$db_root" LANG=C repo-add "$db_path" "${pkglist[@]}"
+
+        # Sign database in temporary directory (var_tmp)
+        for f in "$db_path" "$files_path"; do
+	    batch_sign "$build_user" "$passphrase" --output "$var_tmp/${f##*/}".sig "$f"
+        done
+
+        # Move signatures and create symlinks
+        mv -v "${db_path##*/}".sig "${files_path##*/}".sig "$db_root"
+        cd "$db_root"
+
+        cp -sf "$db_path".sig "$db_root/$db_name".db.sig 
+        cp -sf "$files_path".sig "$db_root/$db_name".files.sig
+    done
+}
+
+# 3. main loop
+if (( ${#pkgbase_targets[@]} )); then
+    var_tmp=$(runas "$build_user" mktemp -d --tmpdir=/var/tmp/ "$argv0.XXXXXXXX")
+    trap 'rm -df -- "$var_tmp"' EXIT
+
+    repo_add_and_sign "${pkgbase_targets[@]}"
+else
+    printf >&2 '%s: there is nothing to do\n' "$argv0"
+    exit 1
+fi
+

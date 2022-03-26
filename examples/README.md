@@ -68,3 +68,30 @@ then be done periodically:
 $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repoctl rm
 $ repoctl update
 ```
+
+## chroot-batch
+
+`aur-build` and `aur-chroot` elevate privileges on-demand with `sudo(8)`. This
+typically results in password prompts when a certain time has elapsed, e.g. when
+building larger packages. To avoid this, `sudoers(5)` can be configured to not
+ask a password for relevant commands (see `aur-build(1)` and `aur-chroot(1)`).
+
+An alternative is to run commands as the superuser, and drop privileges to a
+separate user as needed. `chroot-batch` does so using `setpriv(1)`. In addition,
+packages are signed with `gpg --pinentry-mode loopback` so that the script will
+prompt for a `gpg(1)` passphrase once, with no keyring agents left running in
+the background. This approach is taken from Xyne's
+[`repo-add_and_sign`](https://xyne.dev/projects/repo-add_and_sign/) and requires
+`allow-loopback-pinentry` in `$GNUPGHOME/gpg-agent.conf`.
+
+To verify which packages are available in the local repository, `chroot-batch`
+uses `aur build --dry-run --pkgver`. To disable this behavior, the `OVERWRITE`
+variable can be set to `0`. The build user for `aur-build`, `gpg` and `repo-add`
+defaults to `$SUDO_USER` and can be specified on the command-line.
+
+Example usage:
+
+```bash
+$ aur sync -d custom --root /home/custompkgs --no-build >queue.txt
+$ sudo chroot-batch queue.txt custom /home/custompkgs "$USER"
+```
