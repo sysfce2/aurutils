@@ -9,6 +9,9 @@
 * `aur-fetch`
   + add `--no-pager` to the `git log` command (#969)
 
+* `aur-sync`
+  + redirect `aur-fetch` output to stderr (#974)
+
 ## 8.3
 
 * `aur-fetch`
