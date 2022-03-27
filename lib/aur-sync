@@ -433,7 +433,7 @@ if (( AUR_SYNC_USE_NINJA )); then
         # preserve ninja directory
         printf '%s: build files at %s\n' "$argv0" "$(pwd -P)"
     else
-        printf '%s: build files at %s\n' "$argv0" "$(pwd -P)"
+        printf '%s\n' "$(pwd -P)"
     fi
 
 elif (( build )); then
