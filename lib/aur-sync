@@ -283,7 +283,7 @@ fi
 if [[ -s igni ]]; then
     printf '%s: packages ignored: ' "$argv0"
     awk -v ORS=' ' '{print} END {printf("\n")}' igni
-fi
+fi >&2
 
 # db_info: $1 pkgname $2 pkgver
 ( set -o pipefail
