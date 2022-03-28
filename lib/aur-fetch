@@ -115,10 +115,15 @@ fi | while read -r pkg; do
         fi
 
         # Retrieve HEAD before running git-rebase or git-reset
-        prev_head=$(git rev-parse --verify HEAD)
+        prev_head=$(git rev-parse --verify --quiet HEAD)
+
+        # Merge commits from upstream if the working tree has no commits.
+        if [[ ! $prev_head ]]; then
+            git merge 'origin/master'
+        fi
 
         if [[ -v results_file ]]; then
-            results 'fetch' "$prev_head" "$fetch_head" "$PWD/$pkg" "$results_file"
+            results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
         fi
 
         if [[ $sync == 'auto' ]]; then
