@@ -101,19 +101,20 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
-        # Verify if the repository is empty (#959)
-        if ! git --no-pager log --pretty=reference -1 >&2; then
-            continue
-        fi
-
         # Retrieve new upstream revisions
         if git fetch --verbose >&2; then
-            fetch_head=$(git rev-parse --verify FETCH_HEAD)
+            fetch_head=$(git rev-parse --verify --quiet FETCH_HEAD)
         else
             exit 1
         fi
 
-        # HEAD before git rebase or git reset
+        # Skip repositories without upstream commits (#959)
+        if [[ ! $fetch_head ]]; then
+            warning '%s: repository has no upstream commits, skipping' "$pkg"
+            continue
+        fi
+
+        # Retrieve HEAD before running git-rebase or git-reset
         prev_head=$(git rev-parse --verify HEAD)
 
         if [[ -v results_file ]]; then
@@ -161,8 +162,8 @@ fi | while read -r pkg; do
 
     elif git clone "$AUR_LOCATION/$pkg"; then
         # Verify if the repository is empty (#959)
-        if git -C "$pkg" --no-pager log --pretty=reference -1 >&2; then
-            head=$(git -C "$pkg" rev-parse --verify HEAD)        
+        if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
+            git -C "$pkg" --no-pager log --pretty=reference -1 >&2
         else
             head=0
         fi
