@@ -115,10 +115,8 @@ fi | while read -r pkg; do
         fi
 
         # Retrieve HEAD before running git-rebase or git-reset
-        prev_head=$(git rev-parse --verify --quiet HEAD)
-
-        # Merge commits from upstream if the working tree has no commits.
-        if [[ ! $prev_head ]]; then
+        if ! prev_head=$(git rev-parse --verify --quiet HEAD); then
+            # Merge commits from upstream if the working tree has no commits.
             git merge 'origin/master'
         fi
 
@@ -169,12 +167,10 @@ fi | while read -r pkg; do
         # Verify if the repository is empty (#959)
         if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
-        else
-            head=0
         fi
 
         if [[ -v results_file ]]; then
-            results 'clone' '0' "$head" "$PWD/$pkg" "$results_file"
+            results 'clone' '0' "${head:-0}" "$PWD/$pkg" "$results_file"
         fi
     else
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"
