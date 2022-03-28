@@ -7,7 +7,7 @@ XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # default options
-clone=1 recurse=0 sync=no
+existing=0 recurse=0 sync=no
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -46,7 +46,7 @@ unset results_file
 while true; do
     case "$1" in
         --existing)
-            clone=0 ;;
+            existing=1 ;;
         -S)
             sync=auto ;;
         --sync)
@@ -155,7 +155,10 @@ fi | while read -r pkg; do
         fi
 
     # Otherwise, try to clone anew
-    elif (( clone )) && git clone "$AUR_LOCATION/$pkg"; then
+    elif (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
+        continue
+
+    elif git clone "$AUR_LOCATION/$pkg"; then
         # Verify if the repository is empty (#959)
         if git -C "$pkg" --no-pager log --pretty=reference -1 >&2; then
             head=$(git -C "$pkg" rev-parse HEAD)
@@ -166,8 +169,7 @@ fi | while read -r pkg; do
         if [[ -v results_file ]]; then
             results 'clone' '0' "$head" "$PWD/$pkg" "$results_file"
         fi
-
-    elif (( clone )); then
+    else
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"
         exit 1
     fi

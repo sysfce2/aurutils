@@ -8,6 +8,7 @@
 
 * `aur-fetch`
   + add `--no-pager` to the `git log` command (#969)
+  + `--existing`: clone instead of skip targets if they exist
 
 * `aur-sync`
   + redirect `aur-fetch` output to stderr (#974)
