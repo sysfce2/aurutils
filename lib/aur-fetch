@@ -156,6 +156,7 @@ fi | while read -r pkg; do
 
     # Otherwise, try to clone anew
     elif (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
+        warning '%s: package is not in AUR, skipping' "$argv0" "$pkg"
         continue
 
     elif git clone "$AUR_LOCATION/$pkg"; then
