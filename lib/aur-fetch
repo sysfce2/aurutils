@@ -108,13 +108,13 @@ fi | while read -r pkg; do
 
         # Retrieve new upstream revisions
         if git fetch --verbose >&2; then
-            fetch_head=$(git rev-parse FETCH_HEAD)
+            fetch_head=$(git rev-parse --verify FETCH_HEAD)
         else
             exit 1
         fi
 
         # HEAD before git rebase or git reset
-        prev_head=$(git rev-parse HEAD)
+        prev_head=$(git rev-parse --verify HEAD)
 
         if [[ -v results_file ]]; then
             results 'fetch' "$prev_head" "$fetch_head" "$PWD/$pkg" "$results_file"
@@ -128,7 +128,7 @@ fi | while read -r pkg; do
                     sync=rebase
                 fi
 
-            elif [[ $prev_head != $(git rev-parse 'HEAD@{upstream}') ]]; then
+            elif [[ $prev_head != $(git rev-parse --verify 'HEAD@{upstream}') ]]; then
                 sync=reset
             fi # else sync = no
         fi
@@ -148,7 +148,7 @@ fi | while read -r pkg; do
             exit 1
         }
 
-        head=$(git rev-parse HEAD)
+        head=$(git rev-parse --verify HEAD)
 
         if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
             results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
@@ -161,7 +161,7 @@ fi | while read -r pkg; do
     elif git clone "$AUR_LOCATION/$pkg"; then
         # Verify if the repository is empty (#959)
         if git -C "$pkg" --no-pager log --pretty=reference -1 >&2; then
-            head=$(git -C "$pkg" rev-parse HEAD)
+            head=$(git -C "$pkg" rev-parse --verify HEAD)        
         else
             head=0
         fi
