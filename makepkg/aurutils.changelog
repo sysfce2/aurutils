@@ -1,9 +1,13 @@
 ## 9
 
+* `examples`
+  + add `chroot-batch`
+
 * `lib`
   + add `aur-build--pkglist`
 
 * `aur-build`
+  + add `--dry-run`
   + sign existing packages (#967)
 
 * `aur-fetch`
