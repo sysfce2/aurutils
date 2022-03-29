@@ -8,6 +8,7 @@
 
 * `aur-build`
   + add `--dry-run`
+  + redirect `makepkg -od` output (`--pkgver`) to stderr
   + sign existing packages (#967)
 
 * `aur-fetch`
