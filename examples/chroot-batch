@@ -6,9 +6,10 @@ argv0=chroot-batch
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# assumption: pkgbase == dirname
-queue=$1 db_name=$2 db_root=$3 build_user=${4:-$SUDO_USER} overwrite=${5:-0}
-build_args=(-a "$queue" -d "$db_name" --root "$db_root")
+# XXX: assumption on $queue: pkgbase == dirname (--dry-run output is separated
+# by colons, with the local repository path at the end of each line).
+queue=$1 db_name=$2 db_root=$3
+build_user=${4:-$SUDO_USER} overwrite=${5:-0}
 
 # resolve symlinks
 db_path=$(realpath -e -- "$db_root/$db_name".db)
@@ -30,7 +31,7 @@ build_args+=(--makepkg-conf "$chroot_makepkg_conf")
 
 # 1. check which packages in the queue need to be built
 mapfile -t build_dry_run < <(
-    runas "$build_user" aur build "${build_args[@]}" --dry-run --pkgver 2>/dev/null)
+    runas "$build_user" aur build -a "$queue" -d "$db_name" --root "$db_root" --dry-run --pkgver 2>/dev/null)
 wait "$!"
 
 if (( overwrite == 0 )); then
@@ -68,11 +69,10 @@ repo_add_and_sign() {
 
     #global var_tmp build_user db_path
     for pkgbase in "$@"; do
-	cd "$startdir"
-	cd "$pkgbase"
+	cd -- "$startdir/$pkgbase"
 	PKGDEST="$var_tmp" aur chroot --build --cargs -c,-u,-U,"$build_user"
 
-	cd "$var_tmp"
+	cd -- "$var_tmp"
 	pkglist=(*) siglist=()
 
 	for pkg in "${pkglist[@]}"; do
@@ -91,7 +91,7 @@ repo_add_and_sign() {
 
         # Move signatures and create symlinks
         mv -v "${db_path##*/}".sig "${files_path##*/}".sig "$db_root"
-        cd "$db_root"
+        cd -- "$db_root"
 
         cp -sf "$db_path".sig "$db_root/$db_name".db.sig 
         cp -sf "$files_path".sig "$db_root/$db_name".files.sig
