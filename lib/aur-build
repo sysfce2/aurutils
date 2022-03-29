@@ -356,7 +356,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        run_msg makepkg -od "${makepkg_common_args[@]}"
+        run_msg makepkg -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not exit
