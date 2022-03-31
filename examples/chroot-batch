@@ -9,7 +9,8 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # XXX: assumption on $queue: pkgbase == dirname (--dry-run output is separated
 # by colons, with the local repository path at the end of each line).
 queue=$1 db_name=$2 db_root=$3
-build_user=${4:-$SUDO_USER} overwrite=${5:-0}
+build_user=${4:-$SUDO_USER}
+overwrite=${5:-0}
 
 # resolve symlinks
 db_path=$(realpath -e -- "$db_root/$db_name".db)
@@ -31,7 +32,8 @@ build_args+=(--makepkg-conf "$chroot_makepkg_conf")
 
 # 1. check which packages in the queue need to be built
 mapfile -t build_dry_run < <(
-    runas "$build_user" aur build -a "$queue" -d "$db_name" --root "$db_root" --dry-run --pkgver 2>/dev/null)
+    runas "$build_user" aur build -a "$queue" -d "$db_name" --root "$db_root" \
+        --dry-run --pkgver 2>/dev/null)
 wait "$!"
 
 if (( overwrite == 0 )); then
@@ -50,6 +52,7 @@ aur chroot --create --update
 batch_sign() {
     local user=$1 passphrase=$2
     shift 2
+
     local gpg_args=(--detach-sign --no-armor --batch --verbose
                     --pinentry-mode loopback --passphrase-fd 0)
     [[ -v GNUPGHOME ]] && gpg_args+=(--homedir "$GNUPGHOME")
@@ -69,24 +72,24 @@ repo_add_and_sign() {
 
     #global var_tmp build_user db_path
     for pkgbase in "$@"; do
-	cd -- "$startdir/$pkgbase"
-	PKGDEST="$var_tmp" aur chroot --build --cargs -c,-u,-U,"$build_user"
+    cd -- "$startdir/$pkgbase"
+    PKGDEST="$var_tmp" aur chroot --build --cargs -c,-u,-U,"$build_user"
 
-	cd -- "$var_tmp"
-	pkglist=(*) siglist=()
+    cd -- "$var_tmp"
+    pkglist=(*) siglist=()
 
-	for pkg in "${pkglist[@]}"; do
-	    batch_sign "$build_user" "$passphrase" --output "$pkg".sig "$pkg"
-	    siglist+=("$pkg".sig)
-	done
+    for pkg in "${pkglist[@]}"; do
+        batch_sign "$build_user" "$passphrase" --output "$pkg".sig "$pkg"
+        siglist+=("$pkg".sig)
+    done
 
-	# Move to local repository and update database
-	mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
+    # Move to local repository and update database
+    mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
         runas "$build_user" env -C "$db_root" LANG=C repo-add "$db_path" "${pkglist[@]}"
 
         # Sign database in temporary directory (var_tmp)
         for f in "$db_path" "$files_path"; do
-	    batch_sign "$build_user" "$passphrase" --output "$var_tmp/${f##*/}".sig "$f"
+            batch_sign "$build_user" "$passphrase" --output "$var_tmp/${f##*/}".sig "$f"
         done
 
         # Move signatures and create symlinks
