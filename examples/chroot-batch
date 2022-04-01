@@ -6,19 +6,52 @@ argv0=chroot-batch
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# XXX: assumption on $queue: pkgbase == dirname (--dry-run output is separated
-# by colons, with the local repository path at the end of each line).
-queue=$1 db_name=$2 db_root=$3
-build_user=${4:-$SUDO_USER}
-overwrite=${5:-0}
+# default options
+overwrite=0 build_user=$SUDO_USER
+
+# option parsing
+source /usr/share/makepkg/util/parseopts.sh
+source /usr/share/makepkg/util.sh
+
+orig_argv=("$@")
+opt_short='c:U:f'
+opt_long=('config:' 'user:' 'overwrite')
+
+if ! parseopts "$opt_short" "${opt_long[@]}" -- "$@"; then
+    exit 1
+fi
+set -- "${OPTRET[@]}"
+
+unset build_args chroot_args
+while true; do
+    case $1 in
+        -f|--overwrite)
+            overwrite=1 ;;
+        -c|--config)
+            shift; build_args+=(--pacman-conf "$1")
+            chroot_args+=(--pacman-conf "$1") ;;
+        -U|--user)
+            shift; build_user=$1 ;;
+        --) shift; break ;;
+    esac
+    shift
+done
+
+# XXX: assumption on --arg-file: pkgbase == dirname (--dry-run output is separated
+# by colons, with the package path at the end of each line).
+argfile=$1 db_name=$2 db_root=$3
+
+[[ ! $argfile ]] && { printf >&2 '%s: $1 <argfile> required\n' "$argv0"; exit 1; }
+[[ ! $db_name ]] && { printf >&2 '%s: $2 <repo> required\n' "$argv0"; exit 1; }
+[[ ! $db_root ]] && { printf >&2 '%s: $3 <root> required\n' "$argv0"; exit 1; }
 
 # resolve symlinks
 db_path=$(realpath -e -- "$db_root/$db_name".db)
 files_path=$(realpath -e -- "$db_root/$db_name".files)
 
-# re-exec as root
+# sanity checks done, re-exec as root
 if (( EUID != 0 )); then
-    exec sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,AUR_DEBUG "${BASH_SOURCE[0]}" "$@"
+    exec sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,AUR_DEBUG "${BASH_SOURCE[0]}" "${orig_argv[@]}"
 fi
 
 # run user/unpriviliged commands with setpriv(1)
@@ -32,8 +65,9 @@ build_args+=(--makepkg-conf "$chroot_makepkg_conf")
 
 # 1. check which packages in the queue need to be built
 mapfile -t build_dry_run < <(
-    runas "$build_user" aur build -a "$queue" -d "$db_name" --root "$db_root" \
-        --dry-run --pkgver 2>/dev/null)
+    runas "$build_user" aur build -a "$argfile" -d "$db_name" --root "$db_root" \
+          "${build_args[@]}" --dry-run --pkgver 2>/dev/null
+)
 wait "$!"
 
 if (( overwrite == 0 )); then
@@ -47,7 +81,7 @@ else
 fi
 
 # 2. chroot preparation
-aur chroot --create --update
+aur chroot --create --update "${chroot_args[@]}"
 
 batch_sign() {
     local user=$1 passphrase=$2
@@ -62,29 +96,30 @@ batch_sign() {
 }
 
 repo_add_and_sign() {
-    # Ensure the passphrase is not stored as an environment variable
-    # by saving it in a local variable inside a function.  Note that
-    # when the passphrase is cached in gpg-agent (which cannot be
-    # disabled), it will be used regardless of input read here.
+    # Ensure the passphrase is not stored as an environment variable by saving
+    # it in a local variable inside a function.  Note that when the passphrase
+    # is cached in gpg-agent (with duration set by default-cache-ttl), it will
+    # be used regardless of input read here.
     local passphrase pkglist pkgbase
     read -s -p 'GPG passphrase for signing packages: ' passphrase
     echo
 
     #global var_tmp build_user db_path
     for pkgbase in "$@"; do
-    cd -- "$startdir/$pkgbase"
-    PKGDEST="$var_tmp" aur chroot --build --cargs -c,-u,-U,"$build_user"
+        cd -- "$startdir/$pkgbase"
+        PKGDEST="$var_tmp" aur chroot --build "${chroot_args[@]}" \
+               --cargs -c,-u,-U,"$build_user"
 
-    cd -- "$var_tmp"
-    pkglist=(*) siglist=()
+        cd -- "$var_tmp"
+        pkglist=(*) siglist=()
 
-    for pkg in "${pkglist[@]}"; do
-        batch_sign "$build_user" "$passphrase" --output "$pkg".sig "$pkg"
-        siglist+=("$pkg".sig)
-    done
+        for pkg in "${pkglist[@]}"; do
+            batch_sign "$build_user" "$passphrase" --output "$pkg".sig "$pkg"
+            siglist+=("$pkg".sig)
+        done
 
-    # Move to local repository and update database
-    mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
+        # Move to local repository and update database
+        mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
         runas "$build_user" env -C "$db_root" LANG=C repo-add "$db_path" "${pkglist[@]}"
 
         # Sign database in temporary directory (var_tmp)
@@ -111,4 +146,3 @@ else
     printf >&2 '%s: there is nothing to do\n' "$argv0"
     exit 1
 fi
-
