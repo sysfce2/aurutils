@@ -145,12 +145,12 @@ fi | while read -r pkg; do
             if ! prev_head=$(git rev-parse --verify --quiet HEAD); then
                 git merge 'origin/master'
             fi
-
-            if [[ -v results_file ]]; then
-                results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
-            fi
         else
             exit 1
+        fi
+
+        if [[ -v results_file ]]; then
+            results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
         fi
 
         if [[ $sync == 'auto' ]]; then
@@ -160,13 +160,13 @@ fi | while read -r pkg; do
         # Merge revisions in the master branch with upstream.
         if sync_merge_revisions "$sync" >&2; then
             head=$(git rev-parse --verify HEAD)
-
-            if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
-                results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
-            fi
         else
             error '%s: %s: failed to %s repository' "$argv0" "$sync" "$pkg"
             exit 1
+        fi
+
+        if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
+            results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
         fi
 
     # Otherwise, try to clone anew
