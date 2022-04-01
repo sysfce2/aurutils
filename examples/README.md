@@ -75,23 +75,29 @@ $ repoctl update
 typically results in password prompts when a certain time has elapsed, e.g. when
 building larger packages. To avoid this, `sudoers(5)` can be configured to not
 ask a password for relevant commands (see `aur-build(1)` and `aur-chroot(1)`).
-
 An alternative is to run commands as the superuser, and drop privileges to a
-separate user as needed. `chroot-batch` does so using `setpriv(1)`. In addition,
-packages are signed with `gpg --pinentry-mode loopback` so that the script will
-prompt for a `gpg(1)` passphrase once, without requiring `gpg-agent` to cache
-the passphrase in the background. This approach is adapted from Xyne's
-[`repo-add_and_sign`](https://xyne.dev/projects/repo-add_and_sign/) and requires
-`allow-loopback-pinentry` in `$GNUPGHOME/gpg-agent.conf`.
+separate user as needed. `chroot-batch` does so using `setpriv(1)`.
+
+`chroot-batch` signs packages with `gpg --pinentry-mode loopback` so that the
+script will prompt for a `gpg(1)` passphrase once, without requiring `gpg-agent`
+to cache the passphrase in the background. This approach requires
+`allow-loopback-pinentry` in `$GNUPGHOME/gpg-agent.conf`. Note that `gpg-agent`
+will cache passphrases regardless of this setting. How long a passphrase is
+cached is set with the `default-cache-ttl` option.
+
+An alternative to `--pinentry-mode loopback` which works with `aur-build`,
+`makepkg --sign` and `repo-add` is `gpg-set-passphrase`. See
+`gpg-preset-passphrase(1)` for more information.
 
 To verify which packages are available in the local repository, `chroot-batch`
 uses `aur build --dry-run --pkgver`. It is assumed that the source directory for
 each package is named after `pkgbase`. The build user for `aur-build`, `gpg` and
-`repo-add` default to `$SUDO_USER` and can be specified on the command-line.
-
-Example usage:
+`repo-add` default to `$SUDO_USER` and can be specified on the
+command-line. Example usage:
 
 ```bash
 $ aur sync -d custom --root /home/custompkgs --no-build >queue.txt
-$ sudo chroot-batch queue.txt custom /home/custompkgs "$USER" 0
+$ sudo chroot-batch queue.txt custom /home/custompkgs
 ```
+
+See also: [`repo-add_and_sign`](https://xyne.dev/projects/repo-add_and_sign/)
