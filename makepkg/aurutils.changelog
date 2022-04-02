@@ -1,3 +1,23 @@
+## 9.1
+
+`aur-build` now uses `runuser(1)` to run unprivileged commands (`makepkg`, `gpg`,
+`repo-add`) when `AUR_ASROOT` is combined with `--user`. This change has no
+effect when running `aur-build` as a regular user.
+
+Usage:
+
+  $ sudo env AUR_ASROOT=1 aur build --chroot --user <build_user> ...
+
+This approach works with `--chroot` (`makechrootpkg -U`). Host builds using
+`makepkg --syncdeps` to install dependencies require further configuration.
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ WARNING!                                                                     │
+│                                                                              │
+│ Running `aur-build` as root is experimental and disabled by default. If your │
+│ install breaks, you get to keep both pieces.                                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+
 ## 9
 
 * `examples`
