@@ -452,7 +452,7 @@ while IFS= read -ru "$fd" path; do
 
     for p in "${pkglist[@]}"; do
         if [[ -f $p.sig ]]; then
-            printf >&2 '%s: existing package signature found\n' "$argv0"
+            printf >&2 '%q\n' "$p.sig"
             siglist+=("$p".sig)
 
         elif (( sign_pkg )); then
