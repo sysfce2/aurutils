@@ -207,7 +207,7 @@ if ! [[ $db_name ]]; then
         *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
            for i in "${!conf_file_repo[@]}"; do
                printf '%q\t%q\n' "${conf_file_repo[$i]}" "${conf_file_path[$i]}"
-           done | column -d $'\t' -t >&2
+           done | column -o $'\t' -t >&2
            exit 1
            ;;
     esac
