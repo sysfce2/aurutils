@@ -491,7 +491,10 @@ detect which packages require a rebuild, the
 .UR https://\:github.com/\:maximbaz/\:rebuild-detector
 rebuild-detector
 .UE
-package can be used.
+package can be used. To propagate rebuilt packages to clients,
+.B pkgver
+should be increased priorly, e.g. with
+.BR setconf (1).
 .
 .SS Installing dependencies with makepkg
 If
