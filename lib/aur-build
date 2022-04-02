@@ -263,10 +263,10 @@ if (( chroot )) && [[ ! -v makepkg_conf ]]; then
     # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
     # copies the makepkg configuration to)
     makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
-    makepkg_conf+=/etc/makepkg.conf
-fi
+    makepkg_common_args+=(--config "$makepkg_conf")
+    pkglist_args+=(--config "$makepkg_conf")
 
-if [[ -v makepkg_conf ]]; then
+elif [[ -v makepkg_conf ]]; then
     chroot_args+=(--makepkg-conf "$makepkg_conf")
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
@@ -281,15 +281,16 @@ fi
 # Fallback to uname when autodetecting db_name (#846)
 if (( chroot )) && [[ ! -v pacman_conf ]]; then
     pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
+    chroot_args+=(--pacman-conf "$pacman_conf")
+    pacconf_args+=(--config "$pacman_conf")
 
     # Early check for availability of pacman.conf (#783)
     if [[ ! -f $pacman_conf ]]; then
         diag_pacman_conf "$pacman_conf"
         exit 2
     fi
-fi
 
-if [[ -v pacman_conf ]]; then
+elif [[ -v pacman_conf ]]; then
     chroot_args+=(--pacman-conf "$pacman_conf")
     pacconf_args+=(--config "$pacman_conf")
 
