@@ -476,6 +476,14 @@ in
 .BR gpg (1)
 for details.
 .
+.SS Signing packages unattended
+By default, `gpg(1)` will cache passphrases for a duration set by the
+`default-cache-ttl` option. If extending this duration is not desired, the
+passphrase can be cached manually with `gpg-set-passphrase` before running
+`aur-build(1)`. The duration of the cached passphrase is then set by the
+`max-cache-ttl` option, which defaults to 2 hours. See `gpg-set-passphrase` for
+details.
+
 .SS Rebuilding packages against updated dependencies
 It is sometimes required to rebuild packages when their dependencies
 are updated, for example in the case of dynamic library linking.  To
