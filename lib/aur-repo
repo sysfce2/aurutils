@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0 mode=none field=none
+db_query=local table_format=0 mode=none field=none status=0
 
 # default arguments
 conf_args=()
@@ -127,7 +127,7 @@ while true; do
         --repo-list|--list-repo)
             list=repo ;;
         --status)
-            status_file=/dev/stdout ;;
+            status=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -207,7 +207,7 @@ if ! [[ $db_name ]]; then
         *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
            for i in "${!conf_file_repo[@]}"; do
                printf '%q\t%q\n' "${conf_file_repo[$i]}" "${conf_file_path[$i]}"
-           done | column -d $'\t' -t >&2
+           done | column -o $'\t' -t >&2
            exit 1
            ;;
     esac
@@ -238,11 +238,11 @@ if [[ ! -f $db_path ]]; then
     exit 2
 fi
 
-if [[ -v status_file ]]; then
-    { printf 'repo:%s\n' "$db_name"
-      printf 'root:%s\n' "$db_root"
-      printf 'path:%s\n' "$db_path"
-    } > "$status_file"
+if (( status )); then
+    printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path"
+
+elif [[ -v status_file ]]; then
+    printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path" >"$status_file"
 fi
 
 case $mode in
