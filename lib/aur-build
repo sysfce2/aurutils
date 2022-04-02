@@ -59,10 +59,29 @@ EOF
     printf '%8s%s\n' ' ' "$1"
 }
 
-run_msg() {
-    printf >&2 'Running %s\n' "$*"
-    "$@"
+# Allow to drop and elevate permissions for commands as needed (#907)
+# If UID > 0 and as_user == 1, no additional commands are run.
+run_privs_mode() {
+    #global build_user
+    local as_user=$1 print_cmd=$2 cmd
+    shift 2
+
+    if (( as_user == 2 )) && (( UID != 0 )); then
+        cmd=(sudo -- "$@")
+    elif (( as_user == 1 )) && (( UID == 0 )) && [[ -v build_user ]]; then
+        cmd=(setpriv --reuid "$build_user" --regid "$build_user" --init-groups --reset-env -- "$@")
+    else
+        cmd=("$@")
+    fi
+
+    (( print_cmd )) && printf >&2 '%s\n' "${cmd[*]}"
+    "${cmd[@]}" # run command-line
 }
+
+# Helpers to print command-line to stderr
+run_privs()     { run_privs_mode "$1" 0 "${@:2}"; }
+run_privs_msg() { run_privs_mode "$1" 1 "${@:2}"; }
+run_msg()       { printf >&2 '%s\n' "$*"; "$@"; }
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
@@ -91,13 +110,6 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
-# mollyguard for makepkg
-if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
-    warning 'aur-%s is not meant to be run as root.' "$argv0"
-    warning 'To proceed anyway, set the %s variable.' 'AUR_ASROOT'
-    exit 1
-fi
-
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
@@ -114,7 +126,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
+unset build_user db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
     case "$1" in
         # build options
@@ -161,7 +173,8 @@ while true; do
         -T|--temp)
             makechrootpkg_args+=(-T) ;;
         -U|--user)
-            shift; makechrootpkg_args+=(-U "$1") ;;
+            shift; build_user=$1
+            makechrootpkg_args+=(-U "$1") ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             makepkg_common_args+=(--ignorearch)
@@ -203,6 +216,13 @@ while true; do
     shift
 done
 
+# mollyguard for makepkg
+if (( UID == 0 )) && { [[ ! -v build_user ]] || [[ ! -v AUR_ASROOT ]]; }; then
+    warning 'aur-%s is not meant to be run as root.' "$argv0"
+    warning 'To proceed anyway, set the %s variable and specify --user <username>.' 'AUR_ASROOT'
+    exit 1
+fi
+
 # Custom makepkg command
 if [[ $MAKEPKG ]]; then
     # shellcheck disable=SC2086
@@ -210,7 +230,8 @@ if [[ $MAKEPKG ]]; then
 fi
 
 # Custom elevation command
-if [[ $PACMAN_AUTH ]] && [[ ! -v AUR_ASROOT ]]; then
+# XXX: merge this with run_privs?
+if [[ $PACMAN_AUTH ]]; then
     # shellcheck disable=SC2086
     sudo() { command -- $PACMAN_AUTH "$@"; }
 fi
@@ -218,9 +239,17 @@ fi
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
+
+# Only $var_tmp should be writeable by the build user (PKGDEST, signatures)
+# If UID > 0 and build_user is unset, this is equivalent to $tmp above
+if [[ -v build_user ]]; then
+    var_tmp_uid=$(id -u "$build_user")
+else
+    var_tmp_uid=$UID
+fi
 # shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$UID"
-var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXXXX")
+run_privs '1' mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$var_tmp_uid"
+var_tmp=$(run_privs '1' mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_uid/$argv0.XXXXXXXX")
 
 trap 'trap_exit' EXIT
 trap 'exit' INT
@@ -271,6 +300,7 @@ fi
 
 # Automatically choose repository root and name based on pacman
 # configuration and user environment.
+# XXX: lost when running aur-repo with setpriv(1)
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
 if [[ $db_name ]] && [[ $db_root ]]; then
@@ -280,7 +310,7 @@ else
     { IFS=: read -r _ db_name
       IFS=: read -r _ db_root
       IFS=: read -r _ db_path
-    } < <(aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
+    } < <(run_privs '1' aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
     wait "$!"
 fi
 
@@ -289,12 +319,14 @@ if ! [[ -f $db_path ]]; then
     error '%s: %s: no such file or directory' "$argv0" "$db_path"
     exit 2
 
-elif ! [[ -w $db_path ]]; then
+# Check if build user can write to database
+elif ! run_privs '1' test -w "$db_path"; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
 fi
 
 # Write successfully built packages to file (#437)
+# XXX: write this as the build user?
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
     : >"$results_file" # truncate file
@@ -341,7 +373,7 @@ if (( ! sign_pkg )); then
     fi
 
 elif [[ -v GPGKEY ]]; then
-    gpg --list-keys "$GPGKEY"
+    run_privs '1' gpg --list-keys "$GPGKEY"
     gpg_args+=(-u "$GPGKEY")
 fi
 
@@ -356,7 +388,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        run_msg makepkg -od "${makepkg_common_args[@]}" >&2
+        run_privs '1' makepkg -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not exit
@@ -373,7 +405,7 @@ while IFS= read -ru "$fd" path; do
                 (( dry_run )) && printf '%s:%s:%s\n' build "$pkgbase" "file://$pkgpath"
             fi
         # pkgbase may differ from pkgname; prefix to package path with --full
-        done < <(PKGDEST="$db_root" aur build--pkglist --full "${pkglist_args[@]}")
+        done < <(run_privs '1' env PKGDEST="$db_root" aur build--pkglist --full "${pkglist_args[@]}")
 
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
@@ -401,7 +433,7 @@ while IFS= read -ru "$fd" path; do
             fi
             PKGDEST="$var_tmp" run_msg aur chroot --build "${chroot_args[@]}"
         else
-            PKGDEST="$var_tmp" run_msg makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            run_privs_msg '1' env PKGDEST="$var_tmp" makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd_safe "$var_tmp"
@@ -422,7 +454,7 @@ while IFS= read -ru "$fd" path; do
             siglist+=("$p".sig)
 
         elif (( sign_pkg )); then
-            gpg "${gpg_args[@]}" --output "$p".sig "$p"
+            run_privs '1' gpg "${gpg_args[@]}" --output "$p".sig "$p"
             siglist+=("$p".sig)
         fi
     done
@@ -433,15 +465,15 @@ while IFS= read -ru "$fd" path; do
 
     # Update database
     cd_safe "$db_root"
-    LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+    run_privs '1' env LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( chroot )) || (( no_sync )); then
         continue
     else
         replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
 
-        sudo pacman -Fy  --config="$tmp"/local.conf
-        sudo pacman -Syu --config="$tmp"/local.conf --ignore="$replaces" --noconfirm
+        run_privs '2' pacman -Fy  --config="$tmp"/local.conf
+        run_privs '2' pacman -Syu --config="$tmp"/local.conf --ignore="$replaces" --noconfirm
     fi
 done
 
