@@ -79,8 +79,8 @@ as_user() {
 }
 
 run_msg() {
-    printf >&2 'Running %s\n' "$*"
-    "$@"
+    printf >&2 'Running %s\n' "${*:$1}"
+    "${@:2}"
 }
 
 trap_exit() {
@@ -337,7 +337,7 @@ if (( chroot )); then
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
-    run_msg aur chroot --create --update "${chroot_args[@]}"
+    run_msg 2 aur chroot --create --update "${chroot_args[@]}"
 else
     # Generate pacman.conf for isolated upgrade of local repository.
     { printf '[options]\n'
@@ -432,9 +432,9 @@ while IFS= read -ru "$fd" path; do
             if (( ${#makechrootpkg_makepkg_args[@]} )); then
                 chroot_args+=(--margs "$(args_csv "${makechrootpkg_makepkg_args[@]}")")
             fi
-            PKGDEST="$var_tmp" run_msg aur chroot --build "${chroot_args[@]}"
+            PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
-            PKGDEST="$var_tmp" run_msg as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            PKGDEST="$var_tmp" run_msg 3 as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd_safe "$var_tmp"
