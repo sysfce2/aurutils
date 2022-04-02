@@ -59,17 +59,14 @@ EOF
     printf '%8s%s\n' ' ' "$1"
 }
 
-# Allow to drop and elevate permissions for commands as needed (#907)
-# If UID > 0 and as_user == 1, no additional commands are run.
-run_privs_mode() {
+# Allow to drop permissions for commands as needed (#907)
+as_user_mode() {
     #global build_user
-    local as_user=$1 print_cmd=$2 cmd
-    shift 2
+    local print_cmd=$1 cmd
+    shift
 
-    if (( as_user == 2 )) && (( UID != 0 )); then
-        cmd=(sudo -- "$@")
-    elif (( as_user == 1 )) && (( UID == 0 )) && [[ -v build_user ]]; then
-        cmd=(setpriv --reuid "$build_user" --regid "$build_user" --init-groups --reset-env -- "$@")
+    if (( UID == 0 )) && [[ -v build_user ]]; then
+        cmd=(runuser --pty -u "$build_user" -g "$build_user" -- "$@")
     else
         cmd=("$@")
     fi
@@ -79,9 +76,15 @@ run_privs_mode() {
 }
 
 # Helpers to print command-line to stderr
-run_privs()     { run_privs_mode "$1" 0 "${@:2}"; }
-run_privs_msg() { run_privs_mode "$1" 1 "${@:2}"; }
-run_msg()       { printf >&2 '%s\n' "$*"; "$@"; }
+as_user() {
+    as_user_mode "$1" 0 "${@:2}"
+}
+as_user_msg() {
+    as_user_mode "$1" 1 "${@:2}"
+}
+run_msg() {
+    printf >&2 '%s\n' "$*"; "$@"
+}
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
@@ -230,8 +233,10 @@ if [[ $MAKEPKG ]]; then
 fi
 
 # Custom elevation command
-# XXX: merge this with run_privs?
-if [[ $PACMAN_AUTH ]]; then
+if (( UID == 0 )); then
+    sudo() { command -- "$@"; }
+
+elif [[ $PACMAN_AUTH ]]; then
     # shellcheck disable=SC2086
     sudo() { command -- $PACMAN_AUTH "$@"; }
 fi
@@ -248,8 +253,8 @@ else
     var_tmp_uid=$UID
 fi
 # shellcheck disable=SC2174
-run_privs '1' mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$var_tmp_uid"
-var_tmp=$(run_privs '1' mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_uid/$argv0.XXXXXXXX")
+as_user mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$var_tmp_uid"
+var_tmp=$(as_user mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_uid/$argv0.XXXXXXXX")
 
 trap 'trap_exit' EXIT
 trap 'exit' INT
@@ -300,7 +305,6 @@ fi
 
 # Automatically choose repository root and name based on pacman
 # configuration and user environment.
-# XXX: lost when running aur-repo with setpriv(1)
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
 if [[ $db_name ]] && [[ $db_root ]]; then
@@ -310,7 +314,7 @@ else
     { IFS=: read -r _ db_name
       IFS=: read -r _ db_root
       IFS=: read -r _ db_path
-    } < <(run_privs '1' aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
+    } < <(as_user aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
     wait "$!"
 fi
 
@@ -320,7 +324,7 @@ if ! [[ -f $db_path ]]; then
     exit 2
 
 # Check if build user can write to database
-elif ! run_privs '1' test -w "$db_path"; then
+elif ! as_user test -w "$db_path"; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
 fi
@@ -373,7 +377,7 @@ if (( ! sign_pkg )); then
     fi
 
 elif [[ -v GPGKEY ]]; then
-    run_privs '1' gpg --list-keys "$GPGKEY"
+    as_user gpg --list-keys "$GPGKEY"
     gpg_args+=(-u "$GPGKEY")
 fi
 
@@ -388,7 +392,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
-        run_privs '1' makepkg -od "${makepkg_common_args[@]}" >&2
+        as_user makepkg -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not exit
@@ -405,7 +409,7 @@ while IFS= read -ru "$fd" path; do
                 (( dry_run )) && printf '%s:%s:%s\n' build "$pkgbase" "file://$pkgpath"
             fi
         # pkgbase may differ from pkgname; prefix to package path with --full
-        done < <(run_privs '1' env PKGDEST="$db_root" aur build--pkglist --full "${pkglist_args[@]}")
+        done < <(as_user env PKGDEST="$db_root" aur build--pkglist --full "${pkglist_args[@]}")
 
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
@@ -433,7 +437,7 @@ while IFS= read -ru "$fd" path; do
             fi
             PKGDEST="$var_tmp" run_msg aur chroot --build "${chroot_args[@]}"
         else
-            run_privs_msg '1' env PKGDEST="$var_tmp" makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            as_user_msg env PKGDEST="$var_tmp" makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd_safe "$var_tmp"
@@ -454,7 +458,7 @@ while IFS= read -ru "$fd" path; do
             siglist+=("$p".sig)
 
         elif (( sign_pkg )); then
-            run_privs '1' gpg "${gpg_args[@]}" --output "$p".sig "$p"
+            as_user gpg "${gpg_args[@]}" --output "$p".sig "$p"
             siglist+=("$p".sig)
         fi
     done
@@ -465,15 +469,15 @@ while IFS= read -ru "$fd" path; do
 
     # Update database
     cd_safe "$db_root"
-    run_privs '1' env LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+    as_user env LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( chroot )) || (( no_sync )); then
         continue
     else
         replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
 
-        run_privs '2' pacman -Fy  --config="$tmp"/local.conf
-        run_privs '2' pacman -Syu --config="$tmp"/local.conf --ignore="$replaces" --noconfirm
+        sudo pacman -Fy  --config="$tmp"/local.conf
+        sudo pacman -Syu --config="$tmp"/local.conf --ignore="$replaces" --noconfirm
     fi
 done
 
