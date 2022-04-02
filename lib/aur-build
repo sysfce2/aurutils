@@ -60,30 +60,17 @@ EOF
 }
 
 # Allow to drop permissions for commands as needed (#907)
-as_user_mode() {
-    #global build_user
-    local print_cmd=$1 cmd
-    shift
-
-    if (( UID == 0 )) && [[ -v build_user ]]; then
-        cmd=(runuser --pty -u "$build_user" -g "$build_user" -- "$@")
-    else
-        cmd=("$@")
-    fi
-
-    (( print_cmd )) && printf >&2 '%s\n' "${cmd[*]}"
-    "${cmd[@]}" # run command-line
-}
-
-# Helpers to print command-line to stderr
 as_user() {
-    as_user_mode "$1" 0 "${@:2}"
+    if (( UID == 0 )) && [[ -v build_user ]]; then
+        runuser --pty -u "$build_user" -g "$build_user" -- "$@"
+    else
+        command -- "$@"
+    fi
 }
-as_user_msg() {
-    as_user_mode "$1" 1 "${@:2}"
-}
+
 run_msg() {
-    printf >&2 '%s\n' "$*"; "$@"
+    printf >&2 'Running %s\n' "$*"
+    "$@"
 }
 
 trap_exit() {
@@ -437,7 +424,7 @@ while IFS= read -ru "$fd" path; do
             fi
             PKGDEST="$var_tmp" run_msg aur chroot --build "${chroot_args[@]}"
         else
-            as_user_msg env PKGDEST="$var_tmp" makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            PKGDEST="$var_tmp" run_msg as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd_safe "$var_tmp"
@@ -468,8 +455,7 @@ while IFS= read -ru "$fd" path; do
     fi
 
     # Update database
-    cd_safe "$db_root"
-    as_user env LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+    as_user env -C "$db_root" LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( chroot )) || (( no_sync )); then
         continue
