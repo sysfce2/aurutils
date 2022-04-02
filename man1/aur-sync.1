@@ -1,31 +1,42 @@
-.TH AUR-SYNC 1 2020-03-14 AURUTILS
+.TH AUR-SYNC 1 2022-03-03 AURUTILS
 .SH NAME
 aur\-sync \- download and build AUR packages automatically
 .
 .SH SYNOPSIS
 .SY "aur sync"
-.OP \-AcfgkLostTu
+.OP \-cfknorSu
 .IR pkgname ...
 .YS
 .
 .SH DESCRIPTION
 .B aur\-sync
 downloads and builds AUR packages automatically to a local
-repository. Package names serve as arguments.
-.PP
-Downloaded build files are presented to the user
-.I before
-execution, with a file manager or pager determined in the following order:
-.IP \(bu 4
-The value of
-.BR AUR_PAGER ", "
-if defined;
-.IP \(bu 4
-.BR vifm "(1), "
-if installed. If the exit status of the pager exceeds 0 (for example,
-through user intervention),
+repository. It can be seen as a high level composition of
+.B aurutils
+programs.
 .B aur\-sync
-terminates immediately.
+performs the following tasks:
+.IP \(bu 4
+Resolve AUR dependencies with
+.BR aur-depends (1)
+.IP \(bu 4
+Retrieve build files with
+.BR aur-fetch (1)
+.IP \(bu 4
+Present build files before their execution with
+.BR aur\-view (1)
+.IP \(bu 4
+Build the packages with
+.BR aur-build (1)
+.PP
+Package names serve as arguments.
+.PP
+.B Note:
+.B aur\-sync
+does not expose all available functionality from
+.B aurutils
+programs. It serves as an example how these programs can interoperate
+for a fully automated AUR workflow.
 .
 .SH OPTIONS
 .TP
@@ -41,13 +52,65 @@ separating them with a comma, or by repeating the \fB\-\-ignore\fR option.
 .BI \-\-ignore\-file= FILE
 Ignore package upgrades listed in
 .IR FILE .
-Each package name should be specified on a separate line. Comments may
-be specified after a number sign. Defaults to
+Each package name should be specified on a separate line. If a section
+(enclosed in square brackets) is specified, package names only apply to the
+local repository matching this section. Comments can be specified after
+a number sign. For example:
+.RS
+.PP
+.EX
+[custom]
+package-foo
+package-bar
+
+[custom-testing]
+package-baz
+.EE
+.PP
+Defaults to
 .BR $XDG_CONFIG_HOME/aurutils/sync/ignore .
+.RE
 .
 .TP
-.BR \-o ", " \-\-nobuild ", " \-\-no\-build
-Print target packages and their paths instead of building them.
+.BI \-k " NUM" "\fR,\fP \-\-keep\-going=" NUM
+Keep going until
+.I NUM
+packages fail to build
+.RB ( "ninja -k" ).
+If
+.I NUM
+is set to
+.BR 0 ,
+continue indefinitely. On failure, a summary is printed of failed and
+succeeded builds. Requires
+.B AUR_SYNC_USE_NINJA
+(see
+.BR ENVIRONMENT ).
+.
+.TP
+.BR \-\-noview ", " \-\-no\-view
+Do not present build files for inspection.
+.
+.TP
+.BR \-u ", " \-\-upgrades
+Update all obsolete AUR packages in a local repository.
+.
+.SS Dependency options
+Build dependencies are resolved with
+.BR aur\-depends (1).
+.
+.TP
+.BR \-\-optdepends
+Take
+.B optdepends
+into account when resolving dependencies.
+.RB ( "aur\-depends \-\-optdepends" )
+.
+.TP
+.BR \-\-nocheck ", " \-\-no\-check
+Do not handle
+.BR checkdepends .
+.RB ( "aur\-build \-\-no\-check" ", " "aur\-depends \-\-no\-checkdepends" )
 .
 .TP
 .BR \-\-nograph ", " \-\-no\-graph
@@ -64,35 +127,6 @@ Disable version checking for packages specified on the command line or
 upgrade candidates from
 .BR \-\-upgrades .
 Version checks for package dependencies remain enabled.
-.
-.TP
-.BR \-\-noview ", " \-\-no\-view
-Do not present build files for inspection.
-.
-.TP
-.BR \-u ", " \-\-upgrades
-Update all obsolete AUR packages in a local repository.
-.
-.TP
-.BR \-\-rebuild
-Alias for
-.BR "\-f \-\-nover\-argv" .
-.
-.TP
-.BR \-\-rebuildtree ", " \-\-rebuild\-tree
-Alias for
-.BR "\-f \-\-nover" .
-.
-.TP
-.BR \-\-rebuildall ", " \-\-rebuild\-all
-As
-.BR \-\-rebuild\-tree ,
-but append all packages in the repository (see
-.BR \-d )
-as targets. May be used together with
-.B \-o
-to repopulate source directories in
-.BR $AURDEST .
 .
 .TP
 .BR \-\-noprovides ", " \-\-no\-provides
@@ -172,6 +206,15 @@ Build packages in a systemd\-nspawn container.
 Continue the build process if a package with the same name exists.
 .RB ( "aur build \-f" )
 .
+.TP 
+.BR \-n ", " \-\-noconfirm ", " \-\-no\-confirm
+Do not wait for user input when installing or removing build dependencies.
+.BR ( "aur build \-n" )
+.
+.TP
+.BR \-o ", " \-\-nobuild ", " \-\-no\-build
+Print target packages and their paths instead of building them.
+.
 .TP
 .BR \-\-pkgver
 Run
@@ -180,10 +223,9 @@ before the build process.
 .RB ( "aur\-build \-\-pkgver" )
 .
 .TP
-.BR \-R ", " \-\-remove
-Remove old package files from disk when updating their entry in the
-database.
-.RB ( "aur build \-R" )
+.BR \-r ", " \-\-rmdeps
+Remove dependencies installed by makepkg.
+.RB ( "aur build \-r" )
 .
 .TP
 .BR \-S ", " \-\-sign ", " \-\-gpg-sign
@@ -192,7 +234,7 @@ Sign built packages with
 .RB ( "aur build \-S" )
 .
 .TP
-.BR \-\-makepkg\-conf
+.B \-\-makepkg\-conf
 The
 .BR makepkg.conf (5)
 file for chroot and
@@ -201,25 +243,41 @@ operations.
 .RB ( "aur\-build \-\-makepkg\-conf" )
 .
 .TP
-.BR \-\-pacman\-conf
+.B \-\-pacman\-conf
 The
 .BR pacman.conf (5)
 file for chroot and local repository operations.
 .RB ( "aur\-build \-\-pacman\-conf" ", " "aur-repo \-\-config" )
 .
-.SS Dependency options
-Build dependencies are resolved with
-.BR aur\-depends (1).
-The options
-.BR \-\-no\-depends ,
-.BR \-\-no\-makedepends ,
-and
-.BR \-\-no\-checkdepends
-are supported and appended to the
-.B aur\-depends
-command-line.
+.SS Aliases
+.TP
+.BR \-\-rebuild
+Alias for
+.BR "\-f \-\-nover\-argv" .
+.
+.TP
+.BR \-\-rebuildtree ", " \-\-rebuild\-tree
+Alias for
+.BR "\-f \-\-nover" .
+.
+.TP
+.BR \-\-rebuildall ", " \-\-rebuild\-all
+As
+.BR \-\-rebuild\-tree ,
+but append all packages in the repository (see
+.BR \-d )
+as targets. May be used together with
+.B \-o
+to repopulate source directories in
+.BR $AURDEST .
 .
 .SH ENVIRONMENT
+Environment variables for other
+.B aur
+programs are also supported in
+.BR aur\-sync .
+The below are specific to
+.BR aur\-sync .
 .TP
 .B AURDEST
 Determines where build files will be cloned. This must be an absolute path.
@@ -227,59 +285,54 @@ Defaults to
 .IR $XDG_CACHE_HOME/aurutils/sync .
 .
 .TP
-.B AUR_PAGER
-The file manager used to view and edit build files. This variable is
-split on white space to allow program options, for example:
-.IR "AUR_PAGER=less \-K" .
-.
-.TP
-.B AUR_CONFIRM_PAGER
-Display an additional prompt after the file manager has exited (see
-.BR AUR_PAGER ).
-If set, display an additional confirmation prompt after the file
-manager has exited successfully. This may be used for (GUI) file
-managers not supporting an exit status greater zero to indicate
-unreviewed files.
+.B AUR_SYNC_USE_NINJA
+When set to a positive value, run
+.B aur\-build
+command-lines with
+.BR ninja .
+If a package fails to build, this allows
+.B aur\-sync \-\-keep\-going
+to continue with remaining, independent packages.
+.PP
+.RS
+The
+.IR $AURDEST/ninja-$USER-$$
+directory contains the
+.B build.ninja
+file and timestamps
+.IB \fR( \fIpkgbase \fR. stamp \fR)
+for each job. It is removed on successful completion of
+.BR ninja ,
+or if
+.B \-\-no\-build
+is specified.
+.RE
 .
 .SH NOTES
-.SS File inspection
-.BR aur\-sync (1)
-aborts on build failure, or other errors such as an interrupted file
-review process by the user, in particular
-.B :cq
-in
-.BR vifm (1).
-See also
-.B AUR_CONFIRM_PAGER
-for adding a confirmation prompt after the viewer exited successfully.
-.PP
-To avoid downloading files again, the
-.B \-\-continue
-option may be used. This may be combined with
-.BR aur\-depends (1)
-to build dependency trees independently; see GitHub issue #350.
-.
 .SS Standard input
 Targets may be taken from stdin using
 .BR xargs (1).
-For example:
+For example, to sync all installed packages in a local repository named
+.IR custom :
 .PP
 .EX
-    $ aur vercmp\-devel | xargs aur sync \-\-noconfirm
+    $ paclist custom | awk \(aq{print $1}\(aq | xargs \-r aur sync \-\-noconfirm
 .EE
 .PP
 Note that command output interferes with input from the tty. The
 .B \-\-noconfirm
-option may be used to disable interaction, or output redirected to a
-file:
+option is used to disable interaction with
+.B pacman
+when installing dependencies. Alternatively, command or process substitution
+can be used:
 .PP
 .EX
-    $ aur vercmp\-devel > new.txt
-    $ xargs \-a new.txt aur sync
+    $ xargs \-a <(paclist custom | awk \(aq{print $1}\(aq) aur sync
+    $ aur sync $(paclist custom | awk \(aq{print $1}\(aq)
 .EE
 .
 .SS File retrieval
-When version checks are enabled (\fB\-\-no\-ver\fR is not specified),
+When version checks are enabled (i.e. \fB\-\-no\-ver\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
 than the version in a pacman database. Checks assume there are no
 mismatches between
@@ -309,9 +362,7 @@ if the i686 architecture is detected.
 .BR aur\-repo (1),
 .BR aur\-repo\-filter (1),
 .BR aur\-vercmp (1),
-.BR jq (1),
-.BR less (1),
-.BR vifm (1)
+.BR aur\-view (1)
 .
 .SH AUTHORS
 .MT https://github.com/AladW

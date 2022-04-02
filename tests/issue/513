@@ -2,7 +2,7 @@
 set -e
 
 tmp=$(mktemp -d)
-trap 'rm -rf -- "$tmp"' EXIT
+#trap 'rm -rf -- "$tmp"' EXIT
 tmp_uid=custom-$RANDOM
 
 cat >"$tmp"/pacman.conf <<EOF
@@ -37,6 +37,7 @@ repo-add "$tmp/$tmp_uid".db.tar
 
 # issue 513: PKGDEST (environment) should be ignored
 env -C "$tmp" - HOME=$HOME USER=$USER PATH=$PATH PKGDEST=/does/not/exist \
-    aur build -d "$tmp_uid" --config "$tmp"/pacman.conf
+    aur build --no-sync -d "$tmp_uid" --pacman-conf "$tmp"/pacman.conf
+tar -tf "$tmp"/foo-1-1-any.pkg.tar.zst
 
 # vim: set et sw=4 sts=4 ft=sh:\n

@@ -1,34 +1,24 @@
 #!/bin/bash
 # aur-pkglist - print the AUR package list
 [[ -v AUR_DEBUG ]] && set -o xtrace
-set -o pipefail
 argv0=pkglist
 cache=${XDG_CACHE_HOME:-$HOME/.cache}/aurutils/$argv0
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-delay=300 mode=plain pkglist=packages update=0
+delay=300 mode=plain pkglist=packages update=0 verify=0
 
-extract_date() {
-    sed -n '1p' "$1" | awk -F', ' '{print $3}'
-    sed -i '1d' "$1"
+http_last_modified() {
+    awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
 }
 
-list_update() {
-    if curl -f "$1" --stderr last_transfer | gzip -d - > "$2"; then
-        extract_date "$2"
-    else
-        printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
-    fi
+list_fetch() {
+    curl -A aurutils -f "$1" "${@:2}" --remote-name
 }
 
-list_http_date() {
-    if curl -f "$1" -SsIo last_transfer; then
-        awk -F', ' '/^[Dd]ate:/ {print $2}' last_transfer
-    else
-        printf >&2 '%s: warning: failed to retrieve HTTP date\n' "$argv0"
-    fi
+list_headers() {
+    curl -A aurutils -f "$1" --head -Ss
 }
 
 usage() {
@@ -38,8 +28,9 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bFP'
-opt_long=('pkgbase' 'fixed-strings' 'perl-regexp' 'time:')
+opt_short='t:bvFPSIU'
+opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
+          'time:' 'users' 'verify')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -51,12 +42,22 @@ while true; do
     case "$1" in
         -b|--pkgbase)
             pkglist=pkgbase ;;
-        -t|--time)
-            shift; delay=$1 ;;
+        -S|--search)
+            mode=json; pkglist=packages-meta-v1.json ;;
+        -I|--info)
+            mode=json; pkglist=packages-meta-ext-v1.json ;;
+        -U|--users)
+            pkglist=users ;;
         -F|--fixed-strings)
             mode=fixed ;;
         -P|--perl-regexp)
             mode=regex ;;
+        --plain)
+            mode=plain ;;
+        -t|--time)
+            shift; delay=$1 ;;
+        -v|--verify)
+            verify=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -67,28 +68,34 @@ while true; do
 done
 
 # default to regex if >0 arguments specified
-case $# in
-    0) [[ $mode != 'plain' ]] && usage ;;
-    *) [[ $mode == 'plain' ]] && mode=regex ;;
-esac
+if (( $# > 0 )) && [[ $mode == "plain" ]]; then
+    mode=regex
+fi
 
 # packages.gz cache
 install -dm700 "$cache"
 cd "$cache" || exit
 
-if [[ -s $pkglist && -s timestamp ]]; then
-    sec_l=$(date -f timestamp '+%s')
-    sec_r=$(list_http_date "$AUR_LOCATION/$pkglist.gz" | date -f - '+%s')
+if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
+    update=1
+
+elif [[ -s $pkglist ]]; then
+    sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
+    sec_r=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
 
     if (( sec_l )) && (( sec_r )) && (( sec_r - sec_l > delay )); then
         update=1
     fi
-else
-    update=1
 fi
 
 if (( update )); then
-    list_update "$AUR_LOCATION/$pkglist.gz" "$pkglist" > timestamp
+    list_fetch "$AUR_LOCATION/$pkglist.gz" --dump-header "headers_$pkglist"
+
+    if (( verify )); then
+        list_fetch "$AUR_LOCATION/$pkglist.gz.sha256"
+        sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
+    fi
+    gunzip -f "$pkglist.gz"
 fi
 
 # pattern match
@@ -96,6 +103,7 @@ case $mode in
     plain) cat "$pkglist" ;;
     fixed) grep -F "$1" "$pkglist" ;;
     regex) grep -P "$1" "$pkglist" ;;
+     json) jq -r "$1" "$pkglist" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

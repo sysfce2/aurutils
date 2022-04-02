@@ -1,4 +1,4 @@
-.TH AUR-CHROOT 2020-11-01 AURUTILS
+.TH AUR-CHROOT 2022-03-04 AURUTILS
 .SH NAME
 aur\-chroot \- build pacman packages with systemd-nspawn
 .
@@ -6,22 +6,12 @@ aur\-chroot \- build pacman packages with systemd-nspawn
 .SY "aur chroot"
 .OP \-\-build
 .OP \-\-update
-.OP \-D directory
-.OP \-C pacman_conf
-.OP \-M makepkg_conf
-.OP \-\-
-.RI [ "makechrootpkg args" ]
-.
-.SY "aur chroot"
 .OP \-\-create
 .OP \-D directory
 .OP \-C pacman_conf
 .OP \-M makepkg_conf
+.OP \-\-
 .RI [ "package..." ]
-.
-.SY "aur chroot"
-.OP \-\-packagelist
-.OP \-D directory
 .YS
 .
 .SH DESCRIPTION
@@ -34,13 +24,11 @@ container.
 .SH OPERATIONS
 .TP
 .BR \-B ", " \-\-build
-Build a package inside the container. Arguments after
-.B \-\-
-are passed to
+Build a package inside the container with
 .BR makechrootpkg .
-If none are specified,
-.B makechrootpkg \-c
-is run.
+Assumes
+.B \-\-create
+was run at least once.
 .
 .TP
 .BR \-U ", " \-\-update
@@ -69,14 +57,6 @@ package group is also installed.
 .IP
 If packages or package groups are listed on the command-line, these
 are installed instead of the above.
-.
-.TP
-.B \-\-packagelist
-List the package filenames that would be produced without
-building using the
-.BR makepkg.conf (5)
-file inside the container. (see
-.BR \-\-makepkg\-conf )
 .
 .SH OPTIONS
 .TP
@@ -119,15 +99,22 @@ file used inside the container. Defaults to devtools'
 .IR makepkg\-<machine>.conf .
 .
 .TP
-.BR \-x ", " \-\-suffix
-The path component
-.B <suffix>
-in the pacman configuration
-.BR /usr/share/devtools/pacman\-<suffix>.conf .
+.BI \-\-cargs= ARG
+Arguments (comma-separated) to be passed to
+.B makechrootpkg
+for 
+.BR \-\-build .
 Defaults to
-.BR extra .
-A full path may be specified with
-.BR \-\-pacman\-conf .
+.BR "makechrootpkg \-c" .
+.
+.TP
+.BI \-\-margs= ARG
+Additional (comma-separated)
+.B makepkg 
+arguments for
+.BR makechrootpkg .
+A default list of arguments can be listed with
+.BR "makechrootpkg \-\-help" .
 .
 .TP
 .B \-\-bind
@@ -138,6 +125,22 @@ Bind a directory read-only to the container.
 .B \-\-bind\-rw
 Bind a directory read-write to the container.
 .RB ( makechrootpkg " " \-d )
+.
+.TP
+.B \-\-path
+Print the path to the container template
+.RI ( $directory/root ).
+.
+.TP
+.BR \-x ", " \-\-suffix
+The path component
+.B <suffix>
+in the pacman configuration
+.BR /usr/share/devtools/pacman\-<suffix>.conf .
+Defaults to
+.BR extra .
+A full path may be specified with
+.BR \-\-pacman\-conf .
 .
 .SH ENVIRONMENT
 Packages are placed in the directory set in
@@ -222,7 +225,7 @@ As in
 install the required packages:
 .EX
 
-  # arch-nspawn /var/lib/aurbuild/root pacman \-S ccache distcc
+  # aur chroot --update ccache distcc
 
 .EE
 Ensure write access to
@@ -230,7 +233,7 @@ Ensure write access to
 directories on the host:
 .EX
 
-  # aur chroot -- -d /home/_ccache:/build/.ccache -cu
+  # aur chroot --build --bind /home/_ccache:/build/.ccache
 
 .EE
 Necessary
@@ -273,9 +276,7 @@ path inside the container, and moved afterward to
 .B PKGDEST
 on the host. Checking for existing packages must thus be done
 manually, e.g.  with
-.B makepkg \-\-packagelist
-or
-.BR "aur\-chroot \-\-packagelist" .
+.BR "makepkg \-\-packagelist" .
 .PP
 GPG signing packages with
 .B makepkg \-\-sign

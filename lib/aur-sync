@@ -7,16 +7,14 @@ XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
+AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=(--clean --syncdeps)
-depends_args=()
-repo_args=()
-log_fmt='diff'
+build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=() filter_args=()
 
-# default options (enabled)
-build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1
+# default options
+build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
 
 # default options (disabled)
 rotate=0 update=0 repo_targets=0
@@ -28,31 +26,39 @@ lib32() {
             gsub(/^gcc-multilib$/,"")
         }
         print
-    }'
-}
-
-# files: $1 pkgname\tpkgbase $2 pkgname (order by $2)
-select_pkgbase() {
-    awk 'NR == FNR {
-        map[$1] = $2
-        next
-    }
-    $1 in map {
-        base = map[$1]
-
-        # only print pkgbase on first occurrence
-        if (base in seen) {
-            next
-        } else {
-            print base
-            seen[base]
-        }
     }' "$@"
 }
 
-# fields: $1 pkgname, $2 depends[<>=]
+# argv[1]: $1 pkgname $2 depends $3 pkgbase
+# note: edges are not checked for duplicates
+select_pkgbase() {
+    awk 'NR == FNR {
+        map[$1] = $3
+        next
+    }
+    $2 in map {
+        printf("%s\t%s\n", $3, map[$2])
+    }' "$@"
+}
+
+# argv[1]: $1 pkgname (possibly empty, #910)
+# argv[2]: $1 pkgname $2 pkgver
+select_ignores() {
+    awk -v target="$1" 'ARGV[1] == FILENAME {
+        map[$1] = 1
+        next
+    }
+    !($target in map) {
+        print
+    }' "${@:2}"
+}
+
+# argv[1]: $1 pkgname $2 depends[<>=]
 tr_ver() {
-    awk -F'[<>=]' '{print $1}'
+    awk -v target="$1" '{
+        sub(/[<>=].*/, "", $target)
+        print
+    }' "${@:2}"
 }
 
 complement() {
@@ -62,10 +68,9 @@ complement() {
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
-        rm -rf -- "$tmp" "$tmp_view"
+        rm -rf -- "$tmp"
     else
         printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
-        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp_view"
     fi
 }
 
@@ -89,19 +94,18 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
-opt_short='d:D:AcfLnorRSTuv'
+opt_short='d:D:k:AcfLnorRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
           'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
           'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'results:' 'makepkg-args:' 'format:' 'no-depends'
-          'no-makedepends' 'no-checkdepends')
+          'results:' 'makepkg-args:' 'format:' 'no-check' 'keep-going:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:'
-            'nodepends' 'nomakedepends' 'nocheckdepends')
+            'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:' 'nocheck' 
+            'no-checkdepends' 'nocheckdepends' 'optdepends')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -117,20 +121,21 @@ while true; do
         --continue)
             download=0 ;;
         --format)
-            shift; log_fmt=$1 ;;
+            shift; view_args+=(--format "$1") ;;
         --ignore)
             shift; IFS=, read -a pkg -r <<< "$1"
             pkg_i+=("${pkg[@]}") ;;
         --ignorefile|--ignore-file)
             shift; ignore_file=$1 ;;
+        -k|--keep-going)
+            shift; keep_going=$1 ;;
         -o|--nobuild|--no-build)
             build=0 ;;
-        --nodepends|--no-depends)
-            depends_args+=(--no-depends) ;;
-        --nomakedepends|--no-makedepends)
-            depends_args+=(--no-makedepends) ;;
-        --nocheckdepends|--no-checkdepends)
-            depends_args+=(--no-checkdepends) ;;
+        --optdepends)
+            depends_args+=(--optdepends) ;;
+        --nocheck|--no-check|--nocheckdepends|--no-checkdepends)
+            depends_args+=(--no-checkdepends)
+            build_args+=(--no-check) ;;
         --nograph|--no-graph)
             graph=0 ;;
         --nover|--no-ver)
@@ -169,7 +174,8 @@ while true; do
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
             shift; build_args+=(--pacman-conf "$1")
-            repo_args+=(--config "$1") ;;
+            repo_args+=(--config "$1")
+            filter_args+=(--config "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
         --results)
@@ -216,12 +222,7 @@ done
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
-tmp_view=$(mktemp -d --tmpdir "aurutils-$UID/view.XXXXXXX")
 trap 'trap_exit' EXIT
-
-# Directory for git checksums (revisions viewed by the user, #379)
-view_db=$XDG_DATA_HOME/aurutils/view
-mkdir -p "$view_db"
 
 # Default to showing PKGBUILD first in patch. (#399)
 orderfile=$XDG_CONFIG_HOME/aurutils/$argv0/orderfile
@@ -229,13 +230,6 @@ mkdir -p "${orderfile%/*}"
 
 if [[ ! -s $orderfile ]]; then
     printf 'PKGBUILD\n' > "$orderfile"
-fi
-
-# Append contents of ignore file
-if [[ -f ${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore} ]]; then
-    while IFS='#' read -r i _; do
-        [[ $i ]] && pkg_i+=("$i")
-    done < "$ignore_file"
 fi
 
 if (( rotate )); then
@@ -246,22 +240,20 @@ if (( rotate )); then
     fi
 fi
 
-if (( $# + update + repo_targets == 0 )); then
-    error '%s: no targets specified' "$argv0"
-    exit 1
-fi
-
 mkdir -p "$AURDEST"
 cd_safe "$tmp"
 
-# db_info: $1 pkgname $2 pkgver
-aur repo "${repo_args[@]}" --list --status-file=db >db_info
-
 # Retrieve path to local repo (#448, #700)
+aur repo "${repo_args[@]}" --status-file=db
 { IFS=: read -r _ db_name
   IFS=: read -r _ db_root
   IFS=: read -r _ db_path
 } <db
+
+if (( $# + update + repo_targets == 0 )); then
+    error '%s: no targets specified' "$argv0"
+    exit 1
+fi
 
 if [[ -w $db_path ]]; then
     msg >&2 'Using [%s] repository' "$db_name"
@@ -270,16 +262,45 @@ else
     exit 13
 fi
 
+# Concatenate ignores from file and command-line arguments
+: "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
+
+{ if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
+      mapfile -t isect < <(pacini "$ignore_file" --section-list)
+
+      if (( ${#isect[@]} )); then
+          pacini "$ignore_file" --section="$db_name"
+      else
+          pacini "$ignore_file"
+      fi
+  fi
+
+  if (( ${#pkg_i[@]} )); then
+      printf '%s\n' "${pkg_i[@]}"
+  fi
+} | complement <(printf '%s\n' "$@") >igni
+
+if [[ -s igni ]]; then
+    printf '%s: packages ignored: ' "$argv0"
+    awk -v ORS=' ' '{print} END {printf("\n")}' igni
+fi >&2
+
+# db_info: $1 pkgname $2 pkgver
+( set -o pipefail
+  aur repo "${repo_args[@]}" --list -d "$db_name" -r "$db_root" | select_ignores 1 igni -
+) >db_info
+
 { if (( $# )); then
+      # append command-line arguments
       printf '%s\n' "$@"
   fi
 
-  # append repository packages (all)
   if (( repo_targets )); then
+      # append repository packages (all)
       cut -f1 <db_info
 
-  # append repository packages (updated)
   elif (( update )); then
+      # append repository packages (updated)
       aur vercmp --quiet <db_info
   fi
 } >argv
@@ -287,7 +308,7 @@ fi
 if [[ -s argv ]]; then
     # shellcheck disable=SC2094
     # depends: $1 pkgname $2 depends $3 pkgbase $4 pkgver $5 depends_type
-    xargs -a argv -d'\n' aur depends --table "${depends_args[@]}" -- >depends
+    aur depends --table "${depends_args[@]}" - <argv >depends
 else
     plain >&2 "there is nothing to do"
     exit
@@ -296,10 +317,7 @@ fi
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
 cut -f2,5 --complement depends | sort -u >pkginfo
 
-{ if (( ${#pkg_i[@]} )); then
-      warning "$argv0: ignoring %s package" "${pkg_i[@]}"
-      printf '%s\n' "${pkg_i[@]}"
-  fi
+{ cat igni # ignored packages
 
   # Packages with equal or newer versions are taken as complement
   # for the queue. If chkver_argv is enabled, packages on the
@@ -317,9 +335,9 @@ cut -f2,5 --complement depends | sort -u >pkginfo
 
   if (( provides )); then
       if (( ${#repo_p[@]} )); then
-          filter_args=("${repo_p[@]/#/--repo=}")
+          filter_args+=("${repo_p[@]/#/--repo=}")
       else
-          filter_args=(--sync)
+          filter_args+=(--sync)
       fi
 
       # Note: this uses pacman's copy of the repo (as used by makepkg -s)
@@ -327,17 +345,17 @@ cut -f2,5 --complement depends | sort -u >pkginfo
   fi
 } >filter
 
-# pkgname queue (AUR + repos)
-if cut -f1,2 depends | tr_ver | tsort >queue_0; then
-    tac queue_0 | lib32 | complement filter >queue_1
-else
-    # input contains a loop
-    error '%s: invalid argument' "$argv0"
-    exit 22
-fi
+# $1 pkgname $2 depends $3 pkgbase, filter by $2 (depends and self)
+cut -f1-3 depends | tr_ver 2 | select_ignores 2 filter - | lib32 - >graph_0
 
-# pkgbase queue (AUR)
-cut -f1,2 pkginfo | select_pkgbase - queue_1 >queue
+# XXX a flat file is needed for aur-{graph,fetch,view}. `ninja` requires the
+# build files to be present before dependency resolution (with `ninja -n`) can
+# occur, and `ninja -t targets` sorts in alphabetical order. This implies
+# that dependency cycles cannot be resolved before retrieving files with
+# aur-fetch with `ninja` alone. `tsort` could either be used in this case (with
+# a less nice diagnostic on cycles), or fetches done in an arbitrary order
+# (e.g. sort -u) with checks for cycles done at build-time.
+select_pkgbase graph_0 graph_0 | tee graph | tsort | tac >queue
 
 if [[ -s queue ]]; then
     cd_safe "$AURDEST"
@@ -348,7 +366,7 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    xargs -a "$tmp"/queue -d'\n' aur fetch -S --results "$tmp"/fetch_results
+    aur fetch -S --results "$tmp"/fetch_results - < "$tmp"/queue >&2
 
     # shellcheck disable=SC2034
     while IFS=: read -r mode rev_old rev path; do
@@ -363,82 +381,63 @@ if (( download )); then
     done < "$tmp"/fetch_results
 fi
 
-# Link build files in the queue (absolute links)
-while read -r pkg; do
-    [[ $pkg ]] && printf '%s\0' "$(pwd -P)/$pkg"
-done < "$tmp"/queue | xargs -0 ln -t "$tmp_view" -s --
-
-# Check AUR metadata for validity (#20)
-if (( graph )) && ! find "$tmp_view" -name .SRCINFO -exec cat {} + | aur graph >/dev/null; then
-    error '%s: failed to verify dependency graph' "$argv0"
-    exit 1
+# Verify dependency tree (#20)
+if (( graph )); then
+    if ! { while read -r pkg; do
+               [[ $pkg ]] && printf '%s\0' "$pkg/.SRCINFO"
+           done
+         } | xargs -0 cat -- | aur graph >/dev/null
+    then
+        error '%s: failed to verify dependency graph' "$argv0"
+        exit 1
+    fi < "$tmp"/queue
 fi
 
+# Inspect package files
 if (( view )); then
-    declare -A heads
+    aur view -a "$tmp"/queue "${view_args[@]}"
+fi
 
-    while read -r pkg; do
-        git() { command git -C "$pkg" "$@"; }
+# Build dependency tree with ninja (#908)
+if (( AUR_SYNC_USE_NINJA )); then
+    # directory for stamp files (concurrent aur-sync processes)
+    # XXX: better way to disambiguate (e.g date, uuid)
+    build_dir=ninja-$USER-$$
+    mkdir "$build_dir"
 
-        # Ensure every directory is a git repository (--continue)
-        if head=$(git rev-parse HEAD); then
-            heads[$pkg]=$head
-        else
-            error '%s: %s: not a git repository' "$argv0" "$pkg"
-            exit 22
-        fi
+    # generate build.ninja
+    # input:  $AURDEST/pkgbase/PKGBUILD
+    # output: $AURDEST/$build_dir/pkgbase.stamp
+    cd_safe "$build_dir"
+    sort -k1b,1 -k1 -u "$tmp"/graph | aur sync--ninja "$AURDEST" >build.ninja \
+        -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 
-        if [[ -f $view_db/$pkg ]] && read -r view < "$view_db/$pkg"; then
-            # Check if hash points to a valid object
-            if ! git cat-file -e "$view"; then
-                error '%s: %s: invalid revision' "$argv0" "$pkg"
-                exit 22
+    if (( build )) && NINJA_STATUS='[%s/%t] ' ninja -k "$keep_going"; then
+        # remove ninja directory on successful build
+        rm -rf "$build_dir"
+
+    elif (( build )); then
+        # print all targets in dependency order
+        NINJA_STATUS='[%s/%t] ' ninja -nC /var/empty -f "$PWD"/build.ninja | \
+            # [\w@\.\-\+]: valid characters for pkgname
+            # alternative: [^\s]+ from rule `env -C ... > pkgbase.stamp`
+            pcregrep -o1 -o3 '(\[\d+/\d+\] )(.+?)([\w@\.\-\+]+)(\.stamp)' | while read -r status pkg
+        do
+            if [[ -f $pkg.stamp ]]; then
+                printf "${BOLD}${BLUE}%s${ALL_OFF} %s\t${BOLD}${GREEN}[OK]${ALL_OFF}\n" "$status" "$pkg"
+            else
+                printf "${BOLD}${BLUE}%s${ALL_OFF} %s\t${BOLD}${RED}[FAIL]${ALL_OFF}\n" "$status" "$pkg"
             fi
+        done | column -t
 
-            if [[ $view != "$head" ]]; then
-                git --no-pager "$log_fmt" --patch --stat \
-                    "$view..$head" > "$tmp_view/$pkg.$log_fmt"
-            fi
-
-        elif [[ -f $view_db/$pkg ]]; then
-            error '%s: %s: failed to read revision' "$argv0" "$pkg"
-            exit 1
-        fi
-    done < "$tmp"/queue
-    unset -f git
-
-    if [[ -v AUR_PAGER ]]; then
-        # shellcheck disable=SC2086
-        command -- $AUR_PAGER "$tmp_view"
-
-        # Use an additional prompt for file managers with no support
-        # for exit codes greater 0 (#673)
-        if [[ -v AUR_CONFIRM_PAGER ]]; then
-            read -rp $'Press Return to continue or Ctrl+d to abort\n'
-        fi
-    elif type -P vifm >/dev/null; then
-        # Avoid directory prefix in printed paths (#452)
-        viewer() ( cd "$1"; vifm -c 'set vifminfo=' -c 'view!' -c '0' - )
-
-        { # Print patch files
-          find "$tmp_view" -maxdepth 1 -type f
-
-          # Print build directories in dependency order
-          xargs -a "$tmp"/queue -I{} find -L "$tmp_view"/{} -maxdepth 1
-        } | viewer "$tmp_view"
+        # preserve ninja directory
+        printf '%s: build files at %s\n' "$argv0" "$(pwd -P)"
     else
-        error '%s: no viewer found, please install vifm or set AUR_PAGER' "$argv0"
-        exit 1
+        printf '%s\n' "$(pwd -P)"
     fi
 
-    # Update gitsums (viewer exited successfully)
-    while read -r pkg; do
-        printf '%s\n' "${heads[$pkg]}" > "$view_db/$pkg"
-    done < "$tmp"/queue
-fi
-
-if (( build )); then
-    aur build -a "$tmp"/queue -d "$db_name" --root "$db_root" "${build_args[@]}"
+elif (( build )); then
+    aur build "${build_args[@]}" -a "$tmp"/queue -d "$db_name" --root "$db_root"
 else
     while read -r pkg; do
         [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"

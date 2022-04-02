@@ -1,0 +1,8 @@
+#!/bin/bash
+for i in issue/*; do
+    if "$i" >/dev/null 2>&1; then
+        printf '%s\t%s\n' "$i" OK
+    else
+        printf '%s\t%s\n' "$i" FAIL
+    fi
+done

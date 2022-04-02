@@ -63,7 +63,7 @@ cmp_checkupdates() {
 }
 
 parse_aur() {
-    aur query -t info | jq -r '.results[] | [.Name, .Version] | @tsv'
+    aur query -t info - | jq -r '.results[] | [.Name, .Version] | @tsv'
 }
 
 trap_exit() {

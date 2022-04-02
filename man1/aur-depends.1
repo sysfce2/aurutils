@@ -1,10 +1,10 @@
-.TH AUR-DEPENDS 1 2019-01-15 AURUTILS
+.TH AUR-DEPENDS 1 2022-02-27 AURUTILS
 .SH NAME
 aur\-depends \- retrieve dependencies using aurweb
 .
 .SH SYNOPSIS
 .SY "aur depends"
-.OP \-abnt
+.OP \-abGnt
 .IR "pkgname [pkgname...]"
 .YS
 .
@@ -33,6 +33,15 @@ Print dependency information to stdout as
 in total order. All dependencies are printed.
 .
 .TP
+.BR \-G ", " \-\-graph
+Print dependency information to stdout as edges
+.BR \%pkgbase\etdepends ,
+where
+.I depends
+is resolved to
+.BR pkgbase .
+.
+.TP
 .BR \-t ", " \-\-table
 Output dependency information in the following format:
 .BR \%pkgname\etdepends\etpkgbase\etpkgver .
@@ -45,7 +54,11 @@ considers all types (
 .IR makedepends ,
 and
 .IR checkdepends )
-of dependencies by default. Types can be removed selectively with
+of dependencies by default.
+.I optdepends
+can be taken into account with the
+.BR \-\-optdepends
+option. Types can be removed selectively with
 the
 .BR \-\-no\-depends ,
 .BR \-\-no\-makedepends ,

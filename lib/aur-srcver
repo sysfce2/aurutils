@@ -1,23 +1,13 @@
 #!/bin/bash
 # aur-srcver - update and print package revisions
 [[ -v AUR_DEBUG ]] && set -o xtrace
+shopt -s nullglob
 argv0=srcver
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-srcver_pkgbuild_info() {
-    # shellcheck disable=SC2016
-    env -C "$1" -i bash -c '
-        PATH= source PKGBUILD
-
-        if [[ -v epoch ]]; then
-            fullver=$epoch:$pkgver-$pkgrel
-        else
-            fullver=$pkgver-$pkgrel
-        fi
-
-        printf %s\\t%s\\n "${pkgbase:-$pkgname}" "$fullver"
-    '
-}
+# default arguments
+makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
+num_procs=$(( "$(nproc)" + 2 ))
 
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
@@ -28,30 +18,34 @@ trap_exit() {
 }
 
 usage() {
-    printf >&2 'usage: %s [--noprepare] <pkgbase> [<pkgbase> ...]\n' "$argv0"
+    printf >&2 'usage: %s [--no-prepare] <pkgbase> [<pkgbase> ...]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
+source /usr/share/makepkg/util/pkgbuild.sh
 
-opt_short=j:
-opt_long=('no-prepare' 'jobs:')
-opt_hidden=('dump-options' 'noprepare')
+opt_short=j:E:
+opt_long=('no-prepare' 'jobs:' 'buildscript:')
+opt_hidden=('dump-options' 'noprepare' 'env:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
-num_procs=$(( "$(nproc)" + 2 ))
-
+unset buildscript
 while true; do
     case "$1" in
         --noprepare|--no-prepare)
             makepkg_args+=(--noprepare) ;;
+        -E|--env)
+            shift ;; # deprecated flag, has no effect
         -j|--jobs)
             shift; num_procs=$1 ;;
+        --buildscript)
+            shift; buildscript=$1
+            makepkg_args+=(-p "$1") ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -62,7 +56,13 @@ while true; do
     shift
 done
 
-if ! (( $# )); then
+# Single hyphen to denote input taken from stdin
+stdin=0
+if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
+    stdin=1
+fi
+
+if (( ! $# )); then
     usage
 fi
 
@@ -71,8 +71,19 @@ mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
-i=0
-for n in "$@"; do
+# A pipeline `foo | bar &` causes `bar` to detach from the script. In
+# this case, aur-srcver returns immediately with `makepkg` processes
+# still running in the background. Read all input into an array to
+# avoid this. (cf. aur-view, #958)
+if (( stdin )); then
+    mapfile -t packages
+else
+    packages=("$@")
+    set --
+fi
+
+i=0 # package counter
+for n in "${packages[@]}"; do
     if (( i++ >= num_procs )); then
         wait -n
     fi
@@ -87,13 +98,26 @@ done
 wait
 
 failed=()
-for n in "$@"; do
+for d in "$tmp"/*/; do # iterate over directories
+    n=$(basename "$d")
+
     if [[ -e $tmp/$n/failed ]]; then
         failed+=("$n")
     else
-        srcver_pkgbuild_info "$n"
+        # Precautions when sourcing the PKGBUILD have no effect here,
+        # because makepkg already sourced the PKGBUILD above.
+        # shellcheck disable=SC1090
+        ( source "$n/${buildscript-PKGBUILD}"
+
+          fullver=$(get_full_version)
+          printf '%s\t%s\n' "${pkgbase:-$pkgname}" "$fullver"
+        )
     fi
 done
+
+if (( ${#failed[@]} )); then
+    printf >&2 '8<----\n'
+fi
 
 for f in "${failed[@]}"; do
     printf >&2 '%s: makepkg %s failed for package %s\n' "$argv0" "${makepkg_args[*]}" "$f"

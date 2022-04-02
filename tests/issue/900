@@ -2,12 +2,12 @@
 set -e
 
 tmp=$(mktemp -d)
-trap 'rm -rf "$tmp"' EXIT
+trap 'rm -rf -- "$tmp"' EXIT
 tmp_uid=custom-$RANDOM
 
 cat >"$tmp"/pacman.conf <<EOF
 [options]
-HoldPkg = pacman-git glibc
+HoldPkg = pacman glibc
 Architecture = auto
 CheckSpace
 [core]
@@ -23,7 +23,11 @@ EOF
 
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
+pkg=weston-git
+pkg_ignored=wayland-git
 
-# issue 216: aur-sync with unset variables
-env - HOME="$HOME" USER="$USER" PATH="$PATH" aur sync -d "$tmp_uid" aurutils \
-    --pacman-conf "$tmp"/pacman.conf -o --no-view --no-ver
+# check ignores on the command-line
+env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync -d "$tmp_uid" --no-build \
+	--no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg_ignored" --ignore-file=/dev/null "$pkg"
+[[ ! -d $tmp/$pkg_ignored ]]
+[[ ! -f $tmp/$pkg_ignored ]]

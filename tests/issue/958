@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+cd "$tmp"
+aur fetch aurutils kittypack
+env -C aurutils  git checkout -b release 5394b42c1fcd3dfc3154456cfc5b9b2cbe432e0c # 7.2
+env -C kittypack git checkout -b release a2a0f32d9de4d50418b1aa64127b45fcd2add93d # 0.2.3
+
+aur srcver aurutils kittypack >"$tmp"/results
+{ read -r name1 version1
+  read -r name2 version2
+} <"$tmp"/results
+
+[[ $name1 == "aurutils" ]]
+[[ $name2 == "kittypack" ]]
+[[ $version1 == "7.2-1" ]]
+[[ $version2 == "0.2.3-1" ]]

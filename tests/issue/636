@@ -1,11 +1,16 @@
 #!/bin/bash
-tmp=$(mktemp -d) || exit
+set -e
+
+tmp=$(mktemp -d)
 trap 'rm -rf -- "$tmp"' EXIT
+pkg1=aurutils
+pkg2=aurutils-git
 
-out=$(env -C "$tmp" - HOME=$HOME USER=$USER PATH=$PATH aur fetch aurutils aurutils-git)
-err=$?
+# expected: exit 0
+env -C "$tmp" - HOME=$HOME USER=$USER PATH=$PATH aur fetch "$pkg1" "$pkg2"
 
-# expected: cloned repositories (x2), exit 0
-(( err == 0 )) && [[ -d $tmp/aurutils/.git ]] && [[ -d $tmp/aurutils-git/.git ]]
+# expected: cloned repositories (x2)
+ls "$tmp/$pkg1/.git"
+ls "$tmp/$pkg2/.git"
 
 # vim: set et sw=4 sts=4 ft=sh:\n

@@ -5,10 +5,20 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0
+db_query=local table_format=0 mode=none field=none status=0
 
 # default arguments
 conf_args=()
+
+db_field() {
+    # do not extract an empty database (#727)
+    (( $(bsdtar -tf "$2" | wc -l) )) || return 0
+
+    bsdtar -Oxf "$2" '*/desc' | awk -v field="^%$1%$" '
+    $0 ~ field {
+        while (getline && NF != 0) { print; }
+    }'
+}
 
 db_table() {
     # do not extract an empty database (#727)
@@ -18,17 +28,19 @@ db_table() {
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
 
-        if (table && length(dependencies) > 0) {
+        ## Add dependency to self (packages with no dependencies)
+        printf format, pkgname, pkgname, pkgbase, pkgver
+
+        if (table) {
             for (i in dependencies) {
                 printf format, pkgname, dependencies[i], pkgbase, pkgver
             }
-        } else {
-            printf format, pkgname, pkgname, pkgbase, pkgver
         }
     }
 
     BEGIN {
         pkgname = pkgbase = pkgver = "-"
+        delete dependencies[0]
     }
 
     /^%FILENAME%$/ && FNR > 1 {
@@ -71,17 +83,18 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
-opt_short='c:d:r:alqtuS'
-opt_long=('database:' 'repo:' 'config:' 'root:' 'all' 'list' 'repo-list'
-          'sync' 'upgrades' 'table' 'quiet' 'path-list' 'status')
-opt_hidden=('dump-options' 'status-file:')
+opt_short='c:d:r:F:alqtuS'
+opt_long=('config:' 'database:' 'repo:' 'root:' 'all' 'list' 'path'
+          'path-list' 'repo-list' 'sync' 'upgrades' 'table' 'quiet'
+          'status-file:' 'field:')
+opt_hidden=('dump-options' 'list-repo' 'list-path' 'status')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset mode list db_name db_root status_file pacman_conf vercmp_args
+unset mode list db_name db_root status_file pacman_conf vercmp_args field
 while true; do
     case $1 in
         -d|--database|--repo)
@@ -100,16 +113,21 @@ while true; do
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
-        --path-list)
-            list=path ;;
-        --repo-list)
-            list=repo ;;
-        --status)
-            mode=status; status_file=/dev/fd/1 ;;
         --status-file)
             shift; status_file=$1 ;;
         -S|--sync)
             db_query=sync ;;
+        -F|--field)
+            shift; mode=files; field=$1 ;;
+        ## deprecated options
+        --path)
+            mode=path ;;
+        --path-list|--list-path)
+            list=path ;;
+        --repo-list|--list-repo)
+            list=repo ;;
+        --status)
+            status=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -156,6 +174,7 @@ while read -r key _ value; do
             ;;
     esac
 done < <(pacman-conf "${conf_args[@]}")
+wait $! || exit
 
 # list information on available local repositories
 case $list in
@@ -188,7 +207,7 @@ if ! [[ $db_name ]]; then
         *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
            for i in "${!conf_file_repo[@]}"; do
                printf '%q\t%q\n' "${conf_file_repo[$i]}" "${conf_file_path[$i]}"
-           done | column -d $'\t' -t >&2
+           done | column -o $'\t' -t >&2
            exit 1
            ;;
     esac
@@ -214,24 +233,32 @@ case $db_query in
         ;;
 esac
 
-if [[ -v status_file ]]; then
-    { printf 'repo:%s\n' "$db_name"
-      printf 'root:%s\n' "$db_root"
-      printf 'path:%s\n' "$db_path"
-    } > "$status_file"
+if [[ ! -f $db_path ]]; then
+    printf >&2 '%s: %s: not a file\n' "$argv0" "$db_path"
+    exit 2
+fi
+
+if (( status )); then
+    printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path"
+
+elif [[ -v status_file ]]; then
+    printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path" >"$status_file"
 fi
 
 case $mode in
+    files)
+        db_field "${field^^}" "$db_path"
+        ;;
     upgrades)
         db_table '0' "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
     packages)
         db_table "$table_format" "$db_path"
         ;;
-    status)
-        ;; # status information printed to /dev/fd/1
+    path)
+        printf '%s\n' "$db_path"
+        ;;
     *)
-        usage
         ;;
 esac
 

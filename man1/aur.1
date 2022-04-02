@@ -1,4 +1,4 @@
-.TH AUR 1 2019-03-03 AURUTILS
+.TH AUR 1 2021-12-06 AURUTILS
 .SH NAME
 aur \- helper tool for the arch user repository
 .
@@ -224,10 +224,23 @@ as follows:
 .PP
 .EX
     [options]
-    CacheDir = /var/cache/pacman/pkg
-    CacheDir = /home/custompkgs
+    CacheDir = /var/cache/pacman/pkg /home/custompkgs
     CleanMethod = KeepCurrent
 .EE
+.PP
+In addition,
+.B SigLevel
+should be set to
+.B Never
+or
+.BR Always ,
+if package signing is disabled or enabled, respectively. This avoids
+.B pacman
+copying over packages to the main
+.BR CacheDir ,
+if signature files are missing and
+.B SigLevel = Optional
+is set. (FS#71109)
 .PP
 Note that
 .BR "pacman \-Scc"
@@ -244,7 +257,19 @@ is the interactive shell.
 Run actions on the dependency tree of an AUR package:
 .PP
 .EX
-    $ echo foo | aur depends | while read \-r pkg; do ... done
+    $ aur depends foo | while read \-r pkg; do ... done
+.EE
+.PP
+Retrieve AUR packages and their dependencies recursively:
+.PP
+.EX
+    $ aur depends --pkgbase foo | aur fetch -
+.EE
+.PP
+Retrieve all AUR packages from a given maintainer:
+.PP
+.EX
+    $ aur search -m mcaur --table | cut -f2 | uniq -u | aur fetch -
 .EE
 .PP
 Build
@@ -297,7 +322,7 @@ repository that are unavailable in the AUR:
 As above, but for orphaned packages:
 .PP
 .EX
-    $ pacman \-Slq custom | aur query \-t info | \e
+    $ pacman \-Slq custom | aur query \-t info - | \e
           jq \-r \(aq.[].results[] | select(.Maintainer == null)\(aq
 .EE
 .PP
@@ -317,7 +342,7 @@ and
 in the name:
 .PP
 .EX
-    $ aur pkglist \-P \(aq(?=.*wm)(?=.*git)\(aq | xargs aur search \-i
+    $ aur pkglist \-P \(aq(?=.*wm)(?=.*git)\(aq | aur search \-i \-
 .EE
 .PP
 Select an AUR package with name matching
@@ -400,7 +425,7 @@ in $PATH, for example
         exit 1
     fi
 
-    aur repo \-\-path\-list | while read \-r repo_path; do
+    aur repo \-\-list\-path | while read \-r repo_path; do
         repo\-remove "$repo_path" "$@"
         paccache \-c "${repo_path%/*}" \-rvk0 "$@"
     done

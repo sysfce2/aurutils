@@ -7,7 +7,7 @@ XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # default options
-recurse=0 sync=no
+existing=0 recurse=0 sync=no
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -17,12 +17,43 @@ results() {
     fi
 }
 
+sync_get_type() {
+    local sync=no key=$1
+
+    if [[ $(git config --get --type bool "$key") == 'true' ]]; then
+        plain >&2 'aurutils.rebase is set for %s' "$pkg"
+
+        if ! git merge-base --is-ancestor 'HEAD@{upstream}' HEAD; then
+            sync=rebase
+        fi
+
+    elif [[ $prev_head != $(git rev-parse --verify 'HEAD@{upstream}') ]]; then
+        sync=reset
+    fi
+
+    printf '%s' "$sync"
+}
+
+sync_merge_revisions() {
+    local sync=$1
+
+    if [[ $sync == 'rebase' ]]; then
+        if [[ $(git config --get --type bool rebase.autoStash) != 'true' ]]; then
+            git reset --hard 'HEAD'
+        fi
+        git rebase --verbose
+
+    elif [[ $sync == 'reset' ]]; then
+        git reset --hard 'HEAD@{upstream}'
+    fi
+}
+
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
 XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 !
-    plain >&2 'usage: %s [-rS] [--] pkgname...' "$argv0"
+    plain >&2 'usage: %s [-S] [--] pkgname...' "$argv0"
     exit 1
 }
 
@@ -34,7 +65,7 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='rS'
-opt_long=('recurse' 'sync:' 'results:')
+opt_long=('sync:' 'results:' 'existing' 'recurse')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -45,8 +76,8 @@ set -- "${OPTRET[@]}"
 unset results_file
 while true; do
     case "$1" in
-        -r|--recurse)
-            recurse=1 ;;
+        --existing)
+            existing=1 ;;
         -S)
             sync=auto ;;
         --sync)
@@ -60,6 +91,9 @@ while true; do
             esac ;;
         --results)
             shift; results_file=$1 ;;
+        ## deprecated options
+        --recurse|-r)
+            recurse=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -69,7 +103,13 @@ while true; do
     shift
 done
 
-if ! (( $# )); then
+# Single hyphen to denote input taken from stdin
+stdin=0
+if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
+    stdin=1
+fi
+
+if (( ! $# )); then
     error '%s: no pkgname given' "$argv0"
     exit 1
 fi
@@ -80,9 +120,11 @@ if [[ -v results_file ]]; then
 fi
 
 if (( recurse )); then
-    aur depends --pkgbase "$@"
+    aur depends --pkgbase "$@" # stdin handled by aur-depends
+elif (( stdin )); then
+    tee # noop
 else
-   printf '%s\n' "$@"
+    printf '%s\n' "$@"
 fi | while read -r pkg; do
     unset -f git
 
@@ -90,60 +132,56 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
-        # Retrieve new upstream revisions
+        # Retrieve new upstream revisions. In this step, no commits are merged
+        # to the index and working tree.
         if git fetch --verbose >&2; then
-            fetch_head=$(git rev-parse FETCH_HEAD)
+            # If upstream has no commits, skip processing the repository. (#959)
+            if ! fetch_head=$(git rev-parse --verify --quiet FETCH_HEAD); then
+                warning '%s: repository has no upstream commits, skipping' "$pkg"
+                continue
+            fi
+
+            # If the index has no commits, merge them from upstream.
+            if ! prev_head=$(git rev-parse --verify --quiet HEAD); then
+                git merge 'origin/master'
+            fi
         else
             exit 1
         fi
 
-        # HEAD before git rebase or git reset
-        prev_head=$(git rev-parse HEAD)
-
         if [[ -v results_file ]]; then
-            results 'fetch' "$prev_head" "$fetch_head" "$PWD/$pkg" "$results_file"
+            results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
         fi
 
         if [[ $sync == 'auto' ]]; then
-            if [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
-                plain >&2 'aurutils.rebase is set for %s' "$pkg"
-
-                if ! git merge-base --is-ancestor 'HEAD@{upstream}' HEAD; then
-                    sync=rebase
-                fi
-
-            elif [[ $prev_head != $(git rev-parse 'HEAD@{upstream}') ]]; then
-                sync=reset
-            fi # else sync = no
+            sync=$(sync_get_type aurutils.rebase) # rebase, reset or none
         fi
 
-        case $sync in
-            rebase)
-                if [[ $(git config --get --type bool rebase.autoStash) != 'true' ]]; then
-                    git reset --hard 'HEAD'
-                fi
-                git rebase --verbose
-                ;;
-            reset)
-                git reset --hard 'HEAD@{upstream}'
-                ;;
-        esac >&2 || {
+        # Merge revisions in the master branch with upstream.
+        if sync_merge_revisions "$sync" >&2; then
+            head=$(git rev-parse --verify HEAD)
+        else
             error '%s: %s: failed to %s repository' "$argv0" "$sync" "$pkg"
             exit 1
-        }
-
-        head=$(git rev-parse HEAD)
+        fi
 
         if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
             results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
         fi
 
     # Otherwise, try to clone anew
+    elif (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
+        warning '%s: package is not in AUR, skipping' "$argv0" "$pkg"
+        continue
+
     elif git clone "$AUR_LOCATION/$pkg"; then
-        head=$(git -C "$pkg" rev-parse HEAD)
+        # Verify if the repository is empty (#959)
+        if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
+            git -C "$pkg" --no-pager log --pretty=reference -1 >&2
+        fi
 
         if [[ -v results_file ]]; then
-            results 'clone' '0' "$head" "$PWD/$pkg" "$results_file"
+            results 'clone' '0' "${head:-0}" "$PWD/$pkg" "$results_file"
         fi
     else
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"

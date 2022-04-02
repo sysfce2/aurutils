@@ -1,0 +1,103 @@
+.TH AUR-VIEW 1 2022-03-12 AURUTILS
+.SH NAME
+aur\-view \- inspect git repositories
+.
+.SH SYNOPSIS
+.SY "aur view"
+.OP \-a arg_file
+.OP \-\-format
+.IR repository ...
+.YS
+.
+.SH DESCRIPTION
+.B aur\-view
+presents git repositories to the user for inspection. A file
+manager or pager is determined in the following order:
+.IP \(bu 4
+The value of
+.BR AUR_PAGER ", "
+if defined;
+.IP \(bu 4
+.BR vifm "(1), "
+if installed.
+.PP
+Should the exit status of the pager exceed 0 (for example,
+through the
+.B :cq
+command in
+.BR vifm ),
+.B aur\-view
+terminates immediately.
+.PP
+On a successful exit of the pager, the inspected
+.BR git (1)
+revisions are stored in
+.BR $XDG_DATA_HOME/aurutils/view ,
+or the path in the
+.B AUR_VIEW_DB
+environment variable, if set. These revisions are then used to
+generate diffs with
+.BR git\-diff (1)
+or
+.BR git\-log (1).
+.
+.SH OPTIONS
+.TP
+.B \-\-format
+Can be one of
+.B diff
+or
+.BR log ,
+to generate diffs with
+.BR git\-diff (1)
+and
+.BR git\-log (1),
+respectively.
+.
+.TP
+.B \-\-no\-patch
+Suppress patch output, only showing a summary.
+.
+.TP
+.BI \-\-revision " REV"
+The revision used for comparing changes. Defaults to
+.IR HEAD .
+.
+.TP
+.BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
+A textfile describing git repositories relative to the current
+directory. If unspecified, repositories are taken from the
+command-line.
+.
+.SH ENVIRONMENT
+.TP
+.B AUR_VIEW_DB
+.
+.TP
+.B AUR_PAGER
+The file manager used to view and edit build files. This variable is
+split on white space to allow program options, for example:
+.IR "AUR_PAGER=less \-K" .
+.
+.TP
+.B AUR_CONFIRM_PAGER
+Display an additional prompt after the file manager has exited (see
+.BR AUR_PAGER ).
+If set, display an additional confirmation prompt after the file
+manager has exited successfully. This may be used for (GUI) file
+managers not supporting an exit status greater zero to indicate
+unreviewed files.
+.
+.SH SEE ALSO
+.ad l
+.nh
+.BR aur (1),
+.BR aur\-sync (1),
+.BR vifm (1)
+.
+.SH AUTHORS
+.MT https://github.com/AladW
+Alad Wenter
+.ME
+.
+.\" vim: set textwidth=72:

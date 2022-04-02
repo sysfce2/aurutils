@@ -1,4 +1,4 @@
-.TH AUR-SEARCH 1 2019-01-24 AURUTILS
+.TH AUR-SEARCH 1 2022-02-11 AURUTILS
 .SH NAME
 aur\-search \- search for AUR packages
 .
@@ -11,33 +11,57 @@ aur\-search \- search for AUR packages
 .
 .SH DESCRIPTION
 .B aur\-search
-searches the AUR by multiple strings of packages. The union of all
-results is returned.
+searches the AUR by multiple strings of packages. Requests are done
+using
+.BR aur\-query (1),
+and either use the
+.I searchby
+or
+.I info
+interface.
 .PP
 By default, searches are performed by name and description using the
 .I searchby
-interface, and displayed in a brief format.
+interface, and the intersection of results is displayed in a brief format.
 .
 .SH OPTIONS
+.TP
+.BR \-a ", " \-\-any
+Show the union of results instead of the intersection. Applies to the
+.I searchby
+interface.
+.
 .TP
 .BR \-q ", " \-\-short
 Only display package name, version and description.
 .
 .TP
-.BR \-r ", " \-\-raw
-Display the unprocessed JSON output.
+.BR \-r ", " \-\-json
+Display results as JSON.
 .
 .TP
 .BR \-v ", " \-\-verbose
 Display more package information.
 .
 .TP
-.BR \-i ", " \-\-info
-Use the
-.I info
-interface instead of
-.IR searchby .
+.BR \-\-table
+Display output in
+.B tsv
+format.
 .
+.TP
+.BI "\-k " key
+Sort results via a key, defaulting to
+.IR Name .
+.IP
+Valid choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
+\fIDescription\fR (for brief output) or \fIName\fR, \fIPackageBase\fR,
+\fIVersion\fR, \fIDescription\fR, \fIURL\fR, \fINumVotes\fR,
+\fIPopularity\fR, \fIOutOfDate\fR, \fIMaintainer\fR,
+\fIFirstSubmitted\fR, \fILastModified\fR (for \fB\-v\fR verbose
+output).
+.
+.SS Search types
 .TP
 .BR \-d ", " \-\-desc
 Search by package name and description.
@@ -70,18 +94,6 @@ Search for packages with keywords in
 Search for packages with keywords in
 .BR checkdepends .
 .
-.TP
-.BI "\-k " key
-Sort results via a key, defaulting to
-.IR Name .
-.IP
-Valid choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
-\fIDescription\fR (for brief output) or \fIName\fR, \fIPackageBase\fR,
-\fIVersion\fR, \fIDescription\fR, \fIURL\fR, \fINumVotes\fR,
-\fIPopularity\fR, \fIOutOfDate\fR, \fIMaintainer\fR,
-\fIFirstSubmitted\fR, \fILastModified\fR (for \fB\-v\fR verbose
-output).
-.
 .SH EXIT STATUS
 The exit status is 0 on valid results, 1 if no results were found, or
 2 if an AUR error occurred (such as "Too many results").
@@ -91,7 +103,9 @@ The exit status is 0 on valid results, 1 if no results were found, or
 .nh
 .BR aur (1),
 .BR aur\-query (1),
-.BR jq (1)
+.BR jq (1),
+.BR sort (1),
+.BR uniq (1)
 .
 .SH AUTHORS
 .MT https://github.com/AladW

@@ -42,8 +42,10 @@ chmod +x "$tmp"/pacman
 repo-add "$tmp/$tmp_uid".db.tar
 
 # issue 714: select repository without -d or --root
+# TODO: use --dbpath to avoid privilege escalation
 env -C "$tmp" - HOME=$HOME USER=$USER PATH=$PATH PACMAN="$tmp"/pacman \
-    aur build --config "$tmp"/pacman.conf
-"$tmp"/pacman -Si "$tmp_uid"/foo
+    aur build --no-sync --pacman-conf "$tmp"/pacman.conf
+fakeroot -- "$tmp"/pacman --dbpath "$tmp" -Sy
+"$tmp"/pacman --dbpath "$tmp" -Si "$tmp_uid"/foo
 
 # vim: set et sw=4 sts=4 ft=sh:\n

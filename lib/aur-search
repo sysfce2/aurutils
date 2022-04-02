@@ -8,6 +8,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 multiple=section output=hrm search_by=name-desc sort_key=Name type=search
 
+# default arguments
+query_args=()
+
 hyperlink() {
     local uri=$1
     local mesg=$2
@@ -25,9 +28,15 @@ tabulate() {
     # It is important to have a default value for every field, or
     # parsing of the @tsv result might break.
     # See: https://lists.gnu.org/archive/html/help-bash/2016-05/msg00041.html
+    # For arrays, individual elements have to be checked as well.
+    # See: https://gitlab.archlinux.org/archlinux/aurweb/-/issues/332
     jq -r --arg key "$1" '
         def sel_join:
-            select (length > 0) // ["-"] | join(" ");
+            if length > 0 then
+                map(if . == "" then "-" else . end) | join(" ")
+            else
+                "-"
+            end;
 
         [.results[]] | sort_by(.[$key])[] | [
             .Name        // "-",
@@ -48,7 +57,8 @@ tabulate() {
             (.LastModified   | todate),
             (.Depends        | sel_join),
             (.MakeDepends    | sel_join),
-            (.CheckDepends   | sel_join)
+            (.CheckDepends   | sel_join),
+            (.OptDepends     | sel_join)
         ] | @tsv'
 }
 
@@ -71,6 +81,7 @@ info_long() {
         'Depends On'
         'Makedepends'
         'Checkdepends'
+        'Optdepends'
     )
     local -a info
 
@@ -92,8 +103,7 @@ info_short() {
     while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes Popularity OutOfDate _; do
         case $OutOfDate in
             -) unset OutOfDate ;;
-            *) # FIXME move date command to jq (must only be run if OutOfDate is set)
-               OutOfDate="(Out-of-date: $(date -d @"$OutOfDate" '+%d %B %Y'))" ;;
+            *) printf -v OutOfDate '(Out-of-date: %(%d %B %Y)T)' "$OutOfDate"
         esac
 
         case $Maintainer in
@@ -110,14 +120,6 @@ info_short() {
         printf "%s ${GREEN}%s ${ALL_OFF}(+%s %s%%) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
                "$Link" "$Version" "$NumVotes" "$Popularity" "$Maintainer" "$OutOfDate" "$Description"
     done
-}
-
-trap_exit() {
-    if [[ ! -v AUR_DEBUG ]]; then
-        rm -rf -- "$tmp"
-    else
-        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
-    fi
 }
 
 usage() {
@@ -137,8 +139,8 @@ fi
 
 opt_short='k:adimnqrsv'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
-          'makedepends' 'optdepends' 'checkdepends' 'key:' 'raw' 'short')
-opt_hidden=('dump-options')
+          'makedepends' 'optdepends' 'checkdepends' 'key:' 'json' 'short' 'table')
+opt_hidden=('dump-options' 'raw')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -172,8 +174,10 @@ while true; do
             format=short ;;
         -v|--verbose)
             format=long ;;
-        -r|--raw)
-            output=raw ;;
+        --table)
+            format=table ;;
+        -r|--raw|--json)
+            output=json ;;
         -k|--key)
             shift; sort_key=$1 ;;
         --dump-options)
@@ -189,16 +193,6 @@ if ! (( $# )); then
     usage
 fi
 
-# shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
-tmp=$(mktemp --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
-trap 'trap_exit' EXIT
-
-# XXX union is done by the AUR for info, but not search
-if (( $# < 2 )) || [[ $type == 'info' ]]; then
-    multiple=none
-fi
-
 # set format depending on query type (#319)
 case $type in
       info) format=${format-long}  ;;
@@ -209,40 +203,21 @@ esac
 case $format in
      long) info() { info_long | column -ts $'\t' | sed -E 's/^-//; $d'; } ;;
     short) info() { info_short; } ;;
+    table) info() { tee; } ;;
 esac
 
 # set filters (2)
 case $multiple in
-    section) combine() { sort | uniq -d; } ;;
-      union) combine() { sort | uniq -u; } ;;
+    section) ;; # aur-query default
+      union) query_args+=('--any') ;;
 esac
 
-# check results
-printf '%s\n' "$@" | aur query -t "$type" -b "$search_by" > "$tmp" || exit
-
-# exit early on raw output (#187)
-case $output in
-    raw) cat "$tmp"
-         exit ;;
-esac
-
-# check results (#257)
-count=$(jq -r '.resultcount' "$tmp" | awk '{s += $1} END {print s}')
-error=$(jq -r '.error' "$tmp")
-
-case $count in
-    0) if [[ $error != 'null' ]]; then
-           error '%s' "$error"
-           exit 2
-       else
-           # no results found
-           exit 1
-       fi ;;
-    *) if [[ $multiple != 'none' ]]; then
-           tabulate "$sort_key" < "$tmp" | combine | info
-       else
-           tabulate "$sort_key" < "$tmp" | info
-       fi ;;
-esac
+# exit early on json output (#187)
+if [[ $output == "json" ]]; then
+    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@"
+else
+    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" | tabulate "$sort_key" | info
+    exit "${PIPESTATUS[0]}"
+fi
 
 # vim: set et sw=4 sts=4 ft=sh:

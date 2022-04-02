@@ -1,0 +1,4 @@
+#!/bin/bash
+aur query linux
+# aurweb error if no type is specified
+(( $? == 2 ))

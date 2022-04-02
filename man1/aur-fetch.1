@@ -1,10 +1,9 @@
-.TH AUR-FETCH 1 2020-03-14 AURUTILS
+.TH AUR-FETCH 1 2021-12-06 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
 .SH SYNOPSIS
 .SY "aur fetch"
-.OP \-r
 .OP \-S
 .IR pkgbase " [" pkgbase... ]
 .YS
@@ -13,16 +12,17 @@ aur\-fetch \- download packages from the AUR
 .B aur\-fetch
 downloads packages specified on the command-line from the AUR using
 .BR git (1).
+If the first argument is
+.B \-
+or
+.BR /dev/stdin ,
+packages are taken from standard input.
 .
 .SH OPTIONS
 .TP
-.BR \-r ", " \-\-recurse
-Download packages and their dependencies with
-.BR aur\-depends (1).
-If this option is specified, arguments must be supplied by
-.B pkgname
-instead of by
-.BR pkgbase .
+.BR \-\-existing
+If a git repository is not found for a given package, ignore it instead of running
+.BR git\-clone (1).
 .
 .TP
 .BI \-\-sync= MODE
@@ -90,6 +90,15 @@ Alias for
 .BR \-\-sync=auto .
 .
 .TP
+.BR \-r ", " \-\-recurse
+Download packages and their dependencies with
+.BR aur\-depends (1).
+If this option is specified, arguments must be supplied by
+.B pkgname
+instead of by
+.BR pkgbase .
+.
+.TP
 .BI \-\-results= FILE
 Write colon-delimited output in the following form to
 .IR FILE :
@@ -116,6 +125,15 @@ is the absolute path to the corresponding git repository.
 .IP
 Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
+.
+.SH EXAMPLES
+.B \-\-recurse
+can be written as the pipeline:
+.PP
+.EX
+  $ aur depends --pkgbase "$@" | aur fetch -
+.EE
+.PP
 .
 .SH SEE ALSO
 .ad l

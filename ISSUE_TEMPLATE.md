@@ -15,7 +15,7 @@ is the issue reproducible from the master branch?
 __If yes to all, create a debug log:__
 
 ```
-AUR_DEBUG=1 aur <name> <arguments> >aurutils.log
+AUR_DEBUG=1 aur <name> <arguments> >aurutils.log 2>&1
 ```
 
 and attach aurutils.log to this issue.
