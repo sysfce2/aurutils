@@ -217,7 +217,7 @@ while true; do
 done
 
 # mollyguard for makepkg
-if (( UID == 0 )) && { [[ ! -v build_user ]] || [[ ! -v AUR_ASROOT ]]; }; then
+if (( UID == 0 )) && ! { [[ -v build_user ]] && [[ -v AUR_ASROOT ]]; }; then
     warning 'aur-%s is not meant to be run as root.' "$argv0"
     warning 'To proceed anyway, set the %s variable and specify --user <username>.' 'AUR_ASROOT'
     exit 1
