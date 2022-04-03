@@ -63,7 +63,7 @@ EOF
 as_user() {
     local USER HOME SHELL
 
-    if (( UID == 0 )) && [[ -v build_user ]]; then
+    if [[ $UID == 0 ]] && [[ -v build_user ]]; then
         # runuser --pty messes up the terminal with AUR_DEBUG set, use setpriv(1)
         # and replicate the runuser(1) behavior for setting the environment
         { IFS= read -r USER
@@ -217,7 +217,7 @@ while true; do
 done
 
 # mollyguard for makepkg
-if (( UID == 0 )) && ! { [[ -v build_user ]] && [[ -v AUR_ASROOT ]]; }; then
+if [[ $UID == 0 ]] && ! { [[ -v build_user ]] && [[ -v AUR_ASROOT ]]; }; then
     warning 'aur-%s is not meant to be run as root.' "$argv0"
     warning 'To proceed anyway, set the %s variable and specify --user <username>.' 'AUR_ASROOT'
     exit 1
@@ -230,7 +230,7 @@ if [[ $MAKEPKG ]]; then
 fi
 
 # Custom elevation command
-if (( UID == 0 )); then
+if [[ $UID == 0 ]]; then
     sudo() { command -- "$@"; }
 
 elif [[ $PACMAN_AUTH ]]; then
