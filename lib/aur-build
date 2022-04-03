@@ -256,33 +256,12 @@ var_tmp=$(as_user mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_u
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-if (( chroot )) && [[ ! -v makepkg_conf ]]; then
-    # makepkg --packagelist includes the package extension, but
-    # makechrootpkg ignores PKGEXT set on the host.
-    # Retrieve the path to the container makepkg.conf separately.
-    # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
-    # copies the makepkg configuration to)
-    makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
-    makepkg_common_args+=(--config "$makepkg_conf")
-    pkglist_args+=(--config "$makepkg_conf")
-
-elif [[ -v makepkg_conf ]]; then
-    chroot_args+=(--makepkg-conf "$makepkg_conf")
-    makepkg_common_args+=(--config "$makepkg_conf")
-    pkglist_args+=(--config "$makepkg_conf")
-
-    if [[ ! -f $makepkg_conf ]]; then
-        error '%s: %s: no such file or directory' "$argv0" "$makepkg_conf"
-        exit 2
-    fi
-fi
-
-# Default pacman configuration for container (#824, #808)
-# Fallback to uname when autodetecting db_name (#846)
-if (( chroot )) && [[ ! -v pacman_conf ]]; then
-    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
+if (( chroot )); then
+    # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
+    # /etc/aurutils/pacman-<repo>.conf or /etc/aurutils/pacman-<uname>.conf in
+    # aur-build, and pass it on to aur-chroot (#824, #846)
+    pacman_conf=${pacman_conf-/etc/aurutils/pacman-${db_name:-$machine}.conf}
     chroot_args+=(--pacman-conf "$pacman_conf")
-    pacconf_args+=(--config "$pacman_conf")
 
     # Early check for availability of pacman.conf (#783)
     if [[ ! -f $pacman_conf ]]; then
@@ -290,13 +269,34 @@ if (( chroot )) && [[ ! -v pacman_conf ]]; then
         exit 2
     fi
 
-elif [[ -v pacman_conf ]]; then
-    chroot_args+=(--pacman-conf "$pacman_conf")
+    # The default path is /usr/share/devtools/makepkg-<uname.conf>, which is
+    # copied to <container path>/etc/makepkg.conf by arch-nspawn.
+    if [[ -v makepkg_conf ]]; then
+        chroot_args+=(--makepkg-conf "$makepkg_conf")
+    else
+        # When makechrootpkg calls makepkg inside the container, it uses the above 
+        # makepkg.conf for most variables including PKGEXT. (makepkg --packagelist)
+        makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
+        unset PKGEXT
+    fi
+fi
+
+# Propagate makepkg and pacman configuration to other tools
+if [[ -v pacman_conf ]]; then
     pacconf_args+=(--config "$pacman_conf")
 
-    # Early check for availability of pacman.conf (#783)
     if [[ ! -f $pacman_conf ]]; then
-        error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
+        error '%s: %s: not a regular file' "$argv0" "$pacman_conf"
+        exit 2
+    fi
+fi
+
+if [[ -v makepkg_conf ]]; then
+    makepkg_common_args+=(--config "$makepkg_conf")
+    pkglist_args+=(--config "$makepkg_conf")
+
+    if [[ -v makepkg_conf ]] && [[ ! -f $makepkg_conf ]]; then
+        error '%s: %s: not a regular file' "$argv0" "$makepkg_conf"
         exit 2
     fi
 fi
@@ -318,7 +318,7 @@ fi
 
 # Resolve symbolic link to database.
 if ! [[ -f $db_path ]]; then
-    error '%s: %s: no such file or directory' "$argv0" "$db_path"
+    error '%s: %s: not a regular file' "$argv0" "$db_path"
     exit 2
 
 # Check if build user can write to database
