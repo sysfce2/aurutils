@@ -262,7 +262,7 @@ if (( chroot )) && [[ ! -v makepkg_conf ]]; then
     # Retrieve the path to the container makepkg.conf separately.
     # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
     # copies the makepkg configuration to)
-    makepkg_conf=$(aur chroot --path "${chroot_args[@]}")
+    makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
 
