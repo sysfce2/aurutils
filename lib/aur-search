@@ -11,6 +11,19 @@ multiple=section output=hrm search_by=name-desc sort_key=Name type=search
 # default arguments
 query_args=()
 
+hyperlink() {
+    local uri=$1
+    local mesg=$2
+
+    if [[ ! -v ALL_OFF ]]; then
+        printf "%s" "$mesg"
+    fi
+
+    OSC8="\e]8"
+    ST="\e\\"
+    printf "$OSC8;;%s$ST%s$OSC8;;$ST" "$uri" "$mesg"
+}
+
 tabulate() {
     # It is important to have a default value for every field, or
     # parsing of the @tsv result might break.
@@ -73,7 +86,6 @@ info_long() {
     local -a info
 
     while IFS=$'\t' read -r -a info; do
-        # XXX: AUR_LOCATION only used here
         printf "$BOLD%s:$ALL_OFF\\t%s\\n" "AUR URL" "$AUR_LOCATION/packages/${info[0]}"
 
         for i in "${!info[@]}"; do
@@ -86,7 +98,7 @@ info_long() {
 }
 
 info_short() {
-    local Name Version NumVotes Popularity Maintainer OutOfDate Description
+    local Name Version NumVotes Popularity Maintainer OutOfDate Description Url Link
 
     while IFS=$'\t' read -r Name _ Version Description _ _ _ Maintainer NumVotes Popularity OutOfDate _; do
         case $OutOfDate in
@@ -102,8 +114,11 @@ info_short() {
         # Unset LC_ALL to ensure it doesn't override LC_NUMERIC.
         LC_ALL='' LC_NUMERIC=C printf -v Popularity '%.2f' "$Popularity"
 
-        printf "${BLUE}aur/${ALL_OFF}${BOLD}%s ${GREEN}%s ${ALL_OFF}(+%s %s%%) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
-               "$Name" "$Version" "$NumVotes" "$Popularity" "$Maintainer" "$OutOfDate" "$Description"
+        Url="${AUR_LOCATION}/packages/${Name}"
+        Link="$(hyperlink "$Url" "${BLUE}aur/${ALL_OFF}${BOLD}${Name}")"
+
+        printf "%s ${GREEN}%s ${ALL_OFF}(+%s %s%%) ${RED}%s%s${ALL_OFF}\\n    %s\\n" \
+               "$Link" "$Version" "$NumVotes" "$Popularity" "$Maintainer" "$OutOfDate" "$Description"
     done
 }
 
