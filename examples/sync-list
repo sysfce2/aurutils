@@ -72,7 +72,7 @@ trap 'rm -rf "$tmp" "$var_tmp"' EXIT # comment this if inspecting the contents
   # 8. Synchronize the new repository state to the original location.
   # Remove --dry-run if the output is as desired.
   set -x
-  rsync -avh "$var_tmp"/ "$db_root"/ --delete --remove-source-files \
+  rsync -avh "$var_tmp"/ "$db_root"/ --delete \
         --copy-links --exclude={"$db_name".db,"$db_name".files} --dry-run
 
 ) 200> /tmp/lockfile
