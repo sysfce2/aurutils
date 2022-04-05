@@ -5,6 +5,9 @@
   + retrieve repository before setting `--chroot` paths
   + unset `PKGEXT` when using `--chroot`
 
+* `aur-search`
+  + use OSC8 terminal hyperlinks (#849)
+
 ## 9.1
 
 `aur-build` now uses `setpriv(1)` to run unprivileged commands (`makepkg`, `gpg`,
