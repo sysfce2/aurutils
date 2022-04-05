@@ -113,12 +113,11 @@ fi
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:' 'remove'
-          'pkgver' 'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
-          'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
-          'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:'
-          'buildscript:' 'dry-run')
-opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck'
+          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'remove' 'pkgver' 'rmdeps'
+          'no-confirm' 'no-check' 'ignore-arch' 'log' 'new' 'makepkg-conf:' 'bind:'
+          'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean' 'namcap'
+          'checkpkg' 'user:' 'makepkg-args:' 'buildscript:' 'dry-run')
+opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck' 'results:'
             'nosync' 'margs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -152,8 +151,6 @@ while true; do
             shift; pacman_conf=$1 ;;
         --pkgver)
             run_pkgver=1; makepkg_args+=(--noextract) ;;
-        --results)
-            shift; results_file=$1 ;;
         --root)
             shift; db_root=$1
             repo_args+=(--root "$1") ;;
@@ -207,6 +204,8 @@ while true; do
         --prevent-downgrade)
             repo_add_args+=(-p) ;;
         # other options
+        --results)
+            shift; results_file=$1 ;; # deprecated
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'

@@ -101,7 +101,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'repo:' 'directory:' 'ignore:' 'root:'
           'no-view' 'no-provides' 'no-build' 'rm-deps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'results:' 'makepkg-args:' 'format:' 'no-check' 'keep-going:')
+          'makepkg-args:' 'format:' 'no-check' 'keep-going:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rmdeps' 'gpg-sign' 'margs:' 'nocheck' 
@@ -178,8 +178,6 @@ while true; do
             filter_args+=(--config "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
-        --results)
-            shift; build_args+=(--results "$1") ;;
         -S|--sign|--gpg-sign)
             build_args+=(--sign) ;;
         # build options (devtools)
