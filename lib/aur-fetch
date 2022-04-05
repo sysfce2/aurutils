@@ -161,7 +161,7 @@ fi | while read -r pkg; do
         if sync_merge_revisions "$sync" >&2; then
             head=$(git rev-parse --verify HEAD)
         else
-            error '%s: %s: failed to %s repository' "$argv0" "$sync" "$pkg"
+            error '%s: %s: failed to %s repository' "$argv0" "$pkg" "$sync"
             exit 1
         fi
 
