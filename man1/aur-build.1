@@ -9,7 +9,6 @@ aur\-build \- build packages to a local repository
 .OP \-a queue
 .OP \-\-no\-sync
 .OP \-\-pkgver
-.OP \-\-results FILE
 .OP \-\-root DIRECTORY
 .OP \-\-margs
 .RI [ makepkg_args... ]
@@ -154,14 +153,6 @@ options are forwarded to the above command. Other
 .BR makepkg (8)
 options are ignored.
 .RE
-.
-.TP
-.BI \-\-results= file
-Write absolute paths of successfully built packages to
-.I file
-in the following format:
-.IP
-.I build:file://<package_path>
 .
 .TP
 .BI \-\-root= DIR

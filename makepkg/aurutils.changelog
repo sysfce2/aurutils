@@ -1,3 +1,10 @@
+## 9.2
+
+* `aur-build`
+  + deprecate `--results`
+  + retrieve repository before setting `--chroot` paths
+  + unset `PKGEXT` when using `--chroot`
+
 ## 9.1
 
 `aur-build` now uses `setpriv(1)` to run unprivileged commands (`makepkg`, `gpg`,

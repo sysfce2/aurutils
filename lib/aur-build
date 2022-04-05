@@ -63,7 +63,7 @@ EOF
 as_user() {
     local USER HOME SHELL
 
-    if (( UID == 0 )) && [[ -v build_user ]]; then
+    if [[ $UID == 0 ]] && [[ -v build_user ]]; then
         # runuser --pty messes up the terminal with AUR_DEBUG set, use setpriv(1)
         # and replicate the runuser(1) behavior for setting the environment
         { IFS= read -r USER
@@ -113,12 +113,11 @@ fi
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'results:' 'remove'
-          'pkgver' 'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
-          'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
-          'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:'
-          'buildscript:' 'dry-run')
-opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck'
+          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'remove' 'pkgver' 'rmdeps'
+          'no-confirm' 'no-check' 'ignore-arch' 'log' 'new' 'makepkg-conf:' 'bind:'
+          'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean' 'namcap'
+          'checkpkg' 'user:' 'makepkg-args:' 'buildscript:' 'dry-run')
+opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck' 'results:'
             'nosync' 'margs:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -152,8 +151,6 @@ while true; do
             shift; pacman_conf=$1 ;;
         --pkgver)
             run_pkgver=1; makepkg_args+=(--noextract) ;;
-        --results)
-            shift; results_file=$1 ;;
         --root)
             shift; db_root=$1
             repo_args+=(--root "$1") ;;
@@ -207,6 +204,8 @@ while true; do
         --prevent-downgrade)
             repo_add_args+=(-p) ;;
         # other options
+        --results)
+            shift; results_file=$1 ;; # deprecated
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -217,7 +216,7 @@ while true; do
 done
 
 # mollyguard for makepkg
-if (( UID == 0 )) && { [[ ! -v build_user ]] || [[ ! -v AUR_ASROOT ]]; }; then
+if [[ $UID == 0 ]] && ! { [[ -v build_user ]] && [[ -v AUR_ASROOT ]]; }; then
     warning 'aur-%s is not meant to be run as root.' "$argv0"
     warning 'To proceed anyway, set the %s variable and specify --user <username>.' 'AUR_ASROOT'
     exit 1
@@ -230,7 +229,7 @@ if [[ $MAKEPKG ]]; then
 fi
 
 # Custom elevation command
-if (( UID == 0 )); then
+if [[ $UID == 0 ]]; then
     sudo() { command -- "$@"; }
 
 elif [[ $PACMAN_AUTH ]]; then
@@ -256,51 +255,6 @@ var_tmp=$(as_user mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_u
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-if (( chroot )) && [[ ! -v makepkg_conf ]]; then
-    # makepkg --packagelist includes the package extension, but
-    # makechrootpkg ignores PKGEXT set on the host.
-    # Retrieve the path to the container makepkg.conf separately.
-    # XXX: this is hardcoded to etc/makepkg.conf (where arch-nspawn
-    # copies the makepkg configuration to)
-    makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
-    makepkg_common_args+=(--config "$makepkg_conf")
-    pkglist_args+=(--config "$makepkg_conf")
-
-elif [[ -v makepkg_conf ]]; then
-    chroot_args+=(--makepkg-conf "$makepkg_conf")
-    makepkg_common_args+=(--config "$makepkg_conf")
-    pkglist_args+=(--config "$makepkg_conf")
-
-    if [[ ! -f $makepkg_conf ]]; then
-        error '%s: %s: no such file or directory' "$argv0" "$makepkg_conf"
-        exit 2
-    fi
-fi
-
-# Default pacman configuration for container (#824, #808)
-# Fallback to uname when autodetecting db_name (#846)
-if (( chroot )) && [[ ! -v pacman_conf ]]; then
-    pacman_conf=/etc/aurutils/pacman-${db_name:-$machine}.conf
-    chroot_args+=(--pacman-conf "$pacman_conf")
-    pacconf_args+=(--config "$pacman_conf")
-
-    # Early check for availability of pacman.conf (#783)
-    if [[ ! -f $pacman_conf ]]; then
-        diag_pacman_conf "$pacman_conf"
-        exit 2
-    fi
-
-elif [[ -v pacman_conf ]]; then
-    chroot_args+=(--pacman-conf "$pacman_conf")
-    pacconf_args+=(--config "$pacman_conf")
-
-    # Early check for availability of pacman.conf (#783)
-    if [[ ! -f $pacman_conf ]]; then
-        error '%s: %s: no such file or directory' "$argv0" "$pacman_conf"
-        exit 2
-    fi
-fi
-
 # Automatically choose repository root and name based on pacman
 # configuration and user environment.
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
@@ -318,7 +272,63 @@ fi
 
 # Resolve symbolic link to database.
 if ! [[ -f $db_path ]]; then
-    error '%s: %s: no such file or directory' "$argv0" "$db_path"
+    error '%s: %s: not a regular file' "$argv0" "$db_path"
+    exit 2
+
+# Check if build user can write to database
+elif ! as_user test -w "$db_path"; then
+    error '%s: %s: permission denied' "$argv0" "$db_path"
+    exit 13
+fi
+
+if (( chroot )); then
+    # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
+    # /etc/aurutils/pacman-<repo>.conf or /etc/aurutils/pacman-<uname>.conf in
+    # aur-build, and pass it on to aur-chroot (#824, #846)
+    pacman_conf=${pacman_conf-/etc/aurutils/pacman-${db_name:-$machine}.conf}
+    chroot_args+=(--pacman-conf "$pacman_conf")
+
+    # Early check for availability of pacman.conf (#783)
+    if [[ ! -f $pacman_conf ]]; then
+        diag_pacman_conf "$pacman_conf"
+        exit 2
+    fi
+
+    # The default path is /usr/share/devtools/makepkg-<uname.conf>, which is
+    # copied to <container path>/etc/makepkg.conf by arch-nspawn.
+    if [[ -v makepkg_conf ]]; then
+        chroot_args+=(--makepkg-conf "$makepkg_conf")
+    else
+        # When makechrootpkg calls makepkg inside the container, it uses the above 
+        # makepkg.conf for most variables including PKGEXT. (makepkg --packagelist)
+        makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
+        unset PKGEXT
+    fi
+fi
+
+# Propagate makepkg and pacman configuration to other tools
+if [[ -v pacman_conf ]]; then
+    pacconf_args+=(--config "$pacman_conf")
+
+    if [[ ! -f $pacman_conf ]]; then
+        error '%s: %s: not a regular file' "$argv0" "$pacman_conf"
+        exit 2
+    fi
+fi
+
+if [[ -v makepkg_conf ]]; then
+    makepkg_common_args+=(--config "$makepkg_conf")
+    pkglist_args+=(--config "$makepkg_conf")
+
+    if [[ -v makepkg_conf ]] && [[ ! -f $makepkg_conf ]]; then
+        error '%s: %s: not a regular file' "$argv0" "$makepkg_conf"
+        exit 2
+    fi
+fi
+
+# Resolve symbolic link to database.
+if ! [[ -f $db_path ]]; then
+    error '%s: %s: not a regular file' "$argv0" "$db_path"
     exit 2
 
 # Check if build user can write to database
