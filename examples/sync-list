@@ -14,20 +14,19 @@ fi
 # Create a scratch space. /var/tmp ensures sufficient space for built
 # packages (not on tmpfs by default)
 var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}")
-trap 'rm -rf "$var_tmp"' EXIT
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp" "$var_tmp"' EXIT # comment this if inspecting the contents
 
 # 1. Avoid concurrent use
 ( flock -n 200 || exit 1
-  cd "$var_tmp"
+  cd "$tmp"
 
-  # Retrieve all targets and their dependencies available from the
-  # local repository.
+  # 2. Retrieve targets and their dependencies from the local repository.
   aur repo --status-file=db --table | tee db_table | \
-      cut -f1,2 | grep -Fwf "$list" >db_deps
+      cut -f1,2 | grep -Fwf "$list" | tsort >db_deps
 
-  tsort db_deps | grep -Fxf <(cut -f1 db_table)  | awk '{
-      printf("%s-%s\n", $1, $2)
-  }' >db_list
+  # 3. Remove entries that are not in the dependency tree.
+  cut -f1 db_table | grep -Fxvf db_deps | sort -u >db_removals
 
   # Parse repository information
   { IFS=: read -r _ db_name
@@ -35,46 +34,45 @@ trap 'rm -rf "$var_tmp"' EXIT
     IFS=: read -r _ db_path
   } <db
 
-  # 3. Extract entries from database in $PWD/db_tmp.
-  mkdir -p db_tmp
-  tar -xf "$db_path" -C db_tmp --files-from db_list
+  files_path=$(realpath "$db_root/$db_name".files)
 
-  # 4. Create archive in $PWD which only contains these entries.
-  db_copy=$(basename -- "$db_path")
-  ( cd db_tmp
-    tar czf ../"$db_copy" *
-  )
-  ln -s "$db_copy" "$db_name".db
-  
-  # 5. Generate pacman.conf, replacing the repository root with the
-  # temporary directory.
-  { pacconf '[options]\n'
+  # Create copy of local repository database
+  cp -Pv "$db_path" "$db_root/$db_name".db "$var_tmp"
+  cp -Pv "$files_path" "$db_root/$db_name".files "$var_tmp"
+
+  # 4. Remove entries that are not in the dependency tree.
+  cd "$var_tmp"
+  xargs -a "$tmp"/db_removals -r repo-remove "${db_path##*/}"
+
+  # 5. Add symlinks to built packages.
+  aur repo -d "$db_name" --root "$var_tmp" --field filename | \
+      xargs env -C "$db_root" realpath -z | xargs -0r ln -t "$var_tmp" -s --
+
+  # 6. Point the repository root in pacman.conf to the temporary directory.
+  { printf '[options]\n'
     pacconf --raw --options
 
     while IFS= read -r; do
+        # section header
+        printf '[%s]\n' "$REPLY"
+
         if [[ $REPLY == "$db_name" ]]; then
-            pacconf --raw --repo="$db_name" SigLevel
-            printf '%s\n' "file://$var_tmp"
+            pacconf --raw --repo="$REPLY" --verbose SigLevel
+            printf '%s\n' "Server = file://$var_tmp"
         else
-            pacconf --raw --repo="$db_name" SigLevel Server
+            pacconf --raw --repo="$REPLY" --verbose SigLevel Server
         fi
     done < <(pacconf --repo-list)
-  } >tmp_pacman.conf
-
-  # 6. Add symlinks to built packages.
-  aur repo --config "$var_tmp"/tmp_pacman.conf --field filename | \
-      xargs -r ln -t "$var_tmp" -s --
+  } > "$tmp"/pacman.conf
 
   # 7. Run aur-sync(1) with the new pacman configuration.
   # Adjust options to preference.
-  aur sync --pacman-conf="$var_tmp"/tmp_pacman.conf -Rrn $(<"$list")
+  aur sync -d "$db_name" --pacman-conf="$tmp"/pacman.conf -Rrn $(<"$list")
 
-  # 8. The repository is now in the desired state. Copy it over,
-  # as well as any new package files.
-  mv -bv "$db_name"* "$db_root"
-  find . -type f -iname '*.pkg.tar*' -exec cp -t "$db_root" {} +
-
-  cd ..
-  rm -df "$var_tmp"
+  # 8. Synchronize the new repository state to the original location.
+  # Remove --dry-run if the output is as desired.
+  set -x
+  rsync -avh "$var_tmp"/ "$db_root"/ --delete --remove-source-files \
+        --copy-links --exclude={"$db_name".db,"$db_name".files} --dry-run
 
 ) 200> /tmp/lockfile
