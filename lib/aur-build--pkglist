@@ -12,6 +12,13 @@ usage() {
     exit 1
 }
 
+# mollyguard for sourcing PKGBUILDs
+if [[ $UID == 0 ]] && ! [[ -v AUR_ASROOT ]]; then
+    printf >&2 'aur-%s is not meant to be run as root.\n' "$argv0"
+    printf >&2 'To proceed anyway, set the %s variable.\n' 'AUR_ASROOT'
+    exit 1
+fi
+
 source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
 source /usr/share/makepkg/util/config.sh
