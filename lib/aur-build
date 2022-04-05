@@ -256,6 +256,32 @@ var_tmp=$(as_user mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_u
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
+# Automatically choose repository root and name based on pacman
+# configuration and user environment.
+: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+
+if [[ $db_name ]] && [[ $db_root ]]; then
+    db_path=$db_root/$db_name.${db_ext:-db}
+    db_path=$(realpath -- "$db_path")
+else
+    { IFS=: read -r _ db_name
+      IFS=: read -r _ db_root
+      IFS=: read -r _ db_path
+    } < <(as_user aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
+    wait "$!"
+fi
+
+# Resolve symbolic link to database.
+if ! [[ -f $db_path ]]; then
+    error '%s: %s: not a regular file' "$argv0" "$db_path"
+    exit 2
+
+# Check if build user can write to database
+elif ! as_user test -w "$db_path"; then
+    error '%s: %s: permission denied' "$argv0" "$db_path"
+    exit 13
+fi
+
 if (( chroot )); then
     # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
     # /etc/aurutils/pacman-<repo>.conf or /etc/aurutils/pacman-<uname>.conf in
@@ -299,21 +325,6 @@ if [[ -v makepkg_conf ]]; then
         error '%s: %s: not a regular file' "$argv0" "$makepkg_conf"
         exit 2
     fi
-fi
-
-# Automatically choose repository root and name based on pacman
-# configuration and user environment.
-: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
-
-if [[ $db_name ]] && [[ $db_root ]]; then
-    db_path=$db_root/$db_name.${db_ext:-db}
-    db_path=$(realpath -- "$db_path")
-else
-    { IFS=: read -r _ db_name
-      IFS=: read -r _ db_root
-      IFS=: read -r _ db_path
-    } < <(as_user aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
-    wait "$!"
 fi
 
 # Resolve symbolic link to database.
