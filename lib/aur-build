@@ -283,7 +283,8 @@ if (( chroot )); then
     fi
 fi
 
-# Propagate makepkg and pacman configuration to other tools
+# Propagate makepkg and pacman configuration to other tools. This needs to be
+# done BEFORE retrieving the local repository name/root.
 if [[ -v pacman_conf ]]; then
     pacconf_args+=(--config "$pacman_conf")
 
