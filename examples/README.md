@@ -43,7 +43,7 @@ entries that are not part of the list or its dependencies with
 `repo-remove`. Existing packages are symlinked in the temporary
 directory. Targets are then passed to `aur-sync(1)`, with a temporary
 `pacman.conf` file pointing to the temporary directory. Finally, the state is
-transfered to the local repository with `rsync -delete`.
+transfered to the local repository with `rsync --delete`.
 
 Other approaches include:
 
