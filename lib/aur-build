@@ -329,10 +329,10 @@ elif ! as_user test -w "$db_path"; then
     exit 13
 fi
 
-# Write successfully built packages to file (#437)
+# Write successfully built packages to file (#437, #980)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
-    (( truncate )) && true >"$results_file"
+    (( truncate )) && true | as_user tee "$results_file"
 fi
 
 if (( chroot )); then
@@ -443,7 +443,8 @@ while IFS= read -ru "$fd" path; do
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
 
         if [[ -v results_file ]]; then
-            printf >> "$results_file" "build:file://${db_path%/*}/%s\n" "${pkglist[@]}"
+            printf "build:file://${db_path%/*}/%s\n" "${pkglist[@]}" | \
+                as_user tee -a "$results_file" >/dev/null
         fi
     fi
 
