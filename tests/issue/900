@@ -27,7 +27,8 @@ pkg=weston-git
 pkg_ignored=wayland-git
 
 # check ignores on the command-line
-env - HOME=$HOME USER=$USER PATH=$PATH AURDEST="$tmp" aur sync -d "$tmp_uid" --no-build \
-	--no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg_ignored" --ignore-file=/dev/null "$pkg"
+env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u XDG_CACHE_HOME -u AUR_SYNC_NINJA AURDEST="$tmp" \
+    aur sync -d "$tmp_uid" --no-build --no-view --pacman-conf "$tmp"/pacman.conf --ignore="$pkg_ignored" --ignore-file=/dev/null "$pkg"
+
 [[ ! -d $tmp/$pkg_ignored ]]
 [[ ! -f $tmp/$pkg_ignored ]]

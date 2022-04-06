@@ -32,20 +32,15 @@ package() {
 }
 EOF
 
-# create pacman wrapper for makepkg -s operations
-{ printf '#!/bin/sh --\n'
-  printf 'pacman --config "%s" "$@"\n' "$tmp"/pacman.conf
-} >"$tmp"/pacman
-chmod +x "$tmp"/pacman
-
 # create local repository
 repo-add "$tmp/$tmp_uid".db.tar
 
 # issue 714: select repository without -d or --root
 # TODO: use --dbpath to avoid privilege escalation
-env -C "$tmp" - HOME=$HOME USER=$USER PATH=$PATH PACMAN="$tmp"/pacman \
+env -C "$tmp" -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG \
     aur build --no-sync --pacman-conf "$tmp"/pacman.conf
-fakeroot -- "$tmp"/pacman --dbpath "$tmp" -Sy
-"$tmp"/pacman --dbpath "$tmp" -Si "$tmp_uid"/foo
+
+fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy
+pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Si "$tmp_uid"/foo
 
 # vim: set et sw=4 sts=4 ft=sh:\n
