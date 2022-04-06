@@ -18,7 +18,7 @@ results() {
 }
 
 sync_get_type() {
-    local sync=no key=$1
+    local sync=no key=$1 pkg=$2 head=$3
 
     if [[ $(git config --get --type bool "$key") == 'true' ]]; then
         plain >&2 'aurutils.rebase is set for %s' "$pkg"
@@ -27,7 +27,7 @@ sync_get_type() {
             sync=rebase
         fi
 
-    elif [[ $prev_head != $(git rev-parse --verify 'HEAD@{upstream}') ]]; then
+    elif [[ $head != $(git rev-parse --verify 'HEAD@{upstream}') ]]; then
         sync=reset
     fi
 
@@ -136,25 +136,30 @@ fi | while read -r pkg; do
         # to the index and working tree.
         if git fetch --verbose >&2; then
             # If upstream has no commits, skip processing the repository. (#959)
-            if ! fetch_head=$(git rev-parse --verify --quiet FETCH_HEAD); then
+            if fetch_head=$(git rev-parse --verify --quiet FETCH_HEAD); then
+                prev_head=$(git rev-parse --verify --quiet HEAD)
+            else
                 warning '%s: repository has no upstream commits, skipping' "$pkg"
                 continue
             fi
 
-            # If the index has no commits, merge them from upstream.
-            if ! prev_head=$(git rev-parse --verify --quiet HEAD); then
+            if [[ -v results_file ]]; then
+                results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
+            fi
+
+            # If the index has no commits, merge them from upstream and skip to
+            # the next package.  XXX: print "merge" to results_file?
+            if [[ ! $prev_head ]]; then
                 git merge 'origin/master'
+                continue
             fi
         else
             exit 1
         fi
 
-        if [[ -v results_file ]]; then
-            results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
-        fi
-
         if [[ $sync == 'auto' ]]; then
-            sync=$(sync_get_type aurutils.rebase) # rebase, reset or none
+            # sync = rebase, reset or no
+            sync=$(sync_get_type aurutils.rebase "$pkg" "$prev_head")
         fi
 
         # Merge revisions in the master branch with upstream.
