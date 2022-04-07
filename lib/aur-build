@@ -9,7 +9,7 @@ startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 dry_run=0
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 dry_run=0 truncate=1
 
 # default arguments (empty)
 chroot_args=() pacconf_args=() repo_args=() repo_add_args=() pkglist_args=()
@@ -117,8 +117,8 @@ opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
           'no-confirm' 'no-check' 'ignore-arch' 'log' 'new' 'makepkg-conf:' 'bind:'
           'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean' 'namcap'
           'checkpkg' 'user:' 'makepkg-args:' 'buildscript:' 'dry-run')
-opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck' 'results:'
-            'nosync' 'margs:')
+opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck' 'margs:'
+            'nosync' 'results:' 'results-append:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -205,7 +205,9 @@ while true; do
             repo_add_args+=(-p) ;;
         # other options
         --results)
-            shift; results_file=$1 ;; # deprecated
+            shift; results_file=$1 ;;
+        --results-append)
+            shift; results_file=$1; truncate=0 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -327,11 +329,10 @@ elif ! as_user test -w "$db_path"; then
     exit 13
 fi
 
-# Write successfully built packages to file (#437)
-# XXX: write this as the build user?
+# Write successfully built packages to file (#437, #980)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
-    : >"$results_file" # truncate file
+    (( truncate )) && true | as_user tee "$results_file"
 fi
 
 if (( chroot )); then
@@ -442,7 +443,8 @@ while IFS= read -ru "$fd" path; do
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
 
         if [[ -v results_file ]]; then
-            printf >> "$results_file" "build:file://${db_path%/*}/%s\n" "${pkglist[@]}"
+            printf "build:file://${db_path%/*}/%s\n" "${pkglist[@]}" | \
+                as_user tee -a "$results_file" >/dev/null
         fi
     fi
 
