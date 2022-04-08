@@ -132,8 +132,8 @@ else
     splitno=$AUR_QUERY_RPC_SPLITNO
 fi
 
-# search requests require 1 argument per URI
-if [[ $arg_type == "search" ]]; then
+# search/suggests requests require 1 argument per URI
+if [[ $arg_type == "search" ]] || [[ $arg_type = "suggest" ]]; then
     splitno=1
 fi
 
@@ -156,13 +156,19 @@ if (( ${dump_curl_config-0} )); then
 fi
 
 # Set intersection only applies to search queries, where one search term leads
-# to multiple results. This is the default, unless --any is specified. Info
-# queries are already implicitly a union of terms (packages), unless duplicate
-# packages were specified, and are so not processed further.
+# to multiple results. This is the default, unless --any is specified.
 multiple=${multiple:-section}
 
+# Info queries are already implicitly a union of terms (packages), unless
+# duplicate packages were specified, and are not processed further.
 if [[ $arg_type == "info" ]]; then
     multiple=none
+
+# Suggest queries are done lexicographically, with a limit of 20 results per
+# query. The intersection is then either empty, or contains less results than
+# the query for the longest substring. Default to the union in this case.
+elif [[ $arg_type == "suggest" ]] && [[ $multiple != "none" ]]; then
+    multiple=union_flat
 fi
 
 # set operations on search output
@@ -182,6 +188,8 @@ case $multiple in
                 "results": $r
             })'
         } ;;
+    union_flat)
+        combine() { jq -Mrcs 'add | unique'; } ;;
     none)
         combine() { jq -Mrc; } ;;
 esac
@@ -203,7 +211,8 @@ if [[ ! -f ${files[0]} ]]; then
 fi
 
 # check responses for errors (#257)
-for f in "${files[@]}"; do
+# suggest queries accept arbitrary inputs, including the empty string
+[[ $arg_type != "suggest" ]] && for f in "${files[@]}"; do
     f_error=$(jq -r '.error' "$f")
 
     if [[ $f_error != 'null' ]]; then
