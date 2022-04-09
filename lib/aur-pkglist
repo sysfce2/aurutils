@@ -28,9 +28,9 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bvFPSIU'
+opt_short='t:bqvFPSIU'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
-          'time:' 'users' 'verify')
+          'time:' 'users' 'verify' 'quiet')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -54,6 +54,8 @@ while true; do
             mode=regex ;;
         --plain)
             mode=plain ;;
+        -q|--quiet)
+            mode=none ;;
         -t|--time)
             shift; delay=$1 ;;
         -v|--verify)
@@ -100,10 +102,16 @@ fi
 
 # pattern match
 case $mode in
-    plain) cat "$pkglist" ;;
-    fixed) grep -F "$1" "$pkglist" ;;
-    regex) grep -P "$1" "$pkglist" ;;
-     json) jq -r "$1" "$pkglist" ;;
+    plain)
+        cat "$pkglist" ;;
+    fixed)
+        grep -F "$1" "$pkglist" ;;
+    regex)
+        grep -P "$1" "$pkglist" ;;
+    json)
+        jq -r "$1" "$pkglist" ;;
+    none)
+        printf >&2 '%s: list written to %s\n' "$argv0" "$pkglist" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

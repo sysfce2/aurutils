@@ -1,11 +1,11 @@
-.TH AUR.PKGLIST 1 2022-01-13 AURUTILS
+.TH AUR.PKGLIST 1 2022-04-09 AURUTILS
 .SH NAME
 aur\-pkglist \- retrieve AUR metadata archives
 .
 .SH SYNOPSIS
 .SY "aur pkglist"
 .OP \-FP pattern
-.OP \-bUv
+.OP \-bUqv
 .OP \-I pattern
 .OP \-S pattern
 .OP \-t time
@@ -82,6 +82,10 @@ newlines, any of which is to be matched.
 .BI "\-P " pattern "\fR,\fP \-\-perl\-regexp " pattern
 Interpret the given pattern as a Perl-compatible regular expression
 (PCRE).
+.
+.TP
+.BR \-q ", " \-\-quiet
+Update the package list and print its path to standard error.
 .
 .TP
 .BR \-t ", " \-\-time
