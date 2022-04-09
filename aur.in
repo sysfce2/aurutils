@@ -1,4 +1,5 @@
 #!/bin/bash -
+readonly XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 readonly argv0=aur
 readonly aur_version='AURUTILS_VERSION'
 readonly lib_dir=${AUR_EXEC_PATH:-'AURUTILS_LIB_DIR'}
@@ -23,10 +24,26 @@ if [[ -z $1 ]]; then
     exit 1
 fi
 
-if [[ $1 == '--version' ]]; then
-    printf >&2 'aur version %s\n' "$aur_version"
-    exit 0
+# load environment
+if [[ -f $XDG_CONFIG_HOME/aurutils/env ]]; then
+    while IFS=' = ' read -r key value; do
+        case $key in
+            AUR*) printf -v "$key" '%s' "$value"
+                  export "${key?}" ;;
+        esac
+    done < <(pacini "$XDG_CONFIG_HOME/aurutils/env")
+
+    wait "$!"
 fi
+
+case $1 in
+    --version)
+        printf >&2 'aur version %s\n' "$aur_version"
+        exit 0 ;;
+    --env)
+        printenv | grep -E '^AUR' >&2
+        exit 0 ;;
+esac
 
 if [[ "$PATH" != "$lib_dir:"* ]]; then
     readonly PATH=$lib_dir:$PATH
