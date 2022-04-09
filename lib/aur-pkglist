@@ -7,7 +7,7 @@ AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-delay=300 mode=plain pkglist=packages update=0 verify=0
+ttl=300 mode=plain pkglist=packages update=0 verify=0
 
 http_last_modified() {
     awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
@@ -30,8 +30,8 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='t:bqvFPSIU'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
-          'time:' 'users' 'verify' 'quiet')
-opt_hidden=('dump-options')
+          'ttl:' 'users' 'verify' 'quiet')
+opt_hidden=('dump-options' 'time:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -56,8 +56,8 @@ while true; do
             mode=plain ;;
         -q|--quiet)
             mode=none ;;
-        -t|--time)
-            shift; delay=$1 ;;
+        -t|--time|--ttl)
+            shift; ttl=$1 ;;
         -v|--verify)
             verify=1 ;;
         --dump-options)
@@ -85,7 +85,7 @@ elif [[ -s $pkglist ]]; then
     sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
     sec_r=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
 
-    if (( sec_l )) && (( sec_r )) && (( sec_r - sec_l > delay )); then
+    if (( sec_l )) && (( sec_r )) && (( sec_r - sec_l > ttl )); then
         update=1
     fi
 fi
@@ -98,7 +98,7 @@ if (( update )); then
         sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
     fi
     gunzip -f "$pkglist.gz"
-fi
+fi >&2
 
 # pattern match
 case $mode in
@@ -111,7 +111,7 @@ case $mode in
     json)
         jq -r "$1" "$pkglist" ;;
     none)
-        printf >&2 '%s: list written to %s\n' "$argv0" "$pkglist" ;;
+        printf '%s\n' "$PWD/$pkglist" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
