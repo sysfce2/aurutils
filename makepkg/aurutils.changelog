@@ -1,3 +1,9 @@
+## 9.6
+
+* `aur-pkglist`
+  + add `AUR_METADEST`
+  + add `--quiet`
+
 ## 9.5
 
 * `aur-build`
