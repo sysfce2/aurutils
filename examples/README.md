@@ -58,7 +58,6 @@ slow for a large set of packages. The first alternative is sufficient to avoid
 unused upgrades with `aur-sync -u`. Cleanups can then be done periodically:
 
 ```bash
-$ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repoctl rm
-$ repoctl update
+$ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repo-purge -f custom
 ```
 
