@@ -146,15 +146,18 @@ fi | while read -r pkg; do
             if [[ -v results_file ]]; then
                 results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
             fi
-
-            # If the index has no commits, merge them from upstream and skip to
-            # the next package.  XXX: print "merge" to results_file?
-            if [[ ! $prev_head ]]; then
-                git merge 'origin/master'
-                continue
-            fi
         else
             exit 1
+        fi
+
+        # If the index has no commits, merge from upstream and move to the next package.
+        if [[ ! $prev_head ]]; then
+            git merge 'origin/master'
+
+            if [[ -v results_file ]]; then
+                results 'merge' '0' "$fetch_head" "$PWD/$pkg" "$results_file"
+            fi
+            continue
         fi
 
         if [[ $sync == 'auto' ]]; then
@@ -165,13 +168,13 @@ fi | while read -r pkg; do
         # Merge revisions in the master branch with upstream.
         if sync_merge_revisions "$sync" >&2; then
             head=$(git rev-parse --verify HEAD)
+
+            if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
+                results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
+            fi
         else
             error '%s: %s: failed to %s repository' "$argv0" "$pkg" "$sync"
             exit 1
-        fi
-
-        if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
-            results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
         fi
 
     # Otherwise, try to clone anew
