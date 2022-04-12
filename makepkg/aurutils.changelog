@@ -1,8 +1,11 @@
 ## 9.6
 
 * `aur-pkglist`
-  + add `AUR_METADEST`
+  + add `AUR_METADEST` (directory where metadata archives are stored)
   + add `--quiet`
+
+* `aur-fetch`
+  + write `git-merge` to `results_file` if the command is run
 
 ## 9.5
 
