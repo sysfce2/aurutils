@@ -1,3 +1,11 @@
+## 10
+
+* `aur-build`
+  + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
+
+* `aur-chroot`
+  + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
+
 ## 9.6
 
 * `aur-pkglist`
