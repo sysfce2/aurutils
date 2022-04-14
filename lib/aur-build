@@ -237,9 +237,9 @@ fi
 if [[ $UID == 0 ]]; then
     sudo() { command -- "$@"; }
 
-elif [[ $PACMAN_AUTH ]]; then
+elif [[ $AUR_PACMAN_AUTH ]]; then
     # shellcheck disable=SC2086
-    sudo() { command -- $PACMAN_AUTH "$@"; }
+    sudo() { command -- $AUR_PACMAN_AUTH "$@"; }
 fi
 
 # shellcheck disable=SC2174
