@@ -117,6 +117,29 @@ Programs follow a subset of errno(3), or preserve command status where
 applicable.
 .
 .SH ENVIRONMENT
+Environment variables for
+.B aur
+programs are prefixed with
+.BR AUR .
+Where applicable, standard variables such as
+.B XDG_CONFIG_HOME
+are respected. Variables supported by specific programs are listed
+in their respective man pages (see
+.BR "AUR COMMANDS" ).
+.PP
+Variables can be set in the user environment or in
+.IR $XDG_CONFIG_HOME/aurutils/env ,
+using a key/value format separated by newlines. For example:
+.PP
+.RS
+.EX
+AURDEST=/home/custompkgs
+AUR_PACMAN_AUTH=sudo --askpass
+AUR_PAGER=ranger
+AUR_REPO=custom
+.EE
+.RE
+.
 .TP
 .B AUR_DEBUG
 Setting this variable enables debug mode (typically

@@ -1,5 +1,9 @@
 ## 10
 
+* `aur`
+  + support environment files (`$XDG_CONFIG_HOME/aurutils/env`)
+  + add `--env`
+
 * `aur-build`
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
 
