@@ -110,10 +110,7 @@ elif [[ ! -r $pacman_conf ]]; then
 fi
 
 # Custom elevation command
-if [[ $UID == 0 ]]; then
-    sudo() { command -- "$@"; }
-
-elif [[ $AUR_PACMAN_AUTH ]]; then
+if [[ $AUR_PACMAN_AUTH ]]; then
     # shellcheck disable=SC2086
     sudo() { command -- $AUR_PACMAN_AUTH "$@"; }
 fi
