@@ -3,7 +3,7 @@ LABEL Name=aurutils
 
 # packages, time zone
 RUN pacman -Syu --noconfirm --needed base base-devel
-RUN pacman -Syu --noconfirm jq pacutils git wget shellcheck vim vifm devtools bash-completion man-db man-pages
+RUN pacman -Syu --noconfirm jq pacutils git expect shellcheck vim vifm devtools bash-completion man-db man-pages ninja
 RUN ln -fs /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
 # unprivileged user
