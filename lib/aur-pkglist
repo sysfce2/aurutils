@@ -90,16 +90,16 @@ if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
     update=1
 
 elif [[ -s $pkglist ]]; then
-    # Check local timestamp before checking remote (#984)
     sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
-    sec_d=$(date '+%s')
 
-    if (( ! use_system_time )) || (( sec_d - sec_l > ttl )); then
-        sec_r=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
+    if (( use_system_time )); then
+        sec_d=$(date '+%s')
+    else
+        sec_d=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
+    fi
 
-        if (( sec_r )) && (( sec_r - sec_l > ttl )); then
-            update=1
-        fi
+    if (( sec_d - sec_l > ttl )); then
+        update=1
     fi
 fi
 
