@@ -1,0 +1,13 @@
+#!/bin/bash
+# exit early on dependency cycles
+# regression in commit 01af4500d77ac1bce6105089603051b4ad554c92 (#908)
+cycles_target=r-devtools
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+env AUR_SYNC_USE_NINJA=0 AURDEST="$tmp" aur sync --no-build "$cycles_target"
+(( $? == 22 ))
+
+env AUR_SYNC_USE_NINJA=1 AURDEST="$tmp" aur sync --no-build "$cycles_target"
+(( $? == 22 ))
