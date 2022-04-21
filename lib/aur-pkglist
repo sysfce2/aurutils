@@ -75,6 +75,11 @@ if (( $# > 0 )) && [[ $mode == "plain" ]]; then
     mode=regex
 fi
 
+if ! [[ $ttl =~ [0-9]+ ]]; then
+    printf >&2 "error: --ttl requires an integer ('%s' provided)\n" "$ttl"
+    exit 1
+fi
+
 # packages.gz cache
 install -dm700 "$AUR_METADEST"
 cd "$AUR_METADEST" || exit
