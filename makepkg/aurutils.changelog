@@ -10,6 +10,9 @@
 * `aur-chroot`
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
 
+* `aur-pkglist`
+  + add `--systime`
+
 ## 9.6
 
 * `aur-pkglist`
