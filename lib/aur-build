@@ -112,13 +112,13 @@ fi
 
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
-opt_long=('arg-file:' 'chroot' 'database:' 'repo:' 'force' 'root:' 'sign'
-          'verify' 'directory:' 'no-sync' 'pacman-conf:' 'remove' 'pkgver' 'rmdeps'
+opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'verify'
+          'directory:' 'no-sync' 'pacman-conf:' 'remove' 'pkgver' 'rmdeps'
           'no-confirm' 'no-check' 'ignore-arch' 'log' 'new' 'makepkg-conf:' 'bind:'
           'bind-rw:' 'prevent-downgrade' 'temp' 'syncdeps' 'clean' 'namcap'
           'checkpkg' 'user:' 'makepkg-args:' 'buildscript:' 'dry-run')
 opt_hidden=('dump-options' 'gpg-sign' 'ignorearch' 'noconfirm' 'nocheck' 'margs:'
-            'nosync' 'results:' 'results-append:')
+            'nosync' 'repo:' 'results:' 'results-append:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
