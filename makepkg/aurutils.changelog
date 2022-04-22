@@ -13,6 +13,9 @@
 * `aur-pkglist`
   + add `--systime`
 
+* `aur-sync`
+  + exit 22 on dependency cycles (regression introduced in v7)
+
 ## 9.6
 
 * `aur-pkglist`

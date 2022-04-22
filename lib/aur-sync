@@ -355,6 +355,12 @@ cut -f1-3 depends | tr_ver 2 | select_ignores 2 filter - | lib32 - >graph_0
 # (e.g. sort -u) with checks for cycles done at build-time.
 select_pkgbase graph_0 graph_0 | tee graph | tsort | tac >queue
 
+# XXX: preserve tsort exit status
+if (( PIPESTATUS[2] )); then
+    error '%s: dependency cycle detected' "$argv0"
+    exit 22
+fi
+
 if [[ -s queue ]]; then
     cd_safe "$AURDEST"
 else
