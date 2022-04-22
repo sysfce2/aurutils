@@ -1,4 +1,4 @@
-.TH AUR-SEARCH 1 2022-02-11 AURUTILS
+.TH AUR-SEARCH 1 2022-04-20 AURUTILS
 .SH NAME
 aur\-search \- search for AUR packages
 .
@@ -32,6 +32,18 @@ Show the union of results instead of the intersection. Applies to the
 interface.
 .
 .TP
+.BR \-s ", " \-\-search
+Use the
+.I searchby
+interface. This is the default.
+.
+.TP
+.BR \-i ", " \-\-info
+Use the
+.I info
+interface.
+.
+.TP
 .BR \-q ", " \-\-short
 Only display package name, version and description.
 .
@@ -50,7 +62,7 @@ Display output in
 format.
 .
 .TP
-.BI "\-k " key
+.BI "\-k " key "\fR,\fP \-\-key=" key
 Sort results via a key, defaulting to
 .IR Name .
 .IP

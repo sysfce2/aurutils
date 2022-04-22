@@ -35,8 +35,8 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='d:a'
-opt_long=('all' 'sync' 'config:' 'database:' 'repo:' 'sysroot:')
-opt_hidden=('dump-options')
+opt_long=('all' 'sync' 'config:' 'database:' 'sysroot:')
+opt_hidden=('dump-options' 'repo:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
