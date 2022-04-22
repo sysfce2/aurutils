@@ -8,7 +8,7 @@ aur\-pkglist \- retrieve AUR metadata archives
 .OP \-bUqv
 .OP \-I pattern
 .OP \-S pattern
-.OP \-t time
+.OP \-t ttl
 .YS
 .
 .SH DESCRIPTION
@@ -104,6 +104,13 @@ minutes; setting a lower interval with
 .B \-t
 thus has no benefit.
 .RE
+.
+.TP
+.B \-\-systime
+Use the system clock when verifying the list modification date (see
+.BR \-\-time ).
+This option should only be used when the clock is synchronized, for
+example with NTP.
 .
 .TP
 .BR \-v ", " \-\-verify

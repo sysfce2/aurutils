@@ -8,7 +8,7 @@ AUR_METADEST=${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0} # variable name pr
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-ttl=300 mode=plain pkglist=packages update=0 verify=0
+ttl=300 mode=plain pkglist=packages update=0 verify=0 use_system_time=0
 
 http_last_modified() {
     awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
@@ -23,7 +23,7 @@ list_headers() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-bt] [-FP pattern]\n' "$argv0"
+    printf >&2 'usage: %s [-bUqv] [-t ttl] [-FP pattern]\n' "$argv0"
     exit 1
 }
 
@@ -31,7 +31,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='t:bqvFPSIU'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
-          'ttl:' 'users' 'verify' 'quiet')
+          'ttl:' 'users' 'verify' 'quiet' 'systime')
 opt_hidden=('dump-options' 'time:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -61,6 +61,8 @@ while true; do
             shift; ttl=$1 ;;
         -v|--verify)
             verify=1 ;;
+        --systime)
+            use_system_time=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -75,6 +77,11 @@ if (( $# > 0 )) && [[ $mode == "plain" ]]; then
     mode=regex
 fi
 
+if ! [[ $ttl =~ [0-9]+ ]]; then
+    printf >&2 "error: --ttl requires an integer ('%s' provided)\n" "$ttl"
+    exit 1
+fi
+
 # packages.gz cache
 install -dm700 "$AUR_METADEST"
 cd "$AUR_METADEST" || exit
@@ -84,9 +91,14 @@ if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
 
 elif [[ -s $pkglist ]]; then
     sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
-    sec_r=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
 
-    if (( sec_l )) && (( sec_r )) && (( sec_r - sec_l > ttl )); then
+    if (( use_system_time )); then
+        sec_d=$(date '+%s')
+    else
+        sec_d=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
+    fi
+
+    if (( sec_d - sec_l > ttl )); then
         update=1
     fi
 fi
