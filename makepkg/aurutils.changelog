@@ -13,6 +13,9 @@
 * `aur-pkglist`
   + add `--systime`
 
+* `aur-search`
+  + add `--fmt-stdin`
+
 * `aur-sync`
   + exit 22 on dependency cycles (regression introduced in v7)
 
