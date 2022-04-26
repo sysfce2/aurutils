@@ -6,7 +6,7 @@ AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-multiple=section output=hrm search_by=name-desc sort_key=Name type=search fmt_stdin=0
+multiple=section search_by=name-desc sort_key=Name type=search mode=query
 
 # default arguments
 query_args=()
@@ -138,7 +138,7 @@ fi
 opt_short='k:adimnqrsv'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
           'makedepends' 'optdepends' 'checkdepends' 'key:' 'json' 'short'
-          'table' 'fmt-stdin')
+          'table' 'stdin-json' 'stdin-table')
 opt_hidden=('dump-options' 'raw')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -175,10 +175,12 @@ while true; do
             format=long ;;
         --table)
             format=table ;;
-        --fmt-stdin)
-            fmt_stdin=1 ;;
+        --stdin-json)
+            mode=stdin_json ;;
+        --stdin-table)
+            mode=stdin_table ;;
         -r|--raw|--json)
-            output=json ;;
+            mode=query_raw ;;
         -k|--key)
             shift; sort_key=$1 ;;
         --dump-options)
@@ -190,7 +192,7 @@ while true; do
     shift
 done
 
-if ! (( $# + fmt_stdin )); then
+if ! (( $# )) && ! [[ $mode == "stdin_json" || $mode == "stdin_table" ]]; then
     usage
 fi
 
@@ -213,15 +215,16 @@ case $multiple in
       union) query_args+=('--any') ;;
 esac
 
-if (( fmt_stdin )); then
-    tabulate "$sort_key" | info
-
-elif [[ $output == "json" ]]; then
-    # exit early on json output (#187)
-    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@"
-else
-    aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" | tabulate "$sort_key" | info
-    exit "${PIPESTATUS[0]}"
-fi
+case $mode in
+    query)
+        aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" | tabulate "$sort_key" | info
+        exit "${PIPESTATUS[0]}" ;;
+    query_raw)
+        aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" ;;
+    stdin_json)
+        tabulate "$sort_key" | info ;;
+    stdin_table)
+        info ;;
+esac
 
 # vim: set et sw=4 sts=4 ft=sh:

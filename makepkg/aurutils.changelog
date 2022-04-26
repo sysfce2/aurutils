@@ -14,7 +14,7 @@
   + add `--systime`
 
 * `aur-search`
-  + add `--fmt-stdin`
+  + add `--stdin-json`, `--stdin-table`
 
 * `aur-sync`
   + exit 22 on dependency cycles (regression introduced in v7)

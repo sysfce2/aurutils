@@ -59,7 +59,7 @@ Display more package information.
 .BR \-\-table
 Display output in
 .B tsv
-format.
+(tab-separated) format.
 .
 .TP
 .BI "\-k " key "\fR,\fP \-\-key=" key
@@ -74,12 +74,17 @@ Valid choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
 output).
 .
 .TP
-.B \-\-fmt\-stdin
-Take JSON from standard input and format it (see
-.BR \-\-short ,
-.BR \-\-verbose ).
-Input should match the output from
-.BR aur\-query (1).
+.B \-\-stdin\-json
+Format JSON from standard input, assumed to match
+.BR aur\-query (1)
+output.
+.
+.TP
+.B \-\-stdin\-table
+Format tab-separated values from standard input, assumed to match
+from
+.B aur\-search \-\-table
+output.
 .
 .SS Search types
 .TP
