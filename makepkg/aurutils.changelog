@@ -1,7 +1,7 @@
 ## 10
 
 * `aur`
-  + support environment files (`$XDG_CONFIG_HOME/aurutils/env`)
+  + support environment files (`$AUR_ENV`, defaults to `$XDG_CONFIG_HOME/aurutils/env`)
   + add `--env`
 
 * `aur-build`

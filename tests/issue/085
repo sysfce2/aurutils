@@ -50,7 +50,7 @@ cat "$tmp"/PKGBUILD
 i=0
 
 while [ $((i < 10)) -eq 1 ]; do
-    env -C "$tmp" -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG aur build \
+    env -C "$tmp" -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG AUR_ENV=/dev/null aur build \
         --no-sync -fd "$tmp_uid" --pacman-conf "$tmp"/pacman.conf
 
     fakeroot pacsync --config "$tmp"/pacman.conf --dbpath "$tmp"/pacman

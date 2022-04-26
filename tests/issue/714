@@ -37,7 +37,7 @@ repo-add "$tmp/$tmp_uid".db.tar
 
 # issue 714: select repository without -d or --root
 # TODO: use --dbpath to avoid privilege escalation
-env -C "$tmp" -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG \
+env -C "$tmp" -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG AUR_ENV=/dev/null \
     aur build --no-sync --pacman-conf "$tmp"/pacman.conf
 
 fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy

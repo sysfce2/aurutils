@@ -7,7 +7,7 @@ pkg1=aurutils
 pkg2=aurutils-git
 
 # expected: exit 0
-env -C "$tmp" -u XDG_CONFIG_HOME -u AUR_LOCATION aur fetch "$pkg1" "$pkg2"
+env -C "$tmp" -u XDG_CONFIG_HOME -u AUR_LOCATION AUR_ENV=/dev/null aur fetch "$pkg1" "$pkg2"
 
 # expected: cloned repositories (x2)
 ls "$tmp/$pkg1/.git"

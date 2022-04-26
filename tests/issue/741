@@ -35,8 +35,9 @@ env - HOME=$HOME USER=$USER PATH=$PATH aur fetch "$pkg"
 
 cd "$pkg"
 git reset --hard "$rev"
+env_unset=(-u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG -u XDG_CACHE_HOME)
 
-env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG aur build --no-sync \
+env "${env_unset[@]}" AUR_ENV=/dev/null aur build --no-sync \
      -rnd "$tmp_uid" --margs --skippgpcheck --pacman-conf "$tmp"/pacman.conf
 
 fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy
@@ -45,12 +46,12 @@ found_package=$(pacsift --config "$tmp"/pacman.conf --dbpath "$tmp" --repo="$tmp
 
 # update to latest revision
 cd -
-env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u XDG_CACHE_HOME -u AUR_SYNC_NINJA AURDEST="$tmp" \
+env "${env_unset[@]}" -u AUR_SYNC_NINJA AUR_ENV=/dev/null AURDEST="$tmp" \
     aur sync --no-build --upgrades --ignore-file=/dev/null -d "$tmp_uid" --no-view --pacman-conf "$tmp"/pacman.conf
 
 # build new version
 cd "$pkg"
-env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u MAKEPKG aur build --no-sync \
+env "${env_unset[@]}" AUR_ENV=/dev/null aur build --no-sync \
     -rnd "$tmp_uid" --margs --skippgpcheck --pacman-conf "$tmp"/pacman.conf
 
 fakeroot -- pacman --config "$tmp"/pacman.conf --dbpath "$tmp" -Sy

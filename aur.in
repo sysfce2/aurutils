@@ -25,7 +25,7 @@ if [[ -z $1 ]]; then
 fi
 
 # load environment
-if [[ -f $XDG_CONFIG_HOME/aurutils/env ]]; then
+if [[ -f ${AUR_ENV=$XDG_CONFIG_HOME/aurutils/env} ]]; then
     while IFS=' = ' read -r key value; do
         case $key in
             AUR*) printf -v "$key" '%s' "$value"

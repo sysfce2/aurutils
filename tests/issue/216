@@ -25,5 +25,5 @@ EOF
 repo-add "$tmp/$tmp_uid".db.tar
 
 # issue 216: aur-sync with unset variables
-env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u XDG_CACHE_HOME -u AURDEST -u AUR_SYNC_NINJA \
+env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT -u XDG_CACHE_HOME -u AURDEST -u AUR_SYNC_NINJA AUR_ENV=/dev/null \
     aur sync -d "$tmp_uid" aurutils --pacman-conf "$tmp"/pacman.conf -o --no-view --no-ver
