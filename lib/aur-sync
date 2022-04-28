@@ -344,7 +344,7 @@ cut -f2,5 --complement depends | sort -u >pkginfo
 } >filter
 
 # $1 pkgname $2 depends $3 pkgbase, filter by $2 (depends and self)
-cut -f1-3 depends | tr_ver | select_ignores filter - | lib32 - >graph_0
+cut -f1-3 depends | tr_ver - | select_ignores filter - | lib32 - >graph_0
 
 # XXX a flat file is needed for aur-{graph,fetch,view}. `ninja` requires the
 # build files to be present before dependency resolution (with `ninja -n`) can
