@@ -17,7 +17,8 @@
   + add `--stdin-json`, `--stdin-table`
 
 * `aur-sync`
-  + exit 22 on dependency cycles (regression introduced in v7)
+  + exit 22 on dependency cycles (v7 regression)
+  + filter dependency graph by pkgname, not depends (v7 regression)
 
 ## 9.6
 
