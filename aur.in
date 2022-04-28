@@ -41,7 +41,7 @@ case $1 in
         printf >&2 'aur version %s\n' "$aur_version"
         exit 0 ;;
     --env)
-        printenv | grep -E '^AUR' >&2
+        printenv | grep -E '^AUR' | sort >&2
         exit 0 ;;
 esac
 
