@@ -170,7 +170,7 @@ fi | while read -r pkg; do
 
     elif git clone "$AUR_LOCATION/$pkg"; then
         # Verify if the repository is empty (#959)
-        if head=$(git -C "$pkg" rev-parse --verify HEAD); then
+        if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
         fi
 
