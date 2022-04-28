@@ -370,7 +370,7 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    aur fetch -S --results "$tmp"/fetch_results - < "$tmp"/queue >&2
+    aur fetch -S --existing --results "$tmp"/fetch_results - < "$tmp"/queue >&2
 
     # shellcheck disable=SC2034
     while IFS=: read -r mode rev_old rev path; do

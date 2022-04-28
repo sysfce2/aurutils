@@ -135,29 +135,15 @@ fi | while read -r pkg; do
         # Retrieve new upstream revisions. In this step, no commits are merged
         # to the index and working tree.
         if git fetch --verbose >&2; then
-            # If upstream has no commits, skip processing the repository. (#959)
-            if fetch_head=$(git rev-parse --verify --quiet FETCH_HEAD); then
-                prev_head=$(git rev-parse --verify --quiet HEAD)
-            else
-                warning '%s: repository has no upstream commits, skipping' "$pkg"
-                continue
-            fi
+            fetch_head=$(git rev-parse --verify FETCH_HEAD)
+            prev_head=$(git rev-parse --verify HEAD)
 
             if [[ -v results_file ]]; then
                 results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
             fi
         else
+            error '%s: %s: failed to %s repository' "$argv0" "$pkg" fetch
             exit 1
-        fi
-
-        # If the index has no commits, merge from upstream and move to the next package.
-        if [[ ! $prev_head ]]; then
-            git merge 'origin/master'
-
-            if [[ -v results_file ]]; then
-                results 'merge' '0' "$fetch_head" "$PWD/$pkg" "$results_file"
-            fi
-            continue
         fi
 
         if [[ $sync == 'auto' ]]; then
@@ -184,7 +170,7 @@ fi | while read -r pkg; do
 
     elif git clone "$AUR_LOCATION/$pkg"; then
         # Verify if the repository is empty (#959)
-        if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
+        if head=$(git -C "$pkg" rev-parse --verify HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
         fi
 
