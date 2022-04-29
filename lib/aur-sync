@@ -94,14 +94,14 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
-opt_short='d:D:k:AcfLnorRSTuv'
+opt_short='d:D:k:U:AcfLnorRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
           'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
           'no-view' 'no-provides' 'no-build' 'rmdeps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'makepkg-args:' 'format:' 'no-check' 'keep-going:')
+          'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
@@ -180,6 +180,8 @@ while true; do
             build_args+=(--pkgver) ;;
         -S|--sign|--gpg-sign)
             build_args+=(--sign) ;;
+        -U|--user)
+            shift; build_args+=(--user "$1") ;;
         # build options (devtools)
         -D|--directory)
             shift; build_args+=(--directory "$1") ;;
