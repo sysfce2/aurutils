@@ -10,20 +10,22 @@ db_query=local table_format=0 mode=none field=none status=0
 # default arguments
 conf_args=()
 
-db_field() {
-    # do not extract an empty database (#727)
-    (( $(bsdtar -tf "$2" | wc -l) )) || return 0
+db_count() {
+    bsdtar -tf "$1" | wc -l
+}
 
+db_field() {
     bsdtar -Oxf "$2" '*/desc' | awk -v field="^%$1%$" '
     $0 ~ field {
         while (getline && NF != 0) { print; }
     }'
 }
 
-db_table() {
-    # do not extract an empty database (#727)
-    (( $(bsdtar -tf "$2" | wc -l) )) || return 0
-    
+db_field_list() {
+    bsdtar -Oxf "$1" '*/desc' | awk -F% '/^%.+%$/ {print $2}' | sort -u
+}
+
+db_table() {    
     bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
     function print_previous() {
         table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
@@ -85,9 +87,8 @@ source /usr/share/makepkg/util/parseopts.sh
 ## option parsing
 opt_short='c:d:r:F:alqtuS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'path-list'
-          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'status-file:'
-          'field:')
-opt_hidden=('dump-options' 'repo:' 'list-repo' 'list-path' 'status')
+          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'status-file:' 'field:')
+opt_hidden=('dump-options' 'repo:' 'list-field' 'list-repo' 'list-path' 'status')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -113,6 +114,8 @@ while true; do
             mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
+        --list-field)
+            mode=fields ;;
         --status-file)
             shift; status_file=$1 ;;
         -S|--sync)
@@ -236,15 +239,24 @@ esac
 if [[ ! -f $db_path ]]; then
     printf >&2 '%s: %s: not a file\n' "$argv0" "$db_path"
     exit 2
-fi
-
-if (( status )); then
+elif (( status )); then
     printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path"
-
 elif [[ -v status_file ]]; then
     printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path" >"$status_file"
 fi
 
+# empty mode, only print path
+if [[ $mode == "path" ]]; then
+    printf '%s\n' "$db_path"
+    exit 0
+fi
+
+# do not extract an empty database (#727)
+if ! (( $(db_count "$db_path") )); then
+    exit 0
+fi
+
+# database operations
 case $mode in
     files)
         db_field "${field^^}" "$db_path"
@@ -253,10 +265,10 @@ case $mode in
         db_table '0' "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
     packages)
-        db_table "$table_format" "$db_path"
+        db_table "$table_format" "$db_path"       
         ;;
-    path)
-        printf '%s\n' "$db_path"
+    fields)
+        db_field_list "$db_path"
         ;;
     *)
         ;;
