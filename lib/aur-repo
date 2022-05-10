@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0 mode=none field=none status=0
+db_query=local table_format=0 mode=none field=none status=0 quiet=0
 
 # default arguments
 conf_args=()
@@ -25,12 +25,10 @@ db_field_list() {
     bsdtar -Oxf "$1" '*/desc' | awk -F% '/^%.+%$/ {print $2}' | sort -u
 }
 
-db_table() {    
-    bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
-    function print_previous() {
-        table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
-
-        ## Add dependency to self (packages with no dependencies)
+db_table() {
+    bsdtar -Oxf "$3" '*/desc' | awk -v table="$1" -v quiet="$2" '
+    function print_previous(format) {
+        # Add dependency to self (packages with no dependencies)
         printf format, pkgname, pkgname, pkgbase, pkgver
 
         if (table) {
@@ -43,10 +41,17 @@ db_table() {
     BEGIN {
         pkgname = pkgbase = pkgver = "-"
         delete dependencies[0]
+
+        if (table)
+            format = "%s\t%s\t%s\t%s\n"
+        else if (quiet)
+            format = "%1$s\n"
+        else
+            format = "%1$s\t%4$s\n"
     }
 
     /^%FILENAME%$/ && FNR > 1 {
-        print_previous()
+        print_previous(format)
         pkgname = pkgbase = pkgver = "-"
         delete dependencies
     }
@@ -73,7 +78,7 @@ db_table() {
     }
 
     END {
-        print_previous()
+        print_previous(format)
     }'
 }
 
@@ -110,12 +115,12 @@ while true; do
             mode=packages; table_format=1 ;;
         -a|--all)
             mode=upgrades; vercmp_args+=(-a) ;;
-        -q|--quiet)
-            mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
         --list-field)
             mode=fields ;;
+        -q|--quiet)
+            quiet=1; vercmp_args+=(-q) ;;
         --status-file)
             shift; status_file=$1 ;;
         -S|--sync)
@@ -262,10 +267,10 @@ case $mode in
         db_field "${field^^}" "$db_path"
         ;;
     upgrades)
-        db_table '0' "$db_path" | aur vercmp "${vercmp_args[@]}"
+        db_table "0" "0" "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
     packages)
-        db_table "$table_format" "$db_path"       
+        db_table "$table_format" "$quiet" "$db_path"
         ;;
     fields)
         db_field_list "$db_path"
