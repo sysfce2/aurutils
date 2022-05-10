@@ -4,10 +4,8 @@ aur\-pkglist \- retrieve AUR metadata archives
 .
 .SH SYNOPSIS
 .SY "aur pkglist"
-.OP \-FP pattern
-.OP \-bUqv
-.OP \-I pattern
-.OP \-S pattern
+.OP \-JFP pattern
+.OP \-buiqsv
 .OP \-t ttl
 .YS
 .
@@ -51,27 +49,32 @@ instead of
 .BR packages.gz .
 .
 .TP
-.BR \-U ", " \-\-users
+.BR \-u ", " \-\-users
 Retrieve
 .B users.gz
 instead of
 .BR packages.gz .
 .
 .TP
-.BR \-I ", " \-\-info
+.BR \-i ", " \-\-info
 Retrieve AUR metadata from
 .BR search \-type
-requests. A
-.BR jq (1)
-pattern can be specified.
+requests.
 .
 .TP
-.BR \-S ", " \-\-search
+.BR \-s ", " \-\-search
 Retrieve AUR metadata from
 .BR info \-type
-requests. A
-.BR jq (1)
-pattern can be specified.
+requests.
+.
+.SS Pattern options
+.TP
+.B \-\-plain
+Print the package list to standard output. This is the default for
+.BR packages.gz ,
+.BR pkgbase.gz ,
+and
+.BR users.gz .
 .
 .TP
 .BI "\-F " pattern "\fR,\fP \-\-fixed\-strings " pattern
@@ -83,6 +86,16 @@ newlines, any of which is to be matched.
 Interpret the given pattern as a Perl-compatible regular expression
 (PCRE).
 .
+.TP
+.BI "\-J " pattern "\fR,\fP \-\-json " pattern
+Interpret the given pattern as a
+.BR jq (1)
+pattern. This is the default for
+.B \-\-info
+and
+.BR \-\-search .
+.
+.SS List retrieval options
 .TP
 .BR \-q ", " \-\-quiet
 Update the package list and print its path to standard output.
