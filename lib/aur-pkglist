@@ -29,9 +29,9 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bqvFPSIU'
+opt_short='t:bqsivFJP'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
-          'ttl:' 'users' 'verify' 'quiet' 'systime')
+          'ttl:' 'users' 'verify' 'quiet' 'systime' 'json')
 opt_hidden=('dump-options' 'time:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -43,16 +43,18 @@ while true; do
     case "$1" in
         -b|--pkgbase)
             pkglist=pkgbase ;;
-        -S|--search)
-            mode=json; pkglist=packages-meta-v1.json ;;
-        -I|--info)
-            mode=json; pkglist=packages-meta-ext-v1.json ;;
-        -U|--users)
+        -s|--search)
+            pkglist=packages-meta-v1.json ;;
+        -i|--info)
+            pkglist=packages-meta-ext-v1.json ;;
+        --users)
             pkglist=users ;;
         -F|--fixed-strings)
             mode=fixed ;;
         -P|--perl-regexp)
             mode=regex ;;
+        -J|--json)
+            mode=json ;;
         --plain)
             mode=plain ;;
         -q|--quiet)
@@ -71,6 +73,11 @@ while true; do
     esac
     shift
 done
+
+# default to json for info/search lists
+if [[ $pkglist == *.json ]]; then
+    mode=json
+fi
 
 # default to regex if >0 arguments specified
 if (( $# > 0 )) && [[ $mode == "plain" ]]; then

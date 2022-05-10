@@ -11,7 +11,15 @@
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
 
 * `aur-pkglist`
+  + output is now independent of command-line argument order
+  + rename `-I` and `-S` short options to `-i` and `-s`, remove `-u`
   + add `--systime`
+
+* `aur-query`
+  + `-q` now applies to `--list` and `--upgrades`
+
+* `aur-repo`
+  + add `--list-field`
 
 * `aur-search`
   + add `--stdin-json`, `--stdin-table`

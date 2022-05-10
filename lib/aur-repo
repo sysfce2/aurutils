@@ -5,30 +5,30 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0 mode=none field=none status=0
+db_query=local table_format=0 mode=none field=none status=0 quiet=0
 
 # default arguments
 conf_args=()
 
-db_field() {
-    # do not extract an empty database (#727)
-    (( $(bsdtar -tf "$2" | wc -l) )) || return 0
+db_count() {
+    bsdtar -tf "$1" | wc -l
+}
 
+db_field() {
     bsdtar -Oxf "$2" '*/desc' | awk -v field="^%$1%$" '
     $0 ~ field {
         while (getline && NF != 0) { print; }
     }'
 }
 
-db_table() {
-    # do not extract an empty database (#727)
-    (( $(bsdtar -tf "$2" | wc -l) )) || return 0
-    
-    bsdtar -Oxf "$2" '*/desc' | awk -v table="$1" '
-    function print_previous() {
-        table ? format = "%s\t%s\t%s\t%s\n" : format = "%1$s\t%4$s\n"
+db_field_list() {
+    bsdtar -Oxf "$1" '*/desc' | awk -F% '/^%.+%$/ {print $2}' | sort -u
+}
 
-        ## Add dependency to self (packages with no dependencies)
+db_table() {
+    bsdtar -Oxf "$3" '*/desc' | awk -v table="$1" -v quiet="$2" '
+    function print_previous(format) {
+        # Add dependency to self (packages with no dependencies)
         printf format, pkgname, pkgname, pkgbase, pkgver
 
         if (table) {
@@ -41,10 +41,17 @@ db_table() {
     BEGIN {
         pkgname = pkgbase = pkgver = "-"
         delete dependencies[0]
+
+        if (table)
+            format = "%s\t%s\t%s\t%s\n"
+        else if (quiet)
+            format = "%1$s\n"
+        else
+            format = "%1$s\t%4$s\n"
     }
 
     /^%FILENAME%$/ && FNR > 1 {
-        print_previous()
+        print_previous(format)
         pkgname = pkgbase = pkgver = "-"
         delete dependencies
     }
@@ -71,7 +78,7 @@ db_table() {
     }
 
     END {
-        print_previous()
+        print_previous(format)
     }'
 }
 
@@ -84,10 +91,9 @@ source /usr/share/makepkg/util/parseopts.sh
 
 ## option parsing
 opt_short='c:d:r:F:alqtuS'
-opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'path-list'
-          'repo-list' 'sync' 'upgrades' 'table' 'quiet' 'status-file:'
-          'field:')
-opt_hidden=('dump-options' 'repo:' 'list-repo' 'list-path' 'status')
+opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
+          'list-field' 'sync' 'upgrades' 'table' 'quiet' 'status-file:' 'field:')
+opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'status')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -109,10 +115,12 @@ while true; do
             mode=packages; table_format=1 ;;
         -a|--all)
             mode=upgrades; vercmp_args+=(-a) ;;
-        -q|--quiet)
-            mode=upgrades; vercmp_args+=(-q) ;;
         -u|--upgrades)
             mode=upgrades ;;
+        --list-field)
+            mode=fields ;;
+        -q|--quiet)
+            quiet=1; vercmp_args+=(-q) ;;
         --status-file)
             shift; status_file=$1 ;;
         -S|--sync)
@@ -236,27 +244,36 @@ esac
 if [[ ! -f $db_path ]]; then
     printf >&2 '%s: %s: not a file\n' "$argv0" "$db_path"
     exit 2
-fi
-
-if (( status )); then
+elif (( status )); then
     printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path"
-
 elif [[ -v status_file ]]; then
     printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path" >"$status_file"
 fi
 
+# empty mode, only print path
+if [[ $mode == "path" ]]; then
+    printf '%s\n' "$db_path"
+    exit 0
+fi
+
+# do not extract an empty database (#727)
+if ! (( $(db_count "$db_path") )); then
+    exit 0
+fi
+
+# database operations
 case $mode in
     files)
         db_field "${field^^}" "$db_path"
         ;;
     upgrades)
-        db_table '0' "$db_path" | aur vercmp "${vercmp_args[@]}"
+        db_table "0" "0" "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
     packages)
-        db_table "$table_format" "$db_path"
+        db_table "$table_format" "$quiet" "$db_path"
         ;;
-    path)
-        printf '%s\n' "$db_path"
+    fields)
+        db_field_list "$db_path"
         ;;
     *)
         ;;

@@ -5,9 +5,31 @@ cycles_target=r-devtools
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
+tmp_uid=custom-$RANDOM
 
-env AUR_SYNC_USE_NINJA=0 AURDEST="$tmp" aur sync --no-build "$cycles_target"
+cat >"$tmp"/pacman.conf <<EOF
+[options]
+HoldPkg = pacman-git glibc
+Architecture = auto
+CheckSpace
+[core]
+Include = /etc/pacman.d/mirrorlist
+[extra]
+Include = /etc/pacman.d/mirrorlist
+[community]
+Include = /etc/pacman.d/mirrorlist
+[$tmp_uid]
+SigLevel = Optional TrustAll
+Server = file://$tmp
+EOF
+
+# create local repository
+repo-add "$tmp/$tmp_uid".db.tar
+
+env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT AUR_ENV=/dev/null AUR_SYNC_USE_NINJA=0 AURDEST="$tmp" \
+    aur sync --no-view --no-build --pacman-conf "$tmp"/pacman.conf "$cycles_target"
 (( $? == 22 ))
 
-env AUR_SYNC_USE_NINJA=1 AURDEST="$tmp" aur sync --no-build "$cycles_target"
+env -u AUR_REPO -u AUR_DBROOT -u AUR_DBEXT AUR_ENV=/dev/null AUR_SYNC_USE_NINJA=1 AURDEST="$tmp" \
+    aur sync --no-view --no-build --pacman-conf "$tmp"/pacman.conf "$cycles_target"
 (( $? == 22 ))

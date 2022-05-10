@@ -4,11 +4,9 @@ aur\-pkglist \- retrieve AUR metadata archives
 .
 .SH SYNOPSIS
 .SY "aur pkglist"
-.OP \-FP pattern
-.OP \-bUqv
-.OP \-I pattern
-.OP \-S pattern
+.OP \-biqsvJFP
 .OP \-t ttl
+.OP pattern
 .YS
 .
 .SH DESCRIPTION
@@ -51,44 +49,65 @@ instead of
 .BR packages.gz .
 .
 .TP
-.BR \-U ", " \-\-users
+.B \-\-users
 Retrieve
 .B users.gz
 instead of
 .BR packages.gz .
 .
 .TP
-.BR \-I ", " \-\-info
+.BR \-i ", " \-\-info
 Retrieve AUR metadata from
 .BR search \-type
-requests. A
-.BR jq (1)
-pattern can be specified.
+requests.
 .
 .TP
-.BR \-S ", " \-\-search
+.BR \-s ", " \-\-search
 Retrieve AUR metadata from
 .BR info \-type
-requests. A
-.BR jq (1)
-pattern can be specified.
+requests.
+.
+.SS Pattern options
+.TP
+.B \-\-plain
+Print the package list to standard output. This is the default for
+.BR packages.gz ,
+.BR pkgbase.gz ,
+and
+.BR users.gz .
 .
 .TP
-.BI "\-F " pattern "\fR,\fP \-\-fixed\-strings " pattern
-Interpret the given pattern as a list of fixed strings, separated by
+.BR \-F ", " \-\-fixed\-strings
+Interpret the given
+.I pattern
+as a list of fixed strings, separated by
 newlines, any of which is to be matched.
 .
 .TP
-.BI "\-P " pattern "\fR,\fP \-\-perl\-regexp " pattern
-Interpret the given pattern as a Perl-compatible regular expression
+.BR \-P ", " \-\-perl\-regexp
+Interpret the given
+.I pattern
+as a Perl-compatible regular expression
 (PCRE).
 .
+.TP
+.BR \- ", " \-\-json
+Interpret the given
+.I pattern
+as a
+.BR jq (1)
+expression. This is the default for
+.B \-\-info
+and
+.BR \-\-search .
+.
+.SS List retrieval options
 .TP
 .BR \-q ", " \-\-quiet
 Update the package list and print its path to standard output.
 .
 .TP
-.BR \-t ", " \-\-time ", " \-\-ttl
+.BR \-t ", " \-\-ttl
 Set the delay in seconds before a new list is retrieved.
 Defaults to
 .B 300

@@ -25,9 +25,9 @@ usage() {
 source /usr/share/makepkg/util/parseopts.sh
 source /usr/share/makepkg/util/pkgbuild.sh
 
-opt_short=j:E:
+opt_short=j:
 opt_long=('no-prepare' 'jobs:' 'buildscript:')
-opt_hidden=('dump-options' 'noprepare' 'env:')
+opt_hidden=('dump-options' 'noprepare')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -39,8 +39,6 @@ while true; do
     case "$1" in
         --noprepare|--no-prepare)
             makepkg_args+=(--noprepare) ;;
-        -E|--env)
-            shift ;; # deprecated flag, has no effect
         -j|--jobs)
             shift; num_procs=$1 ;;
         --buildscript)
