@@ -29,7 +29,7 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bqsiuvFJP'
+opt_short='t:bqsivFJP'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
           'ttl:' 'users' 'verify' 'quiet' 'systime' 'json')
 opt_hidden=('dump-options' 'time:')
@@ -47,7 +47,7 @@ while true; do
             pkglist=packages-meta-v1.json ;;
         -i|--info)
             pkglist=packages-meta-ext-v1.json ;;
-        -u|--users)
+        --users)
             pkglist=users ;;
         -F|--fixed-strings)
             mode=fixed ;;
