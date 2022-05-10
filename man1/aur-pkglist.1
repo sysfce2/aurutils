@@ -4,9 +4,9 @@ aur\-pkglist \- retrieve AUR metadata archives
 .
 .SH SYNOPSIS
 .SY "aur pkglist"
-.OP \-JFP pattern
-.OP \-biqsv
+.OP \-biqsvJFP
 .OP \-t ttl
+.OP pattern
 .YS
 .
 .SH DESCRIPTION
@@ -77,20 +77,26 @@ and
 .BR users.gz .
 .
 .TP
-.BI "\-F " pattern "\fR,\fP \-\-fixed\-strings " pattern
-Interpret the given pattern as a list of fixed strings, separated by
+.BR \-F ", " \-\-fixed\-strings
+Interpret the given
+.I pattern
+as a list of fixed strings, separated by
 newlines, any of which is to be matched.
 .
 .TP
-.BI "\-P " pattern "\fR,\fP \-\-perl\-regexp " pattern
-Interpret the given pattern as a Perl-compatible regular expression
+.BR \-P ", " \-\-perl\-regexp
+Interpret the given
+.I pattern
+as a Perl-compatible regular expression
 (PCRE).
 .
 .TP
-.BI "\-J " pattern "\fR,\fP \-\-json " pattern
-Interpret the given pattern as a
+.BR \- ", " \-\-json
+Interpret the given
+.I pattern
+as a
 .BR jq (1)
-pattern. This is the default for
+expression. This is the default for
 .B \-\-info
 and
 .BR \-\-search .
@@ -101,7 +107,7 @@ and
 Update the package list and print its path to standard output.
 .
 .TP
-.BR \-t ", " \-\-time ", " \-\-ttl
+.BR \-t ", " \-\-ttl
 Set the delay in seconds before a new list is retrieved.
 Defaults to
 .B 300
