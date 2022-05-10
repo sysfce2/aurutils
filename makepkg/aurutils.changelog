@@ -15,10 +15,8 @@
   + rename `-I` and `-S` short options to `-i` and `-s`, remove `-u`
   + add `--systime`
 
-* `aur-query`
-  + `-q` now applies to `--list` and `--upgrades`
-
 * `aur-repo`
+  + `-q` now applies to `--list` and `--upgrades`
   + add `--list-field`
 
 * `aur-search`
