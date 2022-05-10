@@ -8,7 +8,7 @@ AUR_METADEST=${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0} # variable name pr
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-ttl=300 mode=plain pkglist=packages update=0 verify=0 use_system_time=0
+ttl=300 pkglist=packages update=0 verify=0 use_system_time=0
 
 http_last_modified() {
     awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
@@ -39,6 +39,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
+unset mode
 while true; do
     case "$1" in
         -b|--pkgbase)
@@ -75,12 +76,11 @@ while true; do
 done
 
 # default to json for info/search lists
-if [[ $pkglist == *.json ]]; then
+if [[ ! -v mode ]] && [[ $pkglist == *.json ]]; then
     mode=json
-fi
 
 # default to regex if >0 arguments specified
-if (( $# > 0 )) && [[ $mode == "plain" ]]; then
+elif [[ ! -v mode ]] && (( $# > 0 )); then
     mode=regex
 fi
 
