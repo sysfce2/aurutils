@@ -90,7 +90,6 @@ and make the necessary adjustments. Due to devtools limitations, any
 desired repositories should be configured explicitly in this copy.
 .
 .RE
-.
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
 The name of the
@@ -178,6 +177,23 @@ sync operations regardless of this setting. See also
 .BR \-\-no\-sync .
 .RE
 .
+.TP
+.BI \-\-makepkg\-conf= FILE
+The
+.BR makepkg.conf (5)
+file used for
+.BR makepkg (8)
+operations. For chroot builds, the file is also used inside the container.
+.RB ( makepkg " " \-\-config ", " aur\-chroot " " \-\-makepkg\-conf ).
+.
+.TP
+.BI \-\-pacman\-conf= FILE
+The file used for syncing and retrieving local repositories. For chroot
+builds, the file is also used inside the container
+.RB ( aur\-chroot " " \-\-pacman\-conf ).
+.BR makepkg (8)
+calls are unaffected by this option.
+.
 .SS makechrootpkg options
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
@@ -227,23 +243,6 @@ Run
 .BR checkpkg (1)
 on the built package.
 .
-.TP
-.BI \-\-makepkg\-conf= FILE
-The
-.BR makepkg.conf (5)
-file used for
-.BR makepkg (8)
-operations. For chroot builds, the file is also used inside the container.
-.RB ( aur\-chroot " " \-\-makepkg\-conf ).
-.
-.TP
-.BI \-\-pacman\-conf= FILE
-The file used for syncing and retrieving local repositories. For chroot
-builds, the file is also used inside the container
-.RB ( aur\-chroot " " \-\-pacman\-conf ).
-.BR makepkg (8)
-calls are unaffected by this option.
-.
 .SS makepkg options
 Additional options may be passed to
 .B makepkg
@@ -277,26 +276,26 @@ Install missing dependencies using
 Ignore a missing or incomplete
 .I arch
 field in the build script.
-.RB ( makepkg " " \-A )
+.RB ( makepkg " " \-\-ignorearch )
 .
 .TP
 .BR \-L ", " \-\-log
 Enable logging to a text file in the build directory.
-.RB ( makepkg " " \-L )
+.RB ( makepkg " " \-\-log )
 .
 .TP
-.BR \-\-clean
+.BR -C ", " \-\-clean
 Clean up leftover work files and directories after a successful build.
-.RB ( makepkg " " \-c )
+.RB ( makepkg " " \-\-clean )
 .
 .TP
-.BI \-\-makepkg\-conf= FILE
-The
-.BR makepkg.conf (5)
-file used for
-.BR makepkg (8)
-invocations.
-.RB ( makepkg " " \-\-config )
+.BI \-\-buildscript= NAME
+Read the package script
+.I NAME
+instead of the
+.I PKGBUILD
+default.
+.RB ( makepkg " " \-p )
 .
 .SS repo\-add options
 .TP
