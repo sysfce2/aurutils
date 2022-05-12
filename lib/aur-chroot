@@ -28,9 +28,10 @@ source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:x:BU'
-opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update' 'create'
-          'suffix:' 'bind:' 'bind-rw:' 'path' 'makepkg-args:' 'makechrootpkg-args:')
-opt_hidden=('dump-options' 'packagelist' 'margs:' 'cargs:')
+opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
+          'create' 'suffix:' 'bind:' 'bind-rw:' 'path' 'makepkg-args:'
+          'makechrootpkg-args:' 'margs:' 'cargs:')
+opt_hidden=('dump-options' 'packagelist')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
