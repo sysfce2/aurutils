@@ -75,13 +75,17 @@ while true; do
     shift
 done
 
-# default to json for info/search lists
-if [[ ! -v mode ]] && [[ $pkglist == *.json ]]; then
-    mode=json
+if [[ ! -v mode ]]; then
+    # default to json for info/search lists
+    if [[ $pkglist == *.json ]]; then
+        mode=json
 
-# default to regex if >0 arguments specified
-elif [[ ! -v mode ]] && (( $# > 0 )); then
-    mode=regex
+    # default to regex if >0 arguments specified
+    elif (( $# > 0 )); then
+        mode=regex
+    else
+        mode=plain
+    fi    
 fi
 
 if ! [[ $ttl =~ [0-9]+ ]]; then
