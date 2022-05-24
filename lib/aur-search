@@ -13,13 +13,8 @@ query_args=()
 
 hyperlink() {
     local uri=$1 mesg=$2
+    local OSC8="\e]8" ST="\e\\"
 
-    if [[ ! -v ALL_OFF ]]; then
-        printf "%s" "$mesg"
-    fi
-
-    OSC8="\e]8"
-    ST="\e\\"
     printf "$OSC8;;%s$ST%s$OSC8;;$ST" "$uri" "$mesg"
 }
 
