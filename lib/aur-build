@@ -437,7 +437,8 @@ while IFS= read -ru "$fd" path; do
             fi
             PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
-            PKGDEST="$var_tmp" run_msg 3 as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            PKGDEST="$var_tmp" LOGDEST=${LOGDEST:-$PWD} \
+                run_msg 3 as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd_safe "$var_tmp"
