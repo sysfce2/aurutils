@@ -464,11 +464,12 @@ while IFS= read -ru "$fd" path; do
 
         # Skipped package build with signature
         elif [[ -f $db_root/$p_base.sig ]] && [[ ! -f $p_base ]]; then
-            printf >&2 '%q\n' "$db_root/$p_base.sig"
+            printf >&2 '%s: existing signature file %q\n' "$argv0" "$db_root/$p_base.sig"
 
         # No candidate signature, generate one
         elif (( sign_pkg )); then
             as_user gpg "${gpg_args[@]}" --output "$p_base".sig "$p"
+            printf >&2 '%s: created signature file %q\n' "$argv0" "$p_base".sig
             siglist+=("$p_base".sig)
         fi
     done
