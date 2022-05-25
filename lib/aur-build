@@ -254,6 +254,7 @@ if [[ -v build_user ]]; then
 else
     var_tmp_uid=$UID
 fi
+
 # shellcheck disable=SC2174
 as_user mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$var_tmp_uid"
 var_tmp=$(as_user mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_uid/$argv0.XXXXXXXX")
@@ -314,10 +315,11 @@ if [[ $db_name ]] && [[ $db_root ]]; then
 else
     { IFS=: read -r _ db_name
       IFS=: read -r _ db_root
-      IFS=: read -r _ db_path
+      IFS=: read -r _ db_path # canonicalized
     } < <(as_user aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
     wait "$!"
 fi
+db_root=$(realpath -- "$db_root")
 
 # Resolve symbolic link to database.
 if ! [[ -f $db_path ]]; then
