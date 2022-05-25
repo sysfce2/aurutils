@@ -445,11 +445,6 @@ while IFS= read -ru "$fd" path; do
 
         cd_safe "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
-
-        if [[ -v results_file ]]; then
-            printf "build:file://${db_path%/*}/%s\n" "${pkglist[@]}" | \
-                as_user tee -a "$results_file" >/dev/null
-        fi
     fi
 
     # Sign any packages without signatures, even if the packages are existing.
@@ -469,6 +464,10 @@ while IFS= read -ru "$fd" path; do
 
     if (( create_package )); then
         mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
+
+        if [[ -v results_file ]]; then
+            printf "build:file://$db_root/%s\n" "${pkglist[@]}" | as_user tee -a "$results_file" >/dev/null
+        fi
     fi
 
     # Update database
