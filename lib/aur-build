@@ -445,25 +445,39 @@ while IFS= read -ru "$fd" path; do
 
         cd_safe "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
+    else
+        cd_safe "$var_tmp"
+        # pkglist has paths to $db_root/<pkg>
     fi
 
     # Sign any packages without signatures, even if the packages are existing.
-    # In the latter case, $pkglist will contain absolute paths.
+    # This is done in the temporary directory (write-access for build user).
     siglist=()
 
     for p in "${pkglist[@]}"; do
-        if [[ -f $p.sig ]]; then
-            printf >&2 '%q\n' "$p.sig"
-            siglist+=("$p".sig)
+        # Package basename (equals $p if create_package=1)
+        p_base=${p##*/}
 
+        # Signature from makepkg --sign
+        if [[ -f $p_base.sig ]]; then
+            siglist+=("$p_base".sig)
+
+        # Skipped package build with signature
+        elif [[ -f $db_root/$p_base.sig ]] && [[ ! -f $p_base ]]; then
+            printf >&2 '%q\n' "$db_root/$p_base.sig"
+
+        # No candidate signature, generate one
         elif (( sign_pkg )); then
-            as_user gpg "${gpg_args[@]}" --output "$p".sig "$p"
-            siglist+=("$p".sig)
+            as_user gpg "${gpg_args[@]}" --output "$p_base".sig "$p"
+            siglist+=("$p_base".sig)
         fi
     done
 
+    if (( ${#siglist[@]} )); then
+        mv -f "${siglist[@]}" "$db_root"
+    fi
     if (( create_package )); then
-        mv -f "${pkglist[@]}" "${siglist[@]}" "$db_root"
+        mv -f "${pkglist[@]}" "$db_root"
 
         if [[ -v results_file ]]; then
             printf "build:file://$db_root/%s\n" "${pkglist[@]}" | as_user tee -a "$results_file" >/dev/null
