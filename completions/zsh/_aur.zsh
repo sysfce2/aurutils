@@ -65,13 +65,21 @@ __aur_list_repos()
     fi
 }
 
+# Helper to call out to makepkg/makechrootpkg completion
+__aur_complete_for()
+{
+    service=$1 $_comps[$1]
+}
+
+
 declare -ga _aur_build_sync_args
 # Flags that are used by both aur-build and aur-sync
 # Prevents having to duplicate them in both places
 _aur_build_sync_args=(
     + options
     # Build args
-    '*'{--margs=,--makepkg-args=}'[additional (comma separated) makepkg arguments]:arguments: '
+    '*'{--margs=,--makepkg-args=}'[additional (comma separated) makepkg arguments]:arguments:_sequence __aur_complete_for
+ makepkg'
     '--makepkg-conf=[the makepkg.conf to use for makepkg, for chroot also inside the container]:configuration file: _files'
     '(-A --ignore-arch)'{-A,--ignore-arch}'[ignore a missing or incomplete arch field in the build script]'
     '(-c --chroot)'{-c,--chroot}'[build packages inside a systemd-nspawn container with archbuild]'
@@ -136,8 +144,10 @@ _aur_chroot() {
         '*--bind-rw=[bind a directory read-write to the container]:directory: _files -/'
         '*--bind=[bind a directory read-only to the container]:directory: _files -/'
         '(-D --directory)'{-D,--directory=}'[the base directory for containers]:directory: _files -/'
-        '*'{--makechrootpkg-args=,--cargs=}'[additional (comma separated) arguments to be passed to makechrootpkg for --build]:arguments: '
-        '*'{--makepkg-args=,--margs=}'[additional (comma separated) makepkg arguments for makechrootpkg]:arguments: '
+        '*'{--makechrootpkg-args=,--cargs=}'[additional (comma separated) arguments to be passed to makechrootpkg for --build]:arguments:_sequence __aur_complete_for
+     makechrootpkg'
+        '*'{--makepkg-args=,--margs=}'[additional (comma separated) makepkg arguments for makechrootpkg]:arguments:_sequence __aur_complete_for
+     makepkg'
         '(-M --makepkg-conf)'{-M,--makepkg-conf=}'[the makepkg.conf to use inside the container]:configuration file: _files'
         '--path[print the path to the container template]'
         
