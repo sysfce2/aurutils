@@ -1,23 +1,37 @@
-test_package=(
-    'python-pyalsaaudio' # split packages - independent
-    'fasm-linux-git' 'hnwatch' # split packages - pkgbase does not match pkgname
-    'ros-build-tools' # empty make/depends
-    'curr' # dependency order (#414)
-    'c++utilities' # special characters
-)
+# split packages - independent
+python-pyalsaaudio 
 
-test_package_big=(
-    'clion' # split package - multiple packages from same package base
-    'libc++' 'libc++-abi' # split package - depends on package from same package base
-    'openrct2-git' # make/depends_arch
-    'mingw-w64-gcc-base' # cyclic dependencies - required removal of makedeps
-)
+# split packages - pkgbase does not match pkgname
+fasm-linux-git 
+hnwatch
 
-test_package_huge=(
-    'plasma-git-meta' # 100+ depends
-    'ros-lunar-desktop' # 250+ depends 
-)
+# empty make/depends
+ros-build-tools
 
-test_package_checkcycle=(
-    'ruby-activemodel' # contain dependency cycles if checkdepends is considered
-)
+# dependency order (#414)
+curr
+
+# special characters
+c++utilities
+
+# split package - multiple packages from same package base
+clion
+
+# split package - depends on package from same package base
+libc++
+libc++-abi
+
+# make/depends_arch
+openrct2-git
+
+# cyclic dependencies - required removal of makedeps
+mingw-w64-gcc-base
+
+# 100+ depends
+plasma-git-meta
+
+# 250+ depends 
+ros-lunar-desktop
+
+# contain dependency cycles if checkdepends is considered
+ruby-activemodel
