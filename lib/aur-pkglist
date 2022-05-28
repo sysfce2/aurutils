@@ -23,7 +23,7 @@ list_headers() {
 }
 
 usage() {
-    printf >&2 'usage: %s [-bUqv] [-t ttl] [-FP pattern]\n' "$argv0"
+    printf >&2 'usage: %s [-bqsiv] [-t ttl] [-FP pattern]\n' "$argv0"
     exit 1
 }
 
