@@ -31,8 +31,8 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='t:bqsivFPJISu'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
-          'ttl:' 'users' 'verify' 'quiet' 'systime' 'json')
-opt_hidden=('dump-options' 'time:')
+          'ttl:' 'users' 'verify' 'quiet' 'systime')
+opt_hidden=('dump-options' 'time:' 'json')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -93,7 +93,7 @@ if [[ ! -v mode ]]; then
         mode=regex
     else
         mode=plain
-    fi    
+    fi
 fi
 
 if ! [[ $ttl =~ [0-9]+ ]]; then
@@ -129,7 +129,16 @@ if (( update )); then
         list_fetch "$AUR_LOCATION/$pkglist.gz.sha256"
         sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
     fi
-    gunzip -f "$pkglist.gz"
+
+    if [[ $pkglist == *.json ]]; then
+        # Remove newlines separating partial objects, i.e.
+        # [\n{...},\n{...},...\n]  =>  [{...}{...},...]\n
+        { gunzip -c "$pkglist.gz" | tr -d '\n'
+          printf '\n'
+        } > "$pkglist"
+    else
+        gunzip -f "$pkglist.gz"
+    fi
 fi >&2
 
 # pattern match
