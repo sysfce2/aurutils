@@ -14,7 +14,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=() filter_args=()
 
 # default options
-build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
+build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1 fetch_sync=auto
 
 # default options (disabled)
 rotate=0 update=0 repo_targets=0
@@ -96,12 +96,12 @@ fi
 
 opt_short='d:D:k:U:AcfLnorRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
-          'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
-          'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
-          'no-view' 'no-provides' 'no-build' 'rmdeps' 'sign' 'temp' 'upgrades'
-          'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
-          'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
-          'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:')
+          'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force' 'ignore-arch'
+          'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv' 'no-view'
+          'no-provides' 'no-build' 'rmdeps' 'sign' 'temp' 'upgrades' 'pkgver'
+          'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:' 'remove'
+          'provides-from:' 'new' 'prevent-downgrade' 'verify' 'makepkg-args:'
+          'format:' 'no-check' 'keep-going:' 'user:' 'rebase' 'reset')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
@@ -163,6 +163,11 @@ while true; do
             shift; repo_args+=(-d "$1") ;;
         --root)
             shift; repo_args+=(-r "$1") ;;
+        # fetch options
+        --rebase)
+            fetch_sync=rebase ;;
+        --reset)
+            fetch_sync=reset ;;
         # build options
         -c|--chroot)
             build_args+=(--chroot) ;;
@@ -372,7 +377,7 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    aur fetch -S --results "$tmp"/fetch_results - < "$tmp"/queue >&2
+    aur fetch --sync="$fetch_sync" --results "$tmp"/fetch_results - < "$tmp"/queue >&2
 
     # shellcheck disable=SC2034
     while IFS=: read -r mode rev_old rev path; do
