@@ -44,14 +44,8 @@ cmp_checkupdates() {
             *) op=$(my_vercmp "$v_in" "$v_cmp") ;;
         esac
 
-        if (( ! all )) && (( op > -1 )); then
-            continue
-        fi
-
-        if (( quiet )); then
-            printf '%s\n' "$pkg"
-            continue
-        fi
+        (( ! all )) && (( op > -1 )) && continue;
+        (( quiet )) && { printf '%s\n' "$pkg"; continue; }
 
         case $op in
            -1) printf '%s %s -> %s\n' "$pkg" "$v_in" "$v_cmp" ;;
