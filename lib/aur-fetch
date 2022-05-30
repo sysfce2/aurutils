@@ -128,7 +128,11 @@ else
 fi | while read -r pkg; do
     unset -f git
 
-    if [[ -d $pkg/.git ]]; then
+    if (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
+        warning '%s: package is not in AUR, skipping' "$argv0" "$pkg"
+        continue
+
+    elif [[ -d $pkg/.git ]]; then
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
@@ -174,11 +178,7 @@ fi | while read -r pkg; do
         fi
 
     # Otherwise, try to clone anew
-    elif (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
-        warning '%s: package is not in AUR, skipping' "$argv0" "$pkg"
-        continue
-
-    elif git clone "$AUR_LOCATION/$pkg"; then
+    elif git clone "$AUR_LOCATION/$pkg" >&2; then
         # Verify if the repository is empty (#959)
         if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
