@@ -32,7 +32,7 @@
 
 * `aur-repo`
   + `-q` now applies to `--list` and `--upgrades`
-  + add `--list-field`
+  + add `--list-attr`
 
 * `aur-srcver`
   + remove `-E`, `--env` (deprecated in v8)

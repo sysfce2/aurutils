@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=local table_format=0 mode=none field=none status=0 quiet=0
+db_query=local table_format=0 mode=none attr=none status=0 quiet=0
 
 # default arguments
 conf_args=()
@@ -14,14 +14,14 @@ db_count() {
     bsdtar -tf "$1" | wc -l
 }
 
-db_field() {
-    bsdtar -Oxf "$2" '*/desc' | awk -v field="^%$1%$" '
-    $0 ~ field {
+db_attr() {
+    bsdtar -Oxf "$2" '*/desc' | awk -v attr="^%$1%$" '
+    $0 ~ attr {
         while (getline && NF != 0) { print; }
     }'
 }
 
-db_field_list() {
+db_attr_list() {
     bsdtar -Oxf "$1" '*/desc' | awk -F% '/^%.+%$/ {print $2}' | sort -u
 }
 
@@ -92,7 +92,7 @@ source /usr/share/makepkg/util/parseopts.sh
 ## option parsing
 opt_short='c:d:r:F:alqtuS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
-          'list-field' 'sync' 'upgrades' 'table' 'quiet' 'status-file:' 'field:')
+          'list-attr' 'sync' 'upgrades' 'table' 'quiet' 'status-file:' 'attr:')
 opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'status')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -100,7 +100,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset mode list db_name db_root status_file pacman_conf vercmp_args field
+unset mode list db_name db_root status_file pacman_conf vercmp_args attr
 while true; do
     case $1 in
         -d|--database|--repo)
@@ -117,16 +117,16 @@ while true; do
             mode=upgrades; vercmp_args+=(-a) ;;
         -u|--upgrades)
             mode=upgrades ;;
-        --list-field)
-            mode=fields ;;
+        --list-attr)
+            mode=list_attr ;;
         -q|--quiet)
             quiet=1; vercmp_args+=(-q) ;;
         --status-file)
             shift; status_file=$1 ;;
         -S|--sync)
             db_query=sync ;;
-        -F|--field)
-            shift; mode=files; field=$1 ;;
+        -F|--attr)
+            shift; mode=attr; attr=$1 ;;
         ## deprecated options
         --path)
             mode=path ;;
@@ -263,17 +263,17 @@ fi
 
 # database operations
 case $mode in
-    files)
-        db_field "${field^^}" "$db_path"
-        ;;
     upgrades)
         db_table "0" "0" "$db_path" | aur vercmp "${vercmp_args[@]}"
         ;;
     packages)
         db_table "$table_format" "$quiet" "$db_path"
         ;;
-    fields)
-        db_field_list "$db_path"
+    attr)
+        db_attr "${attr^^}" "$db_path"
+        ;;
+    list_attr)
+        db_attr_list "$db_path"
         ;;
     *)
         ;;
