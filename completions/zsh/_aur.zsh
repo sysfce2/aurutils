@@ -30,7 +30,10 @@ __aur_list_pkgs() {
 # Helper to list local packages.
 __aur_list_local_packages() {
     declare -a pkgs
-    pkgs=( $(aur repo -lq 2>/dev/null) )
+    local repo
+    for repo in ${(f)"$(aur repo --list-repo)"}; do
+        pkgs+=( $(aur repo -lq -d $repo 2>/dev/null) )
+    done
     if [[ ${#pkgs} -eq 0 ]]; then
         _message "package (no local packages found)"
     else
