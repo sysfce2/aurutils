@@ -1,4 +1,4 @@
-.TH AUR-FETCH 1 2021-12-06 AURUTILS
+.TH AUR-FETCH 1 2022-06-09 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
@@ -42,7 +42,7 @@ and
 .BR \-\-no\-commit
 options to
 .BR git\-pull .
-.B aur\-fetch \-\-no\-commit
+.B \-\-no\-commit
 additionally forwards
 .B git pull \-\-no\-ff
 so that no commits are merged even when a fast-forward is possible.
@@ -59,7 +59,7 @@ option should thus be used with care. See
 for details.
 .
 .TP
-.BR \-\-reset ", " \-\-sync=reset
+.BR \-\-sync=reset ", " \-\-reset
 Retrieve new revisions with
 .B git\-fetch origin
 and
@@ -67,9 +67,9 @@ and
 to the
 .B master@{upstream}
 commit, discarding any local changes.
-.IP
 .
-.BR \-\-no\-pull ", " \-\-sync=fetch
+.TP
+.BR \-\-sync=fetch ", " \-\-no\-pull
 Run
 .B git\-fetch
 instead of
