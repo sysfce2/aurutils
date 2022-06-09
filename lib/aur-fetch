@@ -42,8 +42,8 @@ fi
 
 opt_short='rS'
 opt_long=('no-pull' 'rebase' 'reset' 'no-rebase' 'results:' 'existing' 'recurse'
-          'no-commit' 'autostash' 'ff-only')
-opt_hidden=('dump-options' 'sync:' 'auto')
+          'no-commit' 'autostash' 'ff-only' 'sync:')
+opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -77,7 +77,7 @@ while true; do
             # --no-ff so that a fast-forward merge also adds no new commits
             pull_args+=(--no-commit --no-ff) ;;
         ## deprecated options
-        -S|--auto)
+        -S)
             ;; # no-op, default git-pull behavior
         --recurse|-r)
             recurse=1 ;;
