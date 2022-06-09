@@ -123,12 +123,12 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
-        # HEAD is assumed to point to a valid commit
+        # Store HEAD pre-merge for --results output
         prev_head=$(git rev-parse --verify --quiet HEAD)
 
         if [[ ! $prev_head ]]; then
-            warning '%s: %s: HEAD not found, skipping repository' "$argv0" "$pkg"
-            continue
+            warning '%s: %s: HEAD not found, defaulting to empty tree' "$argv0" "$pkg"
+            prev_head=$(git hash-object -t tree /dev/null)
         fi
 
         # Merge in new history
