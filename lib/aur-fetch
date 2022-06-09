@@ -1,50 +1,26 @@
 #!/bin/bash
 # aur-fetch - retrieve build files from the AUR
 [[ -v AUR_DEBUG ]] && set -o xtrace
+shopt -s extglob
 argv0=fetch
 AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
+# author information for merge commits
+export GIT_AUTHOR_NAME=aurutils
+export GIT_AUTHOR_EMAIL=aurutils@localhost
+export GIT_COMMITTER_NAME=aurutils
+export GIT_COMMITTER_EMAIL=aurutils@localhost
+
 # default options
-existing=0 recurse=0 sync=no
+existing=0 recurse=0 sync=pull
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
 
     if [[ -w $dest ]]; then
         printf >> "$dest" '%s:%s:%s:file://%s\n' "$mode" "$prev" "$current" "$path"
-    fi
-}
-
-sync_get_type() {
-    local sync=no key=$1 pkg=$2 head=$3
-
-    if [[ $(git config --get --type bool "$key") == 'true' ]]; then
-        plain >&2 'aurutils.rebase is set for %s' "$pkg"
-
-        if ! git merge-base --is-ancestor 'HEAD@{upstream}' HEAD; then
-            sync=rebase
-        fi
-
-    elif [[ $head != $(git rev-parse --verify 'HEAD@{upstream}') ]]; then
-        sync=reset
-    fi
-
-    printf '%s' "$sync"
-}
-
-sync_merge_revisions() {
-    local sync=$1
-
-    if [[ $sync == 'rebase' ]]; then
-        if [[ $(git config --get --type bool rebase.autoStash) != 'true' ]]; then
-            git reset --hard 'HEAD'
-        fi
-        git rebase --verbose
-
-    elif [[ $sync == 'reset' ]]; then
-        git reset --hard 'HEAD@{upstream}'
     fi
 }
 
@@ -65,7 +41,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='rS'
-opt_long=('sync:' 'results:' 'existing' 'recurse')
+opt_long=('no-pull' 'rebase' 'reset' 'no-rebase' 'results:' 'existing' 'recurse'
+          'no-commit' 'autostash' 'ff-only' 'sync:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -73,25 +50,35 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset results_file
+unset pull_args results_file
 while true; do
     case "$1" in
+        ## fetch options
         --existing)
             existing=1 ;;
-        -S)
-            sync=auto ;;
-        --sync)
-            shift
-            case $1 in
-                auto|reset|rebase|no)
-                    sync=$1 ;;
-                *)
-                    error '%s: invalid --sync option: %s' "$argv0" "$1"
-                    usage ;;
-            esac ;;
+        --no-pull)
+            sync=fetch ;;
+        --reset)
+            sync=reset ;;
         --results)
-            shift; results_file=$1 ;;
+            shift; results_file=$(realpath -- "$1") ;;
+        --sync)
+            shift; sync=$1 ;;
+        ## git-pull options
+        --autostash)
+            pull_args+=(--autostash) ;;
+        --ff-only)
+            pull_args+=(--ff-only) ;;
+        --rebase)
+            pull_args+=(--rebase) ;; # git-rebase
+        --no-rebase)
+            pull_args+=(--no-rebase) ;; # git-merge
+        --no-commit)
+            # --no-ff so that a fast-forward merge also adds no new commits
+            pull_args+=(--no-commit --no-ff) ;;
         ## deprecated options
+        -S)
+            ;; # no-op, default git-pull behavior
         --recurse|-r)
             recurse=1 ;;
         --dump-options)
@@ -103,82 +90,71 @@ while true; do
     shift
 done
 
-# Single hyphen to denote input taken from stdin
-stdin=0
-if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
-    stdin=1
-fi
+case $sync in
+    !(pull|fetch|reset))
+        error '%s: invalid --sync option: %s' "$argv0" "$sync"
+        usage ;;
+esac
 
 if (( ! $# )); then
-    error '%s: no pkgname given' "$argv0"
+    error '%s: no arguments given' "$argv0"
     exit 1
 fi
 
 if [[ -v results_file ]]; then
-    results_file=$(realpath -- "$results_file")
     : >"$results_file" || exit 1 # truncate file
 fi
 
 if (( recurse )); then
     aur depends --pkgbase "$@" # stdin handled by aur-depends
-elif (( stdin )); then
+
+elif (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
     tee # noop
 else
     printf '%s\n' "$@"
 fi | while read -r pkg; do
     unset -f git
 
-    if [[ -d $pkg/.git ]]; then
-        # Avoid issues with filesystem boundaries (#274)
-        git() { command git -C "$pkg" "$@"; }
-
-        # Retrieve new upstream revisions. In this step, no commits are merged
-        # to the index and working tree.
-        if git fetch --verbose >&2; then
-            # If upstream has no commits, skip processing the repository. (#959)
-            if fetch_head=$(git rev-parse --verify --quiet FETCH_HEAD); then
-                prev_head=$(git rev-parse --verify --quiet HEAD)
-            else
-                warning '%s: repository has no upstream commits, skipping' "$pkg"
-                continue
-            fi
-
-            if [[ -v results_file ]]; then
-                results 'fetch' "${prev_head:-0}" "$fetch_head" "$PWD/$pkg" "$results_file"
-            fi
-        else
-            error '%s: %s: failed to %s repository' "$argv0" "$pkg" fetch
-            exit 1
-        fi
-
-        if [[ ! $prev_head ]]; then
-            git checkout 'master'
-            continue
-        fi
-
-        if [[ $sync == 'auto' ]]; then
-            # sync = rebase, reset or no
-            sync=$(sync_get_type aurutils.rebase "$pkg" "$prev_head")
-        fi
-
-        # Merge revisions in the master branch with upstream.
-        if sync_merge_revisions "$sync" >&2; then
-            head=$(git rev-parse --verify HEAD)
-
-            if [[ -v results_file ]] && [[ $sync != 'no' ]]; then
-                results "$sync" "$prev_head" "$head" "$PWD/$pkg" "$results_file"
-            fi
-        else
-            error '%s: %s: failed to %s repository' "$argv0" "$pkg" "$sync"
-            exit 1
-        fi
-
-    # Otherwise, try to clone anew
-    elif (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
+    if (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
         warning '%s: package is not in AUR, skipping' "$argv0" "$pkg"
         continue
 
-    elif git clone "$AUR_LOCATION/$pkg"; then
+    elif [[ -d $pkg/.git ]]; then
+        # Avoid issues with filesystem boundaries (#274)
+        git() { command git -C "$pkg" "$@"; }
+
+        # HEAD is assumed to point to a valid commit
+        prev_head=$(git rev-parse --verify --quiet HEAD)
+
+        if [[ ! $prev_head ]]; then
+            warning '%s: %s: HEAD not found, skipping repository' "$argv0" "$pkg"
+            continue
+        fi
+
+        # Merge in new history
+        ref=0
+        case $sync in
+            pull)
+                ref='HEAD'
+                git pull origin master "${pull_args[@]}" -v ;;
+            fetch)
+                ref='FETCH_HEAD'
+                git fetch origin -v ;;
+            reset)
+                ref='master@{upstream}'
+                git fetch origin -v && git reset --hard "$ref" ;;
+        esac >&2 || {
+            error '%s: %s: --sync=%s failed' "$argv0" "$pkg" "$sync"
+            exit 1
+        }
+
+        if [[ -v results_file ]]; then
+            commit=$(git rev-parse --verify "$ref")
+            results "$sync" "$prev_head" "$commit" "$PWD/$pkg" "$results_file"
+        fi
+
+    # Otherwise, try to clone anew
+    elif git clone "$AUR_LOCATION/$pkg" >&2; then
         # Verify if the repository is empty (#959)
         if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
