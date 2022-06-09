@@ -14,7 +14,7 @@ export GIT_COMMITTER_NAME=aurutils
 export GIT_COMMITTER_EMAIL=aurutils@localhost
 
 # default options
-existing=0 recurse=0 sync=ffonly
+existing=0 recurse=0 sync=pull
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -41,8 +41,8 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='rS'
-opt_long=('no-pull' 'rebase' 'reset' 'merge' 'results:' 'existing' 'recurse'
-          'no-commit' 'autostash')
+opt_long=('no-pull' 'rebase' 'reset' 'no-rebase' 'results:' 'existing' 'recurse'
+          'no-commit' 'autostash' 'ff-only')
 opt_hidden=('dump-options' 'sync:' 'auto')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -60,22 +60,24 @@ while true; do
             sync=fetch ;;
         --reset)
             sync=reset ;;
-        --rebase)
-            sync=rebase ;;
-        --merge)
-            sync=merge ;;
-        -S|--auto)
-            sync=auto ;; # no default git-pull arguments, checks pull.rebase git config
         --results)
             shift; results_file=$(realpath -- "$1") ;;
         --sync)
             shift; sync=$1 ;;
         ## git-pull options
-        --no-commit)
-            pull_args+=(--no-commit) ;;
         --autostash)
             pull_args+=(--autostash) ;;
-        ## other options
+        --ff-only)
+            pull_args+=(--ff-only) ;;
+        --rebase)
+            pull_args+=(--rebase) ;; # git-rebase
+        --no-rebase)
+            pull_args+=(--no-rebase) ;; # git-merge
+        --no-commit)
+            pull_args+=(--no-commit) ;;
+        ## deprecated options
+        -S|--auto)
+            ;; # no-op, default git-pull behavior
         --recurse|-r)
             recurse=1 ;;
         --dump-options)
@@ -87,18 +89,10 @@ while true; do
     shift
 done
 
-# set git-pull operation
-
 case $sync in
-    merge)
-        pull_args+=(--no-rebase) ;;
-    rebase)
-        pull_args+=(--rebase) ;;
-    ffonly)
-        pull_args+=(--ff-only) ;;
-    !(auto|fetch|reset))
+    !(pull|fetch|reset))
         error '%s: invalid --sync option: %s' "$argv0" "$sync"
-        usage
+        usage ;;
 esac
 
 if (( ! $# )); then
@@ -137,7 +131,7 @@ fi | while read -r pkg; do
         # Merge in new history
         ref=0
         case $sync in
-            auto|rebase|merge|ffonly)
+            pull)
                 ref='HEAD'
                 git pull origin master "${pull_args[@]}" -v ;;
             fetch)
