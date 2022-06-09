@@ -40,7 +40,7 @@ __aur_list_local_packages() {
 
 __aur_list_fields() {
     declare -a fields
-    fields=( $(aur repo --list-field 2>/dev/null ) )
+    fields=( $(aur repo --list-field -Sd core 2>/dev/null ) )
     if [[ ${#fields} -eq 0 ]]; then
         _message "field (no fields found)"
     else
