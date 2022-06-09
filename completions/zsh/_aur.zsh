@@ -186,13 +186,25 @@ _aur_depends() {
 
 _aur_fetch() {
     local -a args
+    local -A sync_types
+
+    sync_types[reset]="discard local changes"
+    sync_types[pull]="run git-pull to merge in  upstream changes"
+    sync_types[fetch]="run git-fetch instead of git-pull"
+
+    local -a sync_type_strings=()
+    local k
+    for k in ${(k)sync_types}; do
+        sync_type_strings+=( "${k}\\:${sync_types[${k}]// /\\ }" )
+    done
 
     args=(
         '--existing[if a git repository is not found for a given package, ignore it instead of running git-clone]'
         '(-r --recurse)'{-r,--recurse}'[download packages and their dependencies with aur-depends]'
         '--results=[write colon-delimited output to FILE]:file: _files'
-        '(-S)--sync=[configure handling of local changes]:mode:((reset\:discard\ local\ changes rebase\:perform\ rebase auto\:use\ git\ configuration\ per\ repository))'
-        '(--sync)-S[alias for --sync=auto]'
+        "(--reset --no-pull)--sync=[configure handling of local changes]:mode:(($sync_type_strings))"
+        "(--sync)--reset[${sync_types[reset]}, alias for --sync=reset]"
+        "(--sync)--no-pull[${sync_types[fetch]}, alias for --sync=fetch]"
     )
     # This is to handle the fact that -r/--recurse changes the meaning of positional arguments
     if [[ $words[(ie)-r] -le ${#words} || $words[(ie)--recurse] -le ${#words} ]]; then
