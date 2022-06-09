@@ -1,6 +1,7 @@
 #!/bin/bash
 # aur-fetch - retrieve build files from the AUR
 [[ -v AUR_DEBUG ]] && set -o xtrace
+shopt -s extglob
 argv0=fetch
 AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
@@ -64,7 +65,7 @@ while true; do
         --merge)
             sync=merge ;;
         -S|--auto)
-            sync=pull ;; # no default git-pull arguments, checks pull.rebase git config
+            sync=auto ;; # no default git-pull arguments, checks pull.rebase git config
         --results)
             shift; results_file=$(realpath -- "$1") ;;
         --sync)
@@ -86,13 +87,18 @@ while true; do
     shift
 done
 
-case $mode in
+# set git-pull operation
+
+case $sync in
     merge)
         pull_args+=(--no-rebase) ;;
     rebase)
         pull_args+=(--rebase) ;;
     ffonly)
         pull_args+=(--ff-only) ;;
+    !(auto|fetch|reset))
+        error '%s: invalid --sync option: %s' "$argv0" "$sync"
+        usage
 esac
 
 if (( ! $# )); then
@@ -131,7 +137,7 @@ fi | while read -r pkg; do
         # Merge in new history
         ref=0
         case $sync in
-            pull|rebase|merge|ffonly)
+            auto|rebase|merge|ffonly)
                 ref='HEAD'
                 git pull origin master "${pull_args[@]}" -v ;;
             fetch)
