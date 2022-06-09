@@ -74,7 +74,8 @@ while true; do
         --no-rebase)
             pull_args+=(--no-rebase) ;; # git-merge
         --no-commit)
-            pull_args+=(--no-commit) ;;
+            # --no-ff so that a fast-forward merge also adds no new commits
+            pull_args+=(--no-commit --no-ff) ;;
         ## deprecated options
         -S|--auto)
             ;; # no-op, default git-pull behavior
