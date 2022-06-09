@@ -121,10 +121,12 @@ fi | while read -r pkg; do
 
     elif [[ -d $pkg/.git ]]; then
         # Avoid issues with filesystem boundaries (#274)
-        git() { command git -C "$pkg" "$@" >&2; }
+        git() { command git -C "$pkg" "$@"; }
 
         # HEAD is assumed to point to a valid commit
-        if ! prev_head=$(git rev-parse --verify --quiet HEAD); then
+        prev_head=$(git rev-parse --verify --quiet HEAD)
+
+        if [[ ! $prev_head ]]; then
             warning '%s: %s: HEAD not found, skipping repository' "$argv0" "$pkg"
             continue
         fi
@@ -141,7 +143,7 @@ fi | while read -r pkg; do
             reset)
                 ref='master@{upstream}'
                 git fetch origin -v && git reset --hard "$ref" ;;
-        esac || {
+        esac >&2 || {
             error '%s: %s: --sync=%s failed' "$argv0" "$pkg" "$sync"
             exit 1
         }
