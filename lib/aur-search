@@ -137,8 +137,8 @@ fi
 
 opt_short='k:adimnqrsv'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
-          'makedepends' 'optdepends' 'checkdepends' 'key:' 'json' 'short'
-          'table' 'stdin-json' 'stdin-table')
+          'makedepends' 'optdepends' 'checkdepends' 'key:' 'short' 'table'
+          'json' 'json-stdin')
 opt_hidden=('dump-options' 'raw')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -175,12 +175,10 @@ while true; do
             format=long ;;
         --table)
             format=table ;;
-        --stdin-json)
-            mode=stdin_json ;;
-        --stdin-table)
-            mode=stdin_table ;;
         -r|--raw|--json)
-            mode=query_raw ;;
+            mode=json ;;
+        --json-stdin)
+            mode=json_stdin ;;
         -k|--key)
             shift; sort_key=$1 ;;
         --dump-options)
@@ -219,12 +217,12 @@ case $mode in
     query)
         aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" | tabulate "$sort_key" | info
         exit "${PIPESTATUS[0]}" ;;
-    query_raw)
-        aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@" ;;
-    stdin_json)
-        tabulate "$sort_key" | info ;;
-    stdin_table)
-        info ;;
+    json)
+        aur query -t "$type" -b "$search_by" -e "${query_args[@]}" "$@"
+        ;;
+    json_stdin)
+        tabulate "$sort_key" | info
+        ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:

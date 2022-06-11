@@ -322,13 +322,12 @@ _aur_search() {
         '--table[display output in tsv format]'
 
         + '(stdin-format)'
-        '--stdin-json[Format JSON from standard input, assumed to match aur-query]'
-        '--stdin-table[Format tab-separated values from standard input, assumed to match aur-search --table]'
+        '--json-stdin[Format JSON from standard input, assumed to match aur-query]'
 
         + options
         '(-a --any)'{-a,--any}'[show the union of results instead of the intersection]'
         '(-r --json)'{-r,--json}'[display results as json]'
-        '(-k --key)'{-k,--key=}'[sort results via key]:key:(Name Version NumVotes Description PackageBase URL Popularity OutOfDatate Maintainer FirstSubmitted LastModified)'
+        '(-k --key)'{-k,--key=}'[sort results via key]:key:(Name Version NumVotes Description PackageBase URL Popularity OutOfDate Maintainer FirstSubmitted LastModified)'
 
         + '(search_by)'
         {-d,--desc}'[search by package name and description]'

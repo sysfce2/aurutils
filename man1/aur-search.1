@@ -52,6 +52,12 @@ Only display package name, version and description.
 Display results as JSON.
 .
 .TP
+.B \-\-json\-stdin
+Format JSON from standard input, assumed to match
+.BR aur\-query (1)
+output.
+.
+.TP
 .BR \-v ", " \-\-verbose
 Display more package information.
 .
@@ -72,19 +78,6 @@ Valid choices are \fIName\fR, \fIVersion\fR, \fINumVotes\fR,
 \fIPopularity\fR, \fIOutOfDate\fR, \fIMaintainer\fR,
 \fIFirstSubmitted\fR, \fILastModified\fR (for \fB\-v\fR verbose
 output).
-.
-.TP
-.B \-\-stdin\-json
-Format JSON from standard input, assumed to match
-.BR aur\-query (1)
-output.
-.
-.TP
-.B \-\-stdin\-table
-Format tab-separated values from standard input, assumed to match
-from
-.B aur\-search \-\-table
-output.
 .
 .SS Search types
 .TP
