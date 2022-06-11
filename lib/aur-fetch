@@ -62,23 +62,23 @@ while true; do
             sync=reset ;;
         --results)
             shift; results_file=$(realpath -- "$1") ;;
-        --sync)
-            shift; sync=$1 ;;
         ## git-pull options
         --autostash)
             pull_args+=(--autostash) ;;
         --ff-only)
             pull_args+=(--ff-only) ;;
         --rebase)
-            pull_args+=(--rebase) ;; # git-rebase
+            pull_args+=(--rebase) ;;
         --no-rebase)
-            pull_args+=(--no-rebase) ;; # git-merge
+            pull_args+=(--no-rebase) ;;
         --no-commit)
             # --no-ff so that a fast-forward merge also adds no new commits
             pull_args+=(--no-commit --no-ff) ;;
-        ## deprecated options
+        ## Compatibility options
         -S)
-            ;; # no-op, default git-pull behavior
+            sync=pull ;;
+        --sync)
+            shift; sync=$1 ;;
         --recurse|-r)
             recurse=1 ;;
         --dump-options)
@@ -90,7 +90,12 @@ while true; do
     shift
 done
 
+# Compatiblity options with aur-fetch <=9.6
 case $sync in
+    rebase)
+        sync=pull; pull_args+=(--rebase) ;;
+    auto)
+        sync=pull ;;
     !(pull|fetch|reset))
         error '%s: invalid --sync option: %s' "$argv0" "$sync"
         usage ;;
