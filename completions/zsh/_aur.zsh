@@ -18,7 +18,7 @@ __aur_list_pkgs() {
     fi
 
     declare -a pkgs
-    pkgs=( $(aur pkglist --ttl 86400 $@ 2>/dev/null) )
+    pkgs=( $(aur pkglist --ttl 86400 --systime $@ 2>/dev/null) )
     # Since we are dealing with very long lists of possible completions (~80k as of writing this),
     # speed is of the utmost importance for a good user experience. A low level compadd call gave
     # the best performance in testing.
