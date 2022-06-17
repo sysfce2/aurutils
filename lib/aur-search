@@ -13,9 +13,9 @@ query_args=()
 
 hyperlink() {
     local uri=$1 mesg=$2
-    local OSC8="\e]8" ST="\e\\"
 
-    printf "$OSC8;;%s$ST%s$OSC8;;$ST" "$uri" "$mesg"
+    # Interpret escapes with %b for "dumb" terminals (#1001)
+    printf "\e]8;;%s\e\\%b\e]8;;\e\\" "$uri" "$mesg"
 }
 
 tabulate() {
