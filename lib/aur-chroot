@@ -17,14 +17,10 @@ makechrootpkg_makepkg_args=()
 update=0 build=0 packagelist=0 create=0 print_path=0
 
 usage() {
-    cat <<EOF
-Usage:
-  $argv0 [-BU] [--create] [-CDM path] [package...]
-EOF
+    printf 'usage: %s [-BU] [--create] [-CDM path] [package...]\n' "$argv0"
     exit 1
 }
 
-source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:x:BU'

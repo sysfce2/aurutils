@@ -9,6 +9,15 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
 num_procs=$(( "$(nproc)" + 2 ))
 
+# shellcheck disable=SC2154
+get_full_version() {
+    if (( epoch > 0 )); then
+        printf "%s\n" "$epoch:$pkgver-$pkgrel"
+    else
+        printf "%s\n" "$pkgver-$pkgrel"
+    fi
+}
+
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -23,7 +32,6 @@ usage() {
 }
 
 source /usr/share/makepkg/util/parseopts.sh
-source /usr/share/makepkg/util/pkgbuild.sh
 
 opt_short=j:
 opt_long=('no-prepare' 'jobs:' 'buildscript:')

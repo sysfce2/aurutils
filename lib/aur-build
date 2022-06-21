@@ -104,7 +104,6 @@ usage() {
 
 source /usr/share/makepkg/util/message.sh
 source /usr/share/makepkg/util/parseopts.sh
-source /usr/share/makepkg/util/util.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
@@ -385,8 +384,8 @@ fi
 
 while IFS= read -ru "$fd" path; do
     # Use two cd calls to handle absolute paths in --arg-file
-    cd_safe "$startdir"
-    cd_safe "$path"
+    cd "$startdir"
+    cd "$path"
 
     # Allow running repo-add(8) on existing packages (#839)
     create_package=1
@@ -443,10 +442,10 @@ while IFS= read -ru "$fd" path; do
                 run_msg 3 as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
-        cd_safe "$var_tmp"
+        cd "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
     else
-        cd_safe "$var_tmp"
+        cd "$var_tmp"
         # pkglist has paths to $db_root/<pkg>
     fi
 
@@ -486,7 +485,7 @@ while IFS= read -ru "$fd" path; do
     fi
 
     # Update database
-    cd_safe "$db_root"
+    cd "$db_root"
     as_user LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( chroot )) || (( no_sync )); then
