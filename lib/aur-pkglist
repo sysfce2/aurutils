@@ -29,7 +29,7 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bqsivFJP'
+opt_short='t:bqsivFPJISu'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
           'ttl:' 'users' 'verify' 'quiet' 'systime' 'json')
 opt_hidden=('dump-options' 'time:')
@@ -54,8 +54,6 @@ while true; do
             mode=fixed ;;
         -P|--perl-regexp)
             mode=regex ;;
-        -J|--json)
-            mode=json ;;
         --plain)
             mode=plain ;;
         -q|--quiet)
@@ -66,6 +64,16 @@ while true; do
             verify=1 ;;
         --systime)
             use_system_time=1 ;;
+        # Deprecated options
+        -u) printf >&2 'deprecation notice: %s -u is an alias for --quiet\n' "$argv0"
+            mode=none ;;
+        -I) printf >&2 'deprecation notice: %s -I is an alias for --info\n' "$argv0"
+            pkglist=packages-meta-ext-v1.json ;;
+        -S) printf >&2 'deprecation notice: %s -S is an alias for --search\n' "$argv0"
+            pkglist=packages-meta-v1.json ;;
+        -J|--json)
+            printf >&2 'deprecation notice: %s --json is an alias for --info | jq\n' "$argv0"
+            mode=json ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'

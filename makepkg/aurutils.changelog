@@ -12,19 +12,22 @@
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
 
 * `aur-fetch`
-  + `--sync=auto` now runs `git-pull` and is the default operation
+  + `git-pull` is now the default operation (`--sync=pull`)
     - local changes are no longer discarded automatically
     - add `--no-pull` for running `git-fetch`
-    - add `--ff-only`, `--autostash`, `--no-commit`, `--rebase`, `--no-rebase`
+    - add `--ff-only`, `--autostash`, `--no-commit`, `--rebase`, `--no-rebase` as `git-pull` options
     - set per-repository rebase with `pull.rebase` git configuration
-  + add `--rebase` and `--reset` as shorthand for `--sync=rebase` and `--sync=reset`
+    - deprecate `--sync=rebase`, `--sync=auto`
+  + add `--reset` (shorthand for `--sync=reset`)
   + support multiple branches, with commits merged from `origin/master`
   + `--results` output now uses `pull`, `reset` and `fetch` keywords
 
 * `aur-pkglist`
   + output is now independent of command-line argument order
-  + rename `-I` and `-S` short options to `-i` and `-s`
-  + remove `-u`
+  + deprecate `-I`, `-S`, `-u`
+    - renamed to: `-i` (`--info`), `-s` (`--search`) `-q` (`--quiet`)
+  + deprecate `-J`, `--json`
+    - equivalent to `aur pkglist --info | jq $1`
   + add `--systime`
 
 * `aur-repo`
@@ -32,13 +35,13 @@
   + add `--list-field`
 
 * `aur-search`
-  + add `--json--stdin`
+  + add `--json-stdin`
 
 * `aur-srcver`
   + remove `-E`, `--env` (deprecated in v8)
 
 * `aur-sync`
-  + add `--rebase`, `--reset`, use `aur-fetch --sync=merge` default
+  + add `--rebase`, `--reset` options for `aur-fetch`
   + exit 22 on dependency cycles (v7 regression)
   + filter dependency graph by pkgname, not depends (v7 regression)
 

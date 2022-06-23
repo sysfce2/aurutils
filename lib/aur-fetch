@@ -76,6 +76,7 @@ while true; do
             pull_args+=(--no-commit --no-ff) ;;
         ## Compatibility options
         -S)
+            printf >&2 'deprecation notice: %s -S is an alias for --sync=pull\n' "$argv0"
             sync=pull ;;
         --sync)
             shift; sync=$1 ;;
@@ -90,11 +91,13 @@ while true; do
     shift
 done
 
-# Compatiblity options with aur-fetch <=9.6
+# Compatiblity options for aur-fetch <=9.6
 case $sync in
     rebase)
+        printf >&2 'deprecation notice: %s --sync=rebase is an alias for --rebase\n' "$argv0"
         sync=pull; pull_args+=(--rebase) ;;
     auto)
+        printf >&2 'deprecation notice: %s --sync=auto is an alias for --sync=pull\n' "$argv0"
         sync=pull ;;
     !(pull|fetch|reset))
         error '%s: invalid --sync option: %s' "$argv0" "$sync"
