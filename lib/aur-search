@@ -132,9 +132,8 @@ fi
 
 opt_short='k:adimnqrsv'
 opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
-          'makedepends' 'optdepends' 'checkdepends' 'key:' 'short' 'table'
-          'json' 'json-stdin')
-opt_hidden=('dump-options' 'raw')
+          'makedepends' 'optdepends' 'checkdepends' 'key:' 'short' 'table' 'json')
+opt_hidden=('dump-options' 'raw' 'json-stdin')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage

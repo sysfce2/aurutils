@@ -34,9 +34,6 @@
   + `-q` now applies to `--list` and `--upgrades`
   + add `--list-field`
 
-* `aur-search`
-  + add `--json-stdin`
-
 * `aur-srcver`
   + remove `-E`, `--env` (deprecated in v8)
 

@@ -321,9 +321,6 @@ _aur_search() {
         {-v,--verbose}'[display more package information]'
         '--table[display output in tsv format]'
 
-        + '(stdin-format)'
-        '--json-stdin[Format JSON from standard input, assumed to match aur-query]'
-
         + options
         '(-a --any)'{-a,--any}'[show the union of results instead of the intersection]'
         '(-r --json)'{-r,--json}'[display results as json]'
