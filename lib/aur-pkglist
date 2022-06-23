@@ -73,7 +73,7 @@ while true; do
             pkglist=packages-meta-v1.json ;;
         -J|--json)
             printf >&2 'deprecation notice: %s --json is an alias for --info | jq\n' "$argv0"
-            mode=json ;;
+            mode=plain ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -83,17 +83,11 @@ while true; do
     shift
 done
 
-if [[ ! -v mode ]]; then
-    # default to json for info/search lists
-    if [[ $pkglist == *.json ]]; then
-        mode=json
-
-    # default to regex if >0 arguments specified
-    elif (( $# > 0 )); then
-        mode=regex
-    else
-        mode=plain
-    fi
+# default to regex if >0 arguments specified
+if [[ ! -v mode ]] && (( $# > 0 )); then
+    mode=regex
+elif [[ ! -v mode ]]; then
+    mode=plain
 fi
 
 if ! [[ $ttl =~ [0-9]+ ]]; then
@@ -132,7 +126,7 @@ if (( update )); then
 
     if [[ $pkglist == *.json ]]; then
         # Remove newlines separating partial objects, i.e.
-        # [\n{...},\n{...},...\n]  =>  [{...}{...},...]\n
+        #   [\n{...},\n{...},...\n]  =>  [{...}{...},...]\n
         { gunzip -c "$pkglist.gz" | tr -d '\n'
           printf '\n'
         } > "$pkglist"
@@ -149,8 +143,6 @@ case $mode in
         grep -F "$1" "$pkglist" ;;
     regex)
         grep -P "$1" "$pkglist" ;;
-    json)
-        jq -r "$1" "$pkglist" ;;
     none)
         printf '%s\n' "$PWD/$pkglist" ;;
 esac
