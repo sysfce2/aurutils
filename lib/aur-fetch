@@ -13,8 +13,11 @@ export GIT_AUTHOR_EMAIL=aurutils@localhost
 export GIT_COMMITTER_NAME=aurutils
 export GIT_COMMITTER_EMAIL=aurutils@localhost
 
+# git "empty" object, SHA1 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+git_empty_object=$(git hash-object -t tree /dev/null)
+
 # default options
-existing=0 recurse=0 sync=pull
+existing=0 recurse=0 discard=0 sync=merge
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -41,43 +44,44 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='rS'
-opt_long=('no-pull' 'rebase' 'reset' 'no-rebase' 'results:' 'existing' 'recurse'
-          'no-commit' 'autostash' 'ff-only' 'sync:')
-opt_hidden=('dump-options')
+opt_long=('existing' 'fetch-only' 'reset' 'rebase' 'results:' 'discard'
+          'ff' 'ff-only' 'no-ff' 'no-commit' 'recurse')
+opt_hidden=('dump-options' 'sync:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset pull_args results_file
+unset rebase_args merge_args results_file
 while true; do
     case "$1" in
-        ## fetch options
+        # aur-fetch options
+        --discard)
+            discard=1 ;;
         --existing)
             existing=1 ;;
-        --no-pull)
+        --fetch-only)
             sync=fetch ;;
+        --rebase)
+            sync=rebase ;;
         --reset)
             sync=reset ;;
         --results)
             shift; results_file=$(realpath -- "$1") ;;
-        ## git-pull options
-        --autostash)
-            pull_args+=(--autostash) ;;
+        # git options
+        --ff)
+            merge_args+=(-ff) ;;
         --ff-only)
-            pull_args+=(--ff-only) ;;
-        --rebase)
-            pull_args+=(--rebase) ;;
-        --no-rebase)
-            pull_args+=(--no-rebase) ;;
+            merge_args+=(--ff-only) ;;
         --no-commit)
-            # --no-ff so that a fast-forward merge also adds no new commits
-            pull_args+=(--no-commit --no-ff) ;;
-        ## Compatibility options
+            merge_args+=(--no-commit) ;;
+        --no-ff)
+            merge_args+=(--no-ff); rebase_args+=(--no-ff) ;;
+        # Compatibility options
         -S)
-            printf >&2 'deprecation notice: %s -S is an alias for --sync=pull\n' "$argv0"
-            sync=pull ;;
+            printf >&2 'deprecation notice: %s -S is an alias for --discard\n' "$argv0"
+            discard=1; sync=merge ;;
         --sync)
             shift; sync=$1 ;;
         --recurse|-r)
@@ -91,31 +95,32 @@ while true; do
     shift
 done
 
-# Compatiblity options for aur-fetch <=9.6
-case $sync in
-    rebase)
-        printf >&2 'deprecation notice: %s --sync=rebase is an alias for --rebase\n' "$argv0"
-        sync=pull; pull_args+=(--rebase) ;;
-    auto)
-        printf >&2 'deprecation notice: %s --sync=auto is an alias for --sync=pull\n' "$argv0"
-        sync=pull ;;
-    !(pull|fetch|reset))
-        error '%s: invalid --sync option: %s' "$argv0" "$sync"
-        usage ;;
-esac
+if [[ $sync == 'auto' ]]; then
+    printf >&2 'deprecation notice: %s --sync=auto is an alias for --discard\n' "$argv0"
+    discard=1; sync=merge
+
+elif [[ $sync == !(merge|rebase|reset|fetch) ]]; then
+    error '%s: invalid --sync mode' "$argv0"
+    exit 1
+fi
 
 if (( ! $# )); then
     error '%s: no arguments given' "$argv0"
     exit 1
 fi
 
+# Default to only allowing fast-forward merges (as git-pull)
+if (( ! ${#merge_args[@]} )); then
+    merge_args=(--ff-only)
+fi
+
 if [[ -v results_file ]]; then
     : >"$results_file" || exit 1 # truncate file
 fi
 
+# Main loop
 if (( recurse )); then
     aur depends --pkgbase "$@" # stdin handled by aur-depends
-
 elif (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
     tee # noop
 else
@@ -123,6 +128,7 @@ else
 fi | while read -r pkg; do
     unset -f git
 
+    # Verify if the repository is hosted on AUR (#959)
     if (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
         warning '%s: package is not in AUR, skipping' "$argv0" "$pkg"
         continue
@@ -131,45 +137,52 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
-        # Store HEAD pre-merge for --results output
-        prev_head=$(git rev-parse --verify --quiet HEAD)
+        # Retrieve new upstream commits
+        git fetch -v origin >&2 || exit
 
-        if [[ ! $prev_head ]]; then
-            warning '%s: %s: HEAD not found, defaulting to empty tree' "$argv0" "$pkg"
-            prev_head=$(git hash-object -t tree /dev/null)
+        # Store original HEAD for --results output
+        orig_head=$(git rev-parse --verify --quiet HEAD)
+        orig_head=${orig_head:-$git_empty_object}
+
+        # Check if merge/rebase will have an effect; if so, reset the branch HEAD
+        if (( discard )) && [[ $sync == @(rebase|merge) ]]; then
+            git merge-base --is-ancestor 'master@{u}' HEAD || git reset --hard HEAD
         fi
 
         # Merge in new history
-        ref=0
-        case $sync in
-            pull)
-                ref='HEAD'
-                git pull origin master "${pull_args[@]}" -v ;;
-            fetch)
-                ref='FETCH_HEAD'
-                git fetch origin -v ;;
-            reset)
-                ref='master@{upstream}'
-                git fetch origin -v && git reset --hard "$ref" ;;
-        esac >&2 || {
-            error '%s: %s: --sync=%s failed' "$argv0" "$pkg" "$sync"
+        if [[ $sync == 'rebase' ]] || { [[ $sync == 'merge' ]] && [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; }; then
+            git rebase -v "${rebase_args[@]}" origin master
+            dest='HEAD'
+
+        elif [[ $sync == 'merge' ]]; then
+            git merge -v "${merge_args[@]}" origin master
+            dest='HEAD'
+
+        elif [[ $sync == 'reset' ]]; then
+            git reset --hard 'master@{u}'
+            dest='master@{u}'
+
+        elif [[ $sync == 'fetch' ]]; then
+            # Leave branch untouched
+            dest='master@{u}'
+        fi >&2 || {
+            error '%s: %s: failed to %s repository' "$argv0" "$pkg" "$sync"
             exit 1
         }
 
         if [[ -v results_file ]]; then
-            commit=$(git rev-parse --verify "$ref")
-            results "$sync" "$prev_head" "$commit" "$PWD/$pkg" "$results_file"
+            head=$(git rev-parse --verify "$dest")
+            results "$sync" "$orig_head" "$head" "$PWD/$pkg" "$results_file"
         fi
 
     # Otherwise, try to clone anew
     elif git clone "$AUR_LOCATION/$pkg" >&2; then
-        # Verify if the repository is empty (#959)
         if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
         fi
 
         if [[ -v results_file ]]; then
-            results 'clone' '0' "${head:-0}" "$PWD/$pkg" "$results_file"
+            results 'clone' "$git_empty_object" "${head:-$git_empty_object}" "$PWD/$pkg" "$results_file"
         fi
     else
         error '%s: %s: failed to clone repository' "$argv0" "$pkg"

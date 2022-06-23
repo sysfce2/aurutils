@@ -1,10 +1,9 @@
-.TH AUR-FETCH 1 2022-06-09 AURUTILS
+.TH AUR-FETCH 1 2022-06-24 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
 .SH SYNOPSIS
-.SY "aur fetch"
-.OP \-S
+.SY "aur fetch [--rebase] [--reset]"
 .IR pkgbase " [" pkgbase... ]
 .YS
 .
@@ -19,34 +18,80 @@ or
 packages are taken from standard input.
 .PP
 .
-By default, git repositories are retrieved with
+.BR git (1)
+repositories are retrieved with
 .BR git\-clone (1)
-if they do not exist. Otherwise, they are updated with
-.B git\-pull
-from the
-.B origin/master
-branch.
+if they do not exist. Otherwise, the
+.B origin
+remote is updated with
+.B git\-fetch
+and changes are merged with
+.B git\-merge \-\-ff\-only
+by default. Alternatively,
+.BR git\-rebase ,
+.BR git\-reset
+or only
+.BR git\-fetch
+can be run.
+.PP
+Since AUR packages have
+.B master
+as the only remote branch, changes are always merged
+from
+.BR origin/master .
+Local changes may however live in separate, feature branches.
 .
 .SH OPTIONS
 .TP
-.BR \-\-sync=pull
+.BR \-\-sync=merge
 Run
-.BR git\-pull
-to merge in upstream changes. This is the default.
+.BR git\-merge
+to merge in upstream changes. This is the default, unless
+.B aurutils.rebase
+equals
+.BR true
+in
+.BR git\-config (1)
+(see
+.B \-\-sync=merge
+for details.)
+.IP
+If no
+.BR git\-merge (1)
+options are specified,
+only fast-forwards are allowed
+.RB ( "git\-merge \-\-ff\-only" ).
 .B aur\-fetch
 forwards the
-.BR \-\-rebase ,
-.BR \-\-no\-rebase ,
-.BR \-\-ff\-only
-and
+.BR \-\-ff ,
+.BR \-\-ff\-only ,
 .BR \-\-no\-commit
+and
+.BR \-\-no\-ff
 options to
-.BR git\-pull .
-.B \-\-no\-commit
-additionally forwards
-.B git pull \-\-no\-ff
-so that no commits are merged even when a fast-forward is possible.
+.B git\-merge
+when specified.
+.IP
+.B Note:
+When previewing changes with
+.BR \-\-no\-commit ,
+it is advised to also use
+.BR \-\-no\-ff
+so that no commits are applied to the index, even when a fast-forward is possible. See
+.BR git\-merge (1)
+for details.
 .
+.TP
+.BR \-\-rebase ", " \-\-sync=rebase
+Run
+.BR git\-rebase (1)
+instead of
+.BR git\-merge (1),
+re-applying local commits on top of upstream AUR commits. The
+.B \-\-no\-ff
+option is supported and forwarded to
+.BR git\-merge
+when specified.
 .IP
 .B Warning:
 If a rebase does not apply cleanly, the user is expected to fix any
@@ -59,22 +104,42 @@ option should thus be used with care. See
 for details.
 .
 .TP
-.BR \-\-sync=reset ", " \-\-reset
+.BR \-\-reset ", " \-\-sync=rebase
 Retrieve new revisions with
 .B git\-fetch origin
 and
 .B git\-reset
 to the
 .B master@{upstream}
-commit, discarding any local changes.
+commit, removing any local commits.
 .
 .TP
-.BR \-\-sync=fetch ", " \-\-no\-pull
-Run
-.B git\-fetch
-instead of
-.BR git\-pull .
-.IP
+.BR \-\-fetch\-only ", " \-\-sync=fetch
+Only retrieve new revisions with
+.BR git\-fetch ,
+if the repository exists, otherwise run
+.BR git\-clone .
+.
+.TP
+.BR \-\-discard
+When using
+.BR \-\-sync=merge
+or
+.BR \-\-sync=rebase ,
+uncommited changes may cause the operation to fail. The
+.B \-\-discard
+option discards these changes
+.B git \-\-reset HEAD
+.I if
+either
+.B git\-merge
+or
+.B git\-rebase
+would result in new changes. This is verified by checking if
+.B master@{upstream}
+is an ancestor of the
+.B HEAD
+commit.
 .
 .TP
 .BR \-\-existing
@@ -91,9 +156,10 @@ If this option is specified, arguments must be supplied by
 instead of by
 .BR pkgbase .
 .IP
-This can be written as the pipeline:
+This is equivalent to the pipeline:
+.IP
 .EX
-  $ aur depends --pkgbase "$@" | aur fetch -
+aur depends --pkgbase "$@" | aur fetch -
 .EE
 .
 .TP
@@ -107,7 +173,8 @@ Possible values for
 .I action
 are
 .BR clone ,
-.BR pull ,
+.BR merge ,
+.BR rebase ,
 and
 .BR fetch .
 If
@@ -116,12 +183,25 @@ is set to
 .BR clone ,
 .I <head_from>
 is set to
-.BR 0 .
+.BR 4b825dc642cb6eb9a060e54bf8d69288fbee4904 ,
+the
+.BR git (1)
+empty tree object.
 .I <path>
 is the absolute path to the corresponding git repository.
 .IP
 Can be used by higher level tools to differentiate new clones from
 updates to existing repositories.
+.IP
+.B Note:
+When using
+.B \-\-no\-commit \-\-no\-ff
+and
+.BR git\-merge(1) ,
+.I head_from
+and
+.I head_to
+will be identical.
 .
 .SH SEE ALSO
 .ad l
@@ -131,10 +211,10 @@ updates to existing repositories.
 .BR git (1),
 .BR git\-clone (1),
 .BR git\-config (1),
-.BR git\-diff (1),
 .BR git\-fetch (1),
-.BR git\-log (1),
+.BR git\-merge (1),
 .BR git\-pull (1),
+.BR git\-rebase (1),
 .BR git\-reset (1),
 .BR git\-rev\-parse (1)
 .
