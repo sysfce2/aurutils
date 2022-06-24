@@ -193,8 +193,9 @@ _aur_fetch() {
     local -A sync_types
 
     sync_types[reset]="discard local changes"
-    sync_types[pull]="run git-pull to merge in  upstream changes"
-    sync_types[fetch]="run git-fetch instead of git-pull"
+    sync_types[merge]="run git-merge to incorporate upstream changes"
+    sync_types[rebase]="run git-rebase to incorporate upstream changes"
+    sync_types[fetch]="only run git-fetch"
 
     local -a sync_type_strings=()
     local k
@@ -203,12 +204,14 @@ _aur_fetch() {
     done
 
     args=(
-        '--existing[if a git repository is not found for a given package, ignore it instead of running git-clone]'
+        '--existing[if a package has no matching repository on AUR, ignore it instead of running git-clone]'
         '(-r --recurse)'{-r,--recurse}'[download packages and their dependencies with aur-depends]'
         '--results=[write colon-delimited output to FILE]:file: _files'
-        "(--reset --no-pull)--sync=[configure handling of local changes]:mode:(($sync_type_strings))"
+        '--discard[discard uncommited changes if git-rebase or git-merge result in new commits]'
+        #"(--reset --no-pull)--sync=[configure handling of local changes]:mode:(($sync_type_strings))"
+        "(--sync)--rebase[${sync_types[rebase]}, alias for --sync=rebase]"
         "(--sync)--reset[${sync_types[reset]}, alias for --sync=reset]"
-        "(--sync)--no-pull[${sync_types[fetch]}, alias for --sync=fetch]"
+        "(--sync)--fetch-only[${sync_types[fetch]}, alias for --sync=fetch]"
     )
     # This is to handle the fact that -r/--recurse changes the meaning of positional arguments
     if [[ $words[(ie)-r] -le ${#words} || $words[(ie)--recurse] -le ${#words} ]]; then

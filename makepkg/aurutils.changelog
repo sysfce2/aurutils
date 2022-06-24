@@ -12,15 +12,15 @@
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
 
 * `aur-fetch`
-  + `git-pull` is now the default operation (`--sync=pull`)
-    - local changes are no longer discarded automatically
-    - add `--no-pull` for running `git-fetch`
-    - add `--ff-only`, `--autostash`, `--no-commit`, `--rebase`, `--no-rebase` as `git-pull` options
-    - set per-repository rebase with `pull.rebase` git configuration
-    - deprecate `--sync=rebase`, `--sync=auto`
-  + add `--reset` (shorthand for `--sync=reset`)
+  + change default operation to `git fetch && git-merge --ff-only`
+    - local (uncommited) changes are preserved, unless `--discard` is specified
+    - set default author for merge commits to `aurutils@localhost`
+    - add `--fetch-only` to only run `git-fetch`
+    - add `--discard` to run `git-reset` on new upstream commits
+    - add `--ff`, `--ff-only`, `--no-ff`, `--no-commit` options
+    - deprecate `-S`, `--sync=auto`
+  + add `--reset` and `--rebase`, deprecate `--sync=reset`, `--sync=rebase`
   + support multiple branches, with commits merged from `origin/master`
-  + `--results` output now uses `pull`, `reset` and `fetch` keywords
 
 * `aur-pkglist`
   + output is now independent of command-line argument order

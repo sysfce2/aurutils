@@ -1,0 +1,31 @@
+#!/bin/bash
+set -ex
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+cd "$tmp"
+aur fetch aurutils aurutils-git yuzu
+
+cd aurutils
+git config --add aurutils.rebase true
+echo '# test for issue/1007' >>PKGBUILD
+git commit -m 'test for issue/1007' PKGBUILD
+head1=$(git rev-parse --verify HEAD)
+
+cd ../aurutils-git
+git reset --hard HEAD^1
+head2=$(git rev-parse --verify HEAD)
+
+cd ../yuzu
+git reset --hard HEAD^1
+head3=$(git rev-parse --verify HEAD)
+
+cd ..
+aur fetch --sync=auto aurutils aurutils-git yuzu
+
+cd aurutils
+[[ $(git rev-parse --verify HEAD) == $head1 ]]
+cd ../aurutils-git
+[[ $(git rev-parse --verify HEAD) != $head2 ]]
+cd ../yuzu
+[[ $(git rev-parse --verify HEAD) != $head3 ]]
