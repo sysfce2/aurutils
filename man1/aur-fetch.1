@@ -34,27 +34,30 @@ or only
 .BR git\-fetch
 can be run.
 .PP
-Since AUR packages have
+AUR packages have
 .B master
-as the only remote branch, changes are always merged
+as the only remote branch, so changes are always merged
 from
 .BR origin/master .
-Local changes may however live in separate, feature branches.
+Local changes may however live in different branches.
 .
 .SH OPTIONS
 .TP
 .BR \-\-sync=merge
 Run
-.BR git\-merge
+.BR git\-merge (1)
 to merge in upstream changes. This is the default, unless
 .B aurutils.rebase
 equals
 .BR true
 in
 .BR git\-config (1).
-(See
-.B \-\-sync=merge
-for details.)
+In this case,
+.BR git\-rebase (1)
+is run instead (see
+.B \-\-rebase
+for details).
+.
 .IP
 If no
 .BR git\-merge (1)
@@ -198,9 +201,9 @@ When using
 .B \-\-no\-commit \-\-no\-ff
 and
 .BR git\-merge(1) ,
-.I head_from
+.I <head_from>
 and
-.I head_to
+.I <head_to>
 will be identical.
 .
 .SH SEE ALSO
