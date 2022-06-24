@@ -51,16 +51,17 @@ to merge in upstream changes. This is the default, unless
 equals
 .BR true
 in
-.BR git\-config (1)
-(see
+.BR git\-config (1).
+(See
 .B \-\-sync=merge
 for details.)
 .IP
 If no
 .BR git\-merge (1)
 options are specified,
-only fast-forwards are allowed
-.RB ( "git\-merge \-\-ff\-only" ).
+only fast-forwards are allowed with
+.BR "git\-merge \-\-ff\-only" .
+When specified,
 .B aur\-fetch
 forwards the
 .BR \-\-ff ,
@@ -69,15 +70,14 @@ forwards the
 and
 .BR \-\-no\-ff
 options to
-.B git\-merge
-when specified.
+.BR git\-merge .
 .IP
 .B Note:
 When previewing changes with
-.BR \-\-no\-commit ,
+.B \-\-no\-commit
 it is advised to also use
-.BR \-\-no\-ff
-so that no commits are applied to the index, even when a fast-forward is possible. See
+.BR \-\-no\-ff ,
+so that no commits are applied to the index even when a fast-forward is possible. See
 .BR git\-merge (1)
 for details.
 .
@@ -128,14 +128,14 @@ or
 .BR \-\-sync=rebase ,
 uncommited changes may cause the operation to fail. The
 .B \-\-discard
-option discards these changes
+option discards these changes with
 .B git \-\-reset HEAD
 .I if
 either
 .B git\-merge
 or
 .B git\-rebase
-would result in new changes. This is verified by checking if
+would result in new commits. This is done by checking if
 .B master@{upstream}
 is an ancestor of the
 .B HEAD
