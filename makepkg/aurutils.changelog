@@ -33,6 +33,9 @@
   + `-q` now applies to `--list` and `--upgrades`
   + add `--list-attr`
 
+* `aur-search`
+  + add `--color` (`auto`, `always`, `none`)
+
 * `aur-srcver`
   + remove `-E`, `--env` (deprecated in v8)
 
