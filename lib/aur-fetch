@@ -1,20 +1,20 @@
 #!/bin/bash
 # aur-fetch - retrieve build files from the AUR
 [[ -v AUR_DEBUG ]] && set -o xtrace
-shopt -s extglob
 argv0=fetch
 AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
-# author information for merge commits
+# Author information for merge commits
 export GIT_AUTHOR_NAME=aurutils
 export GIT_AUTHOR_EMAIL=aurutils@localhost
 export GIT_COMMITTER_NAME=aurutils
 export GIT_COMMITTER_EMAIL=aurutils@localhost
 
-# git "empty" object, SHA1 4b825dc642cb6eb9a060e54bf8d69288fbee4904
-git_empty_object=$(git hash-object -t tree /dev/null)
+# Skip global git-config
+export GIT_CONFIG_GLOBAL=/dev/null
+export GIT_CONFIG_NOSYSTEM=1
 
 # default options
 existing=0 recurse=0 discard=0 sync=merge
@@ -32,10 +32,11 @@ usage() {
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
 XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 !
-    printf >&2 'usage: %s [-S] [--] pkgname...\n' "$argv0"
+    printf >&2 'usage: %s [-r] [--rebase|--reset|--fetch-only] [--] pkgname...\n' "$argv0"
     exit 1
 }
 
+# option handling
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='rS'
@@ -90,18 +91,25 @@ while true; do
     shift
 done
 
-if [[ $sync == 'auto' ]]; then
-    printf >&2 'deprecation notice: %s --sync=auto is an alias for --discard\n' "$argv0"
-    discard=1; sync=merge
-
-elif [[ $sync == !(merge|rebase|reset|fetch) ]]; then
-    printf >&2 '%s: error: invalid --sync mode\n' "$argv0"
-    exit 1
-fi
+# option validation
+case $sync in
+    merge|rebase|reset|fetch)
+        true ;;
+    auto)
+        printf >&2 'deprecation notice: %s --sync=auto is an alias for --discard\n' "$argv0"
+        discard=1; sync=merge ;;
+    *)
+        printf >&2 '%s: error: invalid --sync mode\n' "$argv0"
+        exit 1 ;;
+esac
 
 if (( ! $# )); then
     printf >&2 '%s: error: no arguments given\n' "$argv0"
     exit 1
+fi
+
+if [[ -v results_file ]]; then
+    : >"$results_file" || exit 1 # truncate file
 fi
 
 # Default to only allowing fast-forward merges (as git-pull)
@@ -109,9 +117,8 @@ if (( ! ${#merge_args[@]} )); then
     merge_args=(--ff-only)
 fi
 
-if [[ -v results_file ]]; then
-    : >"$results_file" || exit 1 # truncate file
-fi
+# Placeholder for repositories without commits
+git_empty_object=$(git hash-object -t tree /dev/null)
 
 # Main loop
 if (( recurse )); then
