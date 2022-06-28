@@ -146,35 +146,42 @@ fi | while read -r pkg; do
         orig_head=$(git rev-parse --verify --quiet HEAD)
         orig_head=${orig_head:-$git_empty_object}
 
-        # Check if merge/rebase will have an effect; if so, reset the branch HEAD
-        if (( discard )) && [[ $sync == @(rebase|merge) ]]; then
-            git merge-base --is-ancestor 'master@{u}' HEAD || git reset --hard HEAD
+        # Retrieve per-package configuration (defaults to global setting, #1007)
+        # XXX: no distinction between default (sync=merge) and command-line (--sync=merge)
+        sync_pkg=$sync
+        if [[ $sync == 'merge' ]] && [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
+            sync_pkg=rebase
         fi
 
-        # Merge in new history
-        if [[ $sync == 'rebase' ]] || { [[ $sync == 'merge' ]] && [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; }; then
-            git rebase -v "${rebase_args[@]}" origin master
-            dest='HEAD'
-
-        elif [[ $sync == 'merge' ]]; then
-            git merge -v "${merge_args[@]}" origin master
-            dest='HEAD'
-
-        elif [[ $sync == 'reset' ]]; then
-            git reset --hard 'master@{u}'
-            dest='master@{u}'
-
-        elif [[ $sync == 'fetch' ]]; then
-            # Leave branch untouched
-            dest='master@{u}'
-        fi >&2 || {
-            printf >&2 '%s: error: failed to %s repository %s\n' "$argv0" "$sync" "$pkg"
-            exit 1
+        # Reset working tree if new commits will be merged (--discard)
+        reset_on_update() {
+            git merge-base --is-ancestor 'master@{u}' HEAD || git checkout ./
         }
 
+        # Merge in new history
+        case $sync_pkg in
+            rebase)
+                (( discard )) && reset_on_update
+                git rebase -v "${rebase_args[@]}" origin master
+                dest='HEAD' ;;
+            merge)
+                (( discard )) && reset_on_update
+                git merge -v "${merge_args[@]}" origin master
+                dest='HEAD' ;;
+            reset)
+                git reset --hard 'master@{u}'
+                dest='master@{u}' ;;
+            fetch)
+                # Preserve local branch
+                dest='master@{u}' ;;
+        esac >&2 || {
+            printf >&2 '%s: error: failed to %s repository %s\n' "$argv0" "$sync_pkg" "$pkg"
+            exit 1
+        }
+        head=$(git rev-parse --verify "$dest")
+
         if [[ -v results_file ]]; then
-            head=$(git rev-parse --verify "$dest")
-            results "$sync" "$orig_head" "$head" "$PWD/$pkg" "$results_file"
+            results "$sync_pkg" "$orig_head" "$head" "$PWD/$pkg" "$results_file"
         fi
 
     # Otherwise, try to clone anew
@@ -182,9 +189,10 @@ fi | while read -r pkg; do
         if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
         fi
+        head=${head:-$git_empty_object}
 
         if [[ -v results_file ]]; then
-            results 'clone' "$git_empty_object" "${head:-$git_empty_object}" "$PWD/$pkg" "$results_file"
+            results 'clone' "$git_empty_object" "$head" "$PWD/$pkg" "$results_file"
         fi
     else
         printf >&2 '%s: error: failed to clone repository %s\n' "$argv0" "$pkg"
