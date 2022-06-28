@@ -155,17 +155,17 @@ fi | while read -r pkg; do
 
         # Reset working tree if new commits will be merged (--discard)
         reset_on_update() {
-            git merge-base --is-ancestor 'master@{u}' HEAD || git checkout ./
+            git merge-base --is-ancestor "$1" HEAD || git checkout ./
         }
 
         # Merge in new history
         case $sync_pkg in
             rebase)
-                (( discard )) && reset_on_update
+                (( discard )) && reset_on_update 'master@{u}'
                 git rebase -v "${rebase_args[@]}" origin master
                 dest='HEAD' ;;
             merge)
-                (( discard )) && reset_on_update
+                (( discard )) && reset_on_update 'master@{u}'
                 git merge -v "${merge_args[@]}" origin master
                 dest='HEAD' ;;
             reset)
