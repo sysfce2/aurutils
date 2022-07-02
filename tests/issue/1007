@@ -6,26 +6,37 @@ trap 'rm -rf "$tmp"' EXIT
 cd "$tmp"
 aur fetch aurutils aurutils-git yuzu
 
+# HEAD on top of master@{u}
 cd aurutils
 git config --add aurutils.rebase true
 echo '# test for issue/1007' >>PKGBUILD
 git commit -m 'test for issue/1007' PKGBUILD
 head1=$(git rev-parse --verify HEAD)
 
+# HEAD is 1 commit behind
 cd ../aurutils-git
 git reset --hard HEAD^1
 head2=$(git rev-parse --verify HEAD)
 
+# HEAD on top of master@{u}^1
 cd ../yuzu
 git reset --hard HEAD^1
+echo '# test for issue/1007' >>PKGBUILD
+git commit -m 'test for issue/1007' PKGBUILD
 head3=$(git rev-parse --verify HEAD)
 
+# merge can be solved as fast-forward
 cd ..
-aur fetch --sync=auto aurutils aurutils-git yuzu
-
+aur fetch aurutils aurutils-git
 cd aurutils
 [[ $(git rev-parse --verify HEAD) == $head1 ]]
 cd ../aurutils-git
 [[ $(git rev-parse --verify HEAD) != $head2 ]]
-cd ../yuzu
+
+# diverging history, --ff-only default
+cd ..
+aur fetch yuzu || err=$?
+(( err == 1 ))
+aur fetch yuzu --rebase
+cd yuzu
 [[ $(git rev-parse --verify HEAD) != $head3 ]]

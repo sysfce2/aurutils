@@ -99,12 +99,12 @@ case $sync in
         printf >&2 'deprecation notice: %s --sync=auto is an alias for --discard\n' "$argv0"
         discard=1; sync=merge ;;
     *)
-        printf >&2 '%s: error: invalid --sync mode\n' "$argv0"
+        printf >&2 '%s: invalid --sync mode\n' "$argv0"
         exit 1 ;;
 esac
 
 if (( ! $# )); then
-    printf >&2 '%s: error: no arguments given\n' "$argv0"
+    printf >&2 '%s: no arguments given\n' "$argv0"
     exit 1
 fi
 
@@ -160,22 +160,23 @@ fi | while read -r pkg; do
 
         # Merge in new history
         case $sync_pkg in
+            rebase|merge)
+                (( discard )) && reset_on_update 'master@{u}'
+                ;;&  # proceed to merge or rebase
             rebase)
-                (( discard )) && reset_on_update 'master@{u}'
-                git rebase -v "${rebase_args[@]}" origin master
-                dest='HEAD' ;;
+                dest='HEAD'
+                git rebase -v "${rebase_args[@]}" origin master ;;
             merge)
-                (( discard )) && reset_on_update 'master@{u}'
-                git merge -v "${merge_args[@]}" origin master
-                dest='HEAD' ;;
+                dest='HEAD'
+                git merge -v "${merge_args[@]}" origin master ;;
             reset)
-                git reset --hard 'master@{u}'
-                dest='master@{u}' ;;
+                dest='master@{u}'
+                git reset --hard 'master@{u}' ;;
             fetch)
                 # Preserve local branch
                 dest='master@{u}' ;;
         esac >&2 || {
-            printf >&2 '%s: error: failed to %s repository %s\n' "$argv0" "$sync_pkg" "$pkg"
+            printf >&2 '%s: failed to %s %s\n' "$argv0" "$sync_pkg" "$pkg"
             exit 1
         }
         head=$(git rev-parse --verify "$dest")
@@ -195,7 +196,7 @@ fi | while read -r pkg; do
             results 'clone' "$git_empty_object" "$head" "$PWD/$pkg" "$results_file"
         fi
     else
-        printf >&2 '%s: error: failed to clone repository %s\n' "$argv0" "$pkg"
+        printf >&2 '%s: failed to clone repository %s\n' "$argv0" "$pkg"
         exit 1
     fi
 done
