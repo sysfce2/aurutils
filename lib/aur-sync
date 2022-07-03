@@ -11,11 +11,10 @@ AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=(--clean --syncdeps)
-depends_args=() fetch_args=() repo_args=() view_args=() filter_args=()
+build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=() filter_args=()
 
 # default options
-build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
+build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1 fetch_mode=auto
 
 # default options (disabled)
 rotate=0 update=0 repo_targets=0
@@ -165,9 +164,9 @@ while true; do
             shift; repo_args+=(-r "$1") ;;
         # fetch options
         --rebase)
-            fetch_args+=(--rebase) ;;
+            fetch_mode=rebase ;;
         --reset)
-            fetch_args+=(--reset) ;;
+            fetch_mode=reset ;;
         # build options
         -c|--chroot)
             build_args+=(--chroot) ;;
@@ -377,7 +376,7 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    aur fetch "${fetch_args[@]}" --results "$tmp"/fetch_results --discard - < "$tmp"/queue >&2
+    aur fetch --sync="$fetch_mode" --results "$tmp"/fetch_results --discard - < "$tmp"/queue >&2
 
     # shellcheck disable=SC2034
     while IFS=: read -r mode rev_old rev path; do

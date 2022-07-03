@@ -12,14 +12,13 @@
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
 
 * `aur-fetch`
-  + change default operation to `git fetch && git-merge --ff-only`
-    - local (uncommited) changes are preserved, unless `--discard` is specified
-    - set default author for merge commits to `aurutils@localhost`
-    - add `--fetch-only` to only run `git-fetch`
-    - add `--discard` to run `git-reset` on new upstream commits
+  + `--sync=auto`: run `git-merge` instead of `git-reset`
     - add `--ff`, `--ff-only`, `--no-ff`, `--no-commit` options
-    - deprecate `-S`, `--sync=auto`
-  + add `--reset` and `--rebase`, deprecate `--sync=reset`, `--sync=rebase`
+    - fix a bug where setting `aurutils.rebase` affected unrelated targets
+    - set default author for merge commits to `aurutils@localhost`
+  + `--sync=auto` now preserves local changes by default
+    - `--discard` (`-f`) resets the repository on new upstream commits
+  + add `--reset`, `--rebase`, `--auto` aliases for `--sync=reset`, `--sync=rebase`, `--sync=auto`
   + support multiple branches, with commits merged from `origin/master`
 
 * `aur-pkglist`
