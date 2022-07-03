@@ -165,10 +165,10 @@ fi | while read -r pkg; do
                 ;;&  # proceed to merge or rebase
             rebase)
                 dest='HEAD'
-                git rebase -v "${rebase_args[@]}" origin master ;;
+                git rebase -v "${rebase_args[@]}" origin/master ;;
             merge)
                 dest='HEAD'
-                git merge -v "${merge_args[@]}" origin master ;;
+                git merge -v "${merge_args[@]}" origin/master ;;
             reset)
                 dest='master@{u}'
                 git reset --hard 'master@{u}' ;;
