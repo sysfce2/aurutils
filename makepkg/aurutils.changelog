@@ -41,6 +41,9 @@
   + remove `-E`, `--env` (deprecated in v8)
 
 * `aur-sync`
+  + use pkgspec `<REPOSITORY>/<PACKAGE>` format for `--ignore-file`
+    - support for sections (introduced with v6.3) is removed (#880)
+    - <PACKAGE> ignores apply to all local repositories
   + add `--rebase`, `--reset` options for `aur-fetch`
   + exit 22 on dependency cycles (v7 regression)
   + filter dependency graph by pkgname, not depends (v7 regression)

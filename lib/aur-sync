@@ -29,6 +29,16 @@ lib32() {
     }' "$@"
 }
 
+split_pkgspec() {
+    awk -F'/' '{
+        if (NF == 2) {
+            printf("%s\t%s\n", $1, $2)
+        } else {
+            printf("-\t%s\n", $1)
+        }
+    }' "$@"
+}
+
 # argv[1]: $1 pkgname $2 depends $3 pkgbase
 # note: edges are not checked for duplicates
 select_pkgbase() {
@@ -270,13 +280,10 @@ fi
 : "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
 
 { if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
-      mapfile -t isect < <(pacini "$ignore_file" --section-list)
-
-      if (( ${#isect[@]} )); then
-          pacini "$ignore_file" --section="$db_name"
-      else
-          pacini "$ignore_file"
-      fi
+      # Restrict ignores to local repository with single pass (#880)
+      while IFS=$'\t' read -r repo pkg; do
+          [[ $repo == "$db_name" || $repo == "-" ]] && pkg_i+=("$pkg")
+      done < <(split_pkgspec "$ignore_file")
   fi
 
   if (( ${#pkg_i[@]} )); then
