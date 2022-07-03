@@ -6,7 +6,7 @@ AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-multiple=section search_by=name-desc sort_key=Name type=search mode=query
+multiple=section search_by=name-desc sort_key=Name type=search mode=query color=auto
 
 # default arguments
 query_args=()
