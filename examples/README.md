@@ -17,11 +17,10 @@ The sample script retrieves the contents of the local repository with `aur-repo
    `aur-view(1)`
 2. Retrieve new upstream revisions with `aur-srcver(1)`
 
-The first steps assumes all PKGBUILD directories are available in `AURDEST` with
-`aur-fetch --existing`. If `AURDEST` exclusively contains AUR packages,
+If PKGBUILD directories are not available in `AURDEST`, they are cloned anew
+with `aur-fetch -e`. If the local repository exclusively contains AUR packages,
 `aur-fetch` can be used without `--existing`.
 
-In the second step, `makepkg -o` is run on each `PKGBUILD`, updating `pkgver`.
 The full version (`epoch:pkgver-pkgrel`) is then compared to the contents of the
 local repository with `aur-vercmp(1)`. If there is an update, the package is
 built with `aur-build(1)`.
@@ -30,6 +29,11 @@ built with `aur-build(1)`.
 
 A simplified version of `sync-devel` which does only runs `aur-srcver` and
 `aur-vercmp` on targets in the local repository.
+
+Note: `aur-fetch` is not run in this script, and it is assumed all PKGBUILD
+directories are available. This suggests to use a persistent directory for
+`AURDEST`, instead of the default `$XDG_CACHE_HOME/aurutils/sync` used by
+`aur-sync(1)`.
 
 ## sync-list
 
