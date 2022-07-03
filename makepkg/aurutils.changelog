@@ -7,6 +7,7 @@
 * `aur-build`
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
   + use `$PWD` as default value for `$LOGDEST`
+  + bug fixes for gpg signing (`--sign`)
 
 * `aur-chroot`
   + use `AUR_PACMAN_AUTH` as elevation command (prior: `PACMAN_AUTH`)
