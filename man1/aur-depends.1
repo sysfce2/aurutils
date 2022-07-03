@@ -1,4 +1,4 @@
-.TH AUR-DEPENDS 1 2022-02-27 AURUTILS
+.TH AUR-DEPENDS 1 2022-07-03 AURUTILS
 .SH NAME
 aur\-depends \- retrieve dependencies using aurweb
 .
@@ -10,8 +10,8 @@ aur\-depends \- retrieve dependencies using aurweb
 .
 .SH DESCRIPTION
 .B aur\-depends
-solves dependencies for packages provided on the command-line,
-using aurweb.
+solves dependencies for packages provided on the command line using
+aurweb. The transitive closure of dependencies within AUR is computed.
 .
 .SH OPTIONS
 .TP
@@ -30,7 +30,10 @@ in total order.
 .BR \-a ", " \-\-pkgname\-all
 Print dependency information to stdout as
 .BR pkgname ,
-in total order. All dependencies are printed.
+in total order. Direct
+.BR pacman (8)
+dependencies of one or more AUR dependencies
+are included.
 .
 .TP
 .BR \-G ", " \-\-graph
@@ -64,7 +67,8 @@ the
 .BR \-\-no\-makedepends ,
 and
 .B \-\-no\-checkdepends
-options. In particular, these options may be used to bypass cycles between dependencies of differing types.
+options. In particular, these options may be used to bypass cycles
+between dependencies of differing types.
 .
 .SH NOTES
 Version information is ignored for dependencies. See
