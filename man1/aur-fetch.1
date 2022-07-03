@@ -1,9 +1,9 @@
-.TH AUR-FETCH 1 2022-06-24 AURUTILS
+.TH AUR-FETCH 1 2022-07-03 AURUTILS
 .SH NAME
 aur\-fetch \- download packages from the AUR
 .
 .SH SYNOPSIS
-.SY "aur fetch [--rebase] [--reset]"
+.SY "aur fetch [-S] [-f] [--rebase] [--reset]"
 .IR pkgbase " [" pkgbase... ]
 .YS
 .
@@ -24,16 +24,14 @@ repositories are retrieved with
 if they do not exist. Otherwise, the
 .B origin
 remote is updated with
-.B git\-fetch
-and changes are merged with
-.B git\-merge \-\-ff\-only
-by default. Alternatively,
-.BR git\-rebase ,
-.BR git\-reset
-or only
-.BR git\-fetch
-can be run.
+.BR git\-fetch (1).
+Changes can be merged with
+.BR git\-merge " (" \-\-merge ),
+.BR git\-rebase " (" \-\-rebase ),
+or
+.BR git\-reset " (" \-\-reset ).
 .PP
+.B Note:
 AUR packages have
 .B master
 as the only remote branch, so changes are always merged
@@ -43,21 +41,11 @@ Local changes may however live in different branches.
 .
 .SH OPTIONS
 .TP
-.BR \-\-sync=merge
+.BR \-\-sync=merge ", " \-\-merge
 Run
-.BR git\-merge (1)
-to merge in upstream changes. This is the default, unless
-.B aurutils.rebase
-equals
-.BR true
-in
-.BR git\-config (1).
-In this case,
-.BR git\-rebase (1)
-is run instead (see
-.B \-\-rebase
-for details).
-.
+.BR git\-fetch (1)
+and merge upstream changes with
+.BR git\-merge (1).
 .IP
 If no
 .BR git\-merge (1)
@@ -107,7 +95,21 @@ option should thus be used with care. See
 for details.
 .
 .TP
-.BR \-\-reset ", " \-\-sync=rebase
+.BR \-\-sync=auto ", " \-\-auto
+Run
+.BR git\-rebase (1)
+for a repository with
+.B aurutils.rebase
+set to
+.B true
+in
+.BR git\-config (1),
+and
+.BR git\-merge (1)
+otherwise.
+.
+.TP
+.BR \-\-reset ", " \-\-sync=reset
 Retrieve new revisions with
 .B git\-fetch origin
 and
@@ -115,13 +117,6 @@ and
 to the
 .B master@{upstream}
 commit, removing any local commits.
-.
-.TP
-.BR \-\-fetch\-only ", " \-\-sync=fetch
-Only retrieve new revisions with
-.BR git\-fetch ,
-if the repository exists, otherwise run
-.BR git\-clone .
 .
 .TP
 .BR \-\-discard
@@ -158,19 +153,13 @@ If this option is specified, arguments must be supplied by
 .B pkgname
 instead of by
 .BR pkgbase .
-.IP
-This is equivalent to the pipeline:
-.IP
-.EX
-aur depends --pkgbase "$@" | aur fetch -
-.EE
 .
 .TP
 .BI \-\-results= FILE
 Write colon-delimited output in the following form to
 .IR FILE :
 .IP
-<action>:<head_from>:<head_to>:file://<path>
+    <action>:<head_from>:<head_to>:file://<path>
 .IP
 Possible values for
 .I action
@@ -180,6 +169,9 @@ are
 .BR rebase ,
 and
 .BR fetch .
+Can be used by higher level tools to differentiate new clones from
+updates to existing repositories.
+.IP
 If
 .I action
 is set to
@@ -192,9 +184,6 @@ the
 empty tree object.
 .I <path>
 is the absolute path to the corresponding git repository.
-.IP
-Can be used by higher level tools to differentiate new clones from
-updates to existing repositories.
 .IP
 .B Note:
 When using

@@ -27,7 +27,7 @@ head3=$(git rev-parse --verify HEAD)
 
 # merge can be solved as fast-forward
 cd ..
-aur fetch aurutils aurutils-git
+aur fetch --sync=auto aurutils aurutils-git
 cd aurutils
 [[ $(git rev-parse --verify HEAD) == $head1 ]]
 cd ../aurutils-git
@@ -35,8 +35,8 @@ cd ../aurutils-git
 
 # diverging history, --ff-only default
 cd ..
-aur fetch yuzu || err=$?
+aur fetch --sync=auto yuzu || err=$?
 (( err == 1 ))
-aur fetch yuzu --rebase
+aur fetch --sync=rebase yuzu
 cd yuzu
 [[ $(git rev-parse --verify HEAD) != $head3 ]]
