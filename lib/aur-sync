@@ -11,10 +11,10 @@ AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=() filter_args=()
+build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=() filter_args=() fetch_args=()
 
 # default options
-build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1 fetch_mode=auto
+build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
 
 # default options (disabled)
 rotate=0 update=0 repo_targets=0
@@ -110,7 +110,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'no-provides' 'no-build' 'rmdeps' 'sign' 'temp' 'upgrades' 'pkgver'
           'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:' 'remove'
           'provides-from:' 'new' 'prevent-downgrade' 'verify' 'makepkg-args:'
-          'format:' 'no-check' 'keep-going:' 'user:' 'rebase' 'reset')
+          'format:' 'no-check' 'keep-going:' 'user:' 'rebase' 'reset' 'ff')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
@@ -173,10 +173,12 @@ while true; do
         --root)
             shift; repo_args+=(-r "$1") ;;
         # fetch options
+        --ff)
+            fetch_args+=(-ff) ;;
         --rebase)
-            fetch_mode=rebase ;;
+            fetch_args+=(--rebase) ;;
         --reset)
-            fetch_mode=reset ;;
+            fetch_args+=(--reset) ;;
         # build options
         -c|--chroot)
             build_args+=(--chroot) ;;
@@ -383,7 +385,7 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    aur fetch --sync="$fetch_mode" --results "$tmp"/fetch_results --discard - < "$tmp"/queue >&2
+    aur fetch -S "${fetch_args[@]}" --discard --results "$tmp"/fetch_results - < "$tmp"/queue >&2
 
     # shellcheck disable=SC2034
     while IFS=: read -r mode rev_old rev path; do
