@@ -174,7 +174,7 @@ while true; do
             shift; repo_args+=(-r "$1") ;;
         # fetch options
         --ff)
-            fetch_args+=(-ff) ;;
+            fetch_args+=(--ff) ;;
         --rebase)
             fetch_args+=(--rebase) ;;
         --reset)
