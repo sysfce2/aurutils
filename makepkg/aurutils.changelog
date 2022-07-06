@@ -18,8 +18,8 @@
     - fix a bug where setting `aurutils.rebase` affected unrelated targets
     - set default author for merge commits to `aurutils@localhost`
   + `--sync=auto` now preserves local changes by default
-    - `--discard` (`-f`) resets the repository on new upstream commits
-  + add `--reset`, `--rebase`, `--auto` aliases for `--sync=reset`, `--sync=rebase`, `--sync=auto`
+    - `--discard` (`-f`) resets the branch on new upstream commits
+  + add `--reset`, `--rebase`, `--auto` (`--sync=reset`, `--sync=rebase`, `--sync=auto`)
   + support multiple branches, with commits merged from `origin/master`
 
 * `aur-pkglist`
@@ -47,6 +47,7 @@
   + add `--rebase`, `--reset` options for `aur-fetch`
   + exit 22 on dependency cycles (v7 regression)
   + filter dependency graph by pkgname, not depends (v7 regression)
+  + store `build.ninja` files in `$XDG_RUNTIME_DIR/aurutils`
 
 ## 9.6
 
