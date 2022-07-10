@@ -5,9 +5,7 @@ set -o errexit
 shopt -s extglob
 argv0=build
 # Reset path when running elevated (#979)
-if [[ $UID == 0 ]]; then
-    PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-fi
+[[ $UID == 0 ]] && PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 machine=$(uname -m)
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
