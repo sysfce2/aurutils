@@ -24,6 +24,9 @@ completion:
 shellcheck: aur
 	@shellcheck -x -f gcc -e 1071 aur lib/*
 
+test: aur shellcheck
+	@tests/parseopt-consistency
+
 install-aur: aur
 	@install -Dm755 aur       -t '$(DESTDIR)$(BINDIR)'
 
