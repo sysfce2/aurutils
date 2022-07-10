@@ -93,7 +93,7 @@ source /usr/share/makepkg/util/parseopts.sh
 opt_short='c:d:r:F:alqtuS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
           'list-attr' 'sync' 'upgrades' 'table' 'quiet' 'status-file:' 'attr:')
-opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'status')
+opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'status' 'field')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -121,13 +121,10 @@ while true; do
             mode=list_attr ;;
         -q|--quiet)
             quiet=1; vercmp_args+=(-q) ;;
-        --status-file)
-            shift; status_file=$1 ;;
         -S|--sync)
             db_query=sync ;;
-        -F|--attr)
+        -F|--attr|--field)
             shift; mode=attr; attr=$1 ;;
-        ## deprecated options
         --path)
             mode=path ;;
         --path-list|--list-path)
@@ -136,6 +133,8 @@ while true; do
             list=repo ;;
         --status)
             status=1 ;;
+        --status-file)
+            shift; status_file=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
