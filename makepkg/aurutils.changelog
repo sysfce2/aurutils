@@ -33,6 +33,7 @@
 * `aur-repo`
   + `-q` now applies to `--list` and `--upgrades`
   + add `--list-attr`
+  + deprecate `--status-file`
 
 * `aur-search`
   + add `--color` (`auto`, `always`, `none`)
@@ -48,6 +49,9 @@
   + exit 22 on dependency cycles (v7 regression)
   + filter dependency graph by pkgname, not depends (v7 regression)
   + store `build.ninja` files in `$XDG_RUNTIME_DIR/aurutils`
+
+* `completions`
+  + major overhaul of zsh completions (#990)
 
 ## 9.6
 
