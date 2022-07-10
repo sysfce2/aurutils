@@ -58,7 +58,7 @@ select_ignores_pkgspec() {
     awk -F'/' -v needle="$1" '{
         if (NF == 2 && $1 == needle) {
             print $2
-        } else {
+        } else if (NF == 1) {
             print $1
         }
     }' "${@:2}"
