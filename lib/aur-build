@@ -477,24 +477,19 @@ while IFS= read -ru "$fd" path; do
 
         # Verify if packages on the host can be upgraded from the local repository
         targets=()
-
         while IFS='/' read -r repo name; do
             [[ $repo == "$db_name" ]] && targets+=("$repo/$name")
-        done < <(
-            pacman -Sup --print-format '%r/%n' "${pacconf_args[@]}"
-        )
+        done < <(pacman -Sup --print-format '%r/%n' "${pacconf_args[@]}")
+
+        # Preserve pacman exit status
         wait "$!"
 
         if (( ${#targets[@]} )); then
             msg >&2 'Upgrading installed local repository packages'
 
-            # Answer all questions (including package replacements) with No
-            if ! printf '%s\n' "${targets[@]}" | \
-                sudo pacman -S --noconfirm "${pacconf_args[@]}" -
-            then
-                error 'Failed to upgrade local repository'
-                exit 1
-            fi
+            # XXX: replace with stdin input once makepkg does so:
+            # https://github.com/eli-schwartz/pacman/commit/80b118b48b38dd55224d33d54867c533c23b0040
+            sudo pacman -S --noconfirm "${pacconf_args[@]}" "${targets[@]}"
         fi
     fi
 done
