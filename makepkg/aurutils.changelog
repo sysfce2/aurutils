@@ -1,3 +1,8 @@
+## 11
+
+* `aur-build`
+  + retrieve local repository upgrades with `pacman -Sup`
+
 ## 10
 
 * `aur`

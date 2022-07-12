@@ -27,12 +27,6 @@ args_csv() {
     printf '%s' "${str%,}"
 }
 
-db_replaces() {
-    bsdcat "$1" | awk '/%REPLACES%/ {
-        while(getline && NF != 0) { print; }
-    }'
-}
-
 diag_moved_packages() {
     # Print diagnostic on non-moved packages (#794)
     cat <<EOF >&2
@@ -344,22 +338,6 @@ if (( chroot )); then
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
     run_msg 2 aur chroot --create --update "${chroot_args[@]}"
-else
-    # Generate pacman.conf for isolated upgrade of local repository.
-    { printf '[options]\n'
-      pacconf "${pacconf_args[@]}" --raw --options
-
-      printf '[%s]\nUsage = All\n' "$db_name"
-      pacconf "${pacconf_args[@]}" --raw --repo="$db_name" SigLevel Server
-
-      # Allow secondary repositories as targets for -Syu (#956)
-      while IFS= read -r repo; do
-          printf '[%s]\nUsage = Install\n' "$repo"
-          pacconf "${pacconf_args[@]}" --raw --repo="$repo" SigLevel Server
-      done < <(
-          pacconf "${pacconf_args[@]}" --repo-list | grep -Fxv "$db_name"
-      )
-    } >"$tmp"/local.conf
 fi
 
 if [[ -v queue ]]; then
@@ -493,10 +471,31 @@ while IFS= read -ru "$fd" path; do
     if (( chroot )) || (( no_sync )); then
         continue
     else
-        replaces=$(grep -Fxf <(db_replaces "$db_path") <(pacman -Qq) | paste -s -d, -)
+        # Propagate database to pacman
+        sudo pacsync "$db_name" "${pacconf_args[@]}"
+        sudo pacsync "$db_name" "${pacconf_args[@]}" --dbext=.files
 
-        sudo pacman -Fy  --config="$tmp"/local.conf
-        sudo pacman -Syu --config="$tmp"/local.conf --ignore="$replaces" --noconfirm
+        # Verify if packages on the host can be upgraded from the local repository
+        targets=()
+
+        while IFS='/' read -r repo name; do
+            [[ $repo == "$db_name" ]] && targets+=("$repo/$name")
+        done < <(
+            pacman -Sup --print-format '%r/%n' "${pacconf_args[@]}"
+        )
+        wait "$!"
+
+        if (( ${#targets[@]} )); then
+            msg >&2 'Upgrading installed local repository packages'
+
+            # Answer all questions (including package replacements) with No
+            if ! printf '%s\n' "${targets[@]}" | \
+                sudo pacman -S --noconfirm "${pacconf_args[@]}" -
+            then
+                error 'Failed to upgrade local repository'
+                exit 1
+            fi
+        fi
     fi
 done
 

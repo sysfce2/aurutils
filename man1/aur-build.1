@@ -1,4 +1,4 @@
-.TH AUR\-BUILD 1 2022-03-25 AURUTILS
+.TH AUR\-BUILD 1 2022-07-12 AURUTILS
 .SH NAME
 aur\-build \- build packages to a local repository
 .
@@ -382,17 +382,16 @@ of built packages, defaulting to
 .
 .SH NOTES
 .SS Repository updates
-When building locally (outside a container),
-.B "pacman \-Syu"
-is run with
-.BR pacman.conf (8)
-only containing the local repository. This is comparable to
+When building on the host (outside of a container), any installed
+packages in the local repository are upgraded to the latest available
+version with
+.BR pacsync <repository>
+followed by
+.BR "pacman \-S \-\-noconfirm" .
+This is comparable to
 .BR "makepkg \-i" ,
-but without subsequent package installation (if a package was
-installed before, it is updated to the latest available version). An
-interesting side-effect is that pacman considers packages inside the
-official repositories "local", and warns if they are newer than any
-custom counterpart. Packages which define a
+but packages are only upgraded (installed) if they were installed priorly.
+Packages which define a
 .I replaces
 field are ignored if the target package is installed on the local system.
 .
