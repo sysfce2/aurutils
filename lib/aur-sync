@@ -12,7 +12,8 @@ AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
-build_args=(--clean --syncdeps) depends_args=() repo_args=() view_args=() filter_args=() fetch_args=()
+build_args=(--clean --syncdeps)
+depends_args=() repo_args=() view_args=() filter_args=() fetch_args=() graph_args=()
 
 # default options
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
@@ -143,10 +144,12 @@ while true; do
         -o|--nobuild|--no-build)
             build=0 ;;
         --optdepends)
-            depends_args+=(--optdepends) ;;
+            depends_args+=(--optdepends)
+            graph_args+=(-v OPTDEPENDS=1) ;;
         --nocheck|--no-check|--nocheckdepends|--no-checkdepends)
             depends_args+=(--no-checkdepends)
-            build_args+=(--no-check) ;;
+            build_args+=(--no-check)
+            graph_args+=(-v CHECKDEPENDS=0) ;;
         --nograph|--no-graph)
             graph=0 ;;
         --nover|--no-ver)
@@ -402,7 +405,7 @@ if (( graph )); then
     if ! { while read -r pkg; do
                [[ $pkg ]] && printf '%s\0' "$pkg/.SRCINFO"
            done
-         } | xargs -0 cat -- | aur graph >/dev/null
+         } | xargs -0 cat -- | aur graph "${graph_args[@]}" >/dev/null
     then
         error '%s: failed to verify dependency graph' "$argv0"
         exit 1
