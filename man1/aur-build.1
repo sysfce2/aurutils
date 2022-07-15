@@ -36,7 +36,7 @@ or
 .B \-\-chroot
 options are provided,
 .B aur\-build
-will also attempt to sync to local the repository with
+will also attempt to sync to the local repository with
 .B pacman \-Syu
 and
 .BR "pacman \-Fy" .
@@ -59,7 +59,7 @@ container with
 .BR archbuild .
 The prerequisites for this option are that the
 .BR devtools
-package is installed, and the a
+package is installed, and the
 .BR pacman (8)
 configuration for the container is placed in
 .BI /etc/aurutils/pacman-<database>.conf \fR
@@ -390,7 +390,7 @@ followed by
 .BR "pacman \-S \-\-noconfirm" .
 This is comparable to
 .BR "makepkg \-i" ,
-but packages are only upgraded (installed) if they were installed priorly.
+but packages are only upgraded (installed) if they were installed beforehand.
 Packages which define a
 .I replaces
 field are ignored if the target package is installed on the local system.
@@ -482,7 +482,7 @@ rebuild-detector
 .UE
 package can be used. To propagate rebuilt packages to clients,
 .B pkgver
-should be increased priorly, e.g. with
+should be increased beforehand, e.g. with
 .BR setconf (1).
 .
 .SS Installing dependencies with makepkg
