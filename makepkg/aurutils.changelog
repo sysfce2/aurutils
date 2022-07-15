@@ -3,6 +3,10 @@
 * `aur-build`
   + retrieve local repository upgrades with `pacman -Sup`
 
+* `aur-graph`
+  + selectively disable depends with `aur graph -v <TYPE>=[0|1]`
+    - supported types: `DEPENDS`, `MAKEDEPENDS`, `CHECKDEPENDS`, `OPTDEPENDS`
+
 ## 10
 
 * `aur`
