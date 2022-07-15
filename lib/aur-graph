@@ -48,10 +48,24 @@ function get_vercmp(ver1, ver2, op) {
     }
 }
 
-/^\t(make|check)?depends/ {
-    if (!in_split_pkg) {
-        # POSIX array of arrays!
+/^\tdepends/ {
+    if ((!length(DEPENDS) || DEPENDS == 1) && !in_split_pkg)
         pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3 # versioned
+}
+
+/^\tmakedepends/ {
+    if ((!length(MAKEDEPENDS) || MAKEDEPENDS == 1) && !in_split_pkg)
+        pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
+}
+
+/^\tcheckdepends/ {
+    if ((!length(CHECKDEPENDS) || CHECKDEPENDS == 1) && !in_split_pkg)
+        pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
+}
+
+/^\toptdepends/ {
+    if (OPTDEPENDS == 1 && !in_split_pkg) {
+        pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
     }
 }
 
