@@ -471,26 +471,11 @@ while IFS= read -ru "$fd" path; do
     if (( chroot )) || (( no_sync )); then
         continue
     else
-        # Propagate database to pacman
-        sudo pacsync "$db_name" "${pacconf_args[@]}"
-        sudo pacsync "$db_name" "${pacconf_args[@]}" --dbext=.files
-
-        # Verify if packages on the host can be upgraded from the local repository
-        targets=()
-        while IFS='/' read -r repo name; do
-            [[ $repo == "$db_name" ]] && targets+=("$repo/$name")
-        done < <(pacman -Sup --print-format '%r/%n' "${pacconf_args[@]}")
-
-        # Preserve pacman exit status
-        wait "$!"
-
-        if (( ${#targets[@]} )); then
-            msg >&2 'Upgrading installed local repository packages'
-
-            # XXX: replace with stdin input once makepkg does so:
-            # https://github.com/eli-schwartz/pacman/commit/80b118b48b38dd55224d33d54867c533c23b0040
-            sudo pacman -S --noconfirm "${pacconf_args[@]}" "${targets[@]}"
-        fi
+        # Helper which can be used for e.g. sudoers rules (#1012)
+        # Like `makepkg --syncdeps`, this affects the host and so uses the host
+        # pacman configuration. --pacman-conf (which may also point to
+        # a world-writeable file) is not applied.
+        sudo aur build--sync --repo "$db_name"
     fi
 done
 
