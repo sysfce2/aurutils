@@ -1,62 +1,32 @@
-#!/bin/perl -T
-# This script can be used in NOPASSWD rules (sudoers) or similar (doas/setuid
-# wrappers) to upgrade packages in a local repository without password prompt.
-# Use basic measures from perlsec(1perl) to limit security impact.
-use strict;
-use warnings;
-use v5.20;
-my $argv0 = 'build--sync';
+#!/bin/bash
+# build--sync - helper for upgrading local repository
+set -e
+[[ -v AUR_DEBUG ]] && set -o xtrace
+argv0=build--sync
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# minimal path
-$ENV{PATH} = "/bin:/usr/bin";
-delete @ENV{qw(IFS CDPATH ENV BASH_ENV)};
+if (( ! $# )); then
+    printf >&2 'error: repository not specified\n'
+    exit 1
+fi
 
-# option parsing
-use Getopt::Long;
-my $opt_repo;   # tainted
-GetOptions("d|repo=s" => \$opt_repo);
+arg_repo=$1
+pacsync "$arg_repo"
+pacsync "$arg_repo" --dbext=.files
 
-if (!length($opt_repo)) {
-    say STDERR "$argv0: repository not specified";
-    exit(1);
-}
-# limit valid characters for repository
-if ($opt_repo =~ /^([-\@\w.]+)$/) {
-    $opt_repo = $1; # untainted
-} else {
-    die "Bad data in '$opt_repo'";
-}
+targets=()
+while IFS='/' read -r repo name; do
+    if [[ $repo == "$arg_repo" ]]; then
+        targets+=("$name")
+    fi
+done < <(
+    pacman -Sup --print-format '%r/%n'
+)
+wait $!
 
-# update pacman database
-system 'pacsync', $opt_repo
-    and exit $? >> 8;
-system 'pacsync', $opt_repo, '--dbext=.files'
-    and exit $? >> 8;
+if (( ${#targets[@]} )); then
+    printf >&2 "%s: upgrading packages in repository '%s'\n" "$argv0" "$arg_repo"
+    pacman -S --noconfirm "${targets[@]}"
+fi
 
-# verify if host packages can be upgraded from the local repository
-my %targets;
-my $pid = open(my $fh, "-|", 'pacman', '-Sup', '--print-format', '%r/%n');
-
-if ($pid) { # parent
-    while (my $spec = <$fh>) {
-        chomp($spec);
-        my ($repo, $name) = split('/', $spec);
-
-        if ($repo eq $opt_repo) {
-            $targets{$spec} = 1; # untainted - we trust pacman output
-        }
-    };
-
-    waitpid($pid, 0);
-    exit(1) if $?;
-}
-
-if (scalar(keys %targets)) {
-    say STDERR "$argv0: upgrading packages in repository $opt_repo";
-    system 'pacman', '-S', '--noconfirm', keys %targets
-        and exit $? >> 8;
-} else {
-    say STDERR 'there is nothing to do';
-}
-
-# vim: set et sw=4 sts=4 ft=perl:
+# vim: set et sw=4 sts=4 ft=sh:

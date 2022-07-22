@@ -4,8 +4,6 @@
 set -o errexit
 shopt -s extglob
 argv0=build
-# Reset path when running elevated (#979)
-[[ $UID == 0 ]] && PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 machine=$(uname -m)
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -475,7 +473,7 @@ while IFS= read -ru "$fd" path; do
         # Like `makepkg --syncdeps`, this affects the host and so uses the host
         # pacman configuration. --pacman-conf (which may also point to
         # a world-writeable file) is not applied.
-        sudo aur build--sync --repo "$db_name"
+        sudo aur build--sync "$db_name"
     fi
 done
 
