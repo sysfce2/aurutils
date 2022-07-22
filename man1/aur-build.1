@@ -37,9 +37,9 @@ or
 options are provided,
 .B aur\-build
 will also attempt to sync to the local repository with
-.B pacman \-Syu
+.BR pacsync (1)
 and
-.BR "pacman \-Fy" .
+.BR "pacman \-S" .
 See the
 .B Repository updates
 section for details.
@@ -188,11 +188,17 @@ operations. For chroot builds, the file is also used inside the container.
 .
 .TP
 .BI \-\-pacman\-conf= FILE
-The file used for syncing and retrieving local repositories. For chroot
-builds, the file is also used inside the container
+The file used for retrieving local repositories
+.RB ( aur\-repo " " \-\-config ).
+For chroot builds, the file is also used for
+.BR pacman (8)
+operations inside the container
 .RB ( aur\-chroot " " \-\-pacman\-conf ).
 .BR makepkg (8)
-calls are unaffected by this option.
+calls and local repository upgrades (see the
+.B Repository updates
+section)
+.B are unaffected by this option.
 .
 .SS makechrootpkg options
 .TP
@@ -382,18 +388,17 @@ of built packages, defaulting to
 .
 .SH NOTES
 .SS Repository updates
-When building on the host (outside of a container), any installed
-packages in the local repository are upgraded to the latest available
-version with
+When building on the host (outside of a container), installed packages in the
+local repository are upgraded to the latest available version with
+.BR aur\-build\-\-sync .
+.PP
+This command runs
 .BR pacsync <repository>
 followed by
-.BR "pacman \-S \-\-noconfirm" .
+.BI "pacman \-S \-\-noconfirm " <repository>/<upgrades...>
 This is comparable to
 .BR "makepkg \-i" ,
-but packages are only upgraded (installed) if they were installed beforehand.
-Packages which define a
-.I replaces
-field are ignored if the target package is installed on the local system.
+except that only packages which were installed beforehand are upgraded to a new version.
 .
 .SS Using a dedicated build user
 While using a dedicated user for the build process does not increase
@@ -423,17 +428,20 @@ the
 .I build
 user should be allowed to run
 .BR pacman (8)
-with elevated privileges. For example, create the
+with elevated privileges.
+.PP
+For example, create the
 .I /etc/sudoers.d/10_build
-file with following contents:
+file with the following contents:
 .PP
 .EX
     build ALL = (root) NOPASSWD: /usr/bin/pacman
+    build ALL = (root) NOPASSWD: /usr/lib/aurutils/aur-build--sync
 .EE
 .PP
 .BR aur\-build (1)
-(and related programs such as
-.BR aur\-sync (1))
+and related programs such as
+.BR aur\-sync (1)
 may now be run as the new
 .I build
 user.
@@ -493,29 +501,13 @@ is specified, package dependencies are installed with
 .B makepkg
 uses the
 .B pacman \-S \-\-asdeps
-command for this purpose. If other pacman options are desired for this
-command, a wrapper script and the
+command for this purpose. Other pacman options can be specified with a
+wrapper script and the
 .B PACMAN
-environment variable have to be used. (See
+environment variable. (See
 .B ENVIRONMENT VARIABLES
 in
 .BR makepkg (8).)
-.PP
-For example, to use a custom
-.BR pacman.conf (5)
-file, create a wrapper script:
-.PP
-.EX
-  #!/bin/sh --
-  pacman --config </path/to/file> "$@"
-.EE
-.PP
-and set the
-.B PACMAN
-environment variable to its path. (In this particular example,
-building inside a container with dedicated
-.BR pacman.conf(5)
-is an alternative.)
 .
 .SH BUGS
 Databases are built with
