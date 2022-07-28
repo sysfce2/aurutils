@@ -1,5 +1,19 @@
 #compdef aur
 
+#
+# AUR supports third party extension of subcommands. This completion does too:
+#
+# In order to define completion for an aur subcommand "aur-mycmd" you need to
+# create a file _aur-mycmd:
+# * The first line should be: #compdef aur-mycmd
+# * The second line should be: #description Description of Mycmd goes here
+#
+# Then the normal completion function follows, using _arguments or whatever you
+# prefer.
+#
+# This completion mechanism was taken from the _git completion bundled with zsh.
+#
+
 # Helper to list valid repo-add attributes
 __aur_list_attributes() {
     declare -a attrs
