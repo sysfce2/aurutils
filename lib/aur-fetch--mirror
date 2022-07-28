@@ -48,7 +48,7 @@ exec {fd}< "$AUR_ROOT"
   
   # Create branches tracked by local clones
   for b in "${target_branches[@]}"; do
-	  git branch "$b" origin/"$b"
+      git branch --force "$b" origin/"$b"
   done
 } >&2
 

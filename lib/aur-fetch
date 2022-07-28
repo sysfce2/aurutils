@@ -3,8 +3,10 @@
 [[ -v AUR_DEBUG ]] && set -o xtrace
 shopt -s extglob
 argv0=fetch
-AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
+AUR_ROOT=${AUR_ROOT:-$XDG_CACHE_HOME/aur}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # Author information for merge commits
@@ -17,7 +19,7 @@ export GIT_COMMITTER_EMAIL=aurutils@localhost
 git_empty_object=$(git hash-object -t tree /dev/null)
 
 # default options
-existing=0 recurse=0 discard=0 sync=fetch
+existing=0 recurse=0 discard=0 local_mirror=0 sync=fetch
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -55,7 +57,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='efrS'
 opt_long=('auto' 'merge' 'reset' 'rebase' 'discard' 'existing' 'results:' 'ff'
-          'ff-only' 'no-ff' 'no-commit' 'recurse')
+          'ff-only' 'no-ff' 'no-commit' 'recurse' 'mirror')
 opt_hidden=('dump-options' 'sync:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -81,6 +83,8 @@ while true; do
             sync=reset ;;
         --results)
             shift; results_file=$(realpath -- "$1") ;;
+        --mirror)
+            local_mirror=1 ;;
         # git options
         --ff)
             merge_args+=(-ff) ;;
@@ -124,15 +128,31 @@ if (( ! ${#merge_args[@]} )); then
     merge_args=(--ff-only)
 fi
 
-# Main loop
 if (( recurse )); then
-    aur depends --pkgbase "$@" # stdin handled by aur-depends
+    mapfile -t packages < <(aur depends --pkgbase "$@")
+    wait "$!"
+
 elif (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
-    tee # noop
+    mapfile -t packages
 else
-    printf '%s\n' "$@"
-fi | while read -r pkg; do
+    packages=("$@")
+    set --
+fi
+
+# Update revisions in local AUR mirror
+if (( local_mirror )); then
+    mkdir -p "$AUR_ROOT"
+    env AUR_ROOT="$AUR_ROOT" aur fetch--mirror "${packages[@]}"  # flock $AUR_ROOT
+fi
+
+# Main loop
+for pkg in "${packages[@]}"; do
     unset -f git
+    if (( local_mirror )); then  # branch origin/$pkg -> master
+        upstream=origin/$pkg
+    else
+        upstream=origin/master
+    fi
 
     # Verify if the repository is hosted on AUR (#959)
     if (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
@@ -143,8 +163,17 @@ fi | while read -r pkg; do
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
+        # Automatically convert clones to local clones and vice-versa
+        if (( local_mirror )); then
+            git remote set-url origin "$AUR_ROOT"
+            git remote set-branches origin "$pkg"
+        else
+            git remote set-url origin "$AUR_LOCATION/$pkg".git
+            git remote set-branches origin '*'
+        fi
+
         # Retrieve new upstream commits
-        git fetch -v origin >&2 || exit
+        git fetch origin >&2 || exit
 
         # Store original HEAD for --results output
         orig_head=$(git rev-parse --verify --quiet HEAD)
@@ -165,10 +194,10 @@ fi | while read -r pkg; do
                 ;;&  # proceed to merge or rebase
             rebase)
                 dest='HEAD'
-                git rebase -v "${rebase_args[@]}" origin/master ;;
+                git rebase "${rebase_args[@]}" "$upstream" ;;
             merge)
                 dest='HEAD'
-                git merge -v "${merge_args[@]}" origin/master ;;
+                git merge "${merge_args[@]}" "$upstream" ;;
             reset)
                 dest='master@{u}'
                 git reset --hard 'master@{u}' ;;
@@ -186,18 +215,24 @@ fi | while read -r pkg; do
         fi
 
     # Otherwise, try to clone anew
-    elif git clone "$AUR_LOCATION/$pkg" >&2; then
+    else
+        # XXX: per-package locks are too fine-gained for (fast) local clones,
+        # but suitable for regular clones
+        printf >&2 "Cloning into '%s'\n" "$pkg"
+        if (( local_mirror )); then
+            git clone -q --branch="$pkg" --single-branch "$AUR_ROOT" "$pkg" || exit 1
+            git branch -m master # compatibility to aurweb
+        else
+            git clone -q "$AUR_LOCATION/$pkg" || exit 1
+        fi >&2
+
         if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
             git -C "$pkg" --no-pager log --pretty=reference -1 >&2
         fi
-        head=${head:-$git_empty_object}
 
         if [[ -v results_file ]]; then
-            results 'clone' "$git_empty_object" "$head" "$PWD/$pkg" "$results_file"
+            results 'clone' "$git_empty_object" "${head:-$git_empty_object}" "$PWD/$pkg" "$results_file"
         fi
-    else
-        printf >&2 '%s: failed to clone repository %s\n' "$argv0" "$pkg"
-        exit 1
     fi
 done
 
