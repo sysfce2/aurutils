@@ -75,7 +75,6 @@ __aur_complete_for()
     service=$1 $_comps[$1]
 }
 
-
 declare -ga _aur_build_sync_args
 # Flags that are used by both aur-build and aur-sync
 # Prevents having to duplicate them in both places
@@ -110,7 +109,7 @@ _aur_build_sync_args=(
     '(-d --database)'{-d,--database=}'[the name of the pacman database]:repository: __aur_list_repos'
 )
 
-_aur_build() {
+_aur-build() {
     local -a args
 
     args=(
@@ -135,7 +134,7 @@ _aur_build() {
     _arguments -s $args $_aur_build_sync_args
 }
 
-_aur_chroot() {
+_aur-chroot() {
     local -a args
 
     args=(
@@ -165,7 +164,7 @@ _aur_chroot() {
     _arguments -s -S $args
 }
 
-_aur_depends() {
+_aur-depends() {
     local -a args
 
     args=(
@@ -188,7 +187,7 @@ _aur_depends() {
     _arguments -s $args
 }
 
-_aur_fetch() {
+_aur-fetch() {
     local -a args
     local -A sync_types
 
@@ -223,7 +222,7 @@ _aur_fetch() {
 
 }
 
-_aur_graph() {
+_aur-graph() {
     local -a args
 
     args=(
@@ -232,7 +231,7 @@ _aur_graph() {
     _arguments -s $args
 }
 
-_aur_pkglist() {
+_aur-pkglist() {
     local -a args
 
     args=(
@@ -256,7 +255,7 @@ _aur_pkglist() {
     _arguments -s $args
 }
 
-_aur_query() {
+_aur-query() {
     local -a args
 
     args=(
@@ -270,7 +269,7 @@ _aur_query() {
     _arguments -s $args
 }
 
-_aur_repo() {
+_aur-repo() {
     local -a args
 
     args=(
@@ -298,7 +297,7 @@ _aur_repo() {
     _arguments -s $args
 }
 
-_aur_repo-filter() {
+_aur-repo-filter() {
     local -a args
 
     args=(
@@ -310,7 +309,7 @@ _aur_repo-filter() {
     _arguments -s $args
 }
 
-_aur_search() {
+_aur-search() {
     local -a args
 
     # Groups (+ name) are used to simplify handling of options being exclusive
@@ -350,7 +349,7 @@ _aur_search() {
     fi
 }
 
-_aur_srcver() {
+_aur-srcver() {
     local -a args
 
     args=(
@@ -362,7 +361,7 @@ _aur_srcver() {
     _arguments -s $args
 }
 
-_aur_sync() {
+_aur-sync() {
     local -a args
 
     # Groups (+ name) are used to simplify handling of options being exclusive
@@ -396,7 +395,7 @@ _aur_sync() {
     _arguments -s $args $_aur_build_sync_args
 }
 
-_aur_vercmp() {
+_aur-vercmp() {
     local -a args
 
     args=(
@@ -409,7 +408,7 @@ _aur_vercmp() {
     _arguments -s $args
 }
 
-_aur_view() {
+_aur-view() {
     local -a args
 
     args=(
@@ -443,6 +442,10 @@ _aur() {
     cmds[vercmp]="check packages for AUR updates"
     cmds[view]="inspect git repositories"
 
+    for k in ${(k)_aur_third_party_commands}; do
+        cmds[$k]=_aur_third_party_commands[$k]
+    done
+
     local -a descs=()
     local k
     for k in ${(k)cmds}; do
@@ -456,8 +459,39 @@ _aur() {
     case $state in
         options)
             if [[ ${cmds[${words[1]}]} != "" ]]; then
-                _aur_${words[1]}
+                _aur-${words[1]}
             fi
             ;;
     esac
 }
+
+# Based on code in _git, this allows third party commands extending aur and allows
+# completions for them.
+
+# Load any _aur-* definitions so that they may be completed as commands.
+declare -gA _aur_third_party_commands
+_aur_third_party_commands=()
+
+local file input
+for file in ${^fpath}/_aur-*~(*~|*.zwc)(-.N); do
+  local name=${${file:t}#_aur-}
+  if (( $+_aur_third_party_commands[$name] )); then
+    continue
+  fi
+
+  local desc=
+  integer i=1
+  while read input; do
+    if (( i == 2 )); then
+      if [[ $input == '#description '* ]]; then
+        desc=:${input#\#description }
+      fi
+      break
+    fi
+    (( i++ ))
+  done < $file
+
+  _aur_third_party_commands+=([$name]=$desc)
+done
+
+_aur
