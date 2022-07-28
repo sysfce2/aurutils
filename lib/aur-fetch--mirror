@@ -1,0 +1,55 @@
+#!/bin/bash
+set -o errexit
+[[ -v AUR_DEBUG ]] && set -o xtrace
+argv0=fetch--mirror
+AUR_MIRROR=${AUR_MIRROR:-https://github.com/archlinux/aur}
+AUR_MIRROR_TTL=${AUR_MIRROR_TTL:-600}
+startdir=$PWD
+
+if ! { [[ -v AUR_ROOT ]] && [[ -d $AUR_ROOT ]]; }; then
+    printf >&2 '%s: AUR_ROOT must point to a directory\n' "$argv0"
+    exit 2
+fi
+
+# Update local mirror
+exec {fd}< "$AUR_ROOT"
+{ flock --wait 5 "$fd" || exit 1
+
+  # Shallow clone
+  [[ ! -d $AUR_ROOT/.git ]] && git clone --depth=1 "$AUR_MIRROR" "$AUR_ROOT"
+  cd "$AUR_ROOT"
+
+  # Keep a refcache to filter out packages which are not in AUR. This is
+  # includes unlisted packages (unlike `aur pkglist --pkgbase`)
+  printf -v now '%(%s)T' -1
+  ttl=$AUR_MIRROR_TTL
+
+  if ! cachetime=$(stat -c %Y remote-pkgbase 2>/dev/null) || (( now > (cachetime + ttl) )); then
+      git ls-remote origin 'refs/heads/*' | awk -F/ '{print $3}' >'remote-pkgbase'
+  fi
+
+  # Retrieve list of active remotes
+  mapfile -t active_branches < <(
+      git config --get-all remote.origin.fetch | awk -F'[/:]' '$3 != "main" {print $3}'
+  )
+  # Only consider AUR targets
+  mapfile -t target_branches < <(
+      printf '%s\n' "$@" | grep -Fxf 'remote-pkgbase'
+  )
+
+  # Set remote branches as union of active remotes and arguments. If '*' is set
+  # instead, `git fetch origin` in $AUR_ROOT will pull in the entire history.
+  git remote set-branches origin --add main
+  printf '%s\n' "${target_branches[@]}" "${active_branches[@]}" | sort -u \
+      | xargs -d '\n' git remote set-branches origin
+
+  # Retrieve objects
+  git fetch origin "${target_branches[@]}"
+  
+  # Create branches tracked by local clones
+  for b in "${target_branches[@]}"; do
+	  git branch "$b" origin/"$b"
+  done
+} >&2
+
+exec {fd}<&- # release lock
