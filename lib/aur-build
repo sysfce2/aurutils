@@ -328,6 +328,7 @@ fi
 # Write successfully built packages to file (#437, #980)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
+    # XXX: race with concurrent processes
     (( truncate )) && true | as_user tee "$results_file"
 fi
 
@@ -371,6 +372,7 @@ while IFS= read -ru "$fd" path; do
 
     # Run pkgver before --packagelist (#500)
     if (( run_pkgver )); then
+        # XXX: race with concurrent processes
         as_user makepkg -od "${makepkg_common_args[@]}" >&2
     fi
 
@@ -416,6 +418,7 @@ while IFS= read -ru "$fd" path; do
             fi
             PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
+            # XXX: if $LOGDEST is unset, move logs from $var_tmp to $PWD (atomic)
             PKGDEST="$var_tmp" LOGDEST=${LOGDEST:-$PWD} \
                 run_msg 3 as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
@@ -457,6 +460,7 @@ while IFS= read -ru "$fd" path; do
     if (( create_package )); then
         mv -f "${pkglist[@]}" "$db_root"
 
+        # XXX: race with concurrent processes
         if [[ -v results_file ]]; then
             printf "build:file://$db_root/%s\n" "${pkglist[@]}" | as_user tee -a "$results_file" >/dev/null
         fi
