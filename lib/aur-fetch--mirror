@@ -2,54 +2,112 @@
 set -o errexit
 [[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=fetch--mirror
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AUR_MIRROR=${AUR_MIRROR:-https://github.com/archlinux/aur}
-AUR_MIRROR_TTL=${AUR_MIRROR_TTL:-600}
+AUR_MIRROR_TTL=${AUR_MIRROR_TTL:-300}
+AUR_ROOT=${AUR_ROOT:-$XDG_CACHE_HOME/aur}
 startdir=$PWD
+local_clones=0
 
-if ! { [[ -v AUR_ROOT ]] && [[ -d $AUR_ROOT ]]; }; then
-    printf >&2 '%s: AUR_ROOT must point to a directory\n' "$argv0"
-    exit 2
+if [[ $1 = '--lclone' ]]; then
+    local_clones=1
+    shift
 fi
 
-# Update local mirror
+# --------------------------------------------------
+# Step 1. Create a sparse checkout of the AUR mirror
+git_active_remotes() {
+    git config --get-all remote.origin.fetch | awk -F'[/:]' '{print $3}'
+}
+
+# XXX: this includes refs/heads (which we do not use) but unlike
+# git-config this accepts multiple arguments in one call
+git_set_branches() {
+    git remote set-branches origin --add main # ensure at least 1 remote
+    sort -u | xargs -d '\n' git remote set-branches origin
+}
+
+git_ls_remote_ttl() {
+    local cachetime now ttl=$AUR_MIRROR_TTL
+    printf -v now '%(%s)T' -1
+
+    if ! cachetime=$(stat -c %Y "$1" 2>/dev/null) || (( now > (cachetime + ttl) )); then
+        git ls-remote origin 'refs/heads/*' | awk -F/ '{print $3}'
+    fi
+}
+
 exec {fd}< "$AUR_ROOT"
 { flock --wait 5 "$fd" || exit 1
 
   # Shallow clone
-  [[ ! -d $AUR_ROOT/.git ]] && git clone --depth=1 "$AUR_MIRROR" "$AUR_ROOT"
+  [[ ! -d $AUR_ROOT ]] && git clone --depth=1 --bare "$AUR_MIRROR" "$AUR_ROOT"
   cd "$AUR_ROOT"
 
   # Keep a refcache to filter out packages which are not in AUR. This is
   # includes unlisted packages (unlike `aur pkglist --pkgbase`)
-  printf -v now '%(%s)T' -1
-  ttl=$AUR_MIRROR_TTL
-
-  if ! cachetime=$(stat -c %Y remote-pkgbase 2>/dev/null) || (( now > (cachetime + ttl) )); then
-      git ls-remote origin 'refs/heads/*' | awk -F/ '{print $3}' >'remote-pkgbase'
-  fi
+  git_ls_remote_ttl 'remote-pkgbase' >'remote-pkgbase'
 
   # Retrieve list of active remotes
-  mapfile -t active_branches < <(
-      git config --get-all remote.origin.fetch | awk -F'[/:]' '$3 != "main" {print $3}'
-  )
+  mapfile -t active_remotes < <(git_active_remotes | grep -v 'main')
+
   # Only consider AUR targets
-  mapfile -t target_branches < <(
-      printf '%s\n' "$@" | grep -Fxf 'remote-pkgbase'
-  )
+  mapfile -t target_remotes < <(printf '%s\n' "$@" | grep -Fxf 'remote-pkgbase')
 
   # Set remote branches as union of active remotes and arguments. If '*' is set
   # instead, `git fetch origin` in $AUR_ROOT will pull in the entire history.
-  git remote set-branches origin --add main
-  printf '%s\n' "${target_branches[@]}" "${active_branches[@]}" | sort -u \
-      | xargs -d '\n' git remote set-branches origin
+  printf '%s\n' "${target_remotes[@]}" "${active_remotes[@]}" | git_set_branches
 
   # Retrieve objects
-  git fetch origin "${target_branches[@]}"
-  
-  # Create branches tracked by local clones
-  for b in "${target_branches[@]}"; do
-      git branch --force "$b" origin/"$b"
-  done
+  git fetch origin "${target_remotes[@]}"
+
+  # Resetting branches is only needed when .git/config contains both refs/heads
+  # and refs/remotes/origin, i.e. when using git-clone. `--lclone` uses git-init
+  # and refspec manipulation instead.
+  # for b in "${target_remotes[@]}"; do
+  #     git branch --force "$b" origin/"$b"
+  # done
 } >&2
 
-exec {fd}<&- # release lock
+# ------------------------------------------------------------
+# Step 2. Propagate each branch in the mirror to a local clone
+(( ! local_clones )) && exit
+results=()
+
+git_srcdest_origin() {
+    local refspec=refs/remotes/origin/$1
+
+    git config remote.origin.fetch "+$refspec:$refspec"
+    git fetch --quiet
+    git checkout -B master "$refspec"
+}
+
+for b in "${target_remotes[@]}"; do
+    cd "$startdir"
+
+    # XXX: "Cloning into an existing directory is only allowed if the
+    # directory is empty"
+    if [[ ! -d $b/.git ]] && mkdir "$b"; then
+        cd "$b"
+        git init
+        git remote add origin "$AUR_ROOT"
+
+        # Compared to git clone --local, using $refspec as both source and
+        # destination allows updates from `git-fetch` in $AUR_ROOT to be
+        # directly visible in local clones.  $AUR_ROOT does not require
+        # local branches or refs/heads for this to work.
+        git_srcdest_origin "$b"
+
+        # Export results to aur-fetch
+        head=$(git rev-parse --verify --quiet HEAD)
+        results+=("$b:$head")
+    fi >&2
+done
+
+# The lock is only released here, because we do not want an instance to modify
+# AUR_ROOT while local git-clones are still underway. Additionally, local clones
+# use cp(1) and are thus a cheap operation. See --local in git-clone(1).
+exec {fd}<&-
+
+if (( ${#results[@]} )); then
+    printf '%s\n' "${results[@]}"
+fi
