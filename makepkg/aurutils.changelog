@@ -5,6 +5,12 @@
     - `pacman -Syu --config` is replaced by `pacsync <repo>` and `pacman -S <repo>/<pkg>`
     - local repository upgrades are now unaffected by `--pacman-conf`
 
+* `aur-fetch`
+  + add `aur-fetch--mirror` helper for `aur.git` mirrors
+    - defaults to `github.com/archlinux/aur`
+    - enabled with `AUR_FETCH_USE_MIRROR=1`
+  + run flock(1) on existing repositories
+
 * `aur-graph`
   + selectively disable/enable depends with `aur graph -v <TYPE>=[0|1]`
     - supported types: `DEPENDS`, `MAKEDEPENDS`, `CHECKDEPENDS`, `OPTDEPENDS`
