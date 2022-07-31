@@ -5,8 +5,8 @@ shopt -s extglob
 argv0=fetch
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+AUR_FETCH_USE_MIRROR=${AUR_FETCH_USE_MIRROR:-0}
 AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
-AUR_ROOT=${AUR_ROOT:-$XDG_CACHE_HOME/aur}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # Author information for merge commits
@@ -19,7 +19,7 @@ export GIT_COMMITTER_EMAIL=aurutils@localhost
 git_empty_object=$(git hash-object -t tree /dev/null)
 
 # default options
-existing=0 recurse=0 discard=0 local_mirror=0 sync=fetch
+existing=0 recurse=0 discard=0 sync=fetch
 
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -57,7 +57,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='efrS'
 opt_long=('auto' 'merge' 'reset' 'rebase' 'discard' 'existing' 'results:' 'ff'
-          'ff-only' 'no-ff' 'no-commit' 'recurse' 'mirror')
+          'ff-only' 'no-ff' 'no-commit' 'recurse')
 opt_hidden=('dump-options' 'sync:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -83,8 +83,6 @@ while true; do
             sync=reset ;;
         --results)
             shift; results_file=$(realpath -- "$1") ;;
-        --mirror)
-            local_mirror=1 ;;
         # git options
         --ff)
             merge_args+=(-ff) ;;
@@ -143,17 +141,20 @@ fi
 # Update revisions in local AUR mirror
 declare -A local_clones
 
-if (( local_mirror )); then
+# With an AUR mirror, updates are retrieved in two steps. First, updates to the
+# mirror are synchronized with `git-fetch`. Secondly, local clones of the miror
+# are created and are updated with `git-fetch` and `git-merge` as usual.
+if (( AUR_FETCH_USE_MIRROR )); then
     while read -r IFS=':' pkg head; do
         local_clones[$pkg]=$head
-    done < <(env AUR_ROOT="$AUR_ROOT" aur fetch--mirror --lclone "${packages[@]}")
+    done < <(aur fetch--mirror --lclone "${packages[@]}")
     wait "$!"
 fi
 
 # Main loop
 for pkg in "${packages[@]}"; do
     unset -f git
-    if (( local_mirror )); then  # branch origin/$pkg -> master
+    if (( AUR_FETCH_USE_MIRROR )); then  # branch origin/$pkg -> master
         upstream=origin/$pkg
     else
         upstream=origin/master
@@ -166,20 +167,17 @@ for pkg in "${packages[@]}"; do
 
     # Clone package if not existing
     elif [[ ! -d $pkg/.git ]]; then
-        printf >&2 "Cloning into '%s'\n" "$pkg"
-
         # Differentiate between local (fetch--mirror) and aurweb clones
         if [[ ! ${local_clones[$pkg]} ]]; then
-            git clone --quiet "$AUR_LOCATION/$pkg" || exit 1
+            git clone "$AUR_LOCATION/$pkg" || exit 1
             head=$(git -C "$pkg" rev-parse --verify quiet HEAD)
         else
+            printf "Cloning into '%s'\n" "$pkg"
             head=${local_clones[$pkg]}
         fi >&2
 
         if [[ $head ]]; then
             git -C "$pkg" --no-pager log --pretty=reference -1
-        else
-            printf 'warning: You appear to have cloned an empty repository.\n'
         fi >&2
 
         # XXX: race with multiple instances
