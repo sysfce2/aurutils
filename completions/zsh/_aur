@@ -1,46 +1,5 @@
 #compdef aur
 
-# Helper to complete aur package names
-# $@ Optional extra arguments to aur pkglist
-__aur_list_pkgs() {
-    # Because of the large number of items causing slowdowns, only do this completion if there is
-    # at least one letter. In addition we also skip processing if the current completion starts
-    # with a -, which would be an option. This speeds up generating the list of options in case
-    # __aur_list_pkgs is used for * (remaining positional arguments). Then we don't need to evaluate
-    # any of this when we already know we are completing a flag.
-    #
-    # Note that additional care needs to be taken to not give the wrong behaviour for a situation
-    # like "aur sync --ignore=a<tab>". That is what the IPREFIX stuff is about, it lets us skip
-    # the "--ignore=" part.
-    local working_data="${words[$CURRENT]#${IPREFIX}}"
-    if [[ ${working_data} == "" || ${working_data[1]} == '-' ]]; then
-        return
-    fi
-
-    declare -a pkgs
-    pkgs=( $(aur pkglist --ttl 86400 --systime $@ 2>/dev/null) )
-    # Since we are dealing with very long lists of possible completions (~80k as of writing this),
-    # speed is of the utmost importance for a good user experience. A low level compadd call gave
-    # the best performance in testing.
-    local expl
-    _description packages expl 'package'
-    compadd "$expl[@]" - $pkgs
-}
-
-# Helper to list local packages.
-__aur_list_local_packages() {
-    declare -a pkgs
-    local repo
-    for repo in ${(f)"$(aur repo --list-repo)"}; do
-        pkgs+=( $(aur repo -lq -d $repo 2>/dev/null) )
-    done
-    if [[ ${#pkgs} -eq 0 ]]; then
-        _message "package (no local packages found)"
-    else
-        _values package $pkgs
-    fi
-}
-
 # Helper to list valid repo-add attributes
 __aur_list_attributes() {
     declare -a attrs
@@ -49,23 +8,6 @@ __aur_list_attributes() {
         _message "attr (no attributes found)"
     else
         _values attr $attrs
-    fi
-}
-
-# Helper to complete repository names
-# If --all is given, also complete sync repositories, not just local ones.
-__aur_list_repos()
-{
-    if [[ $1 == '--all' ]]; then
-        _values repository $(pacconf --repo-list 2>/dev/null)
-    else
-        declare -a repos
-        repos=( $(aur repo --repo-list 2>/dev/null) )
-        if [[ ${#repos} -eq 0 ]]; then
-            _message "repository (none found)"
-        else
-            _values repository $repos
-        fi
     fi
 }
 
@@ -106,7 +48,7 @@ _aur_build_sync_args=(
     # Repo args
     '--pacman-conf=[the pacman.conf used for syncing and retriving local repositories, for chroot also used inside the container]:configuration file: _files'
     '--root=[the root directory for the repository]:directory: _files -/'
-    '(-d --database)'{-d,--database=}'[the name of the pacman database]:repository: __aur_list_repos'
+    '(-d --database)'{-d,--database=}'[the name of the pacman database]:repository: _aur_repositories'
 )
 
 _aur-build() {
@@ -159,7 +101,7 @@ _aur-chroot() {
         {-x,--suffix=}'[the path component SUFFIX in the pacman configuration, default to extra]:suffix: '
 
         + positional
-        '*:pkgname: __aur_list_pkgs'
+        '*:pkgname: _aur_packages'
     )
     _arguments -s -S $args
 }
@@ -182,7 +124,7 @@ _aur-depends() {
         {-t,--table}'[output dependency information as a tab separated table]'
 
         + positional
-        '*:pkgname: __aur_list_pkgs'
+        '*:pkgname: _aur_packages'
     )
     _arguments -s $args
 }
@@ -214,9 +156,9 @@ _aur-fetch() {
     )
     # This is to handle the fact that -r/--recurse changes the meaning of positional arguments
     if [[ $words[(ie)-r] -le ${#words} || $words[(ie)--recurse] -le ${#words} ]]; then
-        _arguments -s $args '*:pkgname: __aur_list_pkgs'
+        _arguments -s $args '*:pkgname: _aur_packages'
     else
-        _arguments -s $args '*:pkgbase: __aur_list_pkgs -b'
+        _arguments -s $args '*:pkgbase: _aur_packages -b'
     fi
 
 
@@ -264,7 +206,7 @@ _aur-query() {
         '(-e --exit-if-empty)'{-e,--exit-if-empty}'[if no results are found, exit with status 1 instead of 0]'
         '(-r --raw)'{-r,--raw}'[do not process results (implied by --type=info)]'
         '(-t --type)'{-t,--type=}'[type of request]:type:(search info)'
-        '*:pkgname: __aur_list_pkgs'
+        '*:pkgname: _aur_packages'
     )
     _arguments -s $args
 }
@@ -289,7 +231,7 @@ _aur-repo() {
         + options
         '--status-file=[print status information to a specified file]:file: _files'
         '(-c --config)'{-c,--config=}'[set an alternate pacman.conf file path]:config file: _files'
-        '(-d --database --repo)'{-d,--database=,--repo=}'[the name of a pacman repository]:repository: __aur_list_repos --all'
+        '(-d --database --repo)'{-d,--database=,--repo=}'[the name of a pacman repository]:repository: _aur_repositories --all'
         '(-q --quiet)'{-q,--quiet}'[only print package names]'
         '(-r --root)'{-r,--root=}'[the path to the root of a local repository]:path: _files -/'
         '(-S --sync)'{-S,--sync}'[query repositories in DBPATH/sync]'
@@ -303,7 +245,7 @@ _aur-repo-filter() {
     args=(
         '(-a --all --sync)'{-a,--all,--sync}'[query all available pacman repositories (pacsift --sync)]'
         '--config=[set an alternate pacman.conf file path]:config file: _files'
-        '(-d --database)'{-d,--database=}'[restrict output to pacman repository]:repository: __aur_list_repos --all'
+        '(-d --database)'{-d,--database=}'[restrict output to pacman repository]:repository: _aur_repositories --all'
         '--sysroot[set an alternative system root]:path: _files -/'
     )
     _arguments -s $args
@@ -343,7 +285,7 @@ _aur-search() {
     # Determine if this is an info search by checking if the index of -i or --info in the words
     # array is less than the length of the array.
     if [[ $words[(ie)-i] -le ${#words} || $words[(ie)--info] -le ${#words} ]]; then
-        _arguments -s $args '*:search term: __aur_list_pkgs'
+        _arguments -s $args '*:search term: _aur_packages'
     else
         _arguments -s $args '*:search term: '
     fi
@@ -356,7 +298,7 @@ _aur-srcver() {
         '--buildscript[read the package script instead of the PKGBUILD]:: _files'
         {-j,--jobs=}'[set the amount of makepkg processes run in parallel]:number of jobs: '
         '--no-prepare[do not run the prepare() function in the PKGBUILD]'
-        '*:pkgbase: __aur_list_pkgs -b'
+        '*:pkgbase: _aur_packages --pkgbase'
     )
     _arguments -s $args
 }
@@ -379,7 +321,7 @@ _aur-sync() {
         '(--provides-from)--no-provides[do not take virtual dependencies (provides) in pacman sync repositories into account to resolve package dependencies]'
         '(-o --no-build)'{-o,--no-build}'[print target packages and their paths instead of building them]'
         '(-u --upgrades)'{-u,--upgrades}'[update all obsolete AUR packages in a local repository]'
-        '*--ignore=:package: __aur_list_local_packages'
+        '*--ignore=:package: _aur_local_packages'
 
         # These overwrite each other and are thus mutually exlusive
         + '(no_ver)'
@@ -390,7 +332,7 @@ _aur-sync() {
         '--rebuild-tree[as --rebuild-tree, but append all packages in the repository (see -d) as targets]'
 
        + positional
-        '*:packages: __aur_list_pkgs'
+        '*:packages: _aur_packages'
     )
     _arguments -s $args $_aur_build_sync_args
 }
