@@ -1,9 +1,14 @@
 PREFIX ?= /usr
 SHRDIR ?= $(PREFIX)/share
-.PHONY = bash install-bash zsh install-zsh
+.PHONY = bash install-bash install-zsh
+
+ZSH_SITE_FUNCTIONS = \
+	zsh/_aur \
+	zsh/_aur_local_packages \
+	zsh/_aur_packages \
+	zsh/_aur_repositories
 
 bash: bash/aur
-zsh: zsh/_aur.zsh
 
 bash/aur: bash/aurutils.in ../lib/*
 	bash $< >$@
@@ -11,6 +16,8 @@ bash/aur: bash/aurutils.in ../lib/*
 install-bash: bash/aur
 	@install -Dm644 bash/aur -t '$(DESTDIR)$(SHRDIR)/bash-completion/completions'
 
-install-zsh: zsh/_aur.zsh
-	@install -Dm644 zsh/_aur.zsh '$(DESTDIR)$(SHRDIR)/zsh/site-functions/_aur'
-	@install -Dm755 zsh/run-help-aur -t '$(DESTDIR)$(SHRDIR)/zsh/functions/Misc'
+install-zsh: zsh/run-help-aur $(ZSH_SITE_FUNCTIONS)
+	@install -Dm644 zsh/run-help-aur -t '$(DESTDIR)$(SHRDIR)/zsh/functions/Misc'
+
+	@install -d '$(DESTDIR)$(SHRDIR)/zsh/site-functions/'
+	@install -m644 -t '$(DESTDIR)$(SHRDIR)/zsh/site-functions/' $(ZSH_SITE_FUNCTIONS)
