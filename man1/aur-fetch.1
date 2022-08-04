@@ -195,6 +195,57 @@ and
 .I <head_to>
 will be identical.
 .
+.SH ENVIRONMENT
+.TP
+.B AUR_LOCATION
+URI where repositories are cloned from. Defaults to
+.IR https://aur.archlinux.org .
+.
+.TP
+.B AUR_MIRROR
+URI to an AUR mirror, a
+.BR git (1)
+repository where each package is contained in a
+.BR git\-branch (1).
+Defaults to
+.MT https://github.com/archlinux/aur
+.ME .
+.
+.TP
+.B AUR_MIRROR_TTL
+When updating an AUR mirror, a list of all branches is retrieved with
+.BR git\-ls\-remote
+to validate arguments. The
+.B AUR_MIRROR_TTL
+variable defines (in seconds) how often this command is run. For accurate
+results, this should roughly equal the synchronization interval between AUR and
+its mirrors. Defaults to
+.IR 300 .
+.
+.TP
+.B AUR_FETCH_USE_MIRROR
+If this variable is set to a positive value, clone repositories from an AUR
+mirror instead of
+.BR AUR_LOCATION .
+Upstream changes are merged from
+.I origin/<package>
+instead of
+.IR origin/master .
+.IP
+Remotes of existing
+.BR git (1)
+repositories are preserved. When enabling or disabling
+.BR AUR_FETCH_MIRROR ,
+repositories should be converted manually with
+.B git\-remote set\-url
+and
+.BR "git\-remote set\-branches origin" .
+.
+.TP
+.B AUR_ROOT
+Directory where an AUR mirror is cloned to. Defaults to
+.IR XDG_CACHE_HOME/aur .
+.
 .SH SEE ALSO
 .ad l
 .nh

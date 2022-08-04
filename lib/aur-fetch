@@ -3,8 +3,10 @@
 [[ -v AUR_DEBUG ]] && set -o xtrace
 shopt -s extglob
 argv0=fetch
-AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+AUR_FETCH_USE_MIRROR=${AUR_FETCH_USE_MIRROR:-0}
+AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
 
 # Author information for merge commits
@@ -115,6 +117,7 @@ if (( ! $# )); then
     exit 1
 fi
 
+# XXX: race with concurrent processes
 if [[ -v results_file ]]; then
     : >"$results_file" || exit 1 # truncate file
 fi
@@ -124,27 +127,75 @@ if (( ! ${#merge_args[@]} )); then
     merge_args=(--ff-only)
 fi
 
-# Main loop
 if (( recurse )); then
-    aur depends --pkgbase "$@" # stdin handled by aur-depends
+    mapfile -t packages < <(aur depends --pkgbase "$@")
+    wait "$!"
+
 elif (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
-    tee # noop
+    mapfile -t packages
 else
-    printf '%s\n' "$@"
-fi | while read -r pkg; do
+    packages=("$@")
+    set --
+fi
+
+# Update revisions in local AUR mirror
+declare -A local_clones
+
+# With an AUR mirror, updates are retrieved in two steps. First, updates to the
+# mirror are synchronized with `git-fetch`. Secondly, local clones of the miror
+# are created and are updated with `git-fetch` and `git-merge` as usual.
+if (( AUR_FETCH_USE_MIRROR )); then
+    while read -r IFS=':' pkg head; do
+        local_clones[$pkg]=$head
+    done < <(aur fetch--mirror --lclone "${packages[@]}")
+    wait "$!"
+fi
+
+# Main loop
+for pkg in "${packages[@]}"; do
     unset -f git
+    if (( AUR_FETCH_USE_MIRROR )); then  # branch origin/$pkg -> master
+        upstream=origin/$pkg
+    else
+        upstream=origin/master
+    fi
 
     # Verify if the repository is hosted on AUR (#959)
     if (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
         printf >&2 '%s: warning: package %s is not in AUR, skipping\n' "$argv0" "$pkg"
         continue
 
-    elif [[ -d $pkg/.git ]]; then
+    # Clone package if not existing
+    elif [[ ! -d $pkg/.git ]]; then
+        # Differentiate between local (fetch--mirror) and aurweb clones
+        if [[ ! ${local_clones[$pkg]} ]]; then
+            git clone "$AUR_LOCATION/$pkg" || exit 1
+            head=$(git -C "$pkg" rev-parse --verify quiet HEAD)
+        else
+            printf "Cloning into '%s'\n" "$pkg"
+            head=${local_clones[$pkg]}
+        fi >&2
+
+        if [[ $head ]]; then
+            git -C "$pkg" --no-pager log --pretty=reference -1
+        fi >&2
+
+        # XXX: race with multiple instances
+        if [[ -v results_file ]]; then
+            results 'clone' "$git_empty_object" "${head:-$git_empty_object}" "$PWD/$pkg" "$results_file"
+        fi
+
+    # Update existing git repository
+    else
+        # Per-package lock
+        exec {fd}< "$pkg"/.git
+        flock --wait 5 "$fd" || exit 1
+
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
         # Retrieve new upstream commits
-        git fetch -v origin >&2 || exit
+        git fetch origin >&2 || exit
 
         # Store original HEAD for --results output
         orig_head=$(git rev-parse --verify --quiet HEAD)
@@ -165,10 +216,10 @@ fi | while read -r pkg; do
                 ;;&  # proceed to merge or rebase
             rebase)
                 dest='HEAD'
-                git rebase -v "${rebase_args[@]}" origin/master ;;
+                git rebase "${rebase_args[@]}" "$upstream" ;;
             merge)
                 dest='HEAD'
-                git merge -v "${merge_args[@]}" origin/master ;;
+                git merge "${merge_args[@]}" "$upstream" ;;
             reset)
                 dest='master@{u}'
                 git reset --hard 'master@{u}' ;;
@@ -184,20 +235,7 @@ fi | while read -r pkg; do
         if [[ -v results_file ]]; then
             results "$sync_pkg" "$orig_head" "$head" "$PWD/$pkg" "$results_file"
         fi
-
-    # Otherwise, try to clone anew
-    elif git clone "$AUR_LOCATION/$pkg" >&2; then
-        if head=$(git -C "$pkg" rev-parse --verify --quiet HEAD); then
-            git -C "$pkg" --no-pager log --pretty=reference -1 >&2
-        fi
-        head=${head:-$git_empty_object}
-
-        if [[ -v results_file ]]; then
-            results 'clone' "$git_empty_object" "$head" "$PWD/$pkg" "$results_file"
-        fi
-    else
-        printf >&2 '%s: failed to clone repository %s\n' "$argv0" "$pkg"
-        exit 1
+        exec {fd}<&- # release lock
     fi
 done
 
