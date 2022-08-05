@@ -47,7 +47,18 @@ is resolved to
 .TP
 .BR \-t ", " \-\-table
 Output dependency information in the following format:
-.BR \%pkgname\etdepends\etpkgbase\etpkgver .
+.IP
+.IR \%pkgname\etdepends\etpkgbase\etpkgver\ettype
+.IP
+where
+.I type
+is one of
+.BR Self ,
+.BR Depends ,
+.BR MakeDepends ,
+.BR CheckDepends
+and
+.BR OptDepends .
 .
 .SS Dependency options
 When resolving dependencies,
