@@ -254,8 +254,8 @@ if [[ ! -s $orderfile ]]; then
 fi
 
 if (( rotate )); then
-    if { hash rot13 && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
-        exec bash -c "{ aur \"$argv0\" -c \"$target\" && repo-elephant | rot13; } 2>&1 | rot13"
+    if { hash caesar && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
+        exec bash -c "{ aur \"$argv0\" -c \"$target\" && repo-elephant | caesar 13; } 2>&1 | caesar 13"
     else
         echo '?'; exit 16 # EBUSY
     fi
