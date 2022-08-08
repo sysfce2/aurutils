@@ -399,7 +399,7 @@ _aur() {
     cmds[view]="inspect git repositories"
 
     for k in ${(k)_aur_third_party_commands}; do
-        cmds[$k]=_aur_third_party_commands[$k]
+        cmds[$k]=$_aur_third_party_commands[$k]
     done
 
     local -a descs=()
@@ -440,7 +440,7 @@ for file in ${^fpath}/_aur-*~(*~|*.zwc)(-.N); do
   while read input; do
     if (( i == 2 )); then
       if [[ $input == '#description '* ]]; then
-        desc=:${input#\#description }
+        desc=${input#\#description }
       fi
       break
     fi
