@@ -23,7 +23,7 @@ pacsync "$arg_repo" --dbext=.files
 targets=()
 while IFS='/' read -r repo name; do
     if [[ $repo == "$arg_repo" ]]; then
-        targets+=("$name")
+        targets+=("$repo/$name")
     fi
 done < <(pacman -Sup --print-format '%r/%n')
 wait $!
