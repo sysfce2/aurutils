@@ -6,7 +6,7 @@ argv0=build--sync
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 if (( ! $# )); then
-    printf >&2 'error: repository not specified\n'
+    printf >&2 '%s: repository not specified\n' "$argv0"
     exit 1
 fi
 
