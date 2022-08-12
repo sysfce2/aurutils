@@ -416,15 +416,19 @@ while IFS= read -ru "$fd" path; do
             if (( ${#makechrootpkg_makepkg_args[@]} )); then
                 chroot_args+=(--margs "$(args_csv "${makechrootpkg_makepkg_args[@]}")")
             fi
-            PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
+            PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
+                run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
-            # XXX: if $LOGDEST is unset, move logs from $var_tmp to $PWD (atomic)
-            PKGDEST="$var_tmp" LOGDEST=${LOGDEST:-$PWD} \
+            PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
                 run_msg 3 as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd "$var_tmp"
-        pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
+        pkglist=(!(*.sig|*.log)) # discard makepkg --sign output from package list (#410)
+
+        # Store makepkg --log output to $LOGDEST atomically (mv)
+        loglist=(*.log)
+        [[ -f ${loglist[0]} ]] && mv -f "${loglist[@]}" "${LOGDEST:-$PWD}"
     else
         cd "$var_tmp"
         # pkglist has paths to $db_root/<pkg>
