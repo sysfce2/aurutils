@@ -43,8 +43,7 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='a:'
-# TODO: add --confirm? (overrides AUR_CONFIRM_PAGER)
-opt_long=('format:' 'arg-file:' 'revision:' 'no-patch')
+opt_long=('format:' 'arg-file:' 'revision:' 'no-patch' 'confirm')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -70,6 +69,8 @@ while true; do
             patch=0 ;;
         --revision)
             shift; revision=$1 ;;
+        --confirm)
+            AUR_CONFIRM_PAGER=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
