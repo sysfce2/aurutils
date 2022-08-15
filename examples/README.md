@@ -35,6 +35,30 @@ directories are available. This suggests to use a persistent directory for
 `AURDEST`, instead of the default `$XDG_CACHE_HOME/aurutils/sync` used by
 `aur-sync(1)`.
 
+## view-delta
+
+`aur-view(1)` uses `vifm(1)` or a comparable file manager set in
+`AUR_PAGER` to inspect and edit build files. 
+
+`view-delta` assumes that files are not edited before the build process,
+and takes the following approach:
+
+1. display diffs side-by side with `git-delta`;
+2. display remaining files with `bat` for syntax highlighting.
+
+A pager (defaults to `less`) is used for navigation. To allow aborting
+the inspection process with a non-zero exit code, a confirmation prompt
+is displayed.
+
+`view-delta` can be used as any other file manager taking a directory
+argument:
+
+```bash
+view-delta <path to build files>  # directly
+AUR_PAGER=view-delta aur view ... # with aur-view
+AUR_PAGER=view-delta aur sync ... # with aur-view wrappers
+```
+
 ## sync-list
 
 When using `aur-sync(1)` or `aur-build(1)`, packages accumulate in (one or

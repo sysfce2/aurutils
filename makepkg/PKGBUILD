@@ -17,7 +17,9 @@ optdepends=('bash-completion: bash completion'
             'zsh: zsh completion'
             'devtools: aur-chroot'
             'vifm: default pager'
-            'ninja: aur-sync ninja support')
+            'ninja: aur-sync ninja support'
+            'bat: view-delta example script'
+            'git-delta: view-delta example script')
 
 pkgver() {
     cd aurutils
