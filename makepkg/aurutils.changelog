@@ -16,8 +16,15 @@
     - supported types: `DEPENDS`, `MAKEDEPENDS`, `CHECKDEPENDS`, `OPTDEPENDS`
     - forwarded by `aur-sync` (`--optdepends`, `--no-check`)
 
+* `aur-view`
+  + print diagnostic on invalid git revision (#894)
+  + exit code on unknown/invalid revision is now 2 (from 22)
+
 * `completion`
   + support extending `zsh` completion for third party commands (#1016)
+
+* `examples`
+  + add `view-delta`
 
 ## 10
 

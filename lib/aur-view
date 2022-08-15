@@ -126,14 +126,14 @@ for pkg in "${packages[@]}"; do
         heads[$pkg]=$head
     else
         error '%s: %s: revision %s not found' "$argv0" "$pkg" "$revision"
-        exit 22
+        exit 2
     fi
 
     if [[ -f $AUR_VIEW_DB/$pkg ]] && read -r view < "$AUR_VIEW_DB/$pkg"; then
         # Check if hash points to a valid object
         if ! git cat-file -e "$view"; then
             diag_invalid "$pkg"
-            exit 22
+            exit 2
         fi
 
         if [[ $view != "$head" ]]; then
