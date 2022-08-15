@@ -10,6 +10,18 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 log_fmt='diff' revision='HEAD' log_args=() patch=1
 
+diag_invalid() {
+    cat >&2 <<EOF
+Error:
+    aur-view encountered an invalid git revision. This may happen when
+    the upstream URL of a repository changed.  If so, the old revision
+    should be removed manually.
+
+    The following file was checked:
+EOF
+    printf '%8s%s\n' ' ' "$1"
+}
+
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -31,8 +43,7 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='a:'
-# TODO: add --confirm? (overrides AUR_CONFIRM_PAGER)
-opt_long=('format:' 'arg-file:' 'revision:' 'no-patch')
+opt_long=('format:' 'arg-file:' 'revision:' 'no-patch' 'confirm')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -58,6 +69,8 @@ while true; do
             patch=0 ;;
         --revision)
             shift; revision=$1 ;;
+        --confirm)
+            AUR_CONFIRM_PAGER=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -113,14 +126,14 @@ for pkg in "${packages[@]}"; do
         heads[$pkg]=$head
     else
         error '%s: %s: revision %s not found' "$argv0" "$pkg" "$revision"
-        exit 22
+        exit 2
     fi
 
     if [[ -f $AUR_VIEW_DB/$pkg ]] && read -r view < "$AUR_VIEW_DB/$pkg"; then
         # Check if hash points to a valid object
         if ! git cat-file -e "$view"; then
-            error '%s: %s: invalid revision' "$argv0" "$pkg"
-            exit 22
+            diag_invalid "$pkg"
+            exit 2
         fi
 
         if [[ $view != "$head" ]]; then

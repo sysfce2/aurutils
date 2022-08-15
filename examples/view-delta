@@ -1,0 +1,29 @@
+#!/bin/bash
+set -o errexit
+shopt -s extglob
+
+# Helper function to take complements of pkgbase arrays
+filter_packages() { grep -Fxvf <(printf '%s\n' "$@") -; }
+
+# Directory with diffs and PKGBUILD subdirs
+cd "$1"
+diffs=(@(*.diff|*.log))
+pkgbases=(*/)
+pkgbases=("${pkgbases[@]%/}")
+
+# Show diffs in 2 panes
+if [[ -f ${diffs[0]} ]]; then
+    delta --side-by-side --line-numbers "${diffs[@]}"
+
+    # Remove diffs from remaining targets (new or unchanged dirs)
+    mapfile -t pkgbases < <(
+        printf '%s\n' "${diffs[@]%%.*}" | filter_packages "${pkgbases[@]}")
+fi
+
+# Show remaining targets in a concatenated fashion
+if (( ${#pkgbases[@]} )); then
+    find -L "${pkgbases[@]}" -maxdepth 1 -type f -exec bat {} +
+fi
+
+# Show an exit prompt
+read -rp $'Press Return to continue or Ctrl+d to abort\n'
