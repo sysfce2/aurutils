@@ -5,6 +5,10 @@
     - `pacman -Syu --config` is replaced by `pacsync <repo>` and `pacman -S <repo>/<pkg>`
     - local repository upgrades are now unaffected by `--pacman-conf`
 
+* `aur-depends`
+  + performance improvements
+  + add `--json`
+
 * `aur-fetch`
   + add `aur-fetch--mirror` helper for `aur.git` mirrors
     - defaults to `github.com/archlinux/aur`
@@ -16,9 +20,23 @@
     - supported types: `DEPENDS`, `MAKEDEPENDS`, `CHECKDEPENDS`, `OPTDEPENDS`
     - forwarded by `aur-sync` (`--optdepends`, `--no-check`)
 
+* `aur-repo`
+  + add `--json`
+
+* `aur-search`
+  + performance improvements
+  + add `--format`, taking a `package-query`-like string
+  + add `--format-stdin`
+
 * `aur-view`
   + print diagnostic on invalid git revision (#894)
   + exit code on unknown/invalid revision is now 2 (from 22)
+
+* `aur-format`
+  + new helper
+
+* `aur-repo-parse`
+  + new helper
 
 * `completion`
   + support extending `zsh` completion for third party commands (#1016)
