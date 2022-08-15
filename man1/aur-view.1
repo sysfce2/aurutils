@@ -72,12 +72,30 @@ command-line.
 .SH ENVIRONMENT
 .TP
 .B AUR_VIEW_DB
+The directory where inspected
+.BR git (1)
+revisions are stored. Defaults to
+.BR $XDG_DATA_HOME/aurutils/view .
 .
 .TP
 .B AUR_PAGER
 The file manager used to view and edit build files. This variable is
 split on white space to allow program options, for example:
 .IR "AUR_PAGER=less \-K" .
+If unset,
+.B aur\-view
+defaults to
+.BR vifm (1).
+This two-pane file manager allows to quickly navigate between files in
+the left pane, and file previews in the right pane. Simultaneously,
+files can be edited with
+.BR vim (1).
+Other comparable file managers include
+.BR mc (1),
+.BR nnn (1),
+.BR ranger (1),
+and
+.BR xplr (1).
 .
 .TP
 .B AUR_CONFIRM_PAGER
