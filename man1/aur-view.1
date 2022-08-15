@@ -11,8 +11,14 @@ aur\-view \- inspect git repositories
 .
 .SH DESCRIPTION
 .B aur\-view
-presents git repositories to the user for inspection. A file
-manager or pager is determined in the following order:
+presents
+.BR git (1)
+repositories stored in a common directory for inspection. Only
+repositories whose names match
+.BR aur\-view
+arguments are shown.
+.PP
+The used file manager or pager is determined in the following order:
 .IP \(bu 4
 The value of
 .BR AUR_PAGER ", "
@@ -105,6 +111,28 @@ If set, display an additional confirmation prompt after the file
 manager has exited successfully. This may be used for (GUI) file
 managers not supporting an exit status greater zero to indicate
 unreviewed files.
+.
+.SH NOTES
+After browsing to a different directory in the file manager, the view on
+argument directories is replaced by a view on the original directory. To
+alleviate this issue,
+.B aur\-view
+keeps a list of symbolic links in a temporary directory, which point to
+argument repositories. This directory also includes any generated diffs.
+.PP
+If the upstream URL of a
+.BR git (1)
+repository changed, stored
+.B aur\-view
+revisions are potentially invalidated. Specifically,
+.BR git\-cat\-file (1)
+aborts when given a non-existing object. The offending revision can be
+removed manually in this case:
+.EX
+
+  $ rm -rf ~/.local/share/aurutils/view/<package>
+
+.XE
 .
 .SH SEE ALSO
 .ad l
