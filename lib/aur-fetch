@@ -171,7 +171,7 @@ for pkg in "${packages[@]}"; do
         # Differentiate between local (fetch--mirror) and aurweb clones
         if [[ ! ${local_clones[$pkg]} ]]; then
             git clone "$AUR_LOCATION/$pkg" || exit 1
-            head=$(git -C "$pkg" rev-parse --verify quiet HEAD)
+            head=$(git -C "$pkg" rev-parse --verify HEAD)
         else
             printf "Cloning into '%s'\n" "$pkg"
             head=${local_clones[$pkg]}
