@@ -8,13 +8,6 @@ arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 # default options
 sync_repo=0
 
-# The command line will hit ARG_MAX on approximately 70k packages;
-# spread arguments with xargs (and printf, as a shell built-in).
-satisfies() {
-    #global sift_args
-    xargs -a <(printf -- "--satisfies=%s\n" "$@") pacsift "${sift_args[@]}" <&-
-}
-
 provides() {
     #global info_args
     pacinfo "${info_args[@]}" | awk -F'[:<=>]' '
@@ -97,7 +90,7 @@ while IFS= read -r str; do
     fi
 
     # store original versioned string
-    strset+=("$str")
+    strset+=("--satisfies=$str")
 done
 
 # exit on empty stdin
@@ -105,11 +98,23 @@ if ! (( ${#pkgset[@]} )); then
     exit 0
 fi
 
-# Standard input is taken as "provides[<cmp><version>]", where pacsift
-# checks for a package satisfying this condition. Results are printed
-# as "repository/package", and piped to pacinfo to relate the names of
-# the original provides to its corresponding package(s).
-satisfies "${strset[@]}" | provides | while read -r repo package virtual; do
+# Standard input is taken as "provides[<cmp><version>]", where `pacsift` checks
+# for a package satisfying this condition.
+#
+# Remarks:
+# * Closing stdin is not always effective when `pacsift` is used in a pipe (e.g.
+#   with ssh).  Alternatives are using unbuffer(1) or storing the result in memory.
+#   Since `unbuffer` and `expect` are not used anywhere else, use the latter.
+#
+# * The command line will hit ARG_MAX on approximately 70k packages;
+#   spread arguments with xargs (and printf, as a shell built-in).
+mapfile -t candidates <(
+    xargs -a <(printf '%s\n' "${strset[@]}") pacsift "${sift_args[@]}")
+wait "$!" || exit
+
+# Results are printed as "repository/package", and piped to pacinfo to relate
+# the names of the original provides to its corresponding package(s).
+printf '%s\n' "${candidates[@]}" | provides | while read -r repo package virtual; do
     if [[ ${pkgset[$package]} ]]; then
         printf '%s\n' "$package"
     fi
