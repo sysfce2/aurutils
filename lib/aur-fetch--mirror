@@ -13,6 +13,7 @@ if [[ $1 = '--lclone' ]]; then
     local_clones=1
     shift
 fi
+mkdir -p "$AUR_ROOT"
 
 # --------------------------------------------------
 # Step 1. Create a sparse checkout of the AUR mirror
@@ -38,10 +39,13 @@ git_ls_remote_ttl() {
 
 exec {fd}< "$AUR_ROOT"
 { flock --wait 5 "$fd" || exit 1
+  cd "$AUR_ROOT"
 
   # Shallow clone
-  [[ ! -d $AUR_ROOT ]] && git clone --depth=1 --bare "$AUR_MIRROR" "$AUR_ROOT"
-  cd "$AUR_ROOT"
+  if [[ ! $(git rev-parse --is-inside-git-dir 2>/dev/null) ]]; then
+      git init --bare
+      git remote add origin "$AUR_MIRROR"
+  fi
 
   # Keep a refcache to filter out packages which are not in AUR. This is
   # includes unlisted packages (unlike `aur pkglist --pkgbase`)
@@ -78,7 +82,7 @@ git_srcdest_origin() {
 
     git config remote.origin.fetch "+$refspec:$refspec"
     git fetch --quiet
-    git checkout -B master "$refspec"
+    git checkout --quiet -B master "$refspec"
 }
 
 for b in "${target_remotes[@]}"; do
@@ -88,7 +92,7 @@ for b in "${target_remotes[@]}"; do
     # directory is empty"
     if [[ ! -d $b/.git ]] && mkdir "$b"; then
         cd "$b"
-        git init
+        git init --quiet
         git remote add origin "$AUR_ROOT"
 
         # Compared to git clone --local, using $refspec as both source and

@@ -146,10 +146,12 @@ declare -A local_clones
 # mirror are synchronized with `git-fetch`. Secondly, local clones of the miror
 # are created and are updated with `git-fetch` and `git-merge` as usual.
 if (( AUR_FETCH_USE_MIRROR )); then
-    while read -r IFS=':' pkg head; do
+    while IFS=':' read -r pkg head; do
         local_clones[$pkg]=$head
-    done < <(aur fetch--mirror --lclone "${packages[@]}")
-    wait "$!"
+    done < <(
+        aur fetch--mirror --lclone "${packages[@]}"
+    )
+    wait "$!" || exit
 fi
 
 # Main loop
@@ -167,15 +169,19 @@ for pkg in "${packages[@]}"; do
         continue
 
     # Clone package if not existing
+    elif [[ ${local_clones[$pkg]} ]]; then
+        { printf "Cloning into '%s'\n" "$pkg"
+          git -C "$pkg" --no-pager log --pretty=reference -1  # HEAD is guaranteed to be present
+        } >&2
+
+        # XXX: race with multiple instances
+        if [[ -v results_file ]]; then
+            results 'clone' "$git_empty_object" "${local_clones[$pkg]}" "$PWD/$pkg" "$results_file"
+        fi
+
     elif [[ ! -d $pkg/.git ]]; then
-        # Differentiate between local (fetch--mirror) and aurweb clones
-        if [[ ! ${local_clones[$pkg]} ]]; then
-            git clone "$AUR_LOCATION/$pkg" || exit 1
-            head=$(git -C "$pkg" rev-parse --verify HEAD)
-        else
-            printf "Cloning into '%s'\n" "$pkg"
-            head=${local_clones[$pkg]}
-        fi >&2
+        git clone "$AUR_LOCATION/$pkg" >&2 || exit 1
+        head=$(git -C "$pkg" rev-parse --verify HEAD)  # may be empty when cloning a non-AUR package
 
         if [[ $head ]]; then
             git -C "$pkg" --no-pager log --pretty=reference -1
@@ -196,7 +202,7 @@ for pkg in "${packages[@]}"; do
         git() { command git -C "$pkg" "$@"; }
 
         # Retrieve new upstream commits
-        git fetch origin >&2 || exit
+        git fetch origin -v >&2 || exit
 
         # Store original HEAD for --results output
         orig_head=$(git rev-parse --verify --quiet HEAD)
