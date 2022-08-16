@@ -43,6 +43,9 @@ case $1 in
     --env)
         printenv | grep -E '^AUR' | sort >&2
         exit 0 ;;
+    --exec-path)
+        printf '%s\n' "$lib_dir"
+        exit 0 ;;
 esac
 
 if [[ "$PATH" != "$lib_dir:"* ]]; then
