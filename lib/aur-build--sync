@@ -10,12 +10,6 @@ if (( ! $# )); then
     exit 1
 fi
 
-# lock alpm database
-lock_file=$(paclock --print)
-lock_key=$argv0:$(hostname):$$
-paclock --lockfile="$lock_file" --key="$lock_key"
-
-# sync repository to pacman
 arg_repo=$1
 pacsync "$arg_repo"
 pacsync "$arg_repo" --dbext=.files
@@ -32,8 +26,5 @@ if (( ${#targets[@]} )); then
     printf >&2 "%s: upgrading packages in repository '%s'\n" "$argv0" "$arg_repo"
     pacman -S --noconfirm "${targets[@]}"
 fi
-
-# release lock
-paclock --lockfile="$lock_file" --key="$lock_key" --unlock
 
 # vim: set et sw=4 sts=4 ft=sh:
