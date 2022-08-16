@@ -132,7 +132,7 @@ for pkg in "${packages[@]}"; do
     if [[ -f $AUR_VIEW_DB/$pkg ]] && read -r view < "$AUR_VIEW_DB/$pkg"; then
         # Check if hash points to a valid object
         if ! git cat-file -e "$view"; then
-            diag_invalid "$pkg"
+            diag_invalid "$AUR_VIEW_DB/$pkg"
             exit 2
         fi
 
