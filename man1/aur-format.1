@@ -1,0 +1,120 @@
+.TH AUR\-FORMAT 1 2022-06-27 AURUTILS
+.SH NAME
+aur\-format \- format AurJson
+.
+.SH SYNOPSIS
+.SY "aur format"
+.OP \-f format
+.OP \-d delim
+.OP \-rv
+.RI [ file ... ]
+.SY "aur format"
+.OP \-\-counts
+.OP \-\-json
+.RI [ file ... ]
+.YS
+.
+.SH DESCRIPTION
+.
+.SH OPTIONS
+.TP
+.BI \-f " FORMAT" "\fR,\fP \-\-format=" FORMAT
+.
+.TP
+.BI \-d " SEP" "\fR,\fP \-\-delim=" SEP
+.
+.TP
+.BR \-c ", " \-\-counts
+.
+.TP
+.BR \-J ", " \-\-json
+.
+.TP
+.BI \-k " KEY" "\fR,\fP \-\-sort=" KEY
+.
+.TP
+.BR \-r ", " \-\-reverse
+.
+.TP
+.BR \-v ", " \-\-verbose
+.
+.TP
+.BI \-\-union= KEY
+.
+.TP
+.BI \-\-isect= KEY
+.
+.TP
+.BI \-\-dump\-format= KIND
+.
+.SH EXIT STATUS
+The exit status is
+.B 0
+if input was formatted correctly,
+.B 1
+if an invalid option was specified,
+.B 2
+if an input file is not found, and
+.B 4
+on invalid or erroneous input (i.e. the input includes an
+.B error
+attribute).
+.
+.SH EXAMPLES
+.B aur\-format
+can be used with
+.BR aur\-pkglist (1)
+if information is not available from the aurweb RPC interface. For
+example, package searches can be done by name and description, but not
+by description only.
+.PP
+The following code demonstrates this by providing a list of all packages with
+.I AUR
+or
+.I Arch User Repository
+(case-insensitive) in their description. Any duplicate descriptions are
+removed from the results.
+.PP
+.EX
+    aur pkglist \-i | aur format \-f '%n\\t%d\\n' |
+        gawk \-F'\\t' 'tolower($2) ~ /(aur|arch user repository)\\>/ { print }' |
+        sort \-k2,2 -t $'\\t' \-u |
+        sort \-k1,1
+.EE
+.PP
+When searching orphaned packages, an empty maintainer search with
+.B aur search \-m ""
+should, by definition, give the desired results. However, with a results
+limit of 5000 the aurweb RPC interface returns an
+.B Too many package results
+error. We can again resort to
+.BR aur\-pkglist (1):
+.PP
+.EX
+    aur pkglist \-\-info | aur format \-f "%n\\t%m\\n" \-v |
+        gawk \-F'\\t' "{ if ($2 != '-') print $1; }"
+.EE
+.PP
+More attributes can be included, and the output reformatted with
+.BR aur\-search (1):
+.PP
+.EX
+    aur pkglist \-\-info | aur format \-f "%n\\t%v\\t%d\\t%m\\t%w\\t%p\\t%o\\n" \-v |
+        gawk \-F'\\t' "{ if ($4 != '-') print; }" |
+        aur search --format-stdin
+.EE
+.PP
+In case only a limited set of targets is needed,
+.B aur pkglist \-\-info
+can be replaced with
+.BR "aur pkglist <pattern> | aur query \-t info" .
+.
+.SH SEE ALSO
+.BR aur\-search (1)
+.
+.SH AUTHORS
+.MT https://github.com/AladW
+Alad Wenter
+.ME
+.
+.\" vim: set textwidth=72:
