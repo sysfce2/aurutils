@@ -212,14 +212,15 @@ case $format in
     short) 
         format_args+=(-f '%n\t%v\t%d\t%m\t%w\t%p\t%o\n')
         info() { info_short "$colorize"; } ;;
-    long) 
+    long|table)
         format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
-        info() { info_long  "$colorize"; } ;;
+        ;;&
+    long)
+        info() { info_long "$colorize"; } ;;
+    table)
+        info() { info_noop; } ;;
     custom)
         format_args+=(-f "$format_str")
-        info() { info_noop; } ;;
-    table)
-        format_args+=(--table)
         info() { info_noop; } ;;
     json)
         format_args+=(--json)
