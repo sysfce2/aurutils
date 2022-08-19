@@ -31,16 +31,11 @@ results() {
 }
 
 sync_package_config() {
-    local sync=$1 pkg=$2
-
-    if [[ $sync == 'auto' ]] && [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
-        printf >&2 '%s: aurutils.rebase is set for %s\n' "$argv0" "$pkg"
+    if [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
+        printf >&2 '%s: aurutils.rebase is set for %s\n' "$argv0" "$1"
         printf '%s' rebase
-
-    elif [[ $sync == 'auto' ]]; then
-        printf '%s' merge
     else
-        printf '%s' "$sync"
+        printf '%s' merge
     fi
 }
 
@@ -208,8 +203,12 @@ for pkg in "${packages[@]}"; do
         orig_head=$(git rev-parse --verify --quiet HEAD)
         orig_head=${orig_head:-$git_empty_object}
 
-        # Retrieve per-package configuration (defaults to global setting, #1007)
-        sync_pkg=$(sync_package_config "$sync" "$pkg")
+        # Retrieve per-package configuration (#1007)
+        if [[ $sync == 'auto' ]]; then
+            sync_pkg=$(sync_package_config "$pkg")
+        else
+            sync_pkg=$sync
+        fi
 
         # Merge in new history
         case $sync_pkg in
