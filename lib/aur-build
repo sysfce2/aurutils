@@ -218,6 +218,12 @@ if [[ $UID == 0 ]] && ! { [[ -v build_user ]] && [[ -v AUR_ASROOT ]]; }; then
     exit 1
 fi
 
+# Disable elevation when running as root
+if [[ $UID == 0 ]]; then
+    #shellcheck disable=SC2209
+    AUR_PACMAN_AUTH=command
+fi
+
 # Assign environment variables
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
@@ -225,15 +231,6 @@ fi
 if [[ $MAKEPKG ]]; then
     # shellcheck disable=SC2086
     makepkg() { command -- $MAKEPKG "$@"; }
-fi
-
-# Custom elevation command
-if [[ $UID == 0 ]]; then
-    sudo() { command -- "$@"; }
-
-elif [[ $AUR_PACMAN_AUTH ]]; then
-    # shellcheck disable=SC2086
-    sudo() { command -- $AUR_PACMAN_AUTH "$@"; }
 fi
 
 # shellcheck disable=SC2174
@@ -481,7 +478,8 @@ while IFS= read -ru "$fd" path; do
         # Like `makepkg --syncdeps`, this affects the host and so uses the host
         # pacman configuration. --pacman-conf (which may also point to
         # a world-writeable file) is not applied.
-        sudo aur build--sync "$db_name"
+        #shellcheck disable=SC2086
+        ${AUR_PACMAN_AUTH:-sudo} aur build--sync "$db_name"
     fi
 done
 
