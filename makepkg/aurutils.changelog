@@ -14,6 +14,7 @@
     - defaults to `github.com/archlinux/aur`
     - enabled with `AUR_FETCH_USE_MIRROR=1`
   + run flock(1) when modifying existing repositories
+  + run git-checkout(1) when using `--sync=rebase` with `--discard` (#1006)
 
 * `aur-graph`
   + selectively disable/enable depends with `aur graph -v <TYPE>=[0|1]`

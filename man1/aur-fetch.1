@@ -73,7 +73,7 @@ so that no commits are applied to the index even when a fast-forward is possible
 for details.
 .
 .TP
-.BR \-\-rebase ", " \-\-sync=rebase
+.BR \-\-sync=rebase ", " \-\-rebase
 Run
 .BR git\-rebase (1)
 instead of
@@ -109,7 +109,7 @@ and
 otherwise.
 .
 .TP
-.BR \-\-reset ", " \-\-sync=reset
+.BR \-\-sync=reset ", " \-\-reset
 Retrieve new revisions with
 .B git\-fetch origin
 and
@@ -124,20 +124,26 @@ When using
 .BR \-\-sync=merge
 or
 .BR \-\-sync=rebase ,
-uncommitted changes may cause the operation to fail. The
-.B \-\-discard
-option discards these changes with
-.B git \-\-reset HEAD
-.I if
-either
-.B git\-merge
-or
+uncommitted changes may cause the operation to fail. Furthermore,
 .B git\-rebase
-would result in new commits. This is done by checking if
-.B master@{upstream}
-is an ancestor of the
-.B HEAD
-commit.
+expects a clean work tree.
+.IP
+With
+.BR \-\-sync=merge ,
+the
+.B \-\-discard
+option checks if new upstream commits are available with
+.BR git\-merge\-base .
+If so, uncommited changes are discarded with
+.BR git\-checkout .
+.IP
+With
+.BR \-\-sync=rebase ,
+the
+.B \-\-discard
+option runs
+.BR git\-checkout
+unconditionally.
 .
 .TP
 .BR \-\-existing
