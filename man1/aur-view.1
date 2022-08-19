@@ -115,7 +115,8 @@ unreviewed files.
 .SH NOTES
 After browsing to a different directory in the file manager, the view on
 argument directories is replaced by a view on the original directory. To
-alleviate this issue,
+alleviate this issue (and support file managers taking only a single directory
+as argument),
 .B aur\-view
 keeps a list of symbolic links in a temporary directory, which point to
 argument repositories. This directory also includes any generated diffs.
