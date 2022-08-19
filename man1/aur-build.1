@@ -435,14 +435,18 @@ For example, create the
 file with the following contents:
 .PP
 .EX
+    # rule for installing dependencies with makepkg --syncdeps
     build ALL = (root) NOPASSWD: /usr/bin/pacman
-    build ALL = (root) NOPASSWD: /usr/lib/aurutils/aur-build--sync
+
+    # rule for updating the local repository
+    build ALL = (root) NOPASSWD: /usr/bin/aur build-sync *
 .EE
 .PP
+The wildcard can be replaced by the name of the local repository.
 .BR aur\-build (1)
 and related programs such as
 .BR aur\-sync (1)
-may now be run as the new
+can now run as the new
 .I build
 user.
 For example:
