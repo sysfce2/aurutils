@@ -227,12 +227,6 @@ fi
 # Assign environment variables
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
-# Custom makepkg command
-if [[ $MAKEPKG ]]; then
-    # shellcheck disable=SC2086
-    makepkg() { command -- $MAKEPKG "$@"; }
-fi
-
 # shellcheck disable=SC2174
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
@@ -368,9 +362,10 @@ while IFS= read -ru "$fd" path; do
     pkglist=()
 
     # Run pkgver before --packagelist (#500)
+    # XXX: race with concurrent processes
     if (( run_pkgver )); then
-        # XXX: race with concurrent processes
-        as_user makepkg -od "${makepkg_common_args[@]}" >&2
+        #shellcheck disable=SC2086
+        as_user ${MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not exit
@@ -416,8 +411,9 @@ while IFS= read -ru "$fd" path; do
             PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
                 run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
+            #shellcheck disable=SC2086
             PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
-                run_msg 3 as_user makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+                run_msg 3 as_user ${MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd "$var_tmp"
@@ -450,6 +446,7 @@ while IFS= read -ru "$fd" path; do
         # No candidate signature, generate one
         elif (( sign_pkg )); then
             as_user gpg "${gpg_args[@]}" --output "$p_base".sig "$p"
+
             printf >&2 '%s: created signature file %q\n' "$argv0" "$p_base".sig
             siglist+=("$p_base".sig)
         fi
