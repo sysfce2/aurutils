@@ -1,6 +1,7 @@
 #!/bin/bash
 # aur-depends - retrieve package dependencies using AurJson
 [[ -v AUR_DEBUG ]] && set -o xtrace
+set -o pipefail
 argv0=depends
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -63,7 +64,6 @@ chain() {
     aur query -t info "$@" >json/0 || exit
 
     # Top-level dependencies
-    # XXX: handle format errors
     aur format -f "$fmt" --delim=, json/0 | pivot_table - >tsv/0 || exit
 
     if [[ ! -s tsv/0 ]]; then
@@ -86,7 +86,6 @@ chain() {
         if [[ ! -s json/$a ]]; then
             return $a # no unique results (seen \ tsv == [empty])
         fi
-        # XXX: handle format errors
         aur format -f "$fmt" --delim=, json/$a | pivot_table - >tsv/$a || exit
 
         if [[ ! -s tsv/$a ]]; then
