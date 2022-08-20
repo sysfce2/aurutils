@@ -258,7 +258,7 @@ if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
 
-    if [[ -v makepkg_conf ]] && [[ ! -f $makepkg_conf ]]; then
+    if [[ ! -f $makepkg_conf ]]; then
         error '%s: %s: not a regular file' "$argv0" "$makepkg_conf"
         exit 2
     fi
