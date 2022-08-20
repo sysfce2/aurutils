@@ -4,7 +4,7 @@
   + add `aur-build--sync` helper for local repository upgrades
     - `pacman -Syu --config` is replaced by `pacsync <repo>` and `pacman -S <repo>/<pkg>`
     - local repository upgrades are now unaffected by `--pacman-conf`
-  + remove experimental `AUR_ASROOT` functionality
+  + remove experimental `AUR_ASROOT` functionality (#1023)
   + remove `--dry-run`
 
 * `aur-depends`
@@ -25,6 +25,15 @@
 
 * `aur-repo`
   + add `--json`
+
+* `aur-query`
+  + remove support for parallel and `GET` requests
+  + set operations (union, intersection) are moved to `aur-format`
+    - remove `--any`
+  + print curl command-lines with `--dry-run`
+    - remove `--dump-curl-config`
+  + `raw` output is now the default
+    - remove `--exit-if-empty`, `--raw`
 
 * `aur-search`
   + performance improvements
