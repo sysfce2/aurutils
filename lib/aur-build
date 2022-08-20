@@ -269,6 +269,14 @@ if (( chroot )); then
         makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
         unset PKGEXT
     fi
+
+    # Propagate makepkg/makechrootpkg arguments to aur-chroot
+    if (( ${#makechrootpkg_args[@]} )); then
+        chroot_args+=(--cargs "$(args_csv "${makechrootpkg_args[@]}")")
+    fi
+    if (( ${#makechrootpkg_makepkg_args[@]} )); then
+        chroot_args+=(--margs "$(args_csv "${makechrootpkg_makepkg_args[@]}")")
+    fi
 fi
 
 # Propagate makepkg and pacman configuration to other tools. This needs to be
@@ -402,12 +410,6 @@ while IFS= read -ru "$fd" path; do
 
     if (( create_package )); then
         if (( chroot )); then
-            if (( ${#makechrootpkg_args[@]} )); then
-                chroot_args+=(--cargs "$(args_csv "${makechrootpkg_args[@]}")")
-            fi
-            if (( ${#makechrootpkg_makepkg_args[@]} )); then
-                chroot_args+=(--margs "$(args_csv "${makechrootpkg_makepkg_args[@]}")")
-            fi
             PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
                 run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
