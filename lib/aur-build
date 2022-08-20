@@ -9,7 +9,7 @@ startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 dry_run=0 truncate=1
+chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 truncate=1
 
 # default arguments (empty)
 chroot_args=() pacconf_args=() repo_args=() repo_add_args=() pkglist_args=()
@@ -53,25 +53,6 @@ EOF
     printf '%8s%s\n' ' ' "$1"
 }
 
-# Allow to drop permissions for commands as needed (#907)
-as_user() {
-    local USER HOME SHELL
-
-    if [[ $UID == 0 ]] && [[ -v build_user ]]; then
-        # runuser --pty messes up the terminal with AUR_DEBUG set, use setpriv(1)
-        # and replicate the runuser(1) behavior for setting the environment
-        { IFS= read -r USER
-          IFS= read -r HOME
-          IFS= read -r SHELL
-        } < <(getent passwd "$build_user" | awk -F: '{printf("%s\n%s\n%s\n", $1, $6, $7); }')
-
-        setpriv --reuid "$build_user" --regid "$build_user" --init-groups \
-                env USER="$USER" HOME="$HOME" LOGNAME="$USER" SHELL="$SHELL" -- "$@"
-    else
-        env -- "$@"
-    fi
-}
-
 run_msg() {
     printf >&2 'Running %s\n' "${*:$1}"
     "${@:2}"
@@ -109,8 +90,8 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'remove' 'pkgver'
           'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
-          'syncdeps' 'clean' 'namcap' 'checkpkg' 'user:' 'makepkg-args:'
-          'margs:' 'buildscript:' 'dry-run')
+          'syncdeps' 'clean' 'namcap' 'checkpkg' 'makepkg-args:' 'user:'
+          'margs:' 'buildscript:')
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:')
 
@@ -119,7 +100,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset build_user db_name db_path db_root makepkg_conf pacman_conf results_file queue
+unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
     case "$1" in
         # build options
@@ -135,8 +116,6 @@ while true; do
         --buildscript)
             shift; makepkg_common_args+=(-p "$1")
             pkglist_args+=(-p "$1") ;;
-        --dry-run)
-            dry_run=1 ;;
         --nosync|--no-sync)
             no_sync=1 ;;
         --makepkg-conf)
@@ -164,8 +143,7 @@ while true; do
         -T|--temp)
             makechrootpkg_args+=(-T) ;;
         -U|--user)
-            shift; build_user=$1
-            makechrootpkg_args+=(-U "$1") ;;
+            shift; makechrootpkg_args+=(-U "$1") ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             makepkg_common_args+=(--ignorearch)
@@ -212,16 +190,10 @@ while true; do
 done
 
 # mollyguard for makepkg
-if [[ $UID == 0 ]] && ! { [[ -v build_user ]] && [[ -v AUR_ASROOT ]]; }; then
+if [[ $UID == 0 ]] && ! [[ -v AUR_ASROOT ]]; then
     warning 'aur-%s is not meant to be run as root.' "$argv0"
-    warning 'To proceed anyway, set the %s variable and specify --user <username>.' 'AUR_ASROOT'
+    warning 'To proceed anyway, set the %s variable.' 'AUR_ASROOT'
     exit 1
-fi
-
-# Disable elevation when running as root
-if [[ $UID == 0 ]]; then
-    #shellcheck disable=SC2209
-    AUR_PACMAN_AUTH=command
 fi
 
 # Assign environment variables
@@ -231,17 +203,9 @@ fi
 mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
 
-# Only $var_tmp should be writeable by the build user (PKGDEST, signatures)
-# If UID > 0 and build_user is unset, this is equivalent to $tmp above
-if [[ -v build_user ]]; then
-    var_tmp_uid=$(id -u "$build_user")
-else
-    var_tmp_uid=$UID
-fi
-
 # shellcheck disable=SC2174
-as_user mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$var_tmp_uid"
-var_tmp=$(as_user mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$var_tmp_uid/$argv0.XXXXXXXX")
+mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$UID"
+var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXXXX")
 
 trap 'trap_exit' EXIT
 trap 'exit' INT
@@ -294,7 +258,7 @@ if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
 
-    if [[ -v makepkg_conf ]] && [[ ! -f $makepkg_conf ]]; then
+    if [[ ! -f $makepkg_conf ]]; then
         error '%s: %s: not a regular file' "$argv0" "$makepkg_conf"
         exit 2
     fi
@@ -308,7 +272,7 @@ else
     { IFS=: read -r _ db_name
       IFS=: read -r _ db_root
       IFS=: read -r _ db_path # canonicalized
-    } < <(as_user aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
+    } < <(aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
     wait "$!"
 fi
 db_root=$(realpath -- "$db_root")
@@ -319,7 +283,7 @@ if ! [[ -f $db_path ]]; then
     exit 2
 
 # Check if build user can write to database
-elif ! as_user test -w "$db_path"; then
+elif ! test -w "$db_path"; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
 fi
@@ -328,7 +292,7 @@ fi
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
     # XXX: race with concurrent processes
-    (( truncate )) && true | as_user tee "$results_file"
+    (( truncate )) && true | tee "$results_file"
 fi
 
 if (( chroot )); then
@@ -356,7 +320,7 @@ if (( ! sign_pkg )); then
     fi
 
 elif [[ -v GPGKEY ]]; then
-    as_user gpg --list-keys "$GPGKEY"
+    gpg --list-keys "$GPGKEY"
     gpg_args+=(-u "$GPGKEY")
 fi
 
@@ -373,31 +337,21 @@ while IFS= read -ru "$fd" path; do
     # XXX: race with concurrent processes
     if (( run_pkgver )); then
         #shellcheck disable=SC2086
-        as_user ${MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
+        ${MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not exit
     # with an error when so. A warning avoids a queue of builds aborting because
     # one member already exists.
-    if (( ! overwrite )) || (( dry_run )); then
+    if (( ! overwrite )); then
         exists=()
-
-        while IFS=':' read -r pkgbase pkgpath; do
-            if [[ -f $pkgpath ]]; then
-                (( dry_run )) && printf '%s:%s:%s\n' exist "$pkgbase" "file://$pkgpath"
-                exists+=("$pkgpath")
-            else
-                (( dry_run )) && printf '%s:%s:%s\n' build "$pkgbase" "file://$pkgpath"
-            fi
-        # pkgbase may differ from pkgname; prefix to package path with --full
-        done < <(as_user PKGDEST="$db_root" aur build--pkglist --full "${pkglist_args[@]}")
-
+        while IFS=':' read -r pkgpath; do
+            [[ -f $pkgpath ]] && exists+=("$pkgpath")
+        done < <(
+            PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
+        )
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
-
-        if (( dry_run )); then
-            continue
-        fi
 
         if [[ ${exists[*]} ]]; then
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
@@ -412,10 +366,11 @@ while IFS= read -ru "$fd" path; do
         if (( chroot )); then
             PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
                 run_msg 2 aur chroot --build "${chroot_args[@]}"
+
         else
             #shellcheck disable=SC2086
             PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
-                run_msg 3 as_user ${MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+                run_msg 2 ${MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd "$var_tmp"
@@ -447,7 +402,7 @@ while IFS= read -ru "$fd" path; do
 
         # No candidate signature, generate one
         elif (( sign_pkg )); then
-            as_user gpg "${gpg_args[@]}" --output "$p_base".sig "$p"
+            gpg "${gpg_args[@]}" --output "$p_base".sig "$p"
 
             printf >&2 '%s: created signature file %q\n' "$argv0" "$p_base".sig
             siglist+=("$p_base".sig)
@@ -462,13 +417,13 @@ while IFS= read -ru "$fd" path; do
 
         # XXX: race with concurrent processes
         if [[ -v results_file ]]; then
-            printf "build:file://$db_root/%s\n" "${pkglist[@]}" | as_user tee -a "$results_file" >/dev/null
+            printf "build:file://$db_root/%s\n" "${pkglist[@]}" | tee -a "$results_file" >/dev/null
         fi
     fi
 
     # Update database
     cd "$db_root"
-    as_user LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+    LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( chroot )) || (( no_sync )); then
         continue
