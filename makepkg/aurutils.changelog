@@ -40,6 +40,10 @@
   + add `--format`, taking a `package-query`-like string
   + add `--format-stdin`
 
+* `aur-sync`
+  + add diagnostic for missing packages with `--continue`
+  + save `ninja.build` files in `XDG_STATE_HOME`
+
 * `aur-view`
   + print diagnostic on invalid git revision (#894)
   + exit code on unknown/invalid revision is now 2 (from 22)
