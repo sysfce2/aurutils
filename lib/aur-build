@@ -247,21 +247,11 @@ fi
 # done BEFORE retrieving the local repository name/root.
 if [[ -v pacman_conf ]]; then
     pacconf_args+=(--config "$pacman_conf")
-
-    if [[ ! -f $pacman_conf ]]; then
-        error '%s: %s: not a regular file' "$argv0" "$pacman_conf"
-        exit 2
-    fi
 fi
 
 if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
-
-    if [[ ! -f $makepkg_conf ]]; then
-        error '%s: %s: not a regular file' "$argv0" "$makepkg_conf"
-        exit 2
-    fi
 fi
 
 # Automatically choose the local repository based on the pacman configuration.
@@ -277,14 +267,21 @@ else
 fi
 db_root=$(realpath -- "$db_root")
 
-# Resolve symbolic link to database.
-if ! [[ -f $db_path ]]; then
+# File permission checks
+if [[ ! -f $db_path ]]; then
     error '%s: %s: not a regular file' "$argv0" "$db_path"
     exit 2
 
-# Check if build user can write to database
-elif ! test -w "$db_path"; then
+elif [[ ! -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
+    exit 13
+
+elif [[ -v pacman_conf ]] && [[ ! -r $pacman_conf ]]; then
+    error '%s: could not read pacman.conf' "$argv0"
+    exit 13
+
+elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
+    error '%s: could not read makepkg.conf' "$argv0"
     exit 13
 fi
 
