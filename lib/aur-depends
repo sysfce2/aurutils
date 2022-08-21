@@ -192,10 +192,10 @@ if cd "$tmp" && mkdir json tsv; then
         # pkgname (AUR, total order)
         pkgname)
             grep -Fxf <(cut -f1 "${depends[@]}") <(cut -f1,2 "${depends[@]}" | tsort | tac)
-            ;;
+            wait "$!" ;; # status of last process substitution
         # pkgname (all, total order)
         pkgname_all)
-            cat "${depends[@]}" | cut -f1,2 | tsort | tac
+            cut -f1,2 "${depends[@]}" | tsort | tac
             ;;
         # pkgbase (AUR, total order)
         pkgbase)
@@ -207,7 +207,7 @@ if cd "$tmp" && mkdir json tsv; then
             ;;
         # all information
         json)
-            cat "${json[@]}" | aur format --union 'Name' --json
+            aur format "${json[@]}" --union 'Name' --json
             ;;
         table)
             cat "${depends[@]}"
