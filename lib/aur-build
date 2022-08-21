@@ -271,15 +271,12 @@ db_root=$(realpath -- "$db_root")
 if [[ ! -f $db_path ]]; then
     error '%s: %s: not a regular file' "$argv0" "$db_path"
     exit 2
-
 elif [[ ! -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
-
 elif [[ -v pacman_conf ]] && [[ ! -r $pacman_conf ]]; then
     error '%s: could not read pacman.conf' "$argv0"
     exit 13
-
 elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
     error '%s: could not read makepkg.conf' "$argv0"
     exit 13
@@ -337,9 +334,9 @@ while IFS= read -ru "$fd" path; do
         ${MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
     fi
 
-    # Check if the package is already built, but unlike makepkg, do not exit
-    # with an error when so. A warning avoids a queue of builds aborting because
-    # one member already exists.
+    # Check if the package is already built, but unlike makepkg, do not
+    # exit with an error when so. A warning avoids a queue of builds
+    # aborting because one member already exists.
     if (( ! overwrite )); then
         exists=()
         while IFS=':' read -r pkgpath; do
@@ -363,7 +360,6 @@ while IFS= read -ru "$fd" path; do
         if (( chroot )); then
             PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
                 run_msg 2 aur chroot --build "${chroot_args[@]}"
-
         else
             #shellcheck disable=SC2086
             PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
@@ -382,7 +378,6 @@ while IFS= read -ru "$fd" path; do
     fi
 
     # Sign any packages without signatures, even if the packages are existing.
-    # This is done in the temporary directory (write-access for build user).
     siglist=()
 
     for p in "${pkglist[@]}"; do
@@ -426,9 +421,9 @@ while IFS= read -ru "$fd" path; do
         continue
     else
         # Helper which can be used for e.g. sudoers rules (#1012)
-        # Like `makepkg --syncdeps`, this affects the host and so uses the host
-        # pacman configuration. --pacman-conf (which may also point to
-        # a world-writeable file) is not applied.
+        # Like `makepkg --syncdeps`, this affects the host and so uses
+        # the host pacman configuration. --pacman-conf (which may also
+        # point to a world-writeable file) is not applied.
         #shellcheck disable=SC2086
         ${AUR_PACMAN_AUTH:-sudo} aur build--sync "$db_name"
     fi
