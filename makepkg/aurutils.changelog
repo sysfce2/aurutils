@@ -14,7 +14,7 @@
 * `aur-fetch`
   + add `aur-fetch--mirror` helper for `aur.git` mirrors
     - defaults to `github.com/archlinux/aur`
-    - enabled with `AUR_FETCH_USE_MIRROR=1`
+    - enable with `AUR_FETCH_USE_MIRROR=1`
   + run flock(1) when modifying existing repositories
   + run git-checkout(1) when using `--sync=rebase` with `--discard` (#1006)
 
@@ -32,7 +32,7 @@
     - remove `--any`
   + print curl command-lines with `--dry-run`
     - remove `--dump-curl-config`
-  + `raw` output is now the default
+  + `--raw` output is now the default
     - remove `--exit-if-empty`, `--raw`
 
 * `aur-search`
@@ -46,7 +46,6 @@
 
 * `aur-view`
   + print diagnostic on invalid git revision (#894)
-  + exit code on unknown/invalid revision is now 2 (from 22)
 
 * `aur-format`
   + new helper

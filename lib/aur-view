@@ -8,7 +8,7 @@ AUR_VIEW_DB=${AUR_VIEW_DB:-$XDG_DATA_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-log_fmt='diff' revision='HEAD' log_args=() patch=1
+log_fmt='diff' log_args=() patch=1
 
 diag_invalid() {
     cat >&2 <<EOF
@@ -51,7 +51,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset queue
+unset queue revision
 while true; do
     case "$1" in
         -a|--arg-file)
@@ -122,18 +122,18 @@ for pkg in "${packages[@]}"; do
     git() { command git -C "$pkg" "$@"; }
 
     # Ensure every directory is a git repository (--continue)
-    if head=$(git rev-parse "$revision"); then
+    if head=$(git rev-parse "${revision:-HEAD}"); then
         heads[$pkg]=$head
     else
-        error '%s: %s: revision %s not found' "$argv0" "$pkg" "$revision"
+        error '%s: %s: revision %s not found' "$argv0" "$pkg" "${revision:-HEAD}"
         exit 2
     fi
 
     if [[ -f $AUR_VIEW_DB/$pkg ]] && read -r view < "$AUR_VIEW_DB/$pkg"; then
-        # Check if hash points to a valid object
+        # Check if hash points to an existing object
         if ! git cat-file -e "$view"; then
             diag_invalid "$AUR_VIEW_DB/$pkg"
-            exit 2
+            exit 22
         fi
 
         if [[ $view != "$head" ]]; then
