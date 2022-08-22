@@ -22,6 +22,7 @@ git_empty_object=$(git hash-object -t tree /dev/null)
 # default options
 existing=0 recurse=0 discard=0 sync=fetch
 
+# XXX: races with multiple fetch instances
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
 
@@ -31,12 +32,13 @@ results() {
 }
 
 sync_package_config() {
-    if [[ $(git config --get --type bool aurutils.rebase) == 'true' ]]; then
-        printf >&2 '%s: aurutils.rebase is set for %s\n' "$argv0" "$1"
-        printf '%s' rebase
-    else
-        printf '%s' merge
-    fi
+    case $(git config --get --type bool aurutils.rebase) in
+        true)
+            printf >&2 '%s: aurutils.rebase is set for %s\n' "$argv0" "$1"
+            printf '%s' rebase ;;
+        *)
+            printf '%s' merge ;;
+    esac
 }
 
 usage() {
@@ -64,7 +66,7 @@ set -- "${OPTRET[@]}"
 unset rebase_args merge_args results_file
 while true; do
     case "$1" in
-        # aur-fetch options
+        # fetch options
         -S|--auto)
             sync=auto ;;
         -f|--discard)
@@ -102,6 +104,11 @@ while true; do
     shift
 done
 
+# Default to only allowing fast-forward merges (as git-pull)
+if (( ! ${#merge_args[@]} )); then
+    merge_args=(--ff-only)
+fi
+
 # option validation
 if [[ $sync == !(auto|merge|rebase|reset|fetch) ]]; then
     printf >&2 '%s: invalid --sync mode\n' "$argv0"
@@ -118,11 +125,7 @@ if [[ -v results_file ]]; then
     : >"$results_file" || exit 1 # truncate file
 fi
 
-# Default to only allowing fast-forward merges (as git-pull)
-if (( ! ${#merge_args[@]} )); then
-    merge_args=(--ff-only)
-fi
-
+# Save stdin/depends in array (2 passes)
 if (( recurse )); then
     mapfile -t packages < <(aur depends --pkgbase "$@")
     wait "$!"
@@ -142,6 +145,12 @@ declare -A local_clones
 # are created and are updated with `git-fetch` and `git-merge` as usual.
 if (( AUR_FETCH_USE_MIRROR )); then
     while IFS=':' read -r pkg head; do
+        printf "Cloning into '%s'\n" "$pkg"
+        git -C "$pkg" --no-pager log --pretty=reference -1
+
+        if [[ -v results_file ]]; then
+            results 'clone' "$git_empty_object" "$head" "$PWD/$pkg" "$results_file"
+        fi
         local_clones[$pkg]=$head
     done < <(
         aur fetch--mirror --lclone "${packages[@]}"
@@ -152,37 +161,23 @@ fi
 # Main loop
 for pkg in "${packages[@]}"; do
     unset -f git
-    if (( AUR_FETCH_USE_MIRROR )); then  # branch origin/$pkg -> master
-        upstream=origin/$pkg
-    else
-        upstream=origin/master
-    fi
 
     # Verify if the repository is hosted on AUR (#959)
     if (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
         printf >&2 '%s: warning: package %s is not in AUR, skipping\n' "$argv0" "$pkg"
         continue
 
-    # Clone package if not existing
+    # Local clone by fetch--mirror
     elif [[ ${local_clones[$pkg]} ]]; then
-        { printf "Cloning into '%s'\n" "$pkg"
-          git -C "$pkg" --no-pager log --pretty=reference -1  # HEAD is guaranteed to be present
-        } >&2
+        continue
 
-        # XXX: race with multiple instances
-        if [[ -v results_file ]]; then
-            results 'clone' "$git_empty_object" "${local_clones[$pkg]}" "$PWD/$pkg" "$results_file"
-        fi
-
+    # Clone package if not existing
     elif [[ ! -d $pkg/.git ]]; then
-        git clone "$AUR_LOCATION/$pkg" >&2 || exit 1
-        head=$(git -C "$pkg" rev-parse --verify HEAD)  # may be empty when cloning a non-AUR package
+        git clone "$AUR_LOCATION/$pkg" || exit 1
 
-        if [[ $head ]]; then
-            git -C "$pkg" --no-pager log --pretty=reference -1
-        fi >&2
-
-        # XXX: race with multiple instances
+        head=$(git -C "$pkg" rev-parse --verify HEAD)
+        [[ $head ]] && git -C "$pkg" --no-pager log --pretty=reference -1
+  
         if [[ -v results_file ]]; then
             results 'clone' "$git_empty_object" "${head:-$git_empty_object}" "$PWD/$pkg" "$results_file"
         fi
@@ -196,41 +191,51 @@ for pkg in "${packages[@]}"; do
         # Avoid issues with filesystem boundaries (#274)
         git() { command git -C "$pkg" "$@"; }
 
-        # Retrieve new upstream commits
-        git fetch origin -v >&2 || exit
-
-        # Store original HEAD for --results output
-        orig_head=$(git rev-parse --verify --quiet HEAD)
-        orig_head=${orig_head:-$git_empty_object}
-
-        # Retrieve per-package configuration (#1007)
+        # Retrieve per-package configuration (aurutils.rebase, #1007)
         if [[ $sync == 'auto' ]]; then
             sync_pkg=$(sync_package_config "$pkg")
         else
             sync_pkg=$sync
         fi
 
+        # Retrieve new upstream commits
+        git fetch origin -v || exit
+
+        # Store original HEAD for --results output
+        orig_head=$(git rev-parse --verify --quiet HEAD)
+        orig_head=${orig_head:-$git_empty_object}
+
+        # Set correct branch for local clones
+        if (( AUR_FETCH_USE_MIRROR )); then
+            remote=$pkg
+        else
+            remote=master
+        fi
+
         # Merge in new history
+        # XXX: master@{u} for clones, <branch>@{u} for local clones
         case $sync_pkg in
             rebase)
                 dest='HEAD'
                 if (( discard )); then
-                    git checkout ./  # git-rebase requires a clean worktree
+                    # reset worktree
+                    git checkout ./
                 fi
-                git rebase "${rebase_args[@]}" "$upstream" ;;
+                git rebase "${rebase_args[@]}" "origin/$remote" ;;
             merge)
                 dest='HEAD'
                 if (( discard )); then
-                    git merge-base --is-ancestor 'master@{u}' HEAD || git checkout ./
+                    # reset worktree if new commits are available
+                    git merge-base --is-ancestor "$remote@{u}" HEAD || git checkout ./
                 fi
-                git merge "${merge_args[@]}" "$upstream" ;;
+                git merge "${merge_args[@]}" "origin/$remote" ;;
             reset)
-                dest='master@{u}'
-                git reset --hard 'master@{u}' ;;
+                dest="$remote@{u}"
+                git reset --hard "$remote@{u}" ;;
             fetch)
-                # Preserve local branch
-                dest='master@{u}' ;;
-        esac >&2 || {
+                dest="$remote@{u}"
+                ;;
+        esac || {
             printf >&2 '%s: failed to %s %s\n' "$argv0" "$sync_pkg" "$pkg"
             exit 1
         }
@@ -240,7 +245,7 @@ for pkg in "${packages[@]}"; do
             results "$sync_pkg" "$orig_head" "$head" "$PWD/$pkg" "$results_file"
         fi
         exec {fd}<&- # release lock
-    fi
+    fi >&2 # print all git output to stderr
 done
 
 # vim: set et sw=4 sts=4 ft=sh:
