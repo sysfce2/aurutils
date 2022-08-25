@@ -353,6 +353,10 @@ while IFS= read -ru "$fd" path; do
 
             printf '%q\n' >&2 "${exists[@]}"
             pkglist=("${exists[@]}")
+
+            if [[ -v results_file ]]; then
+                printf "exist:file://%s\n" "${exists[@]}" | tee -a "$results_file" >/dev/null
+            fi
         fi
     fi
 

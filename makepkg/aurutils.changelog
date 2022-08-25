@@ -4,8 +4,9 @@
   + add `aur-build--sync` helper for local repository upgrades
     - `pacman -Syu --config` is replaced by `pacsync <repo>` and `pacman -S <repo>/<pkg>`
     - local repository upgrades are now unaffected by `--pacman-conf`
+  + add `exist:` to `--results` output
+    - remove `--dry-run`
   + remove experimental `AUR_ASROOT` functionality (#1023)
-  + remove `--dry-run`
 
 * `aur-depends`
   + performance improvements
