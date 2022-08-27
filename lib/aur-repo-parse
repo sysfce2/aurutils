@@ -105,9 +105,12 @@ sub repo_json {
 }
 
 sub repo_list {
-    my ($pkg, $count, $last, $delim) = @_;
+    my ($pkg, $count, $last, $delim, $quiet) = @_;
 
-    say join($delim, $pkg->{'Name'}, $pkg->{'Version'});
+    if ($quiet)
+        say $pkg->{'Name'};
+    else
+        say join($delim, $pkg->{'Name'}, $pkg->{'Version'});
 }
 
 sub repo_table {
@@ -143,6 +146,7 @@ unless (caller) {
     my $opt_list = 0;
     my $opt_list_attr = 0;
     my $opt_table = 0;
+    my $opt_quiet = 0;
     my $opt_delim;
     my $opt_attr = "";
     my @opt_db_path;
@@ -152,6 +156,7 @@ unless (caller) {
     GetOptions('J|json'    => \$opt_json,
                'F|attr=s'  => \$opt_attr,
                'l|list'    => \$opt_list,
+               'q|quiet'   => \$opt_quiet,
                't|table'   => \$opt_table,
                'd|delim'   => \$opt_delim,
                'list-attr' => \$opt_list_attr,
@@ -183,7 +188,7 @@ unless (caller) {
     }
     elsif ($opt_list) {
         $handler = \&repo_list;
-        @varargs = length($opt_delim) ? $opt_delim : "\t";
+        @varargs = (length($opt_delim) ? $opt_delim : "\t", $opt_quiet);
     }
     elsif ($opt_table) {
         $handler = \&repo_table;
