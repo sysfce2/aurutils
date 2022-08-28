@@ -1,4 +1,5 @@
 #!/bin/bash
+[[ -v AUR_DEBUG ]] && set -o xtrace
 set -o errexit
 shopt -s extglob
 
@@ -6,18 +7,18 @@ shopt -s extglob
 filter_packages() { grep -Fxvf <(printf '%s\n' "$@") -; }
 
 # Directory with diffs and PKGBUILD subdirs
-cd "$1"
+cd "${1:-/dev/null}"
 diffs=(@(*.diff|*.log))
 pkgbases=(*/)
 pkgbases=("${pkgbases[@]%/}")
 
 # Show diffs in 2 panes
 if [[ -f ${diffs[0]} ]]; then
-    delta --side-by-side --line-numbers "${diffs[@]}"
+    cat "${diffs[@]}" | diff-so-fancy | less --tabs=4 -RX
 
     # Remove diffs from remaining targets (new or unchanged dirs)
     mapfile -t pkgbases < <(
-        printf '%s\n' "${diffs[@]%%.*}" | filter_packages "${pkgbases[@]}")
+        printf '%s\n' "${pkgbases[@]}" | filter_packages "${diffs[@]%%.*}")
 fi
 
 # Show remaining targets in a concatenated fashion
