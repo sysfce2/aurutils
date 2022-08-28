@@ -69,7 +69,7 @@ sub parse_db {
             $attr_label = $repo_add_attributes{$attr};
 
             if (not defined $attr_label) {
-                warn "$argv0: attribute '$attr' is unknown";
+                warn "$argv0: unknown attribute '$attr'";
                 $attr_label = ucfirst(lc($attr));
             }
         }
@@ -183,9 +183,13 @@ unless (caller) {
         $aur_json->canonical();
         $handler = \&repo_json;
     }
-    elsif (length($opt_attr)) {
+    elsif (length($opt_attr) and defined($repo_add_attributes{$opt_attr})) {
         $handler = \&repo_attr;
         @varargs = $opt_attr;
+    }
+    elsif (length($opt_attr)) {
+        say STDERR "$argv0: unknown attribute '$opt_attr'";
+        exit(2);
     }
     elsif ($opt_list) {
         $handler = \&repo_list;
