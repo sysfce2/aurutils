@@ -107,10 +107,11 @@ sub repo_json {
 sub repo_list {
     my ($pkg, $count, $last, $delim, $quiet) = @_;
 
-    if ($quiet)
+    if ($quiet) {
         say $pkg->{'Name'};
-    else
+    } else {
         say join($delim, $pkg->{'Name'}, $pkg->{'Version'});
+    }
 }
 
 sub repo_table {
@@ -131,7 +132,7 @@ sub repo_table {
 
 sub repo_attr {
     my ($pkg, $count, $last, $attr) = @_;
-    my $value = $pkg->{$attr};
+    my $value = $pkg->{$repo_add_attributes{$attr}};
 
     if (defined($value) and ref($value) eq 'ARRAY') {
         say join("\n", @{$value});
@@ -167,7 +168,7 @@ unless (caller) {
         $opt_stdin = 1;
     }
     elsif ($opt_list_attr) {
-        say(join("\n", sort(values(%repo_add_attributes))));
+        say(join("\n", sort(keys(%repo_add_attributes))));
         exit(0);
     }
     elsif (scalar(@opt_db_path) < 1 and not $opt_stdin) {
