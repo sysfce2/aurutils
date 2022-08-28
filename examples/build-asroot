@@ -1,0 +1,163 @@
+#!/bin/bash
+[[ -v AUR_DEBUG ]] && set -o xtrace
+set -o errexit
+argv0=build-asroot
+startdir=$PWD
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# default arguments
+makepkg_args=(-L)
+
+# Allow to drop permissions for commands as needed (#907)
+as_user() {
+    local USER HOME SHELL
+
+    if [[ $UID == 0 ]] && [[ -v build_user ]]; then
+        # runuser --pty messes up the terminal with AUR_DEBUG set, use setpriv(1)
+        # and replicate the runuser(1) behavior for setting the environment
+        { IFS= read -r USER
+          IFS= read -r HOME
+          IFS= read -r SHELL
+        } < <(getent passwd "$build_user" | awk -F: '{printf("%s\n%s\n%s\n", $1, $6, $7); }')
+
+        setpriv --reuid "$build_user" --regid "$build_user" --init-groups \
+                env USER="$USER" HOME="$HOME" LOGNAME="$USER" SHELL="$SHELL" "$@"
+    else
+        env "$@"
+    fi
+}
+
+# Save transaction so that it can easily be undone later
+get_transaction() {
+    (( ! $# )) && return 0
+    env LANG=C pacinstall --print-only "$@" | awk '$0 ~ /^removing/ || $0 ~ /^installing/ { print }'
+    return "${PIPESTATUS[0]}"
+}
+
+remove_depends() {
+    if (( ${#remove_args[@]} + ${#install_args[@]} )); then
+        pacremove "${pactrans_args[@]}" "${install_args[@]##*/}" --install "${remove_args[@]}"
+    fi
+}
+
+usage() {
+    printf >&2 'usage: %s -d <repo> [-a <queue>] -U <user> [-nCfR]\n' "$argv0"
+    exit 1
+}
+
+# simple option parsing
+checkdepends=1
+unset queue build_user db_name repo_add_args pactrans_args
+
+orig_argv=("$@")
+while getopts :a:U:d:CfRn OPT; do
+    case $OPT in
+        d) db_name=$OPTARG ;;
+        a) queue=$OPTARG ;;
+        U) build_user=$OPTARG ;;
+        n) pactrans_args+=(--no-confirm) ;; # TODO: support --resolve-conflicts
+        C) makepkg_args+=(--nocheck); checkdepends=0 ;;
+        f) makepkg_args+=(-f) ;;
+        R) repo_add_args+=(-R) ;;
+        *) usage ;;
+    esac
+done
+shift $(( OPTIND - 1 ))
+
+if [[ ! -v db_name ]] || [[ -z $db_name ]]; then
+    printf >&2 '%s: repository must be specified\n' "$argv0"
+    exit 1
+fi
+
+if [[ ! -v build_user ]] || (( $(id -u "$build_user") == 0 )); then
+    printf >&2 '%s: unprivileged user must be specified\n' "$argv0"
+    exit 1
+fi
+
+# Elevate permissions
+if (( EUID != 0 )); then
+    exec ${AUR_PACMAN_AUTH:-sudo} -- "${BASH_SOURCE[0]}" "${orig_argv[@]}"
+fi
+
+db_path=$(as_user aur repo -d "$db_name" --path)
+db_root=$(dirname "$db_path")
+
+# set kinds of dependencies that will be installed before the build
+deptypes=(depends makedepends)
+(( checkdepends )) && deptypes+=(checkdepends)
+
+if [[ -v queue ]]; then
+    exec {fd}< "$queue"
+else
+    exec {fd}< <(printf '\n')
+fi
+
+# repository root and startdir should be different
+if [[ $startdir == "$db_root" ]]; then
+    printf >&2 '%s: root and build directory must differ\n' "$argv0"
+    exit 1
+fi
+
+# process queue
+unset remove_args install_args
+trap 'remove_depends' EXIT
+
+while IFS= read -ru "$fd" path; do
+    cd "$startdir"
+    cd "$path"
+
+    # retrieve dependencies as build user
+    depends=()
+    while IFS= read -r value; do
+        depends+=("$value")
+    done < <(as_user aur build--pkglist --srcinfo | pacini - "${deptypes[@]}" | awk -F' = ' '{print $2}')
+    wait "$!"
+
+    # check which dependencies are missing on the host
+    mapfile -t depends_missing < <(pacman -T "${depends[@]}")
+    # discard exit status
+
+    # precompute the transaction and install dependencies
+    if (( ${#depends_missing[@]} )); then
+        while read -r type package _; do
+            case $type in
+                removing) 
+                    remove_args+=("${package##local/}")  ;;
+                installing) 
+                    install_args+=("$package") ;;
+            esac
+        done < <(get_transaction "${depends_missing[@]}")
+        wait "$!"
+
+        if (( ${#remove_args[@]} + ${#install_args[@]} )); then
+            pacinstall "${pactrans_args[@]}" --as-deps "${install_args[@]}" --remove "${remove_args[@]}"
+        fi
+    fi
+
+    # build the package
+    makepkg_ret=0
+    as_user PKGDEST="$db_root" makepkg "${makepkg_args[@]}" || makepkg_ret=$?
+
+    if (( makepkg_ret == 13 )); then
+        continue  # $E_ALREADY_BUILT
+    elif (( makepkg_ret > 0 )); then
+        exit "$ret"
+    fi
+
+    # perform dependency transaction in reverse order
+    # XXX: restore original installation reason for removed packages?
+    remove_depends
+    unset install_args remove_deps
+
+    # retrieve paths to built packages
+    mapfile -t pkglist < <(as_user PKGDEST="$db_root" aur build--pkglist)
+    wait "$!"
+
+    # update local repository
+    as_user env -C "$db_root" repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+
+    # update host and pacman database
+    aur build--sync "$db_name"
+done
+
+exec {fd}<&-
