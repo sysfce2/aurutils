@@ -362,20 +362,15 @@ while IFS= read -ru "$fd" path; do
 
     if (( create_package )); then
         if (( chroot )); then
-            PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
-                run_msg 2 aur chroot --build "${chroot_args[@]}"
+            PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
-            #shellcheck disable=SC2086
-            PKGDEST="$var_tmp" LOGDEST="$var_tmp" \
-                run_msg 2 ${MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            # XXX: files in $LOGDEST are written with `tee`, which is not thread-safe
+            PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
+                run_msg 2 makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd "$var_tmp"
-        pkglist=(!(*.sig|*.log)) # discard makepkg --sign output from package list (#410)
-
-        # Store makepkg --log output to $LOGDEST atomically (mv)
-        loglist=(*.log)
-        [[ -f ${loglist[0]} ]] && mv -f "${loglist[@]}" "${LOGDEST:-$startdir}"
+        pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
     else
         cd "$var_tmp"
         # pkglist has paths to $db_root/<pkg>
