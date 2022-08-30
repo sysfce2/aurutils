@@ -11,6 +11,9 @@ ros-build-tools
 # dependency order (#414)
 curr
 
+# dependency order
+pyneighborhood
+
 # special characters
 c++utilities
 

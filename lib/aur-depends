@@ -1,7 +1,6 @@
 #!/bin/bash
 # aur-depends - retrieve package dependencies using AurJson
 [[ -v AUR_DEBUG ]] && set -o xtrace
-set -o pipefail
 argv0=depends
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -64,7 +63,8 @@ chain() {
     aur query -t info "$@" >json/0 || exit
 
     # Top-level dependencies
-    aur format -f "$fmt" --delim=, json/0 | pivot_table - >tsv/0 || exit
+    aur format -f "$fmt" --delim=, json/0 | pivot_table - >tsv/0
+    (( PIPESTATUS[0] )) && exit 2  # format error
 
     if [[ ! -s tsv/0 ]]; then
         return 0 # no packages found
@@ -80,13 +80,15 @@ chain() {
 
         # Avoid querying duplicates (#4)
         cut -f1 tsv/$sub >> seen # mark pkgname as seen
+        # Note: `grep` exits with status 1 if no matches are found
         cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen | \
-            aur query -t info - > json/$a || exit # rpc error
+            aur query -t info - > json/$a || exit  # rpc error
 
         if [[ ! -s json/$a ]]; then
             return $a # no unique results (seen \ tsv == [empty])
         fi
-        aur format -f "$fmt" --delim=, json/$a | pivot_table - >tsv/$a || exit
+        aur format -f "$fmt" --delim=, json/$a | pivot_table - >tsv/$a
+        (( PIPESTATUS[0] )) && exit 2
 
         if [[ ! -s tsv/$a ]]; then
             return $a  # no results, recursion complete
@@ -187,6 +189,9 @@ if cd "$tmp" && mkdir json tsv; then
             printf >&2 '%s: total requests: %d (out of range)\n' "$argv0" $(( max_request + 1 ))
             exit 34 ;;
     esac
+
+    # preserve tsort exit status
+    set -o pipefail
 
     case $mode in
         # pkgname (AUR, total order)
