@@ -424,7 +424,7 @@ fi
 # Build dependency tree with ninja (#908)
 if (( AUR_SYNC_USE_NINJA )); then
     # directory for stamp files (concurrent aur-sync processes)
-    mkdir -p "$XDG_STATE_HOME"/aurutils
+    mkdir -p "$XDG_STATE_HOME"/aurutils/$argv0
     ninja_dir=$XDG_STATE_HOME/aurutils/$argv0/ninja-$USER-$$
     mkdir "$ninja_dir"
 
