@@ -20,20 +20,6 @@ build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
 # default options (disabled)
 rotate=0 update=0 repo_targets=0
 
-diag_missing() {
-    cat >&2 <<EOF
-Error:
-    aur-sync could not find a required build directory. When using --continue,
-    make sure all directories are available beforehand.
-
-    The following directories were not found:
-EOF
-    #shellcheck disable=SC2030
-    realpath -z -- "$@" | while read -rd ''; do
-        printf '%8s%s\n' ' ' "$REPLY"
-    done
-}
-
 lib32() {
     awk -v arch="$(uname -m)" '{
         if(arch == "i686") {
@@ -411,18 +397,8 @@ if (( download )); then
                 ;;
         esac
     done < "$tmp"/fetch_results
-
-# Perform explicit directory checks with --continue
 else
-    missing=()
-    while IFS= read -r pkg; do
-        [[ ! -d $pkg ]] && missing+=("$pkg")
-    done < "$tmp"/queue
-
-    if (( ${#missing[@]} )); then
-        diag_missing "${missing[@]}"
-        exit 2
-    fi
+    xargs -a "$tmp"/queue stat >/dev/null || exit 2 # ensure all directories are available
 fi
 
 # Verify dependency tree (#20)
