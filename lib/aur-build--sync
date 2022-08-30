@@ -10,10 +10,6 @@ if (( ! $# )); then
     exit 1
 fi
 
-if (( EUID != 0 )); then
-    exec ${AUR_PACMAN_AUTH:-sudo} -- "${BASH_SOURCE[0]}" "$@"
-fi
-
 arg_repo=$1
 pacsync "$arg_repo"
 pacsync "$arg_repo" --dbext=.files
