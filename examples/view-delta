@@ -23,7 +23,9 @@ fi
 
 # Show remaining targets in a concatenated fashion
 if (( ${#pkgbases[@]} )); then
-    find -L "${pkgbases[@]}" -maxdepth 1 -type f -exec bat --paging=always >&2 {} +
+    # Only print files in the git repository
+    find -L "${pkgbases[@]}" -prune -exec sh -c \
+        'git -C {} ls-files -z | env -C {} xargs -0r realpath -z | xargs -0r bat --paging=always' >&2 \;
 fi
 
 # Show an exit prompt
