@@ -31,7 +31,7 @@ if [[ -f ${AUR_ENV=$XDG_CONFIG_HOME/aurutils/env} ]]; then
             AUR*) printf -v "$key" '%s' "$value"
                   export "${key?}" ;;
         esac
-    done < <(pacini "$XDG_CONFIG_HOME/aurutils/env")
+    done < <(pacini "$AUR_ENV")
 
     wait "$!"
 fi
