@@ -14,7 +14,7 @@ pkgbases=("${pkgbases[@]%/}")
 
 # Show diffs in 2 panes
 if [[ -f ${diffs[0]} ]]; then
-    cat "${diffs[@]}" | diff-so-fancy | less --tabs=4 -RX
+    cat "${diffs[@]}" | diff-so-fancy | less --tabs=4 -FRX --pattern '^(Date|added|deleted|modified): '
 
     # Remove diffs from remaining targets (new or unchanged dirs)
     mapfile -t pkgbases < <(
@@ -23,7 +23,7 @@ fi
 
 # Show remaining targets in a concatenated fashion
 if (( ${#pkgbases[@]} )); then
-    find -L "${pkgbases[@]}" -maxdepth 1 -type f -exec bat {} +
+    find -L "${pkgbases[@]}" -maxdepth 1 -type f -exec bat --paging=always >&2 {} +
 fi
 
 # Show an exit prompt
