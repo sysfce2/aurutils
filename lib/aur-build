@@ -423,7 +423,7 @@ while IFS= read -ru "$fd" path; do
         # Like `makepkg --syncdeps`, this affects the host and so uses
         # the host pacman configuration. --pacman-conf (which may also
         # point to a world-writeable file) is not applied.
-        aur build--sync "$db_name"
+        ${AUR_PACMAN_AUTH:-sudo} aur build--sync "$db_name"
     fi
 done
 
