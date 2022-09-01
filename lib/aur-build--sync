@@ -10,21 +10,29 @@ if (( ! $# )); then
     exit 1
 fi
 
-arg_repo=$1
-pacsync "$arg_repo"
-pacsync "$arg_repo" --dbext=.files
+# custom elevation command
+if [[ -v AUR_PACMAN_AUTH ]]; then
+    # shellcheck disable=SC2086
+    sudo() { command -- $AUR_PACMAN_AUTH "$@"; }
+fi
 
+# propagate local repo contents
+arg_repo=$1
+sudo pacsync "$arg_repo"
+sudo pacsync "$arg_repo" --dbext=.files
+
+# retrieve upgrade targets
 targets=()
 while IFS='/' read -r repo name; do
     if [[ $repo == "$arg_repo" ]]; then
         targets+=("$repo/$name")
     fi
 done < <(pacman -Sup --print-format '%r/%n')
-wait $!
+wait "$!"
 
 if (( ${#targets[@]} )); then
     printf >&2 "%s: upgrading packages in repository '%s'\n" "$argv0" "$arg_repo"
-    pacman -S --noconfirm "${targets[@]}"
+    printf '%s\n' "${targets[@]}" | sudo pacman -S --noconfirm -
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

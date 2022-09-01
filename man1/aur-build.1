@@ -435,11 +435,8 @@ For example, create the
 file with the following contents:
 .PP
 .EX
-    # rule for installing dependencies with makepkg --syncdeps
     build ALL = (root) NOPASSWD: /usr/bin/pacman
-
-    # rule for updating the local repository
-    build ALL = (root) NOPASSWD: /usr/bin/aur build--sync *
+    build ALL = (root) NOPASSWD: /usr/bin/pacsync
 .EE
 .PP
 The wildcard can be replaced by the name of the local repository.
