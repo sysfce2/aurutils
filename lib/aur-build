@@ -275,17 +275,16 @@ elif [[ ! -w $db_path ]]; then
     error '%s: %s: permission denied' "$argv0" "$db_path"
     exit 13
 elif [[ -v pacman_conf ]] && [[ ! -r $pacman_conf ]]; then
-    error '%s: could not read pacman.conf' "$argv0"
+    error '%s: %s: permission denied' "$argv0" "$pacman_conf"
     exit 13
 elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
-    error '%s: could not read makepkg.conf' "$argv0"
+    error '%s: %s: permission denied' "$argv0" "$makepkg_conf"
     exit 13
 fi
 
 # Write successfully built packages to file (#437, #980)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
-    # XXX: race with concurrent processes
     (( truncate )) && true | tee "$results_file"
 fi
 
@@ -327,8 +326,7 @@ while IFS= read -ru "$fd" path; do
     create_package=1
     pkglist=()
 
-    # Run pkgver before --packagelist (#500)
-    # XXX: race with concurrent processes
+    # Run pkgver function before --packagelist (#500)
     if (( run_pkgver )); then
         #shellcheck disable=SC2086
         ${MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
@@ -347,16 +345,16 @@ while IFS= read -ru "$fd" path; do
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
 
-        if [[ ${exists[*]} ]]; then
+        if (( ${#exists[@]} )); then
             warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
             create_package=0
 
             printf '%q\n' >&2 "${exists[@]}"
             pkglist=("${exists[@]}")
+        fi
 
-            if [[ -v results_file ]]; then
-                printf "exist:file://%s\n" "${exists[@]}" | tee -a "$results_file" >/dev/null
-            fi
+        if (( ${#exists[@]} )) && [[ -v results_file ]]; then
+            printf "exist:file://%s\n" "${exists[@]}" | tee -a "$results_file" >/dev/null
         fi
     fi
 
@@ -364,9 +362,9 @@ while IFS= read -ru "$fd" path; do
         if (( chroot )); then
             PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
         else
-            # XXX: files in $LOGDEST are written with `tee`, which is not thread-safe
+            #shellcheck disable=SC2086
             PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
-                run_msg 2 makepkg "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+                run_msg 2 ${MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd "$var_tmp"
@@ -406,7 +404,6 @@ while IFS= read -ru "$fd" path; do
     if (( create_package )); then
         mv -f "${pkglist[@]}" "$db_root"
 
-        # XXX: race with concurrent processes
         if [[ -v results_file ]]; then
             printf "build:file://$db_root/%s\n" "${pkglist[@]}" | tee -a "$results_file" >/dev/null
         fi
