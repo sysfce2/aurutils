@@ -7,9 +7,11 @@
   + add `exist:` to `--results` output
     - remove `--dry-run`
   + remove experimental `AUR_ASROOT` functionality (#1023)
+  + updates for aur-build(1)
 
 * `aur-chroot`
   + remove `--packagelist` (deprecated in v8)
+  + only run `sudo --preserve-env` when `AUR_PACMAN_AUTH` is empty or `sudo`
 
 * `aur-depends`
   + performance improvements
@@ -31,7 +33,7 @@
   + add `--json`
 
 * `aur-query`
-  + remove support for parallel and `GET` requests
+  + remove support for parallel (`AUR_QUERY_PARALLEL`) and `GET` requests
   + set operations (union, intersection) are moved to `aur-format`
     - remove `--any`
   + print curl command-lines with `--dry-run`
@@ -46,7 +48,7 @@
 
 * `aur-sync`
   + add diagnostic for missing packages with `--continue`
-  + save `ninja.build` files in `XDG_STATE_HOME`
+  + save `ninja.build` files in `XDG_STATE_HOME/aurutils/sync`
 
 * `aur-view`
   + print diagnostic on invalid git revision (#894)
@@ -61,7 +63,7 @@
   + support extending `zsh` completion for third party commands (#1016)
 
 * `examples`
-  + add `view-delta`
+  + add `view-delta` (optdepends: `bat`, `diff-so-fancy`)
 
 ## 10
 
