@@ -354,7 +354,7 @@ As above, but for orphaned packages:
 .PP
 .EX
     $ pacman \-Slq custom | aur query \-t info - | \e
-          jq \-r \(aq.[].results[] | select(.Maintainer == null)\(aq
+          jq \-r \(aq.results[] | select(.Maintainer == null)\(aq
 .EE
 .PP
 Update packages in the
