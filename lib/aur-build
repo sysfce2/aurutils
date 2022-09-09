@@ -330,7 +330,7 @@ while IFS= read -ru "$fd" path; do
     # Run pkgver function before --packagelist (#500)
     if (( run_pkgver )); then
         #shellcheck disable=SC2086
-        ${MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
+        ${AUR_MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not
@@ -365,7 +365,7 @@ while IFS= read -ru "$fd" path; do
         else
             #shellcheck disable=SC2086
             PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
-                run_msg 2 ${MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+                run_msg 2 ${AUR_MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
         cd "$var_tmp"
@@ -392,7 +392,8 @@ while IFS= read -ru "$fd" path; do
 
         # No candidate signature, generate one
         elif (( sign_pkg )); then
-            gpg "${gpg_args[@]}" --output "$p_base".sig "$p"
+            #shellcheck disable=SC2086
+            ${AUR_GPG:-gpg} "${gpg_args[@]}" --output "$p_base".sig "$p"
 
             printf >&2 '%s: created signature file %q\n' "$argv0" "$p_base".sig
             siglist+=("$p_base".sig)
@@ -412,7 +413,8 @@ while IFS= read -ru "$fd" path; do
 
     # Update database
     cd "$db_root"
-    LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+    #shellcheck disable=SC2086
+    LANG=C ${AUR_REPO_ADD:-repo-add} "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( chroot )) || (( no_sync )); then
         continue

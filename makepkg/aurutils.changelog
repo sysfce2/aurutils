@@ -6,6 +6,8 @@
     - local repository upgrades are now unaffected by `--pacman-conf`
   + add `exist:` to `--results` output
     - remove `--dry-run`
+  + add `AUR_GPG`, `AUR_REPO_ADD` environment variables
+    - rename `MAKEPKG` to `AUR_MAKEPKG`
   + remove experimental `AUR_ASROOT` functionality (#1023)
   + updates for aur-build(1)
 
