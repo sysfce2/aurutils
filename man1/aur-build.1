@@ -567,9 +567,13 @@ for details.
 Databases are built with
 .B LANG=C
 to avoid libalpm from skipping entries if the locale is not set
-(FS#49342). Packages are signed manually with
+(FS#49342).
+.PP
+Packages are signed manually with
 .B "gpg \-\-batch \-\-detach\-sign \-\-no\-armor"
-(FS#49946).
+since chroot builds have no access to
+.I pinenentry
+variables, and to allow signing existing packages without signature.
 .PP
 .BR pacman (8)
 has a size-limit of 25\~MiB for databases. The use of larger databases
@@ -581,6 +585,17 @@ See
 .UR https://\:git.archlinux.org/\:pacman.git/\:commit/\:?id=\:6dc71926f9b16ebcf11b924941092d6eab204224
 .UE
 for details.
+.PP
+While
+.BR pacman (8)
+options can be passed to
+.B makepkg \-s
+.RB ( "aur\-build \-\-syncdeps" )
+by setting the
+.B PACMAN
+environment variable, the value of
+.B pacman \-\-dbpath
+is fixed.
 .
 .SH SEE ALSO
 .ad l
