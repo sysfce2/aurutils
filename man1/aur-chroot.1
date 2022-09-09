@@ -144,11 +144,39 @@ Bind a directory read-write to the container.
 .RB ( makechrootpkg " " \-d )
 .
 .SH ENVIRONMENT
-Packages are placed in the directory set in
-.BR PKGDEST .
-If unset, the current directory
+.TP
+.B AUR_PACMAN_AUTH
+The agent used to elevate commands. If unset,
+.BR sudo (8)
+is used. When running
+.BR makechrootpkg ,
+the following variables should be preserved:
+.IR PKGDEST ,
+.IR GNUPGHOME
+and
+.IR SSH_AUTH_SOCK .
+By default, these variables are preserved with
+.BR "sudo \-\-preserve-env" ,
+which assumes an
+.BR ALL
+directive or a
+.BR SETENV
+tag for
+.BR /usr/bin/makechrootpkg .
+See
+.B SETENV
+in
+.BR sudoers (5)
+for details.
+.TP
+.B PATH
+The contents of this variable are ignored and replaced with
+.IR /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin .
+.TP
+.B PKGDEST
+The directory where packages are placed. If unset, the current directory
 .RB ( $PWD )
-is used. See also
+is used. See
 .BR makepkg.conf (5)
 and
 .BR "makechrootpkg \-h" .
@@ -267,7 +295,7 @@ QEMU user mode. See
 .UE
 for details.
 .
-.SS Devtools limitations
+.SH BUGS
 .B PKGDEST
 is not checked for existing packages when building with
 .BR makechrootpkg .

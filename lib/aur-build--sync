@@ -1,7 +1,9 @@
 #!/bin/bash
+# shellcheck disable=SC2086
 # build--sync - helper for upgrading local repository
-set -e
+set -o errexit
 [[ -v AUR_DEBUG ]] && set -o xtrace
+AUR_PACMAN_AUTH=${AUR_PACMAN_AUTH:-sudo}
 argv0=build--sync
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -10,16 +12,10 @@ if (( ! $# )); then
     exit 1
 fi
 
-# custom elevation command
-if [[ -v AUR_PACMAN_AUTH ]]; then
-    # shellcheck disable=SC2086
-    sudo() { command -- $AUR_PACMAN_AUTH "$@"; }
-fi
-
 # propagate local repo contents
 arg_repo=$1
-sudo pacsync "$arg_repo"
-sudo pacsync "$arg_repo" --dbext=.files
+$AUR_PACMAN_AUTH pacsync "$arg_repo"
+$AUR_PACMAN_AUTH pacsync "$arg_repo" --dbext=.files
 
 # retrieve upgrade targets
 targets=()
@@ -32,7 +28,7 @@ wait "$!"
 
 if (( ${#targets[@]} )); then
     printf >&2 "%s: upgrading packages in repository '%s'\n" "$argv0" "$arg_repo"
-    printf '%s\n' "${targets[@]}" | sudo pacman -S --noconfirm -
+    printf '%s\n' "${targets[@]}" | $AUR_PACMAN_AUTH pacman -S --noconfirm -
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:

@@ -103,11 +103,13 @@ elif [[ ! -r $pacman_conf ]]; then
     exit 1
 fi
 
-# Custom elevation command
-if [[ $AUR_PACMAN_AUTH ]]; then
-    # shellcheck disable=SC2086
-    sudo() { command -- $AUR_PACMAN_AUTH "$@"; }
-fi
+# Custom elevation command (#1024)
+unset auth_args
+AUR_PACMAN_AUTH=${AUR_PACMAN_AUTH:-sudo}
+
+case $AUR_PACMAN_AUTH in
+    sudo) auth_args+=('--preserve-env=GNUPGHOME,SSH_AUTH_SOCK,PKGDEST') ;;
+esac
 
 # bind mount file:// paths to container (#461)
 # required for update/build steps
@@ -137,11 +139,13 @@ if (( create )); then
 
     # parent path is not created by mkarchroot (#371)
     if [[ ! -d $directory ]]; then
-        sudo install -d "$directory" -m 755 -v
+        # shellcheck disable=SC2086
+        $AUR_PACMAN_AUTH install -d "$directory" -m 755 -v
     fi
 
     if [[ ! -d $directory/root ]]; then
-        sudo mkarchroot -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root "${base_packages[@]}"
+        # shellcheck disable=SC2086
+        $AUR_PACMAN_AUTH mkarchroot -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root "${base_packages[@]}"
     fi
 fi
 
@@ -161,15 +165,17 @@ fi
 
 if (( update )); then
     # locking is done by systemd-nspawn
-    sudo arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
+    # shellcheck disable=SC2086
+    $AUR_PACMAN_AUTH arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
          "${bindmounts_ro[@]/#/--bind-ro=}" \
          "${bindmounts_rw[@]/#/--bind=}" pacman -Syu --noconfirm "$@"
 fi
 
 if (( build )); then
     # use makechrootpkg -c as default build command (sync /root container)
-    # arguments after -- (if present) are used as makechrootpkg arguments
-    sudo --preserve-env=GNUPGHOME,SSH_AUTH_SOCK,PKGDEST makechrootpkg -r "$directory" \
+    # arguments after -- are used as makechrootpkg arguments
+    # shellcheck disable=SC2086
+    $AUR_PACMAN_AUTH "${auth_args[@]}" makechrootpkg -r "$directory" \
          "${bindmounts_ro[@]/#/-D}" "${bindmounts_rw[@]/#/-d}" \
          "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
 fi
