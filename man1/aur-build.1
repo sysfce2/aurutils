@@ -372,6 +372,37 @@ The extension name of the repository. Defaults to
 .IR .db .
 .
 .TP
+.B AUR_MAKEPKG
+The command used to build packages. Any
+.BR makepkg (8)
+options (see the
+.B makepkg options
+section) forwarded must be supported by this command, as well as the
+.IR \-o ,
+.IR \-d ,
+and
+.I \-\-noextract
+options if
+.B aur\-build \-\-pkgver
+is used.
+.
+.TP
+.B AUR_GPG
+The command used to sign packages. The arguments
+.BR \-\-batch ,
+.BR \-\-detach\-sign ,
+and
+.BR \-\-no\-armor
+must be supported by this command.
+
+.TP
+.B AUR_REPO_ADD
+The command used to update the local repository. Any
+.BR repo\-add (8)
+options (see the
+.B repo\-add options
+section) forwarded must be supported by this command.
+.
 .B AUR_PACMAN_AUTH
 A command prefix for running
 .BR pacman (8)
@@ -398,21 +429,6 @@ When the variable is set in
 .BR makepkg.conf (5),
 is it only respected by
 .BR makepkg .
-.
-.TP
-.B MAKEPKG
-The command used to build packages. Any
-.BR makepkg (8)
-options (see the
-.B makepkg options
-section) forwarded must be supported by this command, as well as the
-.IR \-o ,
-.IR \-d ,
-and
-.I \-\-noextract
-options if
-.B aur\-build \-\-pkgver
-is used.
 .
 .TP
 .B TMPDIR
