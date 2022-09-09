@@ -123,7 +123,8 @@ while true; do
         --pacman-conf)
             shift; pacman_conf=$1 ;;
         --pkgver)
-            run_pkgver=1; makepkg_args+=(--noextract) ;;
+            run_pkgver=1; makepkg_args+=(--noextract)
+            makechrootpkg_makepkg_args+=(--holdver) ;;
         --root)
             shift; db_root=$1
             repo_args+=(--root "$1") ;;
