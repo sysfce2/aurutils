@@ -162,13 +162,13 @@ fi
 for pkg in "${packages[@]}"; do
     unset -f git
 
-    # Verify if the repository is hosted on AUR (#959)
-    if (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
-        printf >&2 '%s: warning: package %s is not in AUR, skipping\n' "$argv0" "$pkg"
+    # Local clone by fetch--mirror
+    if [[ ${local_clones[$pkg]} ]]; then
         continue
 
-    # Local clone by fetch--mirror
-    elif [[ ${local_clones[$pkg]} ]]; then
+    # Verify if the repository is hosted on AUR (#959)
+    elif (( existing )) && ! git ls-remote --exit-code "$AUR_LOCATION/$pkg" >/dev/null; then
+        printf >&2 '%s: warning: package %s is not in AUR, skipping\n' "$argv0" "$pkg"
         continue
 
     # Clone package if not existing
