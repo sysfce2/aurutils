@@ -5,7 +5,7 @@ argv0=build-asroot
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default options
+# Default options
 makepkg_args=(-L) pactrans_args=(--no-confirm) repo_add_args=(-R) checkdepends=1
 
 # Allow to drop permissions for commands as needed (#907)
@@ -27,7 +27,6 @@ as_user() {
     fi
 }
 
-# Save transaction so that it can easily be undone later
 get_transaction() {
     if (( ! $# )); then
         env LANG=C pacinstall "${pactrans_args[@]}" --print-only "$@" |
@@ -71,7 +70,7 @@ if (( $(id -u "$build_user") == 0 )); then
     exit 2
 fi
 
-# elevate permissions
+# Elevate permissions
 if (( EUID != 0 )); then
     exec ${AUR_PACMAN_AUTH:-sudo} -- "${BASH_SOURCE[0]}" "${orig_argv[@]}"
 fi
@@ -79,17 +78,20 @@ fi
 db_path=$(as_user aur repo -d "$db_name" --path)
 db_root=$(dirname "$db_path")
 
-# set kinds of dependencies that will be installed before the build
+# Types of dependencies that will be installed before the build.
 deptypes=(depends makedepends)
 (( checkdepends )) && deptypes+=(checkdepends)
 
+# If a queue file is specified, use it for reading targets. Otherwise, default
+# to the current directory.
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
 else
     exec {fd}< <(printf '\n')
 fi
 
-# process queue
+# A trap is defined here so that when build-asroot is interrupted, any installed
+# dependencies are removed. This behavior matches makepkg --rmdeps.
 unset remove_args install_args
 trap 'remove_depends' EXIT
 
@@ -97,17 +99,23 @@ while IFS= read -ru "$fd" path; do
     cd "$startdir"
     cd "$path"
 
-    # retrieve dependencies as build user
+    # Retrieve dependencies as build user with makepkg --printsrcinfo. Alternatively,
+    # dependencies can be retrieved directly from .SRCINFO, in cases where it
+    # matches the PKGBUILD exactly (AUR packages with no local changes).
     depends=()
     while IFS= read -r value; do
         depends+=("$value")
     done < <(
+        #pacini .SRCINFO "${deptypes[@]}" | awk -F' = ' '{print $2}'
         as_user aur build--pkglist --srcinfo | pacini - "${deptypes[@]}" | awk -F' = ' '{print $2}')
 
-    # check which dependencies are missing on the host
+    # Check which dependencies are missing on the host.
     mapfile -t depends_missing < <(pacman -T "${depends[@]}")
 
-    # precompute the transaction and install dependencies
+    # Precomputing the transaction allows to undo it later in reverse order.
+    # In particular, dependencies are installed and removed in a single transaction.
+    # Semantics are defined by the `--resolve-conflicts` and `--resolve-replacements`
+    # options for `pactrans`.
     while read -r type package _; do
         case $type in
             removing)
@@ -120,22 +128,29 @@ while IFS= read -ru "$fd" path; do
 
     install_depends
 
-    # build the package
+    # Privileges are now dropped to a regular user to build the package. It is
+    # assumed that this user has at least read access to the PKGBUILD. If the
+    # PKGBUILD has a `pkgver()` function, write access is also needed.
     makepkg_ret=0
     as_user PKGDEST="$db_root" makepkg "${makepkg_args[@]}" || makepkg_ret=$?
 
+    # A direct invocation of `makepkg` has a wide range of exit codes (see
+    # /usr/share/makepkg/util/error.sh). 13 signifies that a package in `PKGDEST`
+    # is already available. Note that `makepkg --sign` will not create a new
+    # signature in such a case.
     if (( makepkg_ret == 13 )); then
         continue  # $E_ALREADY_BUILT
     elif (( makepkg_ret > 0 )); then
-        exit "$ret"
+        exit "$ret" # general error
     fi
 
-    # perform dependency transaction in reverse order
+    # Perform dependency transaction in reverse order.
     # Note: the install reason for removed packages is not preserved.
     remove_depends
     unset install_args remove_deps
 
-    # retrieve paths to built packages
+    # Retrieve paths to built packages. To avoid linting the PKGBUILD a second
+    # time, `aur-build--pkglist` is preferred over `makepkg --packagelist`.
     mapfile -t pkglist < <(as_user PKGDEST="$db_root" aur build--pkglist)
     wait "$!"
 
