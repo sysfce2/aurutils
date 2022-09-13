@@ -9,6 +9,7 @@
   + add `AUR_GPG`, `AUR_REPO_ADD` environment variables
     - rename `MAKEPKG` to `AUR_MAKEPKG`
   + remove experimental `AUR_ASROOT` functionality (#1023)
+    - add `examples/build-asroot`
   + updates for aur-build(1)
 
 * `aur-chroot`
@@ -66,7 +67,8 @@
   + support extending `zsh` completion for third party commands (#1016)
 
 * `examples`
-  + add `view-delta` (optdepends: `bat`, `diff-so-fancy`)
+  + add `view-delta` (requires: `bat`, `diff-so-fancy`)
+  + add `build-asroot`
 
 ## 10
 
