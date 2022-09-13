@@ -20,7 +20,7 @@ optdepends=('bash-completion: bash completion'
             'perl-json-xs: faster JSON serialization'
             'ninja: aur-sync ninja support'
             'bat: view-delta example script'
-            'diff-so-fancy: view-delta example script')
+            'git-delta: view-delta example script')
 
 pkgver() {
     cd aurutils
