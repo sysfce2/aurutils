@@ -5,8 +5,8 @@ argv0=build-asroot
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
-# default arguments
-makepkg_args=(-L)
+# default options
+makepkg_args=(-L) pactrans_args=(--no-confirm) repo_add_args=(-R) checkdepends=1
 
 # Allow to drop permissions for commands as needed (#907)
 as_user() {
@@ -29,52 +29,49 @@ as_user() {
 
 # Save transaction so that it can easily be undone later
 get_transaction() {
-    (( ! $# )) && return 0
-    env LANG=C pacinstall --print-only "$@" | awk '$0 ~ /^removing/ || $0 ~ /^installing/ { print }'
-    return "${PIPESTATUS[0]}"
+    if (( ! $# )); then
+        env LANG=C pacinstall "${pactrans_args[@]}" --print-only "$@" |
+            awk '$0 ~ /^removing/ || $0 ~ /^installing/ { print }'
+        return "${PIPESTATUS[0]}"
+    fi
+}
+
+install_depends() {
+    #global remove_args install_args
+    if (( ${#remove_args[@]} + ${#install_args[@]} )); then
+        pacinstall "${pactrans_args[@]}" --as-deps "${install_args[@]}" --remove "${remove_args[@]}"
+    fi
 }
 
 remove_depends() {
+    #global remove_args install_args
     if (( ${#remove_args[@]} + ${#install_args[@]} )); then
         pacremove "${pactrans_args[@]}" "${install_args[@]##*/}" --install "${remove_args[@]}"
     fi
 }
 
-usage() {
-    printf >&2 'usage: %s -d <repo> [-a <queue>] -U <user> [-nCfR]\n' "$argv0"
-    exit 1
-}
-
-# simple option parsing
-checkdepends=1
-unset queue build_user db_name repo_add_args pactrans_args
+# Simple option parsing
+unset queue build_user db_name
 
 orig_argv=("$@")
-while getopts :a:U:d:CfRn OPT; do
+while getopts :a:U:d:f OPT; do
     case $OPT in
-        d) db_name=$OPTARG ;;
         a) queue=$OPTARG ;;
+        d) db_name=$OPTARG ;;
         U) build_user=$OPTARG ;;
-        n) pactrans_args+=(--no-confirm) ;; # TODO: support --resolve-conflicts
-        C) makepkg_args+=(--nocheck); checkdepends=0 ;;
         f) makepkg_args+=(-f) ;;
-        R) repo_add_args+=(-R) ;;
-        *) usage ;;
+        *) printf >&2 '%s: invalid option\n' "$argv0"
+           exit 1;;
     esac
 done
 shift $(( OPTIND - 1 ))
 
-if [[ ! -v db_name ]] || [[ -z $db_name ]]; then
-    printf >&2 '%s: repository must be specified\n' "$argv0"
-    exit 1
+if (( $(id -u "$build_user") == 0 )); then
+    printf '%s: build user is privileged\n' "$argv0"
+    exit 2
 fi
 
-if [[ ! -v build_user ]] || (( $(id -u "$build_user") == 0 )); then
-    printf >&2 '%s: unprivileged user must be specified\n' "$argv0"
-    exit 1
-fi
-
-# Elevate permissions
+# elevate permissions
 if (( EUID != 0 )); then
     exec ${AUR_PACMAN_AUTH:-sudo} -- "${BASH_SOURCE[0]}" "${orig_argv[@]}"
 fi
@@ -92,12 +89,6 @@ else
     exec {fd}< <(printf '\n')
 fi
 
-# repository root and startdir should be different
-if [[ $startdir == "$db_root" ]]; then
-    printf >&2 '%s: root and build directory must differ\n' "$argv0"
-    exit 1
-fi
-
 # process queue
 unset remove_args install_args
 trap 'remove_depends' EXIT
@@ -110,29 +101,24 @@ while IFS= read -ru "$fd" path; do
     depends=()
     while IFS= read -r value; do
         depends+=("$value")
-    done < <(as_user aur build--pkglist --srcinfo | pacini - "${deptypes[@]}" | awk -F' = ' '{print $2}')
-    wait "$!"
+    done < <(
+        as_user aur build--pkglist --srcinfo | pacini - "${deptypes[@]}" | awk -F' = ' '{print $2}')
 
     # check which dependencies are missing on the host
     mapfile -t depends_missing < <(pacman -T "${depends[@]}")
-    # discard exit status
 
     # precompute the transaction and install dependencies
-    if (( ${#depends_missing[@]} )); then
-        while read -r type package _; do
-            case $type in
-                removing) 
-                    remove_args+=("${package##local/}")  ;;
-                installing) 
-                    install_args+=("$package") ;;
-            esac
-        done < <(get_transaction "${depends_missing[@]}")
-        wait "$!"
+    while read -r type package _; do
+        case $type in
+            removing)
+                remove_args+=("${package##local/}") ;;
+            installing)
+                install_args+=("$package") ;;
+        esac
+    done < <(get_transaction "${depends_missing[@]}")
+    wait "$!"
 
-        if (( ${#remove_args[@]} + ${#install_args[@]} )); then
-            pacinstall "${pactrans_args[@]}" --as-deps "${install_args[@]}" --remove "${remove_args[@]}"
-        fi
-    fi
+    install_depends
 
     # build the package
     makepkg_ret=0
@@ -145,7 +131,7 @@ while IFS= read -ru "$fd" path; do
     fi
 
     # perform dependency transaction in reverse order
-    # XXX: restore original installation reason for removed packages?
+    # Note: the install reason for removed packages is not preserved.
     remove_depends
     unset install_args remove_deps
 
