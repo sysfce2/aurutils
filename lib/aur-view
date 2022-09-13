@@ -138,7 +138,7 @@ for pkg in "${packages[@]}"; do
 
         if [[ $view != "$head" ]]; then
             git --no-pager "$log_fmt" --stat "${log_args[@]}" \
-                "$view..$head" > "$tmp/$pkg.$log_fmt"
+                "$view..$head" -- ':!*.SRCINFO' ':!*.gitignore' > "$tmp/$pkg.$log_fmt"
         fi
 
     elif [[ -f $AUR_VIEW_DB/$pkg ]]; then

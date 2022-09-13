@@ -53,6 +53,7 @@
   + save `ninja.build` files in `XDG_STATE_HOME/aurutils/sync`
 
 * `aur-view`
+  + ignore `.SRCINFO` and `.gitignore` in diffs
   + print diagnostic on invalid git revision (#894)
 
 * `aur-format`
