@@ -138,11 +138,11 @@ while IFS= read -ru "$fd" path; do
     # /usr/share/makepkg/util/error.sh). 13 signifies that a package in `PKGDEST`
     # is already available. Note that `makepkg --sign` will not create a new
     # signature in such a case.
-    if (( makepkg_ret == 13 )); then
-        continue  # $E_ALREADY_BUILT
-    elif (( makepkg_ret > 0 )); then
-        exit "$ret" # general error
-    fi
+    case $makepkg_ret in
+        13) continue ;; # $E_ALREADY_BUILT
+         0) ;; # success
+         *) exit "$makepkg_ret" ;; # general error
+    esac
 
     # Perform dependency transaction in reverse order.
     # Note: the install reason for removed packages is not preserved.
