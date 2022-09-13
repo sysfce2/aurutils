@@ -1,38 +1,29 @@
 #!/bin/bash
 # aur-pkglist - print the AUR package list
+set -o errexit
 [[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=pkglist
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
-AUR_METADEST=${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0} # variable name prone to change
+AUR_ARCHIVE=${AUR_ARCHIVE:-$AUR_LOCATION}
+AUR_ARCHIVE_ROOT=${AUR_ARCHIVE_ROOT:-$XDG_STATE_HOME/aurweb-archive}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+export GIT_HTTP_USER_AGENT=aurutils
 
 # default options
-ttl=300 pkglist=packages update=0 verify=0 use_system_time=0
-
-http_last_modified() {
-    awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
-}
-
-list_fetch() {
-    curl -A aurutils -f "$1" "${@:2}" --remote-name
-}
-
-list_headers() {
-    curl -A aurutils -f "$1" --head -Ss
-}
+ttl=600 mode=cat pkglist=pkgname.json archive=pkgnames use_system_time=0 use_gc=0
 
 usage() {
-    printf >&2 'usage: %s [-bqsiv] [-t ttl] [-FP pattern]\n' "$argv0"
+    printf >&2 'usage: %s [-bqsi] [-t ttl]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bqsivFPJISu'
-opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
-          'ttl:' 'users' 'verify' 'quiet' 'systime')
-opt_hidden=('dump-options' 'time:' 'json')
+opt_short='t:bQiqun'
+opt_long=('pkgbase' 'pkgname' 'ttl:' 'users' 'quiet' 'systime' 'info'
+          'info-pkgbase' 'gc' 'plain')
+opt_hidden=('dump-options' 'time:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -43,37 +34,25 @@ unset mode
 while true; do
     case "$1" in
         -b|--pkgbase)
-            pkglist=pkgbase ;;
-        -s|--search)
-            pkglist=packages-meta-v1.json ;;
-        -i|--info)
-            pkglist=packages-meta-ext-v1.json ;;
+            pkglist=pkgbase.json; archive=pkgbases ;;
+        -n|--pkgname)
+            pkglist=pkgname.json; archive=pkgnames ;;
         --users)
-            pkglist=users ;;
-        -F|--fixed-strings)
-            mode=fixed ;;
-        -P|--perl-regexp)
-            mode=regex ;;
-        --plain)
-            mode=plain ;;
-        -q|--quiet)
+            pkglist=users.json; archive=users ;;
+        -i|--info)
+            pkglist=pkgname.json; archive=metadata ;;
+        --info-pkgbase)
+            pkglist=pkgbase.json; archive=metadata ;;
+        -q|-u|--quiet)
             mode=none ;;
         -t|--time|--ttl)
             shift; ttl=$1 ;;
-        -v|--verify)
-            verify=1 ;;
-        --systime)
+        -Q|--systime)
             use_system_time=1 ;;
-        # Deprecated options
-        -u) printf >&2 'deprecation notice: %s -u is an alias for --quiet\n' "$argv0"
-            mode=none ;;
-        -I) printf >&2 'deprecation notice: %s -I is an alias for --info\n' "$argv0"
-            pkglist=packages-meta-ext-v1.json ;;
-        -S) printf >&2 'deprecation notice: %s -S is an alias for --search\n' "$argv0"
-            pkglist=packages-meta-v1.json ;;
-        -J|--json)
-            printf >&2 'deprecation notice: %s --json is an alias for [--info|--search] | jq\n' "$argv0"
+        --plain)
             mode=plain ;;
+        --gc)
+            use_gc=1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -83,66 +62,56 @@ while true; do
     shift
 done
 
-# default to regex if >0 arguments specified
-if [[ ! -v mode ]] && (( $# > 0 )); then
-    mode=regex
-elif [[ ! -v mode ]]; then
-    mode=plain
-fi
-
-if ! [[ $ttl =~ [0-9]+ ]]; then
+if ! [[ $ttl =~ -?[0-9]+ ]]; then
     printf >&2 "error: --ttl requires an integer ('%s' provided)\n" "$ttl"
     exit 1
 fi
 
-# packages.gz cache
-install -dm700 "$AUR_METADEST"
-cd "$AUR_METADEST" || exit
+mkdir -p "$AUR_ARCHIVE_ROOT"
 
-if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
-    update=1
+# aurweb git archive
+if [[ ! -d $AUR_ARCHIVE_ROOT/.git ]]; then
+    git clone "$AUR_ARCHIVE/$archive".git "$AUR_ARCHIVE_ROOT/$archive"
 
-elif [[ -s $pkglist ]]; then
-    sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
+else
+    git() { command git -C "$AUR_ARCHIVE_ROOT" "$@"; }
 
-    if (( use_system_time )); then
+    if (( ttl < 0 )); then
+        : # skip upgrades
+    elif (( use_system_time )); then
+        sec_l=$(git log -1 --pretty="format:%ct")
         sec_d=$(date '+%s')
+
+        if (( sec_d - sec_l > ttl )); then
+            git pull
+        fi
     else
-        sec_d=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
+        sec_l=$(git log -1 --pretty="format:%ct")
+        git fetch
+
+        rev_u=$(git rev-parse FETCH_HEAD)
+        sec_d=$(git log "$rev_u" --pretty="format:%ct")
+
+        # Since any new revisions are retrieved by git-fetch, merge them
+        # regardless of --ttl settings. To improve performance, `prefetch` tasks
+        # can be run periodically. See git-maintenance(1) for details.
+        if (( sec_d - sec_l > 0 )); then
+            git merge --ff-only
+        fi
     fi
 
-    if (( sec_d - sec_l > ttl )); then
-        update=1
+    if (( use_gc )); then
+        git gc --aggressive
     fi
 fi
 
-if (( update )); then
-    list_fetch "$AUR_LOCATION/$pkglist.gz" --dump-header "headers_$pkglist"
+cd "$AUR_ARCHIVE_ROOT/$archive"
 
-    if (( verify )); then
-        list_fetch "$AUR_LOCATION/$pkglist.gz.sha256"
-        sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
-    fi
-
-    if [[ $pkglist == *.json ]]; then
-        # Remove newlines separating partial objects, i.e.
-        #   [\n{...},\n{...},...\n]  =>  [{...}{...},...]\n
-        { gunzip -c "$pkglist.gz" | tr -d '\n'
-          printf '\n'
-        } > "$pkglist"
-    else
-        gunzip -f "$pkglist.gz"
-    fi
-fi >&2
-
-# pattern match
 case $mode in
-    plain)
+    cat)
         cat "$pkglist" ;;
-    fixed)
-        grep -F "$1" "$pkglist" ;;
-    regex)
-        grep -P "$1" "$pkglist" ;;
+    plain)
+        tr -d '"][' "$pkglist" | tr -s ',' '\n' ;;
     none)
         printf '%s\n' "$PWD/$pkglist" ;;
 esac
