@@ -341,7 +341,8 @@ while IFS= read -ru "$fd" path; do
         while IFS=':' read -r pkgpath; do
             [[ -f $pkgpath ]] && exists+=("$pkgpath")
         done < <(
-            PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
+            #shellcheck disable=SC2086
+            PKGDEST="$db_root" ${AUR_PKGLIST:-aur build--pkglist} "${pkglist_args[@]}"
         )
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
@@ -400,15 +401,15 @@ while IFS= read -ru "$fd" path; do
         fi
     done
 
-    if (( ${#siglist[@]} )); then
-        mv -f "${siglist[@]}" "$db_root"
-    fi
     if (( create_package )); then
-        mv -f "${pkglist[@]}" "$db_root"
+        mv -f "${siglist[@]}" "${pkglist[@]}" "$db_root"
 
         if [[ -v results_file ]]; then
             printf "build:file://$db_root/%s\n" "${pkglist[@]}" | tee -a "$results_file" >/dev/null
         fi
+
+    elif (( ${#siglist[@]} )); then
+        mv -f "${siglist[@]}" "$db_root"
     fi
 
     # Update database
