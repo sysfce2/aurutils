@@ -247,6 +247,16 @@ Should the rule only apply to specific hosts, replace
 .B ALL
 with the respective
 .IR hostname .
+.PP
+.B Warning:
+Due to a bug in
+.BR makechrootpkg ,
+a
+.I NOPASSWD
+rule for
+.I /usr/bin/makechrootpkg
+is equivalent to
+.IR "NOPASSWD: ALL" .
 .
 .SS Using ccache and distcc
 As in

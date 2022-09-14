@@ -489,14 +489,6 @@ file with the following contents:
     build ALL = (root) NOPASSWD: /usr/bin/pacsync
 .EE
 .PP
-or when using
-.BR \-\-chroot :
-.PP
-.EX
-    build ALL = (root) NOPASSWD: SETENV: /usr/bin/makechrootpkg
-    build ALL = (root) NOPASSWD: /usr/bin/mkarchroot, /usr/bin/arch-nspawn
-.EE
-.PP
 .BR aur\-build (1)
 and related programs such as
 .BR aur\-sync (1)
@@ -516,6 +508,11 @@ Any created files in the local repository (such as packages,
 signatures and database files) will be owned by the
 .I build
 user.
+.PP
+See also
+.B Avoiding password prompts
+in
+.BR aur\-chroot (1).
 .
 .SS PKGBUILD signatures
 GPG signatures defined in the
