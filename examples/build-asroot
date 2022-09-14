@@ -27,10 +27,18 @@ as_user() {
     fi
 }
 
+
+# Save transaction so that it can easily be undone later. `pactrans` ignores
+# `provides` or groups, so these are resolved with `pacman -Sp` first.  This
+# implies no provider selection; default targets are always taken.
+# See: https://github.com/andrewgregory/pacutils/issues/63
 get_transaction() {
     if (( ! $# )); then
-        env LANG=C pacinstall "${pactrans_args[@]}" --print-only "$@" |
-            awk '$0 ~ /^removing/ || $0 ~ /^installing/ { print }'
+        mapfile -t pkgnames < <(pacman -Sp "$@" --print-format '%r/%n')
+        wait "$!" || return
+
+        env LANG=C pacinstall --print-only "${pkgnames[@]}" |
+            awk '$1 == "removing" || $1 == "installing"'
         return "${PIPESTATUS[0]}"
     fi
 }
