@@ -341,8 +341,7 @@ while IFS= read -ru "$fd" path; do
         while IFS=':' read -r pkgpath; do
             [[ -f $pkgpath ]] && exists+=("$pkgpath")
         done < <(
-            #shellcheck disable=SC2086
-            PKGDEST="$db_root" ${AUR_PKGLIST:-aur build--pkglist} "${pkglist_args[@]}"
+            PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
         )
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
