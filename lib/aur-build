@@ -144,7 +144,8 @@ while true; do
         -T|--temp)
             makechrootpkg_args+=(-T) ;;
         -U|--user)
-            shift; makechrootpkg_args+=(-U "$1") ;;
+            shift; makechrootpkg_args+=(-U "$1")
+            pkglist_args+=(-U "$1") ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             makepkg_common_args+=(--ignorearch)
