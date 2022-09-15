@@ -8,7 +8,7 @@ AUR_VIEW_DB=${AUR_VIEW_DB:-$XDG_DATA_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-log_fmt='diff' log_args=() patch=1
+log_fmt='diff' log_args=() excludes=() patch=1
 
 diag_invalid() {
     cat >&2 <<EOF
@@ -43,7 +43,7 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
 fi
 
 opt_short='a:'
-opt_long=('format:' 'arg-file:' 'revision:' 'no-patch' 'confirm')
+opt_long=('format:' 'arg-file:' 'revision:' 'no-patch' 'confirm' 'exclude:')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -69,6 +69,8 @@ while true; do
             patch=0 ;;
         --revision)
             shift; revision=$1 ;;
+        --exclude)
+            shift; excludes+=("$1") ;;
         --confirm)
             AUR_CONFIRM_PAGER=1 ;;
         --dump-options)
@@ -138,7 +140,7 @@ for pkg in "${packages[@]}"; do
 
         if [[ $view != "$head" ]]; then
             git --no-pager "$log_fmt" --stat "${log_args[@]}" \
-                "$view..$head" -- ':!*.SRCINFO' ':!*.gitignore' > "$tmp/$pkg.$log_fmt"
+                "$view..$head" -- "${excludes[@]}" > "$tmp/$pkg.$log_fmt"
         fi
 
     elif [[ -f $AUR_VIEW_DB/$pkg ]]; then
