@@ -428,7 +428,7 @@ fi
 
 # Input for aur-sync--ninja
 if (( columns )); then
-    cat "$tmp"/graph
+    sort -k1b,1 -k1 -u "$tmp"/graph
 
 # Build dependency tree with ninja (#908)
 elif (( AUR_SYNC_USE_NINJA )); then
