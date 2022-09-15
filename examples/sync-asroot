@@ -1,0 +1,45 @@
+#!/bin/bash
+# run as: `sudo sync-asroot ...`
+[[ -v AUR_DEBUG ]] && set -o xtrace
+SUDO_HOME=$(eval echo "~$SUDO_USER")
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$SUDO_HOME/.cache}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+argv0=sync-asroot
+
+# default options
+build_args=(-LR --chroot) sync_args=() keep_going=1
+
+# option parsing
+unset build_user
+while getopts :U:d:k:fSuN OPT; do
+    case $OPT in
+        d) build_args+=(-d "$OPTARG"); sync_args+=(-d "$OPTARG") ;;
+        f) build_args+=(-f "$OPTARG") ;;
+        U) build_user=$OPTARG ;;
+        S) build_args+=(-S) ;;
+        k) keep_going=$OPTARG ;;
+        u) sync_args+=(-u) ;;
+        N) sync_args+=(--no-ver) ;;
+    esac
+done
+
+ninja_dir=$(mktemp -d) || exit
+trap 'rm -rf "$tmp"' EXIT
+
+# 1. define unprivileged commands ------------------------------------------------->
+build_user=${build_user:-${SUDO_USER:-$USER}}
+build_args+=(-U "$build_user")
+
+build_env=(AUR_MAKEPKG="sudo -u $build_user makepkg"
+               AUR_GPG="sudo -u $build_user gpg"
+          AUR_REPO_ADD="sudo -u $build_user repo-add")
+
+# 2. retrieve sources ------------------------------------------------------------->
+cd "$ninja_dir"
+sudo -u "$build_user" env AURDEST="$AURDEST" aur sync "${sync_args[@]}" --columns >graph || exit 1
+sudo -u "$build_user" aur sync--ninja "$AURDEST" <graph >build.ninja -- \
+     env AUR_ASROOT=1 "${build_env[@]}" aur build "${build_args[@]}"
+
+# 3. build queue ------------------------------------------------------------------>
+env -C "$ninja_dir" NINJA_STATUS='[%s/%t] ' ninja -k "$keep_going"
+
