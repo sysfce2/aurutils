@@ -89,7 +89,7 @@ unused upgrades with `aur-sync -u`. Cleanups can then be done periodically:
 $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repo-purge -f custom
 ```
 
-## build-asroot
+## sync-asroot
 
 `aur-build` operates as a regular user, with the following exceptions:
 
@@ -97,11 +97,10 @@ $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repo-purge -f cust
 * updating the local repository with `aur-build--sync`;
 * interacting with an nspawn container with `aur-chroot`.
 
-Instead of elevating to the root user with `sudo` for these tasks, the script can run as root and drop privileges. `build-asroot` accomplishes this with `setpriv`.
+Instead of elevating to the root user for these tasks, `aur-build` can be run as
+root, dropping privileges where necessary. `sync-asroot` does do by running
+`makepkg`, `gpg` and `repo-add` with `sudo -u`. Sources are also retrieved this
+way with `sudo -u aur sync`.
 
-To simplify the exposition, `build-asroot` does not take containers and package signing into account. Specifically:
+Other possible agents are `runuser`, `setpriv`, and `systemd-run`.
 
-* `makepkg --pkglist` may be run *after* `makepkg`, because `makepkg` checks for existing packages (unlike `aur-chroot`);
-* existing packages are not (re-)added to the local repository or signed.
-
-To replicate `makepkg -s`, dependencies are retrieved with `aur build--pkglist --srcinfo` and installed with `pacinstall`. After the build is done, the transaction is then done in the reverse order with `pacremove`.
