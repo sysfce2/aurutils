@@ -6,7 +6,8 @@
     - local repository upgrades are now unaffected by `--pacman-conf`
   + add `exist:` to `--results` output
     - remove `--dry-run`
-  + rename `MAKEPKG` environmetn variable to `AUR_MAKEPKG`
+  + fallback to `/etc/aurutils/pacman-<machine>.conf` if `pacman-<database>.conf` does not exist
+  + rename `MAKEPKG` environment variable to `AUR_MAKEPKG`
   + replace experimental `AUR_ASROOT` functionality (#1023)
     - add `examples/sync-asroot`
     - add `--user` to `aur-build--pkglist`
