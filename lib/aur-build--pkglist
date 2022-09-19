@@ -52,7 +52,7 @@ while true; do
 done
 
 # drop permissions for sourcing PKGBUILDs
-if (( UID == 0 )) && [[ -v build_user ]] && (( $(id -u "$build_user") != 0 )); then
+if (( UID == 0 )) && (( $(id -u "$build_user") != 0 )); then
     exec setpriv --reuid "$build_user" --regid "$build_user" --init-groups --reset-env \
          env PKGDEST="$PKGDEST" "${BASH_SOURCE[0]}" "${orig_argv[@]}"
 
