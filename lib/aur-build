@@ -48,9 +48,12 @@ Error:
     using --chroot, make sure this file is created and valid. See OPTIONS in
     aur-build(1) for configuration details.
 
-    The following file path was checked:
+    The following file paths were checked:
 EOF
-    printf '%8s%s\n' ' ' "$1"
+    #shellcheck disable=SC2030
+    realpath -z -- "$@" | while read -rd ''; do
+        printf '%8s%s\n' ' ' "$REPLY"
+    done
 }
 
 run_msg() {
@@ -213,17 +216,24 @@ trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if (( chroot )); then
+    default_paths=("/etc/aurutils/pacman-$db_name.conf"
+                   "/etc/aurutils/pacman-$machine.conf")
+
     # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
     # /etc/aurutils/pacman-<repo>.conf or /etc/aurutils/pacman-<uname>.conf in
     # aur-build, and pass it on to aur-chroot (#824, #846)
-    pacman_conf=${pacman_conf-/etc/aurutils/pacman-${db_name:-$machine}.conf}
-    chroot_args+=(--pacman-conf "$pacman_conf")
-
-    # Early check for availability of pacman.conf (#783)
-    if [[ ! -f $pacman_conf ]]; then
+    if   [[ ! -v pacman_conf ]] && [[ -f ${default_paths[0]} ]]; then
+        pacman_conf=${default_paths[0]}
+    elif [[ ! -v pacman_conf ]] && [[ -f ${default_paths[1]} ]]; then
+        pacman_conf=${default_paths[1]}
+    elif [[ ! -v pacman_conf ]]; then
+        diag_pacman_conf "${default_paths[@]}"
+        exit 2
+    elif [[ ! -f $pacman_conf ]]; then
         diag_pacman_conf "$pacman_conf"
         exit 2
     fi
+    chroot_args+=(--pacman-conf "$pacman_conf")
 
     # The default path is /usr/share/devtools/makepkg-<uname.conf>, which is
     # copied to <container path>/etc/makepkg.conf by arch-nspawn.

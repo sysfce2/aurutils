@@ -92,7 +92,9 @@ where <database> is specified with
 .IP
 If
 .B \-\-database
-is not provided,
+is not specified or the file
+.BI /etc/aurutils/pacman-<database>.conf \fR
+does not exist,
 .B aur\-build
 falls back to
 .B /etc/aurutils/pacman-<arch>.conf
