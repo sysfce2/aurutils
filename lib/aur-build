@@ -84,6 +84,13 @@ if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
 fi
 
+# mollyguard for makepkg
+if (( UID == 0 )) && ! [[ -v AUR_ASROOT ]]; then
+    warning 'aur-%s is not meant to be run as root.' "$argv0"
+    warning 'To proceed anyway, set the %s variable.' 'AUR_ASROOT'
+    exit 1
+fi
+
 ## option parsing
 opt_short='a:d:D:U:AcCfnrsvLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
@@ -144,7 +151,8 @@ while true; do
         -T|--temp)
             makechrootpkg_args+=(-T) ;;
         -U|--user)
-            shift; makechrootpkg_args+=(-U "$1") ;;
+            shift; makechrootpkg_args+=(-U "$1")
+            pkglist_args+=(-U "$1") ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             makepkg_common_args+=(--ignorearch)
@@ -189,13 +197,6 @@ while true; do
     esac
     shift
 done
-
-# mollyguard for makepkg
-if [[ $UID == 0 ]] && ! [[ -v AUR_ASROOT ]]; then
-    warning 'aur-%s is not meant to be run as root.' "$argv0"
-    warning 'To proceed anyway, set the %s variable.' 'AUR_ASROOT'
-    exit 1
-fi
 
 # Assign environment variables
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"

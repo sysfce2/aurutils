@@ -15,7 +15,7 @@ build_args=(--clean --syncdeps)
 depends_args=() repo_args=() view_args=() filter_args=() fetch_args=() graph_args=()
 
 # default options
-build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
+build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1 columns=0
 
 # default options (disabled)
 rotate=0 update=0 repo_targets=0
@@ -104,6 +104,7 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
     exit 1
 fi
 
+# option parsing
 opt_short='d:D:k:U:AcfLnorRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
@@ -112,31 +113,31 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
           'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:'
-          'rebase' 'reset' 'ff' 'exclude:')
-opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
-            'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-            'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
-            'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
+          'rebase' 'reset' 'ff' 'exclude:' 'columns')
+    opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
+                'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
+                'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
+                'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
-    usage
-fi
-set -- "${OPTRET[@]}"
+    if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+        usage
+    fi
+    set -- "${OPTRET[@]}"
 
-unset pkg pkg_i repo repo_p ignore_file
-while true; do
-    case "$1" in
-        # sync options
-        --allan)
-            rotate=1 ;;
-        --continue)
-            download=0 ;;
-        --format)
-            shift; view_args+=(--format "$1") ;;
-        --exclude)
-            shift; view_args+=(--exclude "$1") ;;
-        --ignore)
-            shift; IFS=, read -a pkg -r <<< "$1"
+    unset pkg pkg_i repo repo_p ignore_file
+    while true; do
+        case "$1" in
+            # sync options
+            --allan)
+                rotate=1 ;;
+            --continue)
+                download=0 ;;
+            --format)
+                shift; view_args+=(--format "$1") ;;
+            --exclude)
+                shift; view_args+=(--exclude "$1") ;;
+            --ignore)
+                shift; IFS=, read -a pkg -r <<< "$1"
             pkg_i+=("${pkg[@]}") ;;
         --ignorefile|--ignore-file)
             shift; ignore_file=$1 ;;
@@ -144,6 +145,8 @@ while true; do
             shift; keep_going=$1 ;;
         -o|--nobuild|--no-build)
             build=0 ;;
+        --columns)
+            build=0; columns=1 ;;
         --optdepends)
             depends_args+=(--optdepends)
             graph_args+=(-v OPTDEPENDS=1) ;;
@@ -423,8 +426,12 @@ if (( view )); then
     aur view -a "$tmp"/queue "${view_args[@]}"
 fi
 
+# Input for aur-sync--ninja
+if (( columns )); then
+    sort -k1b,1 -k1 -u "$tmp"/graph
+
 # Build dependency tree with ninja (#908)
-if (( AUR_SYNC_USE_NINJA )); then
+elif (( AUR_SYNC_USE_NINJA )); then
     # directory for stamp files (concurrent aur-sync processes)
     mkdir -p "$XDG_STATE_HOME"/aurutils/$argv0
     ninja_dir=$XDG_STATE_HOME/aurutils/$argv0/ninja-$USER-$$

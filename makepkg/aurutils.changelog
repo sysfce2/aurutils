@@ -6,15 +6,16 @@
     - local repository upgrades are now unaffected by `--pacman-conf`
   + add `exist:` to `--results` output
     - remove `--dry-run`
-  + add `AUR_GPG`, `AUR_REPO_ADD` environment variables
-    - rename `MAKEPKG` to `AUR_MAKEPKG`
-  + remove experimental `AUR_ASROOT` functionality (#1023)
-    - add `examples/build-asroot`
+  + rename `MAKEPKG` environmetn variable to `AUR_MAKEPKG`
+  + replace experimental `AUR_ASROOT` functionality (#1023)
+    - add `examples/sync-asroot`
+    - add `--user` to `aur-build--pkglist`
+    - add `AUR_GPG`, `AUR_REPO_ADD`, `AUR_MAKEPKG` environment variables
   + updates for aur-build(1)
 
 * `aur-chroot`
   + remove `--packagelist` (deprecated in v8)
-  + only run `sudo --preserve-env` when `AUR_PACMAN_AUTH` is empty or `sudo`
+  + run `sudo --preserve-env` when `AUR_PACMAN_AUTH` is empty or `sudo`
 
 * `aur-depends`
   + performance improvements
@@ -52,6 +53,7 @@
 * `aur-sync`
   + add diagnostic for missing packages with `--continue`
   + save `ninja.build` files in `XDG_STATE_HOME/aurutils/sync`
+  + add `--columns`
 
 * `aur-view`
   + add `--exclude`
@@ -67,8 +69,8 @@
   + support extending `zsh` completion for third party commands (#1016)
 
 * `examples`
-  + add `view-delta` (requires: `bat`, `diff-so-fancy`)
-  + add `build-asroot`
+  + add `view-delta` (requires: `bat`, `git-delta`)
+  + add `sync-asroot`
 
 ## 10
 
