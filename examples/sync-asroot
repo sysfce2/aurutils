@@ -15,31 +15,35 @@ while getopts :U:d:k:fSuN OPT; do
     case $OPT in
         d) build_args+=(-d "$OPTARG"); sync_args+=(-d "$OPTARG") ;;
         f) build_args+=(-f "$OPTARG") ;;
-        U) build_user=$OPTARG ;;
         S) build_args+=(-S) ;;
+        U) build_user=$OPTARG ;;
         k) keep_going=$OPTARG ;;
         u) sync_args+=(-u) ;;
         N) sync_args+=(--no-ver) ;;
     esac
 done
+shift $(( OPTIND-1 ))
 
 ninja_dir=$(mktemp -d) || exit
-trap 'rm -rf "$tmp"' EXIT
+trap 'rm -rf "$ninja_dir"' EXIT
 
 # 1. define unprivileged commands ------------------------------------------------->
 build_user=${build_user:-${SUDO_USER:-$USER}}
 build_args+=(-U "$build_user")
 
-build_env=(AUR_MAKEPKG="sudo -u $build_user makepkg"
-               AUR_GPG="sudo -u $build_user gpg"
-          AUR_REPO_ADD="sudo -u $build_user repo-add")
+build_env=(AUR_MAKEPKG="runuser -u $build_user -- makepkg"
+               AUR_GPG="runuser -u $build_user -- gpg"
+          AUR_REPO_ADD="runuser -u $build_user -- repo-add")
 
 # 2. retrieve sources ------------------------------------------------------------->
 cd "$ninja_dir"
-sudo -u "$build_user" env AURDEST="$AURDEST" aur sync "${sync_args[@]}" --columns >graph || exit 1
-sudo -u "$build_user" aur sync--ninja "$AURDEST" <graph >build.ninja -- \
-     env AUR_ASROOT=1 "${build_env[@]}" aur build "${build_args[@]}"
+runuser -u "$build_user" -- \
+    env AURDEST="$AURDEST" aur sync "${sync_args[@]}" "$@" --columns >graph || exit 1
 
 # 3. build queue ------------------------------------------------------------------>
-env -C "$ninja_dir" NINJA_STATUS='[%s/%t] ' ninja -k "$keep_going"
+if [[ -s graph ]]; then
+    runuser -u "$build_user" -- aur sync--ninja "$AURDEST" <graph >build.ninja -- \
+        env AUR_ASROOT=1 "${build_env[@]}" aur build "${build_args[@]}"
 
+    env NINJA_STATUS='[%s/%t] ' ninja -C "$ninja_dir" -k "$keep_going"
+fi
