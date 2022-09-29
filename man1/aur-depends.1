@@ -11,7 +11,8 @@ aur\-depends \- retrieve dependencies using aurweb
 .SH DESCRIPTION
 .B aur\-depends
 solves dependencies for packages provided on the command line using
-aurweb. The transitive closure of dependencies within AUR is computed.
+.BR aur\-query (1).
+The transitive closure of dependencies within AUR is computed.
 .
 .SH OPTIONS
 .TP
@@ -46,7 +47,7 @@ is resolved to
 .
 .TP
 .BR \-t ", " \-\-table
-Output dependency information in the following format:
+Print dependency information in the following format:
 .IP
 .IR \%pkgname\etdepends\etpkgbase\etpkgver\ettype
 .IP
@@ -59,6 +60,17 @@ is one of
 .BR CheckDepends
 and
 .BR OptDepends .
+.
+.TP
+.BR \-J ", " \-\-json
+Print dependency information as JSON. The union of all results is taken by
+.BR pkgname .
+.
+.TP
+.BR \-\-raw
+Print dependency information as JSON Lines (JSONL), where each line contains an
+.BR aur\-query (1)
+response.
 .
 .SS Dependency options
 When resolving dependencies,

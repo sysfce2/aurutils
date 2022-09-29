@@ -117,7 +117,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='abJGnt'
 opt_long=('table' 'pkgbase' 'pkgname' 'pkgname-all' 'graph' 'optdepends'
-          'no-depends' 'no-makedepends' 'no-checkdepends' 'json')
+          'no-depends' 'no-makedepends' 'no-checkdepends' 'json' 'raw')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -139,6 +139,8 @@ while true; do
             mode=table ;;
         -J|--json)
             mode=json ;;
+        --raw)
+            mode=json_raw ;;
         --no-depends)
             resolve_depends=0 ;;
         --no-makedepends)
@@ -213,6 +215,9 @@ if cd "$tmp" && mkdir json tsv; then
         # all information
         json)
             aur format "${json[@]}" --union 'Name' --json
+            ;;
+        json_raw)
+            cat "${json[@]}"
             ;;
         table)
             cat "${depends[@]}"
