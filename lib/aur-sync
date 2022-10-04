@@ -113,7 +113,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
           'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:'
-          'rebase' 'reset' 'ff' 'exclude:' 'columns')
+          'rebase' 'reset' 'ff' 'exclude:' 'columns' 'prefix')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
@@ -132,10 +132,6 @@ while true; do
             rotate=1 ;;
         --continue)
             download=0 ;;
-        --format)
-            shift; view_args+=(--format "$1") ;;
-        --exclude)
-            shift; view_args+=(--exclude "$1") ;;
         --ignore)
             shift; IFS=, read -a pkg -r <<< "$1"
             pkg_i+=("${pkg[@]}") ;;
@@ -188,6 +184,13 @@ while true; do
             fetch_args+=(--rebase) ;;
         --reset)
             fetch_args+=(--reset) ;;
+        # view options
+        --format)
+            shift; view_args+=(--format "$1") ;;
+        --exclude)
+            shift; view_args+=(--exclude "$1") ;;
+        --prefix)
+            view_args+=(--prefix) ;;  # experimental
         # build options
         -c|--chroot)
             build_args+=(--chroot) ;;
