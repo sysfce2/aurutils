@@ -1,4 +1,4 @@
-.TH AUR-VIEW 1 2022-03-12 AURUTILS
+.TH AUR-VIEW 1 2022-10-04 AURUTILS
 .SH NAME
 aur\-view \- inspect git repositories
 .
@@ -72,6 +72,16 @@ Suppress patch output, only showing a summary.
 .BI \-\-revision= REV
 The revision used for comparing changes. Defaults to
 .IR HEAD .
+.
+.TP
+.BI \-\-prefix
+Prepend paths from command-line arguments or
+.B \-\-arg\-file
+to
+.BR git\-diff (1)
+and
+.BR git\-log (1)
+output.
 .
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
