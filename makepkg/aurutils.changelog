@@ -57,7 +57,7 @@
   + add `--columns`
 
 * `aur-view`
-  + add `--exclude`
+  + add `--exclude`, `--prefix`
   + print diagnostic on invalid git revision (#894)
 
 * `aur-format`
