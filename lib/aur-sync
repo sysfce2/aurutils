@@ -114,30 +114,30 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
           'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:'
           'rebase' 'reset' 'ff' 'exclude:' 'columns')
-    opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
-                'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-                'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
-                'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
+opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
+            'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
+            'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
+            'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
 
-    if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
-        usage
-    fi
-    set -- "${OPTRET[@]}"
+if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+    usage
+fi
+set -- "${OPTRET[@]}"
 
-    unset pkg pkg_i repo repo_p ignore_file
-    while true; do
-        case "$1" in
-            # sync options
-            --allan)
-                rotate=1 ;;
-            --continue)
-                download=0 ;;
-            --format)
-                shift; view_args+=(--format "$1") ;;
-            --exclude)
-                shift; view_args+=(--exclude "$1") ;;
-            --ignore)
-                shift; IFS=, read -a pkg -r <<< "$1"
+unset pkg pkg_i repo repo_p ignore_file
+while true; do
+    case "$1" in
+        # sync options
+        --allan)
+            rotate=1 ;;
+        --continue)
+            download=0 ;;
+        --format)
+            shift; view_args+=(--format "$1") ;;
+        --exclude)
+            shift; view_args+=(--exclude "$1") ;;
+        --ignore)
+            shift; IFS=, read -a pkg -r <<< "$1"
             pkg_i+=("${pkg[@]}") ;;
         --ignorefile|--ignore-file)
             shift; ignore_file=$1 ;;
