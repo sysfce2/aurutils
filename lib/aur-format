@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use open ":std", ":encoding(UTF-8)";
+use POSIX qw(strftime);
 use v5.20;
 my $argv0 = 'format';
 my $aur_json;
@@ -95,14 +96,14 @@ sub tokenize {
 }
 
 sub info_expand_field {
-    my ($value, $label, $delim) = @_;
+    my ($value, $label, $delim, $time_fmt) = @_;
 
     if (not defined($value)) {
         return "";
     } elsif (ref($value) eq 'ARRAY') {
         return join($delim, @{$value});
     } elsif (defined $aur_numeric{$label} and $aur_numeric{$label} eq 'E') {
-        return gmtime($value);
+        return strftime($time_fmt, gmtime $value);
     } else {
         return $value;
     }
@@ -110,7 +111,7 @@ sub info_expand_field {
 
 # Expand tokens to AUR data
 sub info_format {
-    my ($pkg, $labels, $rest, $delim, $verbose) = @_;
+    my ($pkg, $labels, $rest, $delim, $verbose, $time_fmt) = @_;
 
     if (ref($pkg) ne 'HASH') {
         say STDERR "$argv0: --format requires dictionary input";
@@ -122,7 +123,7 @@ sub info_format {
         my ($label, $suffix) = ($labels->[$i], $rest->[$i]);
 
         if (length($label)) {
-            my $field = info_expand_field($pkg->{$label}, $label, $delim);
+            my $field = info_expand_field($pkg->{$label}, $label, $delim, $time_fmt);
 
             if (not length($field) and $verbose) {
                 $field = "-";
@@ -215,6 +216,7 @@ unless (caller) {
     my $opt_delim; # delimiter for arrays
     my $opt_verbose = 0;  # inserts "-" for empty fields with --format
     my $opt_format;
+    my $opt_time_fmt;
     my $opt_sort_key = "";
     my $opt_union_key = "";
     my $opt_isect_key = "";
@@ -232,7 +234,8 @@ unless (caller) {
         'r|reverse'     => \$opt_reverse,
         'union=s'       => \$opt_union_key,
         'isect=s'       => \$opt_isect_key,
-        'dump-format=s' => \$opt_dump_fmt
+        'dump-format=s' => \$opt_dump_fmt,
+        'time-format=s' => \$opt_time_fmt
     ) or exit(1);
 
     # Print possible format options of a given type (tab-completion)
@@ -255,6 +258,9 @@ unless (caller) {
         exit(0);
     }
 
+    if (not length($opt_time_fmt)) {
+        $opt_time_fmt = "%a %b %e %H:%M:%S %Y";
+    }
     if (length($opt_mode)) {
         if (not length($opt_delim)) {
             $opt_delim = " ";
@@ -289,7 +295,7 @@ unless (caller) {
             my ($fmt, $suffix) = tokenize($opt_format);
             die unless (scalar @{$fmt} eq scalar @{$suffix});
 
-            map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose) } @results;
+            map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
         }
     } else {
         say STDERR $argv0 . ": no mode specified";
