@@ -11,7 +11,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 export GIT_HTTP_USER_AGENT=aurutils
 
 # default arguments
-ttl=600 mode=json pkglist=pkgname.json archive=pkgnames use_system_time=0 use_gc=0
+ttl=600 depth=1 mode=json pkglist=pkgname.json archive=pkgnames use_system_time=0 use_gc=0
 
 usage() {
     printf >&2 'usage: %s [-bqsi] [-t ttl]\n' "$argv0"
@@ -56,7 +56,7 @@ while true; do
         --gc)
             use_gc=1 ;;
         --depth)
-            shift; clone_args+=(--depth "$1") ;;
+            shift; depth=$1 ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -73,9 +73,17 @@ if [[ $mode == "plain" ]] && [[ $archive == "metadata" ]]; then
 elif ! [[ $ttl =~ -?[0-9]+ ]]; then
     printf >&2 "error: --ttl requires an integer ('%s' provided)\n" "$ttl"
     exit 1
+
+elif ! [[ $depth =~ -?[0-9]+ ]]; then
+    printf >&2 "error: --depth requires an integer ('%s' provided)\n" "$depth"
+    exit 1
 fi
 
 mkdir -p "$AUR_ARCHIVE_ROOT"
+
+if (( depth >= 1 )); then
+    clone_args+=(--depth "$depth")
+fi
 
 # aurweb git archive
 if [[ ! -d $AUR_ARCHIVE_ROOT/$archive/.git ]]; then
