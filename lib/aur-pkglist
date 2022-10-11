@@ -20,7 +20,7 @@ usage() {
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:bQiqun'
+opt_short='t:biqun'
 opt_long=('pkgbase' 'pkgname' 'ttl:' 'users' 'quiet' 'systime' 'info'
           'info-pkgbase' 'gc' 'plain' 'depth:')
 opt_hidden=('dump-options' 'time:')
@@ -49,7 +49,7 @@ while true; do
             mode=none ;; # deprecated
         -t|--time|--ttl)
             shift; ttl=$1 ;;
-        -Q|--systime)
+        --systime)
             use_system_time=1 ;;
         --plain)
             mode=plain ;;
