@@ -268,15 +268,17 @@ unless (caller) {
         my @results;
         my $i = 0;
 
-        # Store results in an array of hashes, stored in memory for (reverse) sorting and
-        # set operations (union, intersection)
+        # Store results in an array of hashes, stored in memory for (reverse)
+        # sorting and set operations (union, intersection)
         while (my $row = <ARGV>) {
             my $results_line = parse_json_line($row, $i++);
             push(@results, $results_line);
         }
         die if $!;
 
-        results_merge(\@results, $opt_union_key, $opt_isect_key);
+        if ($i > 1) {
+            results_merge(\@results, $opt_union_key, $opt_isect_key);
+        }
         results_rsort(\@results, $opt_sort_key, $opt_reverse);
         my $counts = scalar(@results);
 
@@ -287,8 +289,12 @@ unless (caller) {
             # Sort keys in alphabetical order
             $aur_json->canonical();
 
-            my %hash = ('resultcount' => $counts, 'results' => \@results,
-                        'type' => 'format', 'version' => 1);
+            my %hash = (
+                'resultcount' => $counts,
+                'results' => \@results,
+                'type' => 'format',
+                'version' => 1
+                );
             say $aur_json->encode(\%hash);
         }
         elsif ($opt_mode eq 'format') {
