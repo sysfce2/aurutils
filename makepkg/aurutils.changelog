@@ -44,7 +44,6 @@
     - `--plain` transforms `--users`, `--pkgname` and `--pkgbase` into a
       newline-delimited list
   + remove `-S`, `-I`, `-J` (deprecated in v10)
-  + add `-Q` (alias for `--systime`)
   + add `--gc`, `--depth`
 
 * `aur-repo`
