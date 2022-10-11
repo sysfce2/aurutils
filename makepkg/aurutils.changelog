@@ -35,7 +35,7 @@
     - forwarded by `aur-sync` (`--optdepends`, `--no-check`)
 
 * `aur-pkglist`
-  + switch to git(1) archives (aurweb >=6.1.4, JSON)
+  + switch to git(1) archives (aurweb >=6.1.5, JSON)
     - remove `-F` (`--fixed-strings`), `-P` (`--perl-regexp`) as no
       longer applicable
     - remove `-v` (`--verify`), `--search` as no longer applicable
@@ -43,9 +43,9 @@
     - `--ttl` now only applies to `--systime`
     - `--plain` transforms `--users`, `--pkgname` and `--pkgbase` into a
       newline-delimited list
-  + remove `-S`, `-I`, `-u`, `-J` (deprecated in v10)
+  + remove `-S`, `-I`, `-J` (deprecated in v10)
   + add `-Q` (alias for `--systime`)
-  + add `--gc`
+  + add `--gc`, `--depth`
 
 * `aur-repo`
   + add `--json`
