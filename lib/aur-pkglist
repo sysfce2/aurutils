@@ -5,13 +5,13 @@ set -o errexit
 argv0=pkglist
 XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
-AUR_ARCHIVE=${AUR_ARCHIVE:-$AUR_LOCATION}
+AUR_ARCHIVE=${AUR_ARCHIVE:-$AUR_LOCATION/archives}
 AUR_ARCHIVE_ROOT=${AUR_ARCHIVE_ROOT:-$XDG_STATE_HOME/aurweb-archive}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 export GIT_HTTP_USER_AGENT=aurutils
 
-# default options
-ttl=600 mode=cat pkglist=pkgname.json archive=pkgnames use_system_time=0 use_gc=0
+# default arguments
+ttl=600 mode=json pkglist=pkgname.json archive=pkgnames use_system_time=0 use_gc=0
 
 usage() {
     printf >&2 'usage: %s [-bqsi] [-t ttl]\n' "$argv0"
@@ -22,7 +22,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='t:bQiqun'
 opt_long=('pkgbase' 'pkgname' 'ttl:' 'users' 'quiet' 'systime' 'info'
-          'info-pkgbase' 'gc' 'plain')
+          'info-pkgbase' 'gc' 'plain' 'depth:')
 opt_hidden=('dump-options' 'time:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -30,7 +30,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset mode
+unset clone_args
 while true; do
     case "$1" in
         -b|--pkgbase)
@@ -43,8 +43,10 @@ while true; do
             pkglist=pkgname.json; archive=metadata ;;
         --info-pkgbase)
             pkglist=pkgbase.json; archive=metadata ;;
-        -q|-u|--quiet)
+        -q|--quiet)
             mode=none ;;
+        -u)
+            mode=none ;; # deprecated
         -t|--time|--ttl)
             shift; ttl=$1 ;;
         -Q|--systime)
@@ -53,6 +55,8 @@ while true; do
             mode=plain ;;
         --gc)
             use_gc=1 ;;
+        --depth)
+            shift; clone_args+=(--depth "$1") ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -62,7 +66,11 @@ while true; do
     shift
 done
 
-if ! [[ $ttl =~ -?[0-9]+ ]]; then
+if [[ $mode == "plain" ]] && [[ $archive == "metadata" ]]; then
+    printf >&2 'error: --plain cannot be used with --info\n'
+    exit 1
+
+elif ! [[ $ttl =~ -?[0-9]+ ]]; then
     printf >&2 "error: --ttl requires an integer ('%s' provided)\n" "$ttl"
     exit 1
 fi
@@ -70,11 +78,11 @@ fi
 mkdir -p "$AUR_ARCHIVE_ROOT"
 
 # aurweb git archive
-if [[ ! -d $AUR_ARCHIVE_ROOT/.git ]]; then
-    git clone "$AUR_ARCHIVE/$archive".git "$AUR_ARCHIVE_ROOT/$archive"
+if [[ ! -d $AUR_ARCHIVE_ROOT/$archive/.git ]]; then
+    git clone "${clone_args[@]}" "$AUR_ARCHIVE/$archive".git "$AUR_ARCHIVE_ROOT/$archive"
 
 else
-    git() { command git -C "$AUR_ARCHIVE_ROOT" "$@"; }
+    git() { command git -C "$AUR_ARCHIVE_ROOT/$archive" "$@"; }
 
     if (( ttl < 0 )); then
         : # skip upgrades
@@ -90,7 +98,7 @@ else
         git fetch
 
         rev_u=$(git rev-parse FETCH_HEAD)
-        sec_d=$(git log "$rev_u" --pretty="format:%ct")
+        sec_d=$(git log -1 "$rev_u" --pretty="format:%ct")
 
         # Since any new revisions are retrieved by git-fetch, merge them
         # regardless of --ttl settings. To improve performance, `prefetch` tasks
@@ -103,15 +111,17 @@ else
     if (( use_gc )); then
         git gc --aggressive
     fi
-fi
+fi >&2
 
 cd "$AUR_ARCHIVE_ROOT/$archive"
 
 case $mode in
-    cat)
-        cat "$pkglist" ;;
+    json)
+        tr -d '\n' < "$pkglist" | tr -s ' '
+        printf '\n' ;;
     plain)
-        tr -d '"][' "$pkglist" | tr -s ',' '\n' ;;
+        # Relies on `pkgname` containing alphanumerics and @ . _ + -
+        tr -d '"][ ' < "$pkglist" | tr -s ',' '\n' ;;
     none)
         printf '%s\n' "$PWD/$pkglist" ;;
 esac
