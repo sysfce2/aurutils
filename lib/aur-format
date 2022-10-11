@@ -137,6 +137,28 @@ sub info_format {
     print($fmt_string);
 }
 
+sub info_gron {
+    my ($pkg, $prefix) = @_;
+
+    if (not length(ref($pkg))) {
+        say join(' = ', $prefix, $pkg);
+    }
+    elsif (ref($pkg) eq 'HASH') {
+        for my $key (sort keys %{$pkg}) {
+            my $value = $pkg->{$key};
+
+            if (ref($value) eq 'ARRAY' or ref($value) eq 'HASH') {
+                info_gron($value, join(".", $prefix, $key));
+            }
+            elsif (defined($value)) {
+                say join(".", $prefix, join(' = ', $key, $value));
+            }
+        }
+    } else {
+        map { info_gron($_, $prefix) } @{$pkg};
+    }
+}
+
 sub parse_json_line {
     my ($row) = @_;
 
@@ -159,6 +181,8 @@ sub parse_json_line {
         return @{$rref};
     }
     elsif (ref($obj) eq 'HASH') {
+        # XXX: dropping the keys (pkgname) means aur-format --gron output is
+        # numbered, instead of labeled, unlike a `gron` pipeline
         return values %{$obj};
     }
     elsif (ref($obj) eq 'ARRAY') {
@@ -224,6 +248,7 @@ unless (caller) {
         'f|format=s'    => sub { $opt_mode = 'format',
                                  $opt_format = $_[1] },
         'J|json'        => sub { $opt_mode = 'json' },
+        'gron'          => sub { $opt_mode = 'gron' },
         'd|delim=s'     => \$opt_delim,
         'v|verbose'     => \$opt_verbose,
         'k|sort=s'      => \$opt_sort_key,
@@ -306,6 +331,12 @@ unless (caller) {
             die unless (scalar @{$fmt} eq scalar @{$suffix});
 
             map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
+        }
+        elsif ($opt_mode eq 'gron') {
+            # XXX: move result counting to `info_gron`, so it can apply to lower
+            # structures as well
+            my $index = 0;
+            map { info_gron($_, "json[" . $index++ . "]") } @results;
         }
     } else {
         say STDERR $argv0 . ": no mode specified";
