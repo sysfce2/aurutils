@@ -22,7 +22,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='t:biqun'
 opt_long=('pkgbase' 'pkgname' 'ttl:' 'users' 'quiet' 'systime' 'info'
-          'info-pkgbase' 'gc' 'plain' 'depth:')
+          'info-pkgname' 'info-pkgbase' 'gc' 'plain' 'depth:')
 opt_hidden=('dump-options' 'time:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -39,10 +39,12 @@ while true; do
             pkglist=pkgname.json; archive=pkgnames ;;
         --users)
             pkglist=users.json; archive=users ;;
-        -i|--info)
+        --info-pkgname)
             pkglist=pkgname.json; archive=metadata ;;
         --info-pkgbase)
             pkglist=pkgbase.json; archive=metadata ;;
+        -i|--info)
+            pkglist=merged.json; archive=metadata ;;
         -q|--quiet)
             mode=none ;;
         -u)
@@ -85,7 +87,7 @@ if (( depth >= 1 )); then
     depth_args+=(--depth "$depth")
 fi
 
-# aurweb git archive
+# Retrieve new metadata revisions from aurweb
 if [[ ! -d $AUR_ARCHIVE_ROOT/$archive/.git ]]; then
     git clone "${depth_args[@]}" "$AUR_ARCHIVE/$archive".git "$AUR_ARCHIVE_ROOT/$archive"
 
@@ -121,8 +123,14 @@ fi >&2
 
 cd "$AUR_ARCHIVE_ROOT/$archive"
 
+# Create merged archive
+if [[ $pkglist == 'merged.json' ]]; then
+    aur pkglist--merge -n 'pkgname.json' -b 'pkgbase.json' > merged.json
+fi
+
 case $mode in
     json)
+        # Remove indentation for aur-format pipelines
         tr -d '\n' < "$pkglist" | tr -s ' '
         printf '\n' ;;
     plain)
