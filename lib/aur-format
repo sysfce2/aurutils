@@ -183,10 +183,10 @@ sub parse_aur_json {
         return @{$rref};
     }
     elsif (ref($obj) eq 'HASH') {
-        # XXX: To sort results by a given key, hash responses are converted to an array.
+        # XXX: To sort results by a given value, hash responses are converted to an array.
         # This works with `pkgname.json` which includes the key as `Name` in each
-        # hash value. `pkgbase.json` uses `PackageBase` as key, but does not copy it.
-        # As a workaround, copy the key to the hash.
+        # hash value. `pkgbase.json` uses `PackageBase` as key, but does not copy the
+        # value to the hash. As a workaround, copy the key to the hash.
         return map { my $pkg = $obj->{$_}; $pkg->{'Key'} = $_; $pkg } keys %{$obj};
         #return values %{$obj};
     }
