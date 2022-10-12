@@ -171,7 +171,7 @@ sub parse_aur_json {
     # Possible AUR responses:
     # - JSON arrays: REST (suggests), metadata archives (pkgnames.git, pkgbases.git)
     # - JSON hashes, `results` array: REST (info, search)
-    # - JSON hashes: metadata archives (metadata.git)
+    # - JSON hashes: metadata archives (pkgname.json, pkgbase.json)
     if (ref($obj) eq 'HASH' and defined($obj->{'results'})) {
         my $rref  = $obj->{'results'};
         my $error = $obj->{'error'};
@@ -183,12 +183,7 @@ sub parse_aur_json {
         return @{$rref};
     }
     elsif (ref($obj) eq 'HASH') {
-        # XXX: To sort results by a given value, hash responses are converted to an array.
-        # This works with `pkgname.json` which includes the key as `Name` in each
-        # hash value. `pkgbase.json` uses `PackageBase` as key, but does not copy the
-        # value to the hash. As a workaround, copy the key to the hash.
-        return map { my $pkg = $obj->{$_}; $pkg->{'Key'} = $_; $pkg } keys %{$obj};
-        #return values %{$obj};
+        return values %{$obj};
     }
     elsif (ref($obj) eq 'ARRAY') {
         return @{$obj};
@@ -339,37 +334,34 @@ unless (caller) {
 
             map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
         }
-        elsif ($opt_mode eq 'gron') {
-            # While `info_gron` can operate on any JSON structures, we delay
-            # using it so that sorting, union and intersection of results is
-            # still applied to the output.
-            if (length($opt_gron_key)) {
-                my ($key, $fallback) = split(':', $opt_gron_key);
-                my $null_index = 0;
+        # While `info_gron` can operate on any JSON structures, we delay its use
+        # to apply sorting, union and intersection of results.
+        elsif ($opt_mode eq 'gron' and length($opt_gron_key)) {
+            my ($key, $fallback) = split(':', $opt_gron_key);
+            my $null_index = 0;
 
-                for my $pkg (@results) {
-                    my $label = $pkg->{$key};
-                    my $label_fallback = $pkg->{$fallback // ""};
+            for my $pkg (@results) {
+                my $label = $pkg->{$key};
+                my $label_fallback = $pkg->{$fallback // ""};
 
-                    if (not length($label) and length($label_fallback)) {
-                        $label = $label_fallback;
-                    }
-                    elsif (not length($label)) {
-                        $label = "null[" . $null_index++ . "]";
-                    }
-                    # If the given key results in an array (such as `Provides`),
-                    # repeat the output for each entry
-                    if (ref($label) eq 'ARRAY') {
-                        map { info_gron($pkg, "packages." . $_) } @{$label};
-                    }
-                    else {
-                        info_gron($pkg, "packages." . $label);
-                    }
+                if (not length($label) and length($label_fallback)) {
+                    $label = $label_fallback;
                 }
-            } else {
-                my $index = 0;
-                map { info_gron($_, "packages[" . $index++ . "]") } @results;
+                elsif (not length($label)) {
+                    $label = "null[" . $null_index++ . "]";
+                }
+                # If the given key results in an array (such as `Provides`),
+                # repeat the output for each entry.
+                if (ref($label) eq 'ARRAY') {
+                    map { info_gron($pkg, "packages." . $_) } @{$label};
+                }
+                else {
+                    info_gron($pkg, "packages." . $label);
+                }
             }
+        } elsif ($opt_mode eq 'gron') {
+            my $index = 0;
+            map { info_gron($_, "packages[" . $index++ . "]") } @results;
         }
     } else {
         say STDERR $argv0 . ": no mode specified";
