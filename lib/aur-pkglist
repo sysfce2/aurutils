@@ -30,7 +30,7 @@ if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
 fi
 set -- "${OPTRET[@]}"
 
-unset clone_args
+unset depth_args
 while true; do
     case "$1" in
         -b|--pkgbase)
@@ -82,38 +82,28 @@ fi
 mkdir -p "$AUR_ARCHIVE_ROOT"
 
 if (( depth >= 1 )); then
-    clone_args+=(--depth "$depth")
+    depth_args+=(--depth "$depth")
 fi
 
 # aurweb git archive
 if [[ ! -d $AUR_ARCHIVE_ROOT/$archive/.git ]]; then
-    git clone "${clone_args[@]}" "$AUR_ARCHIVE/$archive".git "$AUR_ARCHIVE_ROOT/$archive"
+    git clone "${depth_args[@]}" "$AUR_ARCHIVE/$archive".git "$AUR_ARCHIVE_ROOT/$archive"
 
 else
     git() { command git -C "$AUR_ARCHIVE_ROOT/$archive" "$@"; }
 
     if (( ttl < 0 )); then
         : # skip upgrades
+
     elif (( use_system_time )); then
         sec_l=$(git log -1 --pretty="format:%ct")
         sec_d=$(date '+%s')
 
         if (( sec_d - sec_l > ttl )); then
-            git pull
+            git pull -q "${depth_args[@]}" --rebase
         fi
     else
-        sec_l=$(git log -1 --pretty="format:%ct")
-        git fetch
-
-        rev_u=$(git rev-parse FETCH_HEAD)
-        sec_d=$(git log -1 "$rev_u" --pretty="format:%ct")
-
-        # Since any new revisions are retrieved by git-fetch, merge them
-        # regardless of --ttl settings. To improve performance, `prefetch` tasks
-        # can be run periodically. See git-maintenance(1) for details.
-        if (( sec_d - sec_l > 0 )); then
-            git merge --ff-only
-        fi
+        git pull -q "${depth_args[@]}" --rebase
     fi
 
     if (( use_gc )); then
