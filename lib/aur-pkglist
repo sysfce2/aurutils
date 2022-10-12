@@ -92,18 +92,26 @@ if [[ ! -d $AUR_ARCHIVE_ROOT/$archive/.git ]]; then
 else
     git() { command git -C "$AUR_ARCHIVE_ROOT/$archive" "$@"; }
 
+    update=0
     if (( ttl < 0 )); then
-        : # skip upgrades
-
+        :
     elif (( use_system_time )); then
         sec_l=$(git log -1 --pretty="format:%ct")
         sec_d=$(date '+%s')
 
         if (( sec_d - sec_l > ttl )); then
-            git pull -q "${depth_args[@]}" --rebase
+            update=1
         fi
     else
-        git pull -q "${depth_args[@]}" --rebase
+        update=1
+    fi
+
+    if (( update )); then
+        git fetch "${depth_args[@]}"
+
+        if [[ $(git rev-parse HEAD) != $(git rev-parse FETCH_HEAD) ]]; then
+            git reset --hard FETCH_HEAD
+        fi
     fi
 
     if (( use_gc )); then
