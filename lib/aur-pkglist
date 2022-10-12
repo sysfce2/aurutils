@@ -1,64 +1,79 @@
 #!/bin/bash
 # aur-pkglist - print the AUR package list
-set -o errexit
 [[ -v AUR_DEBUG ]] && set -o xtrace
 argv0=pkglist
-XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
-AUR_ARCHIVE=${AUR_ARCHIVE:-$AUR_LOCATION/archives}
-AUR_ARCHIVE_ROOT=${AUR_ARCHIVE_ROOT:-$XDG_STATE_HOME/aurweb-archive}
+AUR_METADEST=${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0} # variable name prone to change
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-export GIT_HTTP_USER_AGENT=aurutils
 
-# default arguments
-ttl=600 depth=1 mode=json pkglist=pkgname.json archive=pkgnames use_system_time=0 use_gc=0
+# default options
+ttl=300 pkglist=packages update=0 verify=0 use_system_time=0
+
+http_last_modified() {
+    awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
+}
+
+list_fetch() {
+    curl -A aurutils -f "$1" "${@:2}" --remote-name
+}
+
+list_headers() {
+    curl -A aurutils -f "$1" --head -Ss
+}
 
 usage() {
-    printf >&2 'usage: %s [-bqsi] [-t ttl]\n' "$argv0"
+    printf >&2 'usage: %s [-bqsiv] [-t ttl] [-FP pattern]\n' "$argv0"
     exit 1
 }
 
 source /usr/share/makepkg/util/parseopts.sh
 
-opt_short='t:biqun'
-opt_long=('pkgbase' 'pkgname' 'ttl:' 'users' 'quiet' 'systime' 'info'
-          'info-pkgname' 'info-pkgbase' 'gc' 'plain' 'depth:')
-opt_hidden=('dump-options' 'time:')
+opt_short='t:bqsivFPJISu'
+opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
+          'ttl:' 'users' 'verify' 'quiet' 'systime')
+opt_hidden=('dump-options' 'time:' 'json')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
 set -- "${OPTRET[@]}"
 
-unset depth_args
+unset mode
 while true; do
     case "$1" in
         -b|--pkgbase)
-            pkglist=pkgbase.json; archive=pkgbases ;;
-        -n|--pkgname)
-            pkglist=pkgname.json; archive=pkgnames ;;
-        --users)
-            pkglist=users.json; archive=users ;;
-        --info-pkgname)
-            pkglist=pkgname.json; archive=metadata ;;
-        --info-pkgbase)
-            pkglist=pkgbase.json; archive=metadata ;;
+            pkglist=pkgbase ;;
+        -s|--search)
+            pkglist=packages-meta-v1.json ;;
         -i|--info)
-            pkglist=merged.json; archive=metadata ;;
-        -q|--quiet)
-            mode=none ;;
-        -u)
-            mode=none ;; # deprecated
-        -t|--time|--ttl)
-            shift; ttl=$1 ;;
-        --systime)
-            use_system_time=1 ;;
+            pkglist=packages-meta-ext-v1.json ;;
+        --users)
+            pkglist=users ;;
+        -F|--fixed-strings)
+            mode=fixed ;;
+        -P|--perl-regexp)
+            mode=regex ;;
         --plain)
             mode=plain ;;
-        --gc)
-            use_gc=1 ;;
-        --depth)
-            shift; depth=$1 ;;
+        -q|--quiet)
+            mode=none ;;
+        -t|--time|--ttl)
+            shift; ttl=$1 ;;
+        -v|--verify)
+            verify=1 ;;
+        --systime)
+            use_system_time=1 ;;
+        # Deprecated options
+        -u) printf >&2 'deprecation notice: %s -u is an alias for --quiet\n' "$argv0"
+            mode=none ;;
+        -I) printf >&2 'deprecation notice: %s -I is an alias for --info\n' "$argv0"
+            pkglist=packages-meta-ext-v1.json ;;
+        -S) printf >&2 'deprecation notice: %s -S is an alias for --search\n' "$argv0"
+            pkglist=packages-meta-v1.json ;;
+        -J|--json)
+            printf >&2 'deprecation notice: %s --json is an alias for --info | jq\n' "$argv0"
+            mode=plain ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -68,74 +83,66 @@ while true; do
     shift
 done
 
-if [[ $mode == "plain" ]] && [[ $archive == "metadata" ]]; then
-    printf >&2 'error: --plain cannot be used with --info\n'
-    exit 1
+# default to regex if >0 arguments specified
+if [[ ! -v mode ]] && (( $# > 0 )); then
+    mode=regex
+elif [[ ! -v mode ]]; then
+    mode=plain
+fi
 
-elif ! [[ $ttl =~ -?[0-9]+ ]]; then
+if ! [[ $ttl =~ [0-9]+ ]]; then
     printf >&2 "error: --ttl requires an integer ('%s' provided)\n" "$ttl"
     exit 1
-
-elif ! [[ $depth =~ -?[0-9]+ ]]; then
-    printf >&2 "error: --depth requires an integer ('%s' provided)\n" "$depth"
-    exit 1
 fi
 
-mkdir -p "$AUR_ARCHIVE_ROOT"
+# packages.gz cache
+install -dm700 "$AUR_METADEST"
+cd "$AUR_METADEST" || exit
 
-if (( depth >= 1 )); then
-    depth_args+=(--depth "$depth")
-fi
+if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
+    update=1
 
-# Retrieve new metadata revisions from aurweb
-if [[ ! -d $AUR_ARCHIVE_ROOT/$archive/.git ]]; then
-    git clone "${depth_args[@]}" "$AUR_ARCHIVE/$archive".git "$AUR_ARCHIVE_ROOT/$archive"
+elif [[ -s $pkglist ]]; then
+    sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
 
-else
-    git() { command git -C "$AUR_ARCHIVE_ROOT/$archive" "$@"; }
-
-    update=0
-    if (( ttl < 0 )); then
-        :
-    elif (( use_system_time )); then
-        sec_l=$(git log -1 --pretty="format:%ct")
+    if (( use_system_time )); then
         sec_d=$(date '+%s')
-
-        if (( sec_d - sec_l > ttl )); then
-            update=1
-        fi
     else
+        sec_d=$(http_last_modified <(list_headers "$AUR_LOCATION/$pkglist.gz") | date -f - '+%s')
+    fi
+
+    if (( sec_d - sec_l > ttl )); then
         update=1
     fi
+fi
 
-    if (( update )); then
-        git fetch --quiet "${depth_args[@]}"
+if (( update )); then
+    list_fetch "$AUR_LOCATION/$pkglist.gz" --dump-header "headers_$pkglist"
 
-        if [[ $(git rev-parse HEAD) != $(git rev-parse FETCH_HEAD) ]]; then
-            git reset --hard FETCH_HEAD
-        fi
+    if (( verify )); then
+        list_fetch "$AUR_LOCATION/$pkglist.gz.sha256"
+        sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
     fi
 
-    if (( use_gc )); then
-        git gc --aggressive
+    if [[ $pkglist == *.json ]]; then
+        # Remove newlines separating partial objects, i.e.
+        #   [\n{...},\n{...},...\n]  =>  [{...}{...},...]\n
+        { gunzip -c "$pkglist.gz" | tr -d '\n'
+          printf '\n'
+        } > "$pkglist"
+    else
+        gunzip -f "$pkglist.gz"
     fi
 fi >&2
 
-cd "$AUR_ARCHIVE_ROOT/$archive"
-
-# Create merged archive
-if [[ $pkglist == 'merged.json' ]]; then
-    aur pkglist--merge -n 'pkgname.json' -b 'pkgbase.json' > merged.json
-fi
-
+# pattern match
 case $mode in
-    json)
-        # Remove indentation for aur-format pipelines
-        tr -d '\n' < "$pkglist" | tr -s ' '
-        printf '\n' ;;
     plain)
-        # Relies on `pkgname` containing alphanumerics and @ . _ + -
-        tr -d '"][ ' < "$pkglist" | tr -s ',' '\n' ;;
+        cat "$pkglist" ;;
+    fixed)
+        grep -F "$1" "$pkglist" ;;
+    regex)
+        grep -P "$1" "$pkglist" ;;
     none)
         printf '%s\n' "$PWD/$pkglist" ;;
 esac
