@@ -107,7 +107,7 @@ else
     fi
 
     if (( update )); then
-        git fetch "${depth_args[@]}"
+        git fetch --quiet "${depth_args[@]}"
 
         if [[ $(git rev-parse HEAD) != $(git rev-parse FETCH_HEAD) ]]; then
             git reset --hard FETCH_HEAD
