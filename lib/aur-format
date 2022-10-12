@@ -147,19 +147,21 @@ sub info_gron {
         for my $key (sort keys %{$pkg}) {
             my $value = $pkg->{$key};
 
-            if (ref($value) eq 'ARRAY' or ref($value) eq 'HASH') {
+            if (ref($value) eq 'HASH' or ref($value) eq 'ARRAY') {
                 info_gron($value, join(".", $prefix, $key));
             }
-            elsif (defined($value)) {
-                say join(".", $prefix, join(' = ', $key, $value));
+            else {
+                say join(".", $prefix, join(' = ', $key, $value // "null"));
             }
         }
-    } else {
-        map { info_gron($_, $prefix) } @{$pkg};
+    }
+    elsif (ref($pkg) eq 'ARRAY') {
+        my $index = 0;
+        map { info_gron($_, $prefix . "[" . $index++ . "]") } @{$pkg};
     }
 }
 
-sub parse_json_line {
+sub parse_aur_json {
     my ($row) = @_;
 
     my $obj = $aur_json->incr_parse($row)
@@ -181,8 +183,6 @@ sub parse_json_line {
         return @{$rref};
     }
     elsif (ref($obj) eq 'HASH') {
-        # XXX: dropping the keys (pkgname) means aur-format --gron output is
-        # numbered, instead of labeled, unlike a `gron` pipeline
         return values %{$obj};
     }
     elsif (ref($obj) eq 'ARRAY') {
@@ -240,6 +240,7 @@ unless (caller) {
     my $opt_sort_key = "";
     my $opt_union_key = "";
     my $opt_isect_key = "";
+    my $opt_gron_key = "";
     my $opt_reverse = 0;
     my $opt_dump_fmt;
 
@@ -248,7 +249,8 @@ unless (caller) {
         'f|format=s'    => sub { $opt_mode = 'format',
                                  $opt_format = $_[1] },
         'J|json'        => sub { $opt_mode = 'json' },
-        'gron'          => sub { $opt_mode = 'gron' },
+        'gron:s'        => sub { $opt_mode = 'gron',
+                                 $opt_gron_key = $_[1] },
         'd|delim=s'     => \$opt_delim,
         'v|verbose'     => \$opt_verbose,
         'k|sort=s'      => \$opt_sort_key,
@@ -282,18 +284,18 @@ unless (caller) {
     if (not length($opt_time_fmt)) {
         $opt_time_fmt = "%a %b %e %H:%M:%S %Y";
     }
+    if (not length($opt_delim)) {
+        $opt_delim = " ";
+    }
     if (length($opt_mode)) {
-        if (not length($opt_delim)) {
-            $opt_delim = " ";
-        }
         my $first = <ARGV>;
-        my @results = parse_json_line($first);
+        my @results = parse_aur_json($first);
 
         # Build list of encountered packages incrementally, starting at the
         # first set of results.
         my %seen;
         while (my $row = <ARGV>) {
-            my @next = parse_json_line($row);
+            my @next = parse_aur_json($row);
 
             if (length($opt_union_key)) {
                 results_union(\@next, \@results, \%seen, $opt_union_key);
@@ -333,10 +335,34 @@ unless (caller) {
             map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
         }
         elsif ($opt_mode eq 'gron') {
-            # XXX: move result counting to `info_gron`, so it can apply to lower
-            # structures as well
-            my $index = 0;
-            map { info_gron($_, "json[" . $index++ . "]") } @results;
+            # Generalization of pkgname -> { pkgdata } hashes from metadata archives
+            if (length($opt_gron_key)) {
+                my ($key, $fallback) = split(':', $opt_gron_key);
+                my $null_index = 0;
+
+                for my $pkg (@results) {
+                    my $label = $pkg->{$key};
+                    my $label_fallback = $pkg->{$fallback // ""};
+
+                    if (not length($label) and length($label_fallback)) {
+                        $label = $label_fallback;
+                    }
+                    elsif (not length($label)) {
+                        $label = "null[" . $null_index++ . "]";
+                    }
+                    # If the given key results in an array (such as `Provides`),
+                    # repeat the output for each entry
+                    if (ref($label) eq 'ARRAY') {
+                        map { info_gron($pkg, "packages." . $_) } @{$label};
+                    }
+                    else {
+                        info_gron($pkg, "packages." . $label);
+                    }
+                }
+            } else {
+                my $index = 0;
+                map { info_gron($_, "packages[" . $index++ . "]") } @results;
+            }
         }
     } else {
         say STDERR $argv0 . ": no mode specified";
