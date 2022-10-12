@@ -183,7 +183,12 @@ sub parse_aur_json {
         return @{$rref};
     }
     elsif (ref($obj) eq 'HASH') {
-        return values %{$obj};
+        # XXX: To sort results by a given key, hash responses are converted to an array.
+        # This works with `pkgname.json` which includes the key as `Name` in each
+        # hash value. `pkgbase.json` uses `PackageBase` as key, but does not copy it.
+        # As a workaround, copy the key to the hash.
+        return map { my $pkg = $obj->{$_}; $pkg->{'Key'} = $_; $pkg } keys %{$obj};
+        #return values %{$obj};
     }
     elsif (ref($obj) eq 'ARRAY') {
         return @{$obj};
@@ -335,7 +340,9 @@ unless (caller) {
             map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
         }
         elsif ($opt_mode eq 'gron') {
-            # Generalization of pkgname -> { pkgdata } hashes from metadata archives
+            # While `info_gron` can operate on any JSON structures, we delay
+            # using it so that sorting, union and intersection of results is
+            # still applied to the output.
             if (length($opt_gron_key)) {
                 my ($key, $fallback) = split(':', $opt_gron_key);
                 my $null_index = 0;
