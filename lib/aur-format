@@ -161,12 +161,17 @@ sub info_gron {
     }
 }
 
-sub parse_aur_json {
-    my ($row) = @_;
-
+sub parse_json {
     my $obj = $aur_json->incr_parse($row)
         or die $argv0 . ": expected JSON object or array at beginning of string";
     $aur_json->incr_reset();
+
+    return $obj;
+}
+
+sub parse_aur_json {
+    my $row = $_[0];
+    my $obj = parse_json($row);
 
     # Possible AUR responses:
     # - JSON arrays: REST (suggests), metadata archives (pkgnames.git, pkgbases.git)
@@ -251,6 +256,7 @@ unless (caller) {
         'J|json'        => sub { $opt_mode = 'json' },
         'gron:s'        => sub { $opt_mode = 'gron',
                                  $opt_gron_key = $_[1] },
+        'gron-raw'      => sub { $opt_mode = 'gron_raw' },
         'd|delim=s'     => \$opt_delim,
         'v|verbose'     => \$opt_verbose,
         'k|sort=s'      => \$opt_sort_key,
@@ -287,7 +293,16 @@ unless (caller) {
     if (not length($opt_delim)) {
         $opt_delim = " ";
     }
-    if (length($opt_mode)) {
+
+    if (length($opt_mode) and $opt_mode eq 'gron_raw') {
+        # Mode which does no set operations or sorting, and only loads
+        # one JSON object in memory at a time (garbage collection aside).
+        while (my $row = <ARGV>) {
+            my $obj = parse_json($row);
+            info_gron($obj, "packages");
+        }
+    }
+    elsif (length($opt_mode)) {
         my $first = <ARGV>;
         my @results = parse_aur_json($first);
 
@@ -304,6 +319,8 @@ unless (caller) {
                 results_isect(\@next, \@results, $opt_isect_key);
             }
             else {
+                # XXX: when sorting and set union/intersection are disabled, these
+                # results could be processed lazily, saving memory usage
                 push(@results, @next);
             }
         }
