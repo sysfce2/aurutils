@@ -162,6 +162,7 @@ sub info_gron {
 }
 
 sub parse_json {
+    my $row = $_[0];
     my $obj = $aur_json->incr_parse($row)
         or die $argv0 . ": expected JSON object or array at beginning of string";
     $aur_json->incr_reset();
