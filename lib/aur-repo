@@ -17,7 +17,7 @@ source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='c:d:r:F:alqtuJS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
-          'list-attr' 'sync' 'upgrades' 'table' 'quiet' 'attr:' 'json')
+          'list-attr' 'sync' 'upgrades' 'table' 'quiet' 'attr:' 'json' 'jsonl')
 opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'attr-list' 'status' 'field:')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
@@ -40,6 +40,8 @@ while true; do
             mode=table ;;
         -J|--json)
             mode=json ;;
+        --jsonl)
+            mode=jsonl ;;
         -a|--all)
             mode=upgrades; vercmp_args+=(-a) ;;
         -u|--upgrades)
@@ -163,7 +165,7 @@ fi
 
 # database operations
 case $mode in
-    list|table|json)
+    list|table|json|jsonl)
         aur repo-parse -p "$db_path" --"$mode" "${list_args[@]}"
         ;;
     upgrades)

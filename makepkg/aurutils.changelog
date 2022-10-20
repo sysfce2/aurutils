@@ -35,7 +35,7 @@
     - forwarded by `aur-sync` (`--optdepends`, `--no-check`)
 
 * `aur-repo`
-  + add `--json`
+  + add `--json`, `--jsonl`
 
 * `aur-query`
   + remove support for parallel (`AUR_QUERY_PARALLEL`) and `GET` requests
