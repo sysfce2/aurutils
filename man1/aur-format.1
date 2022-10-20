@@ -1,4 +1,4 @@
-.TH AUR\-FORMAT 1 2022-06-27 AURUTILS
+.TH AUR\-FORMAT 1 2022-10-20 AURUTILS
 .SH NAME
 aur\-format \- format AurJson
 .
@@ -11,41 +11,140 @@ aur\-format \- format AurJson
 .SY "aur format"
 .OP \-\-counts
 .OP \-\-json
+.OP \-\-gron
 .RI [ file ... ]
 .YS
 .
 .SH DESCRIPTION
+.B aur\-format
+takes JSON responses as input and transforms them into shell-readable output, using
+.BR sprintf (3)
+like formats.
+.PP
+Suitable inputs include
+.BR aur\-query (1),
+.BR aur\-pkglist (1)
+and
+.BR aur\-repo\-parse (1).
+Optionally, set operations and sorting can be done on the input.
 .
 .SH OPTIONS
 .TP
 .BI \-f " FORMAT" "\fR,\fP \-\-format=" FORMAT
+The character
+.B %
+is followed by one of the following flags, corresponding to a package
+field. If the field is an array, it is expanded with the delimiter
+defined with
+.BR \-\-delim .
+.IP
+.B a
+Arch
+.IP
+.B b
+PackageBase
+.IP
+.B c
+CheckDepends (array)
+.IP
+.B C
+Conflicts (array)
+.IP
+.B d
+Description
+.IP
+.B D
+Depends (array)
+.IP
+.B e
+License (array)
+.IP
+.B g
+Groups (array)
+.IP
+.B M
+MakeDepends (array)
+.IP
+.B n
+Name
+.IP
+.B O
+OptDepends (array)
+.IP
+.B P
+Provides (array)
+.IP
+.B U
+URL
+.IP
+.B v
+Version
+.IP
+.B f
+FileName
+.IP
+.B F
+Files
+.IP
+.B r
+DBPath
+.IP
+.B K
+Keywords (array)
+.IP
+.B L
+LastModified
+.IP
+.B m
+Maintainer
+.IP
+.B o
+OutOfDate
+.IP
+.B p
+Popularity
+.IP
+.B S
+FirstSubmitted
+.IP
+.B w
+NumVotes
 .
 .TP
 .BI \-d " SEP" "\fR,\fP \-\-delim=" SEP
+The delimiter for expanding arrays. Defaults to a single space.
 .
 .TP
 .BR \-c ", " \-\-counts
+Return the number of results (packages) for given inputs and their combinations
+.RB ( \-\-union ,
+.BR \-\-section ).
 .
 .TP
 .BR \-J ", " \-\-json
+Return combined results, but do not format them
+.RB ( \-\-union ,
+.BR \-\-section ).
 .
 .TP
-.BI \-k " KEY" "\fR,\fP \-\-sort=" KEY
+.BI \-\-sort= KEY "\fR,\fP \-\-union=" KEY "\fR,\fP \-\-isect=" KEY
+For a set of results, take the value of KEY for each package and sort,
+take the set union, or take the set intersection respectively. For a
+list of accepted keys, see
+.BR \-\-format .
+.
+.TP
+.B \-\-gron
+Format output similar to
+.BR gron (1).
 .
 .TP
 .BR \-r ", " \-\-reverse
+Output results in reverse order.
 .
 .TP
 .BR \-v ", " \-\-verbose
-.
-.TP
-.BI \-\-union= KEY
-.
-.TP
-.BI \-\-isect= KEY
-.
-.TP
-.BI \-\-dump\-format= KIND
+If a field is empty, replace it with a hyphen.
 .
 .SH EXIT STATUS
 The exit status is
@@ -110,7 +209,11 @@ can be replaced with
 .BR "aur pkglist <pattern> | aur query \-t info" .
 .
 .SH SEE ALSO
-.BR aur\-search (1)
+.BR aur\-search (1),
+.BR aur\-depends (1),
+.BR aur\-repo\-parse (1),
+.BR aur\-pkglist (1),
+.BR aur\-query (1)
 .
 .SH AUTHORS
 .MT https://github.com/AladW
