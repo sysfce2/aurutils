@@ -353,30 +353,7 @@ unless (caller) {
         }
         # While `info_gron` can operate on any JSON structures, we delay its use
         # to apply sorting, union and intersection of results.
-        elsif ($opt_mode eq 'gron' and length($opt_gron_key)) {
-            my ($key, $fallback) = split(':', $opt_gron_key);
-            my $null_index = 0;
-
-            for my $pkg (@results) {
-                my $label = $pkg->{$key};
-                my $label_fallback = $pkg->{$fallback // ""};
-
-                if (not length($label) and length($label_fallback)) {
-                    $label = $label_fallback;
-                }
-                elsif (not length($label)) {
-                    $label = "null[" . $null_index++ . "]";
-                }
-                # If the given key results in an array (such as `Provides`),
-                # repeat the output for each entry.
-                if (ref($label) eq 'ARRAY') {
-                    map { info_gron($pkg, "packages." . $_) } @{$label};
-                }
-                else {
-                    info_gron($pkg, "packages." . $label);
-                }
-            }
-        } elsif ($opt_mode eq 'gron') {
+        elsif ($opt_mode eq 'gron') {
             my $index = 0;
             map { info_gron($_, "packages[" . $index++ . "]") } @results;
         }
