@@ -335,7 +335,7 @@ unless (caller) {
         if ($opt_mode eq 'counts') {
             say $counts;
         }
-        elsif ($opt_mode eq 'json' and $counts > 0) {
+        elsif ($opt_mode eq 'json') {
             # Sort keys in alphabetical order
             $aur_json->canonical();
 
