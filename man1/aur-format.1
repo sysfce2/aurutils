@@ -137,12 +137,18 @@ list of accepted keys, see
 .BR \-\-gron
 Format output similar to
 .BR gron (1).
-.
-.TP
-.BR \-\-gron\-raw
-Format output similar to
-.BR gron (1),
-leaving out sorting, set union or set intersection of results.
+The
+.BR \-\-sort ,
+.BR \-\-union
+and
+.BR \-\-isect
+options are not applied. To combine these options with
+.BR \-\-gron ,
+use a pipeline. For example:
+.IP
+.EX
+aur query -t search term1 term2 | aur format \-\-union <KEY> --json | aur format \-\-gron
+.XE
 .
 .TP
 .BR \-r ", " \-\-reverse
@@ -222,7 +228,7 @@ memory for sorting and set union or set intersection. A limitation of
 .B aur\-format
 is that even when these operations are disabled, all objects are loaded
 into memory,
-.B \-\-gron\-raw
+.B \-\-gron
 excepted.
 .
 .SH SEE ALSO

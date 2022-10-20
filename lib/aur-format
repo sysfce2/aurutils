@@ -242,7 +242,6 @@ unless (caller) {
     my $opt_sort_key = "";
     my $opt_union_key = "";
     my $opt_isect_key = "";
-    my $opt_gron_key = "";
     my $opt_reverse = 0;
     my $opt_dump_fmt;
 
@@ -251,9 +250,7 @@ unless (caller) {
         'f|format=s'    => sub { $opt_mode = 'format',
                                  $opt_format = $_[1] },
         'J|json'        => sub { $opt_mode = 'json' },
-        'gron:s'        => sub { $opt_mode = 'gron',
-                                 $opt_gron_key = $_[1] },
-        'gron-raw'      => sub { $opt_mode = 'gron_raw' },
+        'gron'          => sub { $opt_mode = 'gron' },
         'd|delim=s'     => \$opt_delim,
         'v|verbose'     => \$opt_verbose,
         'k|sort=s'      => \$opt_sort_key,
@@ -291,7 +288,7 @@ unless (caller) {
         $opt_delim = " ";
     }
 
-    if (length($opt_mode) and $opt_mode eq 'gron_raw') {
+    if (length($opt_mode) and $opt_mode eq 'gron') {
         # TODO: Parsing input object by object could be done generally
         # when set operations and sorting are disabled (the default)
         while (my $row = <ARGV>) {
@@ -353,14 +350,12 @@ unless (caller) {
 
             map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
         }
-        elsif ($opt_mode eq 'gron') {
-            # While `info_gron` can operate on any JSON structures, we delay its use
-            # to apply sorting, union and intersection of results.
-            my $index = 0;
-            map { info_gron($_, "packages[" . $index++ . "]") } @results;
+        else {
+            say STDERR "$argv0: unknown mode $opt_mode";
+            exit(1);
         }
     } else {
-        say STDERR $argv0 . ": no mode specified";
+        say STDERR "$argv0: no mode specified";
         exit(1);
     }
 }
