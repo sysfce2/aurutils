@@ -289,12 +289,10 @@ unless (caller) {
     }
 
     if (length($opt_mode) and $opt_mode eq 'gron') {
-        # TODO: Parsing input object by object could be done generally
-        # when set operations and sorting are disabled (the default)
         while (my $row = <ARGV>) {
-            my $obj = parse_json($row);
-            info_gron($obj, "json");
+            info_gron(parse_json($row), "packages");
         }
+        die if $!;
     }
     elsif (length($opt_mode)) {
         my $first = <ARGV>;
