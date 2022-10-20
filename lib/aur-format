@@ -217,19 +217,15 @@ sub results_isect {
     @{$results} = grep { $seen{$_->{$isect_key}} } @{$results};
  }
 
-# Sorting and reversal on a flattened array
-sub results_rsort {
-    my ($results, $sort_key, $reversed) = @_;
+# Sorting on a flattened array
+sub results_sort {
+    my ($results, $sort_key) = @_;
 
     # Sort entries by value of specified key
-    if (length($sort_key) and defined $aur_numeric{$sort_key}) {
+    if (defined $aur_numeric{$sort_key}) {
         @{$results} = sort { $a->{$sort_key} <=> $b->{$sort_key} } @{$results};
-    }
-    elsif (length($sort_key)) {
+    } else {
         @{$results} = sort { $a->{$sort_key} cmp $b->{$sort_key} } @{$results};
-    }
-    if ($reversed // 0) {
-        @{$results} = reverse @{$results};
     }
     return $results;
 }
@@ -296,8 +292,8 @@ unless (caller) {
     }
 
     if (length($opt_mode) and $opt_mode eq 'gron_raw') {
-        # Mode which does no set operations or sorting, and only loads
-        # one JSON object in memory at a time (garbage collection aside).
+        # TODO: Parsing input object by object could be done generally
+        # when set operations and sorting are disabled (the default)
         while (my $row = <ARGV>) {
             my $obj = parse_json($row);
             info_gron($obj, "json");
@@ -320,16 +316,21 @@ unless (caller) {
                 results_isect(\@next, \@results, $opt_isect_key);
             }
             else {
-                # XXX: when sorting and set union/intersection are disabled, these
-                # results could be processed lazily, saving memory usage
                 push(@results, @next);
             }
         }
         die if $!;
-
-        # Apply sorting criteria to array of packages.
-        results_rsort(\@results, $opt_sort_key, $opt_reverse);
         my $counts = scalar(@results);
+
+        # Apply sorting criteria and reversal to array of packages. These methods
+        # should not change the number of results.
+        if (length($opt_sort_key)) {
+            results_sort(\@results, $opt_sort_key);
+        }
+        if ($opt_reverse) {
+            @results = reverse @results;
+        }
+        die if $counts != scalar(@results);
 
         if ($opt_mode eq 'counts') {
             say $counts;
@@ -352,9 +353,9 @@ unless (caller) {
 
             map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
         }
-        # While `info_gron` can operate on any JSON structures, we delay its use
-        # to apply sorting, union and intersection of results.
         elsif ($opt_mode eq 'gron') {
+            # While `info_gron` can operate on any JSON structures, we delay its use
+            # to apply sorting, union and intersection of results.
             my $index = 0;
             map { info_gron($_, "packages[" . $index++ . "]") } @results;
         }
