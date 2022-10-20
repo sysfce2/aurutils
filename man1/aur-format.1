@@ -134,9 +134,15 @@ list of accepted keys, see
 .BR \-\-format .
 .
 .TP
-.B \-\-gron
+.BR \-\-gron
 Format output similar to
 .BR gron (1).
+.
+.TP
+.BR \-\-gron\-raw
+Format output similar to
+.BR gron (1),
+leaving out sorting, set union or set intersection of results.
 .
 .TP
 .BR \-r ", " \-\-reverse
@@ -207,6 +213,23 @@ In case only a limited set of targets is needed,
 .B aur pkglist \-\-info
 can be replaced with
 .BR "aur pkglist <pattern> | aur query \-t info" .
+.
+.SH NOTES
+For successful JSON serialization,
+.B aur\-format assumes
+every line is a complete JSON object.  All objects are then loaded into
+memory for sorting and set union or set intersection. A limitation of
+.B aur\-format
+is that even when these operations are disabled, all objects are loaded
+into memory,
+.B \-\-gron\-raw
+excepted.
+.PP
+The above does not apply to
+.BR aur\-repo\-parse ,
+which outputs a (potentially large) pacman database as a single JSON
+object. Any memory savings would require this object to be split to multiple
+parts first.
 .
 .SH SEE ALSO
 .BR aur\-search (1),
