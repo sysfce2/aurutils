@@ -107,10 +107,13 @@ sub repo_json {
 sub repo_list {
     my ($pkg, $count, $last, $delim, $quiet) = @_;
 
+    my $name = $pkg->{'Name'};
+    my $pver = $pkg->{'Version'};
+
     if ($quiet) {
-        say $pkg->{'Name'};
+        say $name;
     } else {
-        say join($delim, $pkg->{'Name'}, $pkg->{'Version'});
+        say join($delim, $name, $pver);
     }
 }
 
@@ -198,7 +201,8 @@ unless (caller) {
     elsif ($opt_table) {
         $handler = \&repo_table;
         @varargs = length($opt_delim) ? $opt_delim : "\t";
-    } else {
+    }
+    else {
         say STDERR $argv0 . ': no mode specified';
         exit(1);
     }
