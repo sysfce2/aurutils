@@ -300,7 +300,7 @@ unless (caller) {
         # one JSON object in memory at a time (garbage collection aside).
         while (my $row = <ARGV>) {
             my $obj = parse_json($row);
-            info_gron($obj, "packages");
+            info_gron($obj, "json");
         }
     }
     elsif (length($opt_mode)) {
