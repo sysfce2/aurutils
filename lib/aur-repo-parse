@@ -104,6 +104,13 @@ sub repo_json {
     print "]\n" if $last;
 }
 
+sub repo_jsonl {
+    my ($pkg, $count, $last) = @_;
+    my $json_text = $aur_json->encode($pkg);
+
+    print $json_text . "\n";
+}
+
 sub repo_list {
     my ($pkg, $count, $last, $delim, $quiet) = @_;
 
@@ -147,6 +154,7 @@ sub repo_attr {
 unless (caller) {
     use Getopt::Long;
     my $opt_json = 0;
+    my $opt_jsonl = 0;
     my $opt_list = 0;
     my $opt_list_attr = 0;
     my $opt_table = 0;
@@ -158,6 +166,7 @@ unless (caller) {
 
     # optional arguments
     GetOptions('J|json'    => \$opt_json,
+               'jsonl'     => \$opt_jsonl,
                'F|attr=s'  => \$opt_attr,
                'l|list'    => \$opt_list,
                'q|quiet'   => \$opt_quiet,
@@ -185,6 +194,10 @@ unless (caller) {
     if ($opt_json) {
         $aur_json->canonical();
         $handler = \&repo_json;
+    }
+    elsif ($opt_jsonl) {
+        $aur_json->canonical();
+        $handler = \&repo_jsonl;
     }
     elsif (length($opt_attr) and defined($repo_add_attributes{$opt_attr})) {
         $handler = \&repo_attr;
