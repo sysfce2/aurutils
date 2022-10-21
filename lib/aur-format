@@ -46,8 +46,8 @@ my %aur_formats = (
 
 # Keys used for sorting of numeric values (I integer, E epoch)
 my %aur_numeric = (
-    'FirstSubmitted' => 'E', 'LastModified' => 'E', 'NumVotes' => 'I', 'ID' => 'I',
-    'PackageBaseID'  => 'I', 'Popularity'   => 'I'
+    'FirstSubmitted' => 'E', 'LastModified' => 'E', 'NumVotes'  => 'I', 'ID' => 'I',
+    'PackageBaseID'  => 'I', 'Popularity'   => 'I', 'OutOfDate' => 'E'
 );
 
 sub tokenize {
@@ -138,26 +138,35 @@ sub info_format {
 }
 
 sub info_gron {
-    my ($pkg, $prefix) = @_;
+    my ($pkg, $prefix, $key) = @_;
 
-    if (not length(ref($pkg))) {
-        say join(' = ', $prefix, $pkg);
+    if (not defined($pkg)) {
+        say join(' = ', $prefix, 'null;');
+    }
+    elsif (not length(ref($pkg))) {
+        # Use known types instead of best-effort basis (`looks_like_number`)
+        if (not defined $aur_numeric{$key // ''}) {
+            $pkg =~ s/\\/\\\\/g;         # escape backslashes
+            $pkg =~ s/(?<!\\)\"/\\"/g;   # escape double quotes
+            $pkg =~ s/\x1B/\\u001B/g;    # escape ANSI sequences
+            $pkg = "\"$pkg\"";           # enquote
+        }
+        say join(' = ', $prefix, $pkg . ';');
     }
     elsif (ref($pkg) eq 'HASH') {
+        say "$prefix = {};";
+
         for my $key (sort keys %{$pkg}) {
             my $value = $pkg->{$key};
 
-            if (ref($value) eq 'HASH' or ref($value) eq 'ARRAY') {
-                info_gron($value, join(".", $prefix, $key));
-            }
-            else {
-                say join(".", $prefix, join(' = ', $key, $value // "null"));
-            }
+            info_gron($value, join(".", $prefix, $key), $key);
         }
     }
     elsif (ref($pkg) eq 'ARRAY') {
+        say "$prefix = [];";
+
         my $index = 0;
-        map { info_gron($_, $prefix . "[" . $index++ . "]") } @{$pkg};
+        map { info_gron($_, $prefix . "[" . $index++ . "]", undef) } @{$pkg};
     }
 }
 
@@ -290,7 +299,7 @@ unless (caller) {
 
     if (length($opt_mode) and $opt_mode eq 'gron') {
         while (my $row = <ARGV>) {
-            info_gron(parse_json($row), "packages");
+            info_gron(parse_json($row), "json");
         }
         die if $!;
     }
