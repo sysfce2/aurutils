@@ -9,6 +9,7 @@ AURUTILS_VERSION ?= $(shell git describe --tags || true)
 ifeq ($(AURUTILS_VERSION),)
 AURUTILS_VERSION := 11
 endif
+AURUTILS_SHELLCHECK = $(filter-out lib/aur-search--helper, aur $(wildcard lib/*))
 
 .PHONY: shellcheck install build completion aur
 
@@ -22,7 +23,7 @@ completion:
 	@$(MAKE) -C completions bash zsh
 
 shellcheck: aur
-	@shellcheck -x -f gcc -e 1071 aur lib/*
+	@shellcheck -x -f gcc -e 1071 $(AURUTILS_SHELLCHECK)
 
 test: aur shellcheck
 	@tests/parseopt-consistency

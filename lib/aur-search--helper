@@ -1,0 +1,77 @@
+#!/usr/bin/env -S -u LC_ALL LC_NUMERIC=C awk -f
+function fmt(prefix, field) {
+    printf("%s%-15s%s %s\n", BOLD, prefix, ALL_OFF, field)
+}
+
+BEGIN {
+    # tab-separated input
+    FS = "\t"
+
+    # libmakepkg escape sequences start in \e and cannot be used here
+    if (COLORIZE) {
+        BOLD    = "\033[1m"
+        ALL_OFF = "\033[0m"
+        RED     = BOLD "\033[31m"
+        GREEN   = BOLD "\033[32m"
+        YELLOW  = BOLD "\033[33m"
+        BLUE    = BOLD "\033[34m"
+        OSC8    = "\033]8"
+        ST      = "\033\\"
+    } else {
+        BOLD=""; ALL_OFF=""; RED=""; GREEN=""; YELLOW=""; BLUE=""; OSC8=""; ST=""
+    }
+}
+
+{ # main body
+    if (INFO) {
+        if (NR > 1) {
+            printf("\n")
+        }
+        printf("%s%-15s%s %s/%s\n", BOLD, "AUR URL:", ALL_OFF, URL, $1)
+
+        fmt("Name:"         , $1)
+        fmt("Base:"         , $2)
+        fmt("Version:"      , $3)
+        fmt("Description:"  , $4)
+        fmt("URL:"          , $5)
+        fmt("Keywords:"     , $6)
+        fmt("Licenses:"     , $7)
+        fmt("Maintainer:"   , $8)
+        fmt("Votes:"        , $9)
+        fmt("Popularity:"   , $10)
+        fmt("Out Of Date:"  , $11)
+        fmt("Submitted:"    , $12)
+        fmt("Last Modified:", $13)
+        fmt("Depends On:"   , $14)
+        fmt("Makedepends:"  , $15)
+        fmt("Checkdepends:" , $16)
+        fmt("Optdepends:", $17)
+    }
+    else if (SEARCH) {
+        # Name Version Description Maintainer NumVotes Popularity OutOfDate
+        name = $1; ver = $2; desc = $3; mnt = $4; votes = $5; pop = $6; ood = $7
+
+        ood == "-" ?
+            ood = "" :
+            ood = strftime("(Out-of-date: %d %B %Y)", ood)
+
+        mnt == "-" ?
+            mnt = "(Orphaned) " :
+            mnt = ""
+
+        pop = sprintf("%.2f", $6)
+        pre = sprintf("%saur/%s%s%s", BLUE, ALL_OFF, BOLD, name)
+
+        if (length(OSC8) && length(ST)) {
+            pre = sprintf("%s;;%s%s%s%s;;%s", OSC8, AUR_URL "/" name, ST, pre, OSC8, ST)
+        }
+        printf("%s %s%s %s(+%s %s%%) %s%s%s%s\n", pre, GREEN, ver, ALL_OFF,
+               votes, pop, mnt, RED, ood, ALL_OFF)
+        printf("    %s\n", desc)
+    }
+}
+
+END {
+    if (NR == 0)
+        exit(1)
+}

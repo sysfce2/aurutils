@@ -13,101 +13,6 @@ usage() {
     exit 1
 }
 
-# shellcheck disable=SC2016
-info_long() {
-    awk -F '\t' -v URL="$AUR_LOCATION/packages" -v colorize="$1" '
-    function fmt(prefix, field) {
-        printf("%s%-15s%s %s\n", BOLD, prefix, ALL_OFF, field)
-    }
-
-    BEGIN {
-        # libmakepkg escape sequences start in \e and cannot be used here
-        if (colorize) {
-            BOLD    = "\033[1m"
-            ALL_OFF = "\033[0m"
-        } else {
-            BOLD    = ""
-            ALL_OFF = ""
-        }
-    } {
-        if (NR > 1) {
-            printf("\n")
-        }
-        printf("%s%-15s%s %s/%s\n", BOLD, "AUR URL:", ALL_OFF, URL, $1)
-
-        fmt("Name:"         , $1)
-        fmt("Base:"         , $2)
-        fmt("Version:"      , $3)
-        fmt("Description:"  , $4)
-        fmt("URL:"          , $5)
-        fmt("Keywords:"     , $6)
-        fmt("Licenses:"     , $7)
-        fmt("Maintainer:"   , $8)
-        fmt("Votes:"        , $9)
-        fmt("Popularity:"   , $10)
-        fmt("Out Of Date:"  , $11)
-        fmt("Submitted:"    , $12)
-        fmt("Last Modified:", $13)
-        fmt("Depends On:"   , $14)
-        fmt("Makedepends:"  , $15)
-        fmt("Checkdepends:" , $16)
-        fmt("Optdepends:", $17)
-    }
-    END {
-        if (NR == 0)
-            exit(1)
-    }'
-}
-
-# shellcheck disable=SC2016
-info_short() {
-    env -u LC_ALL LC_NUMERIC=C awk -F '\t' -v AUR_URL="$AUR_LOCATION/packages" -v colorize="$1" '
-    BEGIN {
-        # libmakepkg escape sequences start in \e and cannot be used here
-        if (colorize) {
-            BOLD    = "\033[1m"
-            ALL_OFF = "\033[0m"
-            RED     = BOLD "\033[31m"
-            GREEN   = BOLD "\033[32m"
-            YELLOW  = BOLD "\033[33m"
-            BLUE    = BOLD "\033[34m"
-            OSC8    = "\033]8"
-            ST      = "\033\\"
-        } else {
-            BOLD=""; ALL_OFF=""; RED=""; GREEN=""; YELLOW=""; BLUE=""; OSC8=""; ST=""
-        }
-    } {
-        # Name Version Description Maintainer NumVotes Popularity OutOfDate
-        name = $1; ver = $2; desc = $3; mnt = $4; votes = $5; pop = $6; ood = $7
-
-        ood == "-" ?
-            ood = "" :
-            ood = strftime("(Out-of-date: %d %B %Y)", ood)
-
-        mnt == "-" ?
-            mnt = "(Orphaned) " :
-            mnt = ""
-
-        pop = sprintf("%.2f", $6)
-        pre = sprintf("%saur/%s%s%s", BLUE, ALL_OFF, BOLD, name)
-
-        if (length(OSC8) && length(ST)) {
-            pre = sprintf("%s;;%s%s%s%s;;%s", OSC8, AUR_URL "/" name, ST, pre, OSC8, ST)
-        }
-        printf("%s %s%s %s(+%s %s%%) %s%s%s%s\n", pre, GREEN, ver, ALL_OFF, votes, pop, mnt, RED, ood, ALL_OFF)
-        printf("    %s\n", desc)
-    }
-    END {
-        if (NR == 0)
-            exit(1)
-    }'
-}
-
-# noop formatter which returns 1 if no lines were processed
-info_noop() {
-    awk '{ print } END { if (NR == 0) exit(1); }'
-}
-
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='f:k:adimnqrsv'
@@ -212,37 +117,39 @@ format_args+=(-k "$sort_key")
 
 # output filters
 case $format in
-    short) 
+    short)
         format_args+=(-f '%n\t%v\t%d\t%m\t%w\t%p\t%o\n')
-        info() { info_short "$colorize"; } ;;
-    long|table)
-        format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
-        ;;&
+        info() { aur search--helper -v SEARCH=1 -v COLORIZE="$colorize" -v URL="$AUR_LOCATION/packages"; } ;;
     long)
-        info() { info_long "$colorize"; } ;;
-    table)
-        info() { info_noop; } ;;
+        format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
+        info() { aur search--helper -v INFO=1   -v COLORIZE="$colorize"; } ;;
+    table) # deprecated
+        format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
+        info() { aur search--helper; } ;;
     custom)
         format_args+=(-f "$format_str")
-        info() { info_noop; } ;;
+        info() { aur search--helper; } ;; # NOOP, exit 1 if no lines processed
     json)
         format_args+=(--json)
-        info() { info_noop; } ;;
+        info() { aur search--helper; } ;;
 esac
 
-if [[ $mode == 'query' ]]; then
-    aur query -t "$type" -b "$search_by" "$@" | aur format "${format_args[@]}" -v | info
-    pstate=("${PIPESTATUS[@]}")
+case $mode in
+    query)
+        input() { aur query -t "$type" -b "$search_by" "$@"; } ;;
+    stdin)
+        input() { tee; } ;; # JSON from stdin, e.g. aur-pkglist
+esac
 
-    if (( pstate[0] )) || (( pstate[1] )); then
-        exit 2 # aur-query or aurweb response error
+# main pipeline
+input "$@" | aur format "${format_args[@]}" -v | info
+pstate=("${PIPESTATUS[@]}")
 
-    elif (( pstate[2] )); then
-        exit 1 # no results found
-    fi
+if (( pstate[0] )) || (( pstate[1] )); then
+    exit 2 # aur-query or aurweb response error
 
-elif [[ $mode == 'stdin' ]]; then
-    info
+elif (( pstate[2] )); then
+    exit 1 # no results found
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
