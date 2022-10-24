@@ -142,7 +142,9 @@ sub info_gron {
     }
     elsif (not length(ref($pkg))) {
         # Use known types instead of best-effort basis (`looks_like_number`)
-        if (not ($aur_types{$key} eq 'numeric' or $aur_types{$key} eq 'epoch')) {
+        my $aur_type = $aur_types{$key // ""};
+
+        if (not (defined $aur_type and ($aur_type eq 'numeric' or $aur_type eq 'epoch'))) {
             $pkg =~ s/\\/\\\\/g;         # escape backslashes
             $pkg =~ s/(?<!\\)\"/\\"/g;   # escape double quotes
             $pkg =~ s/\x1B/\\u001B/g;    # escape ANSI sequences
