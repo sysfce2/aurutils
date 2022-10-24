@@ -212,7 +212,7 @@ More attributes can be included, and the output reformatted with
 .EX
     aur pkglist \-\-info | aur format \-f "%n\\t%v\\t%d\\t%m\\t%w\\t%p\\t%o\\n" \-v |
         gawk \-F'\\t' "{ if ($4 != '-') print; }" |
-        aur search --format-stdin
+        aur search--helper
 .EE
 .PP
 In case only a limited set of targets is needed,
