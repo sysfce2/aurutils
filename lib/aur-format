@@ -18,37 +18,34 @@ if (eval { require JSON::XS; 1 }) {
 # Dictionary for formatter string - subset of package-query(1) format options
 # Save type of attribute (AUR, pacman or both) for --dump-format
 my %aur_formats = (
-    'a' => ['common',  'Arch'          ],
-    'b' => ['common',  'PackageBase'   ],
-    'c' => ['common',  'CheckDepends'  ],
-    'C' => ['common',  'Conflicts'     ],
-    'd' => ['common',  'Description'   ],
-    'D' => ['common',  'Depends'       ],
-    'e' => ['common',  'License'       ],
-    'g' => ['common',  'Groups'        ],
-    'M' => ['common',  'MakeDepends'   ],
-    'n' => ['common',  'Name'          ],
-    'O' => ['common',  'OptDepends'    ],
-    'P' => ['common',  'Provides'      ],
-    'U' => ['common',  'URL'           ],
-    'v' => ['common',  'Version'       ],
-    'f' => ['pacman',  'FileName'      ],
-    'F' => ['pacman',  'Files'         ],
-    'r' => ['pacman',  'DBPath'        ],
-    'K' => ['aur'   ,  'Keywords'      ],
-    'L' => ['aur'   ,  'LastModified'  ],
-    'm' => ['aur'   ,  'Maintainer'    ],
-    'o' => ['aur'   ,  'OutOfDate'     ],
-    'p' => ['aur'   ,  'Popularity'    ],
-    'S' => ['aur'   ,  'FirstSubmitted'],
-    'w' => ['aur'   ,  'NumVotes'      ]
+    'a' => ['array',    'Arch'          ],
+    'c' => ['array',    'CheckDepends'  ],
+    'C' => ['array',    'Conflicts'     ],
+    'D' => ['array',    'Depends'       ],
+    'e' => ['array',    'License'       ],
+    'F' => ['array',    'Files'         ],
+    'g' => ['array',    'Groups'        ],
+    'K' => ['array',    'Keywords'      ],
+    'M' => ['array',    'MakeDepends'   ],
+    'O' => ['array',    'OptDepends'    ],
+    'P' => ['array',    'Provides'      ],
+    'b' => ['string',   'PackageBase'   ],
+    'd' => ['string',   'Description'   ],
+    'f' => ['string',   'FileName'      ],
+    'm' => ['string',   'Maintainer'    ],
+    'n' => ['string',   'Name'          ],
+    'r' => ['string',   'DBPath'        ],
+    'U' => ['string',   'URL'           ],
+    'v' => ['string',   'Version'       ],
+    'L' => ['epoch',    'LastModified'  ],
+    'o' => ['epoch',    'OutOfDate'     ],
+    'S' => ['epoch',    'FirstSubmitted'],
+    'p' => ['numeric',  'Popularity'    ],
+    'w' => ['numeric',  'NumVotes'      ]
 );
 
-# Keys used for sorting of numeric values (I integer, E epoch)
-my %aur_numeric = (
-    'FirstSubmitted' => 'E', 'LastModified' => 'E', 'NumVotes'  => 'I', 'ID' => 'I',
-    'PackageBaseID'  => 'I', 'Popularity'   => 'I', 'OutOfDate' => 'E'
-);
+# Known AUR types for use with --format, --gron
+my %aur_types = map { ($_->[1] => $_->[0]) } values %aur_formats;
 
 sub tokenize {
     my ($format, $delim) = @_;
@@ -102,7 +99,7 @@ sub info_expand_field {
         return "";
     } elsif (ref($value) eq 'ARRAY') {
         return join($delim, @{$value});
-    } elsif (defined $aur_numeric{$label} and $aur_numeric{$label} eq 'E') {
+    } elsif ($aur_types{$label} eq 'epoch') {
         return strftime($time_fmt, gmtime $value);
     } else {
         return $value;
@@ -145,7 +142,7 @@ sub info_gron {
     }
     elsif (not length(ref($pkg))) {
         # Use known types instead of best-effort basis (`looks_like_number`)
-        if (not defined $aur_numeric{$key // ''}) {
+        if (not ($aur_types{$key} eq 'numeric' or $aur_types{$key} eq 'epoch')) {
             $pkg =~ s/\\/\\\\/g;         # escape backslashes
             $pkg =~ s/(?<!\\)\"/\\"/g;   # escape double quotes
             $pkg =~ s/\x1B/\\u001B/g;    # escape ANSI sequences
@@ -209,7 +206,7 @@ sub parse_aur_json {
     }
 }
 
-# Functions to merge arrays, by union or by intersection
+# Set union by hash value
 sub results_union {
     my ($target, $results, $seen, $union_key) = @_;
 
@@ -219,6 +216,7 @@ sub results_union {
     push(@{$results}, grep { !$seen->{$_->{$union_key}}++ } @{$target});
  }
 
+# Set intersection by hash value
 sub results_isect {
     my ($target, $results, $isect_key) = @_;
     my %seen = map { $_->{$isect_key} => 1 } @{$target};
@@ -226,12 +224,12 @@ sub results_isect {
     @{$results} = grep { $seen{$_->{$isect_key}} } @{$results};
  }
 
-# Sorting on a flattened array
+# Sort a flattened array of hashes
 sub results_sort {
     my ($results, $sort_key) = @_;
 
     # Sort entries by value of specified key
-    if (defined $aur_numeric{$sort_key}) {
+    if ($aur_types{$sort_key} eq 'epoch' or $aur_types{$sort_key} eq 'numeric') {
         @{$results} = sort { $a->{$sort_key} <=> $b->{$sort_key} } @{$results};
     } else {
         @{$results} = sort { $a->{$sort_key} cmp $b->{$sort_key} } @{$results};
