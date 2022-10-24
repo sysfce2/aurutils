@@ -18,6 +18,9 @@ done
 # 2: file error
 # 4: invalid input
 
+# empty input
+aur format json/empty.json --json
+
 # exit on invalid potion
 aur format json/ascii.json --doesnotexit || err=$?
 [[ $err == 1 ]]
@@ -29,8 +32,6 @@ aur format -f '%n' /does/not/exist || err=$?
 [[ $err == 2 ]]
 
 # check for errors on invalid inputs
-aur format json/empty.json --json || err=$? # invalid input
-[[ $err == 4 ]]
 aur format json/error.json --json || err=$? # response error
 [[ $err == 4 ]]
 
