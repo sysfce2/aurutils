@@ -20,8 +20,8 @@ diff -u <(aur format -F '%n\t%v\n' core.json) \
         <(aur repo-parse -p "$core_files_path" --list)
 
 # test formatting options applicable to pacman repositories
-mapfile -t fmt_p < <(aur format --dump-format pacman)
-mapfile -t fmt_c < <(aur format --dump-format common)
+fmt_p=('f' 'F' 'r')
+fmt_c=('a' 'b' 'c' 'C' 'd' 'D' 'e' 'g' 'M' 'n' 'O' 'P' 'U' 'v')
 
 for f in "${fmt_p[@]}" "${fmt_c[@]}"; do
     cnt=$(aur format core.json --format "$f\n" | awk NF | wc -l)

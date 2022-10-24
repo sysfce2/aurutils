@@ -252,7 +252,6 @@ unless (caller) {
     my $opt_union_key = "";
     my $opt_isect_key = "";
     my $opt_reverse = 0;
-    my $opt_dump_fmt;
 
     GetOptions(
         'c|counts'      => sub { $opt_mode = 'counts' },
@@ -266,29 +265,8 @@ unless (caller) {
         'r|reverse'     => \$opt_reverse,
         'union=s'       => \$opt_union_key,
         'isect=s'       => \$opt_isect_key,
-        'dump-format=s' => \$opt_dump_fmt,
         'time-format=s' => \$opt_time_fmt
     ) or exit(1);
-
-    # Print possible format options of a given type (tab-completion)
-    if (length($opt_dump_fmt)) {
-        if ($opt_dump_fmt !~ /^(any|pacman|common|aur)$/) {
-            say STDERR "$argv0: invalid --dump-format option";
-            exit(1);
-        }
-        my %formats;
-        for my $key (keys %aur_formats) {
-            my ($type, $label) = @{$aur_formats{$key}};
-
-            if ($type eq $opt_dump_fmt or $opt_dump_fmt eq 'any') {
-                $formats{$key} = $label;
-            }
-        }
-        for my $key (sort { $formats{$a} cmp $formats{$b} } keys %formats) {
-            say join("\t", $key, $aur_formats{$key}->[1]);
-        }
-        exit(0);
-    }
 
     if (not length($opt_time_fmt)) {
         $opt_time_fmt = "%a %b %e %H:%M:%S %Y";
