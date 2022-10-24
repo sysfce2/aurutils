@@ -111,9 +111,10 @@ info_noop() {
 source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='f:k:adimnqrsv'
-opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose' 'color:' 'table'
-          'makedepends' 'optdepends' 'checkdepends' 'key:' 'json' 'short' 'format:')
-opt_hidden=('dump-options' 'raw' 'format-stdin')
+opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
+          'short' 'color:' 'makedepends' 'optdepends' 'checkdepends' 'key:'
+          'json' 'format:')
+opt_hidden=('dump-options' 'raw' 'format-stdin' 'table')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
@@ -149,17 +150,19 @@ while true; do
             format=short ;;
         -v|--verbose)
             format=long ;;
-        --table)
-            format=table ;;
         -f|--format)
             shift; format_str=$1
             format=custom ;;
         --format-stdin)
-            mode=stdin ;; # experimental
+            mode=stdin ;;
         -r|--raw|--json)
             format=json ;;
         -k|--key)
             shift; sort_key=$1 ;;
+        # deprecated options
+        --table)
+            printf >&2 'deprecation notice: --table is replaced by aur-format\n'
+            format=table ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'

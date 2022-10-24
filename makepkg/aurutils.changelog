@@ -50,6 +50,7 @@
   + performance improvements
   + add `--format`, taking a `package-query`-like string
   + add `--format-stdin`
+  + deprecate `--table`
 
 * `aur-sync`
   + add diagnostic for missing packages with `--continue`
