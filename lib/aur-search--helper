@@ -1,4 +1,7 @@
-#!/usr/bin/env -S -u LC_ALL LC_NUMERIC=C awk -f
+#!/bin/bash
+
+# shellcheck disable=SC2016
+script='
 function fmt(prefix, field) {
     printf("%s%-15s%s %s\n", BOLD, prefix, ALL_OFF, field)
 }
@@ -75,3 +78,8 @@ END {
     if (NR == 0)
         exit(1)
 }
+'
+
+exec env -u LC_ALL LC_NUMERIC=C awk "$@" "$script"
+
+# vim: set et sw=4 sts=4 ft=awk:

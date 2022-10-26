@@ -9,7 +9,7 @@ AURUTILS_VERSION ?= $(shell git describe --tags || true)
 ifeq ($(AURUTILS_VERSION),)
 AURUTILS_VERSION := 11
 endif
-AURUTILS_SHELLCHECK = $(filter-out lib/aur-search--helper, aur $(wildcard lib/*))
+AURUTILS_SHELLCHECK = $(wildcard lib/*)
 
 .PHONY: shellcheck install build completion aur
 
