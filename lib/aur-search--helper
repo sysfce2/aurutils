@@ -77,8 +77,7 @@ BEGIN {
 END {
     if (NR == 0)
         exit(1)
-}
-'
+}'
 
 exec env -u LC_ALL LC_NUMERIC=C awk "$@" "$script"
 
