@@ -119,10 +119,10 @@ format_args+=(-k "$sort_key")
 case $format in
     short)
         format_args+=(-f '%n\t%v\t%d\t%m\t%w\t%p\t%o\n')
-        info() { aur search--helper -v SEARCH=1 -v COLORIZE="$colorize" -v URL="$AUR_LOCATION/packages"; } ;;
+        info() { aur search--helper -v COLORIZE="$colorize" -v URL="$AUR_LOCATION/packages" -v SEARCH=1; } ;;
     long)
         format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
-        info() { aur search--helper -v INFO=1   -v COLORIZE="$colorize"; } ;;
+        info() { aur search--helper -v COLORIZE="$colorize" -v URL="$AUR_LOCATION/packages" -v INFO=1  ; } ;;
     table) # deprecated
         format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
         info() { aur search--helper; } ;;
