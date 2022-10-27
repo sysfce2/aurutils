@@ -112,9 +112,6 @@ case $multiple in
       union) format_args+=(--union 'Name') ;;
 esac
 
-# sort results by key
-format_args+=(-k "$sort_key")
-
 # output filters
 case $format in
     short)
@@ -142,7 +139,7 @@ case $mode in
 esac
 
 # main pipeline
-input "$@" | aur format "${format_args[@]}" -v | info
+input "$@" | aur format "${format_args[@]}" -k "$sort_key" -v --time-format="%s" | info
 pstate=("${PIPESTATUS[@]}")
 
 if (( pstate[0] )) || (( pstate[1] )); then
