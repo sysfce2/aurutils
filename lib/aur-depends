@@ -37,16 +37,12 @@ pivot_table() {
 
 # $1 pkgname $2 depends $3 pkgbase
 pkgbase_graph() {
-    awk '{
-        pkgbase[$1] = $3
-        depends[$2] = 1
+    awk 'FNR == NR {
+        map[$1] = $3
+        next
     }
-    END {
-        for (pkg in depends) {
-            if (pkg in pkgbase) {
-                printf("%s\t%s\n", pkg, pkgbase[pkg])
-            }
-        }
+    $2 in map {
+        printf("%s\t%s\n", $3, map[$2])
     }' "$@"
 }
 
@@ -206,11 +202,11 @@ if cd "$tmp" && mkdir json tsv; then
             ;;
         # pkgbase (AUR, total order)
         pkgbase)
-            pkgbase_graph "${depends[@]}" | tsort | tac
+            cat "${depends[@]}" | pkgbase_graph <(cat "${depends[@]}") - | tsort | tac
             ;;
         # pkgbase (AUR, graph)
         pkgbase_graph)
-            pkgbase_graph "${depends[@]}" | sort -k1b,1 -k1 -u
+            cat "${depends[@]}" | pkgbase_graph <(cat "${depends[@]}") - | sort -k1b,1 -k1 -u
             ;;
         # all information
         json)

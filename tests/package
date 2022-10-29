@@ -21,8 +21,7 @@ c++utilities
 clion
 
 # split package - depends on package from same package base
-libc++
-libc++-abi
+jellyfin
 
 # make/depends_arch
 openrct2-git
@@ -33,8 +32,8 @@ mingw-w64-gcc-base
 # 100+ depends
 plasma-git-meta
 
-# 250+ depends 
-ros-lunar-desktop
+# 200+ depends 
+ros-noetic-desktop
 
 # contain dependency cycles if checkdepends is considered
 ruby-activemodel
