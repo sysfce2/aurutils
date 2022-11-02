@@ -1,229 +1,283 @@
-#!/bin/bash
-# aur-depends - retrieve package dependencies using AurJson
-[[ -v AUR_DEBUG ]] && set -o xtrace
-argv0=depends
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use v5.20;
 
-# default options
-max_request=30 mode=pkgname
+my $argv0 = 'depends';
+my $aur_json;
 
-# default options (dependency types)
-resolve_depends=1 resolve_makedepends=1 resolve_checkdepends=1 resolve_optdepends=0
-
-# $1 pkgname $2 pkgbase $3 pkgver [$4 deps] [$5 mdeps] [$6 cdeps] [$7 odeps]
-pivot_table() {
-    awk -F'\t' 'BEGIN {
-        format = "%s\t%s\t%s\t%s\t%s\n"
-    } {
-        # Print header (package without dependencies)
-        printf(format, $1, $1, $2, $3, "Self")
-
-        # Print one line for each dependency
-        split($4, depends, ",")
-        split($5, makedepends, ",")
-        split($6, checkdepends, ",")
-        split($7, optdepends, ",")
-
-        for (idx in depends)
-            printf(format, $1, depends[idx], $2, $3, "Depends")
-        for (idx in makedepends)
-            printf(format, $1, makedepends[idx], $2, $3, "MakeDepends")
-        for (idx in checkdepends)
-            printf(format, $1, checkdepends[idx], $2, $3, "CheckDepends")
-        for (idx in optdepends)
-            printf(format, $1, optdepends[idx], $2, $3, "OptDepends")
-    }' "$@"
+# Fallback to slower perl-based JSON parsing
+if (eval { require JSON::XS; 1 }) {
+    $aur_json = JSON::XS->new;
+} else {
+    require JSON::PP;
+    $aur_json = JSON::PP->new;
 }
 
-# $1 pkgname $2 depends $3 pkgbase
-pkgbase_graph() {
-    awk 'FNR == NR {
-        map[$1] = $3
-        next
+sub parse_json {
+    my $row = shift;
+
+    my $obj = $aur_json->incr_parse($row)
+        or die $argv0 . ": expected JSON object or array at beginning of string";
+    $aur_json->incr_reset();
+
+    return $obj;
+}
+
+# Remove outer layer of AurJson responses
+sub get_results {
+    my $obj = shift;
+
+    if ($obj->{'type'} eq 'error') {
+        say STDERR "$argv0: $obj->{'error'}";
+        exit(4);
     }
-    $2 in map {
-        printf("%s\t%s\n", $3, map[$2])
-    }' "$@"
+    return $obj->{'results'};
 }
 
-tr_ver() {
-    sed -r 's/[<>=].*$//g'
+# Retrieve AurJson responses in every level of the dependency DAG
+sub query {
+    return if scalar @_ == 0;
+    my @results;
+
+    my @command = ('aur', 'query', '--type', 'info', @_);
+    my $child_pid = open(my $fh, "-|", @command) or die $!;
+
+    if ($child_pid) { # parent process
+        while (my $row = <$fh>) {
+            chomp $row;
+
+            # single JSON structure per request (max. 5000 packages per request)
+            push(@results, @{get_results(parse_json($row))});
+        }
+        die if $!;
+
+        waitpid($child_pid, 0);
+    }
+    exit(2) if $?;
+
+    return @results;
 }
 
-# shellcheck disable=SC2086
-chain() {
-    local a sub fmt=$1
-    shift 1
+sub chain {
+    my ($targets, $types, $max_req, $handler) = @_;
+    my @depends = @{$targets};
+    my (%results, %reqby, %shlibs);
 
-    # Top-level AUR request
-    aur query -t info "$@" >json/0 || exit
+    # Add `Self` type for explicit targets
+    map { $reqby{$_}{'Self'} = [$_] } @{$targets};
+    map { $shlibs{$_} = [$_, 0] } @{$targets};
 
-    # Top-level dependencies
-    aur format -f "$fmt" --delim=, json/0 | pivot_table - >tsv/0
-    (( PIPESTATUS[0] )) && exit 2  # format error
+    for my $a (1..$max_req) {
+        say STDERR join(" ", "query: [$a]", @depends) if defined $ENV{'AUR_DEBUG'};
 
-    if [[ ! -s tsv/0 ]]; then
-        return 0 # no packages found
-    fi
+        if ($a == $max_req) {
+            say STDERR "$argv0: total requests: $a (out of range)";
+            exit(34);
+        }
+        my @level = $handler->(@depends);
 
-    # In the below, all intermediary results are stored (originally done to
-    # simplify debugging). Strictly speaking, only the current and previous
-    # step are required. With a limited amount of requests (e.g. ~7 total
-    # for large meta-packages such as ros-indigo-desktop and ~250 AUR
-    # dependencies) the difference is unlikely to be noticeable.
-    for (( a = 1; a <= max_request; ++a )); do
-        sub=$(( a - 1 ))
+        if (not scalar(@level)) {
+            last;  # no results
+        }
+        @depends = ();
 
-        # Avoid querying duplicates (#4)
-        cut -f1 tsv/$sub >> seen # mark pkgname as seen
-        # Note: `grep` exits with status 1 if no matches are found
-        cut -f2 tsv/$sub | tr_ver | grep -Fxvf seen | \
-            aur query -t info - > json/$a || exit  # rpc error
+        for my $node (@level) {
+            $results{$node->{'Name'}} = $node;
 
-        if [[ ! -s json/$a ]]; then
-            return $a # no unique results (seen \ tsv == [empty])
-        fi
-        aur format -f "$fmt" --delim=, json/$a | pivot_table - >tsv/$a
-        (( PIPESTATUS[0] )) && exit 2
+            # XXX: no check if provides has valid package version (vercmp)
+            for my $spec (@{$node->{'Provides'} // []}) {
+                my ($prov, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
 
-        if [[ ! -s tsv/$a ]]; then
-            return $a  # no results, recursion complete
-        fi
-        cut -f2 tsv/$sub >> seen # mark depends as seen
-    done
+                # XXX: only keeps the first provider
+                if (not defined $shlibs{$prov}) {
+                    # Use weights to make explicit provides take precedence
+                    $shlibs{$prov} = [$node->{'Name'}, $a]
+                }
+            }
 
-    # recursion limit exceeded
-    return $max_request
+            # Filter out dependency types early (#882)
+            for my $deptype (@{$types}) {
+                if (not defined($node->{$deptype})) {
+                    next;  # no dependency of this type
+                }
+
+                for my $spec (@{$node->{$deptype}}) {
+                    # valid operators (important: <= before <)
+                    my ($dep, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
+
+                    # populate reverse depends
+                    push(@{$reqby{$dep}{$deptype}}, $node->{'Name'});
+
+                    # avoid querying duplicate packages (#4)
+                    if (defined $results{$dep}) {
+                        next;
+                    }
+                    push(@depends, $dep);
+
+                    # mark as incomplete (retrieved in next step or repo package)
+                    $results{$dep} = 'None';
+                }
+            }
+        }
+    }
+    return \%results, \%reqby, \%shlibs;
 }
 
-trap_exit() {
-    if [[ ! -v AUR_DEBUG ]]; then
-        rm -rf -- "$tmp"
-    else
-        printf >&2 'AUR_DEBUG: %s: temporary files at %s\n' "$argv0" "$tmp"
-    fi
+sub chain_mod {
+    my ($results, $reqby, $shlibs, $provides, $show_all) = @_;
+    %{$shlibs} = () if not $provides;
+    my %mod;
+
+    # Add reverse dependencies for AUR targets
+    say STDERR "query: filtering results" if defined $ENV{'AUR_DEBUG'};
+    map {
+        # Take provides on the command-line into account (#837)
+        if (defined $shlibs->{$_} and $shlibs->{$_}->[1] == 1) {
+            my $name = $shlibs->{$_}->[0];
+
+            # Preserve `Self` deptype of command-line target
+            $mod{$name} = $results->{$name};
+            $mod{$name}->{'RequiredBy'} = {%{$reqby->{$_}}, %{$reqby->{$name}}};
+        }
+        # Avoid overriding provides with later target (random ordering of hash!)
+        elsif (not defined $mod{$_}) {
+            $mod{$_} = $results->{$_};
+            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
+        }
+    } grep {
+        $results->{$_} ne 'None'
+    } keys %{$results};
+
+    # Merge reverse dependencies for purely virtual targets, with
+    # corresponding packages specified on the command-line
+    map {
+        my $name = $shlibs->{$_}[0];
+
+        for my $deptype (keys %{$reqby->{$_}}) {
+            push(@{$mod{$name}->{'RequiredBy'}{$deptype}}, @{$reqby->{$_}{$deptype}});
+        }
+    } grep {
+        $results->{$_} eq 'None' and defined $shlibs->{$_}
+    } keys %{$results};
+
+    return \%mod if not $show_all;
+
+    # Add reverse dependencies for any remaining targets
+    map {
+        $mod{$_}->{'Name'} = $_;
+        $mod{$_}->{'RequiredBy'} = $reqby->{$_};
+    } grep {
+        $results->{$_} eq 'None'
+    } keys %{$results};
+
+    return \%mod;
 }
 
-usage() {
-    printf >&2 'usage: %s [-abGnt]\n' "$argv0"
-    exit 1
+# tsv output for usage with aur-sync (aurutils <=10)
+sub table_v10_compat {
+    my ($results, $types) = @_;
+
+    map {
+        my ($name, $base, $version) = ($_->{'Name'}, $_->{'PackageBase'}, $_->{'Version'});
+        say join("\t", $name, $name, $base, $version, 'Self');
+
+        for my $deptype (@{$types}) {
+            my $depends = $_->{$deptype};
+            next if (ref($depends) ne 'ARRAY');
+
+            for my $dep (@{$depends}) {
+                say join("\t", $name, $dep, $base, $version, $deptype);
+            }
+        }
+    } grep { defined $_->{'PackageBase'} } values %{$results};
 }
 
-source /usr/share/makepkg/util/parseopts.sh
+# tsv output for usage with aur-sync (aurutils >=11)
+sub table {
+    my $results = shift;
 
-opt_short='abJGnt'
-opt_long=('table' 'pkgbase' 'pkgname' 'pkgname-all' 'graph' 'optdepends'
-          'no-depends' 'no-makedepends' 'no-checkdepends' 'json' 'raw')
-opt_hidden=('dump-options')
+    for my $pkg (values %{$results}) {
+        my ($name, $base, $version) = ($pkg->{'Name'}, $pkg->{'PackageBase'}, $pkg->{'Version'});
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
-    usage
-fi
-set -- "${OPTRET[@]}"
+        for my $deptype (keys %{$pkg->{'RequiredBy'}}) {
+            map { 
+               say join("\t", $name, $_, $base // '-', $version // '-', $deptype);
+            } @{$pkg->{'RequiredBy'}{$deptype}};
+        }
+    }
+}
 
-while true; do
-    case "$1" in
-        -b|--pkgbase)
-            mode=pkgbase ;;
-        -n|--pkgname)
-            mode=pkgname ;;
-        -a|--pkgname-all)
-            mode=pkgname_all ;;
-        -G|--graph)
-            mode=pkgbase_graph ;;
-        -t|--table)
-            mode=table ;;
-        -J|--json)
-            mode=json ;;
-        --raw)
-            mode=json_raw ;;
-        --no-depends)
-            resolve_depends=0 ;;
-        --no-makedepends)
-            resolve_makedepends=0 ;;
-        --no-checkdepends)
-            resolve_checkdepends=0 ;;
-        --optdepends)
-            resolve_optdepends=1 ;;
-        --dump-options)
-            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
-            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
-            exit ;;
-        --) shift; break ;;
-    esac
-    shift
-done
+# package/dependency pairs for use with tsort(1) or aur-graph
+# XXX: include optional column for versioned dependencies
+sub pairs {
+    my ($results, $key, $reverse) = @_;
 
-# shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
-tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
-trap 'trap_exit' EXIT
+    for my $pkg (values %{$results}) {
+        my $target = $pkg->{$key};
 
-# select dependency types
-fmt="%n\t%b\t%v\t"
-(( resolve_depends )) && fmt+="%D"
-fmt+="\t"
-(( resolve_makedepends )) && fmt+="%M"
-fmt+="\t"
-(( resolve_checkdepends )) && fmt+="%c"
-fmt+="\t"
-(( resolve_optdepends )) && fmt+="%O"
-fmt+="\n"
+        for my $reqby (values %{$pkg->{'RequiredBy'}}) {
+            map {
+                my $rdep = $key eq 'Name' ? $_ : $results->{$_}->{$key} // '-';
+                my @pair = $reverse ? ($target, $rdep) : ($rdep, $target);
 
-# resolve dependency tree
-rings=0
-if cd "$tmp" && mkdir json tsv; then
-    # tsv/*: pkgname\tdepends\tpkgbase\pkgver
-    chain "$fmt" "$@"; rings=$?
-    depends=(tsv/*) json=(json/*)
+                say join("\t", @pair);
+            } @{$reqby};
+        }
+    }
+}
 
-    # check iteration number
-    case $rings in
-        0) printf >&2 '%s: no packages found\n' "$argv0"
-           exit 1 ;;
-        1) true # no dependencies
-           ;;
-        "$max_request")
-            printf >&2 '%s: total requests: %d (out of range)\n' "$argv0" $(( max_request + 1 ))
-            exit 34 ;;
-    esac
+unless(caller) {
+    use Getopt::Long;
+    my $opt_depends      = 1;
+    my $opt_makedepends  = 1;
+    my $opt_checkdepends = 1;
+    my $opt_optdepends   = 0;
+    my $opt_mode         = "pairs";
+    my $opt_pkgname      = 0;
+    my $opt_show_all     = 0;  # implies $opt_pkgname = 1
+    my $opt_reverse      = 0;
+    my $opt_provides     = 1;
 
-    # preserve tsort exit status
-    set -o pipefail
+    GetOptions(
+        'no-depends'      => sub { $opt_depends = 0 },
+        'no-makedepends'  => sub { $opt_makedepends = 0 },
+        'no-checkdepends' => sub { $opt_checkdepends = 0 },
+        'optdepends'      => \$opt_optdepends,
+        'no-provides'     => sub { $opt_provides = 0 },
+        'n|pkgname'       => \$opt_pkgname,
+        'b|pkgbase'       => sub { $opt_pkgname = 0 },
+        'G|graph'         => sub { },  # noop
+        't|table'         => sub { $opt_mode = "table" },
+        'J|json'          => sub { $opt_mode = "json" },
+        'r|reverse'       => \$opt_reverse,
+        'a|all'           => \$opt_show_all
+    ) or exit(1);
 
-    case $mode in
-        # pkgname (AUR, total order)
-        pkgname)
-            grep -Fxf <(cut -f1 "${depends[@]}") <(cut -f1,2 "${depends[@]}" | tsort | tac)
-            wait "$!" ;; # status of last process substitution
-        # pkgname (all, total order)
-        pkgname_all)
-            cut -f1,2 "${depends[@]}" | tsort | tac
-            ;;
-        # pkgbase (AUR, total order)
-        pkgbase)
-            cat "${depends[@]}" | pkgbase_graph <(cat "${depends[@]}") - | tsort | tac
-            ;;
-        # pkgbase (AUR, graph)
-        pkgbase_graph)
-            cat "${depends[@]}" | pkgbase_graph <(cat "${depends[@]}") - | sort -k1b,1 -k1 -u
-            ;;
-        # all information
-        json)
-            aur format "${json[@]}" --union 'Name' --json
-            ;;
-        json_raw)
-            cat "${json[@]}"
-            ;;
-        table)
-            cat "${depends[@]}"
-            ;;
-        *)
-            printf >&2 '%s: invalid argument' "$argv0"
-            exit 22 ;;
-    esac
-else
-    exit
-fi
+    my @types;
+    push(@types, 'Depends')      if $opt_depends;
+    push(@types, 'MakeDepends')  if $opt_makedepends;
+    push(@types, 'CheckDepends') if $opt_checkdepends;
+    push(@types, 'OptDepends')   if $opt_optdepends;
 
-# vim: set et sw=4 sts=4 ft=sh:
+    # Resolve dependency tree
+    my $results = chain_mod(chain(\@ARGV, \@types, 30, \&query), $opt_provides, $opt_show_all);
+
+    if ($opt_mode eq 'pairs') {
+        pairs($results, ($opt_pkgname or $opt_show_all) ? 'Name' : 'PackageBase', $opt_reverse);
+    }
+    elsif ($opt_mode eq 'table' and $opt_reverse) {
+        table($results);
+    }
+    elsif ($opt_mode eq 'table') {
+        table_v10_compat($results, \@types);
+    }
+    elsif ($opt_mode eq 'json') {
+        $aur_json->canonical();
+        say $aur_json->encode($results);
+    }
+    else {
+        say STDERR "$argv0: invalid mode selected";
+        exit(1);
+    }
+}
