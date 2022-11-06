@@ -23,7 +23,7 @@ my %aur_formats = (
     'C' => ['array',    'Conflicts'     ],
     'D' => ['array',    'Depends'       ],
     'e' => ['array',    'License'       ],
-    'F' => ['array',    'Files'         ],
+    'F' => ['array',    'Files'         ],  # aur-repo-parse
     'g' => ['array',    'Groups'        ],
     'K' => ['array',    'Keywords'      ],
     'M' => ['array',    'MakeDepends'   ],
@@ -31,17 +31,18 @@ my %aur_formats = (
     'P' => ['array',    'Provides'      ],
     'b' => ['string',   'PackageBase'   ],
     'd' => ['string',   'Description'   ],
-    'f' => ['string',   'FileName'      ],
+    'f' => ['string',   'FileName'      ],  # aur-repo-parse
     'm' => ['string',   'Maintainer'    ],
     'n' => ['string',   'Name'          ],
-    'r' => ['string',   'DBPath'        ],
+    'r' => ['string',   'DBPath'        ],  # aur-repo-parse
     'U' => ['string',   'URL'           ],
     'v' => ['string',   'Version'       ],
+    's' => ['string',   'Submitter'     ],  # aur-pkglist
     'L' => ['epoch',    'LastModified'  ],
     'o' => ['epoch',    'OutOfDate'     ],
     'S' => ['epoch',    'FirstSubmitted'],
     'p' => ['numeric',  'Popularity'    ],
-    'w' => ['numeric',  'NumVotes'      ]
+    'w' => ['numeric',  'NumVotes'      ],
 );
 
 # Known AUR types for use with --format, --gron
@@ -170,8 +171,7 @@ sub info_gron {
 }
 
 sub parse_json {
-    my $row = $_[0];
-    my $obj = $aur_json->incr_parse($row)
+    my $obj = $aur_json->incr_parse($_[0])
         or die $argv0 . ": expected JSON object or array at beginning of string";
     $aur_json->incr_reset();
 
