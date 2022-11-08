@@ -6,11 +6,9 @@ aur\-format \- format AurJson
 .SY "aur format"
 .OP \-f format
 .OP \-d delim
-.OP \-rv
+.OP \-v
 .RI [ file ... ]
 .SY "aur format"
-.OP \-\-counts
-.OP \-\-json
 .OP \-\-gron
 .RI [ file ... ]
 .YS
@@ -26,7 +24,6 @@ Suitable inputs include
 .BR aur\-pkglist (1)
 and
 .BR aur\-repo\-parse (1).
-Optionally, set operations and sorting can be done on the input.
 .
 .SH OPTIONS
 .TP
@@ -115,44 +112,9 @@ NumVotes
 The delimiter for expanding arrays. Defaults to a single space.
 .
 .TP
-.BR \-c ", " \-\-counts
-Return the number of results (packages) for given inputs and their combinations
-.RB ( \-\-union ,
-.BR \-\-section ).
-.
-.TP
-.BR \-J ", " \-\-json
-Return combined results, but do not format them
-.RB ( \-\-union ,
-.BR \-\-section ).
-.
-.TP
-.BI \-\-sort= KEY "\fR,\fP \-\-union=" KEY "\fR,\fP \-\-isect=" KEY
-For a set of results, take the value of KEY for each package and sort,
-take the set union, or take the set intersection respectively. For a
-list of accepted keys, see
-.BR \-\-format .
-.
-.TP
 .BR \-\-gron
 Format output similar to
 .BR gron (1).
-The
-.BR \-\-sort ,
-.BR \-\-union
-and
-.BR \-\-isect
-options are not applied. To combine these options with
-.BR \-\-gron ,
-use a pipeline. For example:
-.IP
-.EX
-aur query -t search term1 term2 | aur format \-\-union <KEY> --json | aur format \-\-gron
-.XE
-.
-.TP
-.BR \-r ", " \-\-reverse
-Output results in reverse order.
 .
 .TP
 .BR \-v ", " \-\-verbose
@@ -219,17 +181,6 @@ In case only a limited set of targets is needed,
 .B aur pkglist \-\-info
 can be replaced with
 .BR "aur pkglist <pattern> | aur query \-t info" .
-.
-.SH NOTES
-For successful JSON serialization,
-.B aur\-format assumes
-every line is a complete JSON object.  All objects are then loaded into
-memory for sorting and set union or set intersection. A limitation of
-.B aur\-format
-is that even when these operations are disabled, all objects are loaded
-into memory,
-.B \-\-gron
-excepted.
 .
 .SH SEE ALSO
 .BR aur\-search (1),
