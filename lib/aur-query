@@ -7,7 +7,7 @@ my $argv0 = 'query';
 my @curl_args = ('-A', 'aurutils', '-fgLsSq');
 
 # environment variables
-my $aur_location = $ENV{AUR_LOCATION} // 'https://aur.archlinux.org';
+my $aur_location = $ENV{AUR_LOCATION}  // 'https://aur.archlinux.org';
 my $aur_rpc      = $ENV{AUR_QUERY_RPC} // $aur_location . "/rpc";
 my $aur_rpc_ver  = $ENV{AUR_QUERY_RPC_VERSION} // 5;
 my $aur_splitno  = $ENV{AUR_QUERY_RPC_SPLITNO} // 5000;
@@ -30,6 +30,7 @@ GetOptions('t|type=s'  => \$opt_type,
            'n|dry-run' => \$opt_dry_run)
     or exit(1);
 
+# search requests take a single argument only
 if ($opt_type eq "search" or $opt_type eq "suggest") {
     $aur_splitno = 1;
 }
@@ -59,9 +60,7 @@ for my $target (@ARGV) {
         push @forms, "";
 
         # Set fields and values
-        $forms[$#forms] .= '&v='    . $aur_rpc_ver;
-        $forms[$#forms] .= '&type=' . $opt_type;
-        $forms[$#forms] .= '&by='   . $opt_by if defined($opt_by);
+        $forms[$#forms] .= '&by=' . $opt_by if defined($opt_by);
     }
     $forms[$#forms] .= '&arg[]=' . urlencode($target);
     $NR++;
@@ -69,7 +68,7 @@ for my $target (@ARGV) {
 
 # Output as JSON lines
 for my $form (@forms) {
-    my @cmd = ('curl', @curl_args, $aur_rpc, '--data-raw', $form);
+    my @cmd = ('curl', @curl_args, "$aur_rpc/v$aur_rpc_ver/$opt_type", '--data-raw', $form);
 
     if ($opt_dry_run) {
         say join(" ", map(qq/'$_'/, @cmd));
