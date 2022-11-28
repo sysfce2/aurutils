@@ -279,6 +279,14 @@ else
 fi
 db_root=$(realpath -- "$db_root")
 
+# Check that a valid database extension was retrieved (#700, #1038)
+if [[ -z $AUR_DBEXT ]] && [[ $db_path =~ \.db$ ]]; then
+    error '%s: %s does not have a valid database archive extension' "$argv0" "$db_path"
+    # TODO: this usually happens on file systems not supporting symbolic links
+    # (SMB/CIFS). Add a diagnostic to point towards AUR_DBEXT in this case
+    exit 2
+fi
+
 # File permission checks
 if [[ ! -f $db_path ]]; then
     error '%s: %s: not a regular file' "$argv0" "$db_path"
