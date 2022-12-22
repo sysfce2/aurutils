@@ -55,12 +55,6 @@ Type of request. Can be one of
 or
 .BR suggest .
 .
-.TP
-.BR \-n ", " \-\-dry\-run
-Show
-.BR curl (1)
-command-lines instead of executing them.
-.
 .SH EXIT STATUS
 .B aur\-query
 returns 0 if no errors occurred, 1 if an invalid option was specified,
@@ -93,6 +87,12 @@ request.
 .B AUR_QUERY_RPC_VERSION
 The version for the RPC endpoint. Defaults to
 .IR 5 .
+.
+.TP
+.B AUR_DEBUG
+Display
+.BR curl (1)
+command-lines prior to running them.
 .
 .SH NOTES
 The default set of options for

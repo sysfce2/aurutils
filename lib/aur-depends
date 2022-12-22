@@ -3,64 +3,12 @@ use strict;
 use warnings;
 use v5.20;
 
+use AUR::Json qw(parse_json_aur write_json);
+use AUR::Query qw(query_multi);
 my $argv0 = 'depends';
-my $aur_json;
-
-# Fallback to slower perl-based JSON parsing
-if (eval { require JSON::XS; 1 }) {
-    $aur_json = JSON::XS->new;
-} else {
-    require JSON::PP;
-    $aur_json = JSON::PP->new;
-}
-
-sub parse_json {
-    my $row = shift;
-
-    my $obj = $aur_json->incr_parse($row)
-        or die $argv0 . ": expected JSON object or array at beginning of string";
-    $aur_json->incr_reset();
-
-    return $obj;
-}
-
-# Remove outer layer of AurJson responses
-sub get_results {
-    my $obj = shift;
-
-    if ($obj->{'type'} eq 'error') {
-        say STDERR "$argv0: $obj->{'error'}";
-        exit(4);
-    }
-    return $obj->{'results'};
-}
-
-# Retrieve AurJson responses in every level of the dependency DAG
-sub query {
-    return if scalar @_ == 0;
-    my @results;
-
-    my @command = ('aur', 'query', '--type', 'info', @_);
-    my $child_pid = open(my $fh, "-|", @command) or die $!;
-
-    if ($child_pid) { # parent process
-        while (my $row = <$fh>) {
-            chomp $row;
-
-            # single JSON structure per request (max. 5000 packages per request)
-            push(@results, @{get_results(parse_json($row))});
-        }
-        die if $!;
-
-        waitpid($child_pid, 0);
-    }
-    exit(2) if $?;
-
-    return @results;
-}
 
 sub chain {
-    my ($targets, $types, $max_req, $handler) = @_;
+    my ($targets, $types, $max_req) = @_;
     my @depends = @{$targets};
     my (%results, %reqby, %shlibs);
 
@@ -75,9 +23,13 @@ sub chain {
             say STDERR "$argv0: total requests: $a (out of range)";
             exit(34);
         }
-        my @level = $handler->(@depends);
+        my @level = query_multi(pkgs => \@depends, type => 'info', callback => \&parse_json_aur);
 
-        if (not scalar(@level)) {
+        if (not scalar(@level) and $a == 1) {
+            say STDERR "$argv0: no packages found";
+            exit(1);
+        }
+        elsif (not scalar(@level)) {
             last;  # no results
         }
         @depends = ();
@@ -110,9 +62,7 @@ sub chain {
                     push(@{$reqby{$dep}{$deptype}}, $node->{'Name'});
 
                     # avoid querying duplicate packages (#4)
-                    if (defined $results{$dep}) {
-                        next;
-                    }
+                    next if (defined $results{$dep});
                     push(@depends, $dep);
 
                     # mark as incomplete (retrieved in next step or repo package)
@@ -254,6 +204,7 @@ unless(caller) {
         'a|all'           => \$opt_show_all
     ) or exit(1);
 
+    # TODO: handle '-' as stdin argument
     my @types;
     push(@types, 'Depends')      if $opt_depends;
     push(@types, 'MakeDepends')  if $opt_makedepends;
@@ -261,7 +212,7 @@ unless(caller) {
     push(@types, 'OptDepends')   if $opt_optdepends;
 
     # Resolve dependency tree
-    my $results = chain_mod(chain(\@ARGV, \@types, 30, \&query), $opt_provides, $opt_show_all);
+    my $results = chain_mod(chain(\@ARGV, \@types, 30), $opt_provides, $opt_show_all);
 
     if ($opt_mode eq 'pairs') {
         pairs($results, ($opt_pkgname or $opt_show_all) ? 'Name' : 'PackageBase', $opt_reverse);
@@ -273,8 +224,7 @@ unless(caller) {
         table_v10_compat($results, \@types);
     }
     elsif ($opt_mode eq 'json') {
-        $aur_json->canonical();
-        say $aur_json->encode($results);
+        write_json($results);
     }
     else {
         say STDERR "$argv0: invalid mode selected";

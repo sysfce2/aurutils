@@ -1,4 +1,4 @@
-.TH AUR-DEPENDS 1 2022-07-03 AURUTILS
+.TH AUR-DEPENDS 1 2023-01-13 AURUTILS
 .SH NAME
 aur\-depends \- retrieve dependencies using aurweb
 .
@@ -12,38 +12,28 @@ aur\-depends \- retrieve dependencies using aurweb
 .B aur\-depends
 solves dependencies for packages provided on the command line using
 .BR aur\-query (1).
-The transitive closure of dependencies within AUR is computed.
-.
-.SH OPTIONS
-.TP
-.BR \-b ", " \-\-pkgbase
-Print dependency information (AUR-only) to stdout as
-.BR pkgbase ,
-in total order.
-.
-.TP
-.BR \-n ", " \-\-pkgname
-Print dependency information (AUR-only) to stdout as
-.BR pkgname ,
-in total order.
-.
-.TP
-.BR \-a ", " \-\-pkgname\-all
-Print dependency information to stdout as
-.BR pkgname ,
-in total order. Direct
-.BR pacman (8)
-dependencies of one or more AUR dependencies
-are included.
-.
-.TP
-.BR \-G ", " \-\-graph
-Print dependency information to stdout as edges
+The transitive closure of dependencies within AUR is computed. Dependency
+information is printed to standard output as edges
 .BR \%pkgbase\etdepends ,
 where
 .I depends
 is resolved to
+.BR pkgbase
+by default.
+.
+.SH OPTIONS
+.TP
+.BR \-n ", " \-\-pkgname
+Print dependency information to stdout as
+.BR pkgname
+instead of
 .BR pkgbase .
+.
+.TP
+.BR \-a ", " \-\-all
+Include direct
+.BR pacman (8)
+dependencies of dependencies in the output.
 .
 .TP
 .BR \-t ", " \-\-table
@@ -62,15 +52,11 @@ and
 .BR OptDepends .
 .
 .TP
-.BR \-J ", " \-\-json
-Print dependency information as JSON. The union of all results is taken by
-.BR pkgname .
+.BR \-r ", " \-\-reverse
 .
 .TP
-.BR \-\-raw
-Print dependency information as JSON Lines (JSONL), where each line contains an
-.BR aur\-query (1)
-response.
+.BR \-J ", " \-\-json
+Print dependency information as JSON.
 .
 .SS Dependency options
 When resolving dependencies,
@@ -92,6 +78,9 @@ and
 .B \-\-no\-checkdepends
 options. In particular, these options may be used to bypass cycles
 between dependencies of differing types.
+.
+.TP
+.BR \-\-no\-provides
 .
 .SH NOTES
 Version information is ignored for dependencies. See

@@ -17,7 +17,10 @@ parse_loop() {
 }
 
 ret=0
-for aurcmd in "${BASH_SOURCE%/*}"/../lib/!(aur-graph|aur-sync--ninja|aur-format|aur-repo-parse|aur-query|aur-fetch--mirror|aur-build--sync|aur-search--helper); do
+have_optdump=(aur-build aur-chroot aur-fetch aur-pkglist aur-repo aur-repo-filter aur-srcver aur-sync aur-vercmp aur-view)
+for cmd in "${have_optdump[@]}"; do
+      aurcmd=${BASH_SOURCE%/*}/../lib/$cmd
+
       diff --color -U0 --label "$aurcmd Options" --label "$aurcmd Loop" \
         <(bash --pretty-print -O extglob "$aurcmd" | parse_loop | sort) \
         <(AUR_DEBUG=1 command "$aurcmd" --dump-options 2>/dev/null | sort)

@@ -217,7 +217,6 @@ _aur-query() {
         '(-b --by)'{-b,--by=}'[argument for package search (--type=search)]:by:(name name-desc maintainer depends makedepends optdepends checkdepends)'
         '(-r --raw)'{-r,--raw}'[do not process results (implied by --type=info)]'
         '(-t --type)'{-t,--type=}'[type of request]:type:(search info)'
-        '(-n --dry-run)'{-n,--dry-run}'[show curl command-lines instead of running them]'
         '*:pkgname: _aur_packages'
     )
     _arguments -s $args

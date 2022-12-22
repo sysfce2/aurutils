@@ -44,11 +44,10 @@
   + perl rewrite
   + remove support for parallel (`AUR_QUERY_PARALLEL`) and `GET` requests
   + set operations (union, intersection) are moved to `aur-search`
-    - remove `--any`
-  + print curl command-lines with `--dry-run`
-    - remove `--dump-curl-config`
-  + `--raw` output is now the default
-    - remove `--exit-if-empty`, `--raw`
+    - remove `--any`, `--exit-if-empty`
+    - `--raw` is noop
+  + remove `--dump-curl-config`
+    - print command-lines with `AUR_DEBUG=1`
 
 * `aur-search`
   + perl rewrite

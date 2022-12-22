@@ -10,60 +10,31 @@ use Term::ANSIColor qw(:constants);
 use constant OSC8 => "\033]8";
 use constant ST   => "\033\\";
 
+use AUR::Json qw(parse_json_aur write_json);
+use AUR::Query qw(query query_multi);
 my $argv0 = 'search';
-my $aur_json;
 my $aur_location = $ENV{AUR_LOCATION} // 'https://aur.archlinux.org';
 
 # sprintf, strftime()
 setlocale(LC_NUMERIC, 'C');
 setlocale(LC_TIME,    'C');
 
-# Fallback to slower perl-based JSON parsing
-if (eval { require JSON::XS; 1 }) {
-    $aur_json = JSON::XS->new;
-} else {
-    require JSON::PP;
-    $aur_json = JSON::PP->new;
-}
-
-sub parse_json {
-    my $row = shift;
-
-    my $obj = $aur_json->incr_parse($row)
-        or die $argv0 . ": expected JSON object or array at beginning of string";
-    $aur_json->incr_reset();
-
-    return $obj;
-}
-
-sub get_results {
-    my $obj = shift;
-
-    if (ref($obj) eq 'ARRAY') {
-        return $obj;
-    }
-    elsif ($obj->{'type'} eq 'error') {
-        say STDERR "$argv0: $obj->{'error'}";
-        exit(4);
-    }
-    return $obj->{'results'};
-}
-
 sub format_long {
     my $pkg = shift;
+    # Custom fixed order for info output
+    my @keys = (
+	    'Name'       , 'PackageBase' , 'Version'        , 'Description' , 'URL',
+	    'Keywords'   , 'License'     , 'Maintainer'     , 'Submitter'   , 'NumVotes',
+	    'Popularity' , 'OutOfDate'   , 'FirstSubmitted' , 'LastModified', 'Depends',
+	    'MakeDepends', 'CheckDepends', 'OptDepends'
+	);
     my $url = join("/", $aur_location, $pkg->{'Name'});
     say BOLD, sprintf("%-15s", "AUR URL:"), RESET, ' ', $url;
 
-    # Custom fixed order for info output
-    my @keys = (
-        'Name'       , 'PackageBase' , 'Version'        , 'Description' , 'URL',
-        'Keywords'   , 'License'     , 'Maintainer'     , 'Submitter'   , 'NumVotes',
-        'Popularity' , 'OutOfDate'   , 'FirstSubmitted' , 'LastModified', 'Depends',
-        'MakeDepends', 'CheckDepends', 'OptDepends'
-    );
+    # XXX: overlap with info_expand_field() from aur-format
     for my $k (@keys) {
-        # XXX: duplicates info_expand_field() from aur-format
         my $f;
+
         if (ref $pkg->{$k} eq 'ARRAY') {
             $f = join(' ', @{$pkg->{$k} // ['-']});
         } elsif ($k eq 'LastModified' or $k eq 'OutOfDate' or $k eq 'FirstSubmitted') {
@@ -143,7 +114,6 @@ unless(caller) {
     my $opt_color     = 'auto';
     my $opt_reverse   = 0;
     my $opt_format    = '';
-    my $opt_stdin     = 0;
 
     # XXX: add option to disable set operations, --time-format
     GetOptions (
@@ -162,8 +132,7 @@ unless(caller) {
         'J|json'       => sub { $opt_format    = 'json' },
         'color=s'      => \$opt_color,
         'r|reverse'    => \$opt_reverse,
-        'k|key=s'      => \$opt_sort_key,
-        'json-stdin'   => \$opt_stdin  # disambiguate `-`, `/dev/stdin`
+        'k|key=s'      => \$opt_sort_key
     ) or exit(1);
 
     # Colored messages on both stdout and stderr may be desired if stdout is not
@@ -186,23 +155,18 @@ unless(caller) {
     }
 
     # Retrieve JSON responses
-    my @command = $opt_stdin ? ('cat') : ('aur', 'query', '-t', $opt_type, @ARGV);
     my @results;
-    my $child_pid = open(my $fh, "-|", @command) or die $!;
 
-    # Build list of results starting at the first response.
-    if ($child_pid) {
-        my $first = <$fh>;
-        chomp $first if defined $first;
+    # TODO: handle '-' as stdin argument
+    if ($opt_type eq 'search') {
+        # Apply union/intersection starting at the first argument
+        my %query_args = (type => 'search', by => $opt_search_by, callback => \&parse_json_aur);
+        my $first = shift;
+        @results = query(pkgs => [$first], %query_args);
 
-        if (length($first)) {
-            @results = @{get_results(parse_json($first))};
-        }
         my %seen;
-
-        while (my $row = <$fh>) {
-            chomp $row;
-            my @next = @{get_results(parse_json($row))};
+        for my $arg (@ARGV) {
+            my @next = query(pkgs => [$arg], %query_args);
 
             if ($opt_multiple eq 'union') {
                 results_union(\@next, \@results, \%seen, 'Name');
@@ -214,18 +178,17 @@ unless(caller) {
                 push(@results, @next);
             }
         }
-        die if $!;
-
-        waitpid($child_pid, 0);
     }
-    exit(2) if $?;
+    elsif ($opt_type eq 'info') {
+        # Union/intersection do not apply to info-style requests
+        @results = query_multi(pkgs => \@ARGV, type => 'info', callback => \&parse_json_aur);
+    }
     exit(1) if scalar @results == 0;
 
     # Apply sorting criteria
     if (length $opt_sort_key or $opt_reverse) {
         results_rsort(\@results, $opt_sort_key, $opt_reverse);
     }
-
     # Format results to standard output
     if ($opt_format eq 'short') {
         map { format_short($_) } @results;
@@ -235,12 +198,11 @@ unless(caller) {
         map { format_long($_); say '' if ++$i < scalar @results } @results;
     }
     elsif ($opt_format eq 'json') {
-        $aur_json->canonical();
-        say $aur_json->encode(\@results);
+        write_json(\@results);
     }
     else {
         die 'invalid format';
     }
 }
 
-# vim: set et sw=4 sts=4 ft=awk:
+# vim: set et sw=4 sts=4 ft=perl:
