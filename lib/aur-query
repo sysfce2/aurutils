@@ -32,11 +32,11 @@ if ($index > 0) {
     push(@ARGV, <STDIN>);      # add arguments from stdin
     chomp(@ARGV);              # remove newlines
 }
-my %args = (type => $opt_type, by => $opt_by, pkgs => \@ARGV, callback => sub { say @_ });
+my %query_args = (type => $opt_type, by => $opt_by, callback => sub { say @_ });
 
 # search requests take a single argument only
-if ($opt_type eq "search" or $opt_type eq "suggest") {
-    query(%args);
+if ($opt_type eq "search" or $opt_type eq "suggest" or $opt_type eq "suggest-pkgbase") {
+    map { query(term => $_, %query_args) } @ARGV;
 } else {
-    query_multi(%args);
+    query_multi(terms => \@ARGV, %query_args);
 }

@@ -160,13 +160,13 @@ unless(caller) {
     # TODO: handle '-' as stdin argument
     if ($opt_type eq 'search') {
         # Apply union/intersection starting at the first argument
-        my %query_args = (type => 'search', by => $opt_search_by, callback => \&parse_json_aur);
         my $first = shift;
-        @results = query(pkgs => [$first], %query_args);
+        my %query_args = (type => 'search', by => $opt_search_by, callback => \&parse_json_aur);
+        @results = query(term => $first, %query_args);
 
         my %seen;
         for my $arg (@ARGV) {
-            my @next = query(pkgs => [$arg], %query_args);
+            my @next = query(term => $arg, %query_args);
 
             if ($opt_multiple eq 'union') {
                 results_union(\@next, \@results, \%seen, 'Name');
@@ -181,7 +181,7 @@ unless(caller) {
     }
     elsif ($opt_type eq 'info') {
         # Union/intersection do not apply to info-style requests
-        @results = query_multi(pkgs => \@ARGV, type => 'info', callback => \&parse_json_aur);
+        @results = query_multi(terms => \@ARGV, type => 'info', callback => \&parse_json_aur);
     }
     exit(1) if scalar @results == 0;
 

@@ -23,7 +23,7 @@ sub chain {
             say STDERR "$argv0: total requests: $a (out of range)";
             exit(34);
         }
-        my @level = query_multi(pkgs => \@depends, type => 'info', callback => \&parse_json_aur);
+        my @level = query_multi(terms => \@depends, type => 'info', callback => \&parse_json_aur);
 
         if (not scalar(@level) and $a == 1) {
             say STDERR "$argv0: no packages found";

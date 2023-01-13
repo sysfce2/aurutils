@@ -16,16 +16,16 @@ AUR::Query - Retrieve data from AurJSON
 
   use AUR::Query;
 
-  # type=search, performs one query for each argument
-  my @search = query(pkgs => ['foo', 'bar'], type => 'search', by => 'name-desc');
+  # type=search, one GET request per argument
+  my $search = query(term => 'foo', type => 'search', by => 'name-desc');
 
-  # type=info, performs one query for multiple arguments
-  my @info = query_multi(pkgs => ['bar', 'baz'], type => 'info');
+  # type=info, one POST request for multiple arguments
+  my @info = query_multi(terms => ['bar', 'baz'], type => 'info');
 
 =head1 DESCRIPTION
 
 This module offers perl aur(1) scripts a direct way to retrieve data from AurJson
-using POST requests. Arguments are url-encoded beforehand.
+using GET or POST requests. Arguments are url-encoded beforehand.
 
 =head1 AUTHORS
 
@@ -46,28 +46,8 @@ sub urlencode {
     return $s;
 }
 
-sub data_post {
-    my ($args, $splitno, $by) = @_;
-    my @forms;
-    my $NR = 0;
-
-    for my $target (@{$args}) {
-        if ($NR % $splitno == 0) {
-            # Create new form element
-            push @forms, "";
-
-            # Set by field (search)
-            $forms[$#forms] .= '&by=' . $by if defined($by);
-        }
-        $forms[$#forms] .= '&arg[]=' . urlencode($target);
-        $NR++;
-    }
-    return @forms;
-}
-
-sub query_post {
-    my ($data, $path) = @_;
-    my @cmd = ('curl', '-A', 'aurutils', '-fgLsSq', $path, '--data-raw', $data);
+sub query_curl {
+    my @cmd = ('curl', '-A', 'aurutils', '-fgLsSq', @_);
     
     if (defined $ENV{'AUR_DEBUG'}) {
         say STDERR join(" ", map(qq/'$_'/, @cmd));
@@ -88,24 +68,35 @@ sub query_post {
     return $str;
 }
 
-# Use named parameters for default value of splitno/aur_splitno
+sub query {
+    my %args = (type => undef, term => undef, by => undef, callback => undef, @_);
+    my $path = "$aur_rpc/v$aur_rpc_ver/$args{type}/$args{term}";
+
+    if (defined $args{by}) {
+        $path = join('?by=', $path, $args{by});
+    }
+    defined $args{callback} ? return $args{callback}->(query_curl($path))
+                            : return query_curl($path);
+}
+
+# XXX: this can also be used to split GET requests
 sub query_multi {
-    my %args = (type => undef, by => undef, pkgs => [], splitno => $aur_splitno, callback => undef, @_);
+    my %args = (type => undef, by => undef, terms => [], splitno => $aur_splitno, callback => undef, @_);
     my $path = "$aur_rpc/v$aur_rpc_ver/$args{type}";
     my @results;
 
-    # TODO/Idea: let callback handle both @results and $response (aur-search union/intersection)
-    for my $data (data_post($args{pkgs}, $args{splitno}, $args{by})) {
-        my $response = query_post($data, $path);
+    # n-ary queue processing (aurweb term limit)
+    while (my @next = splice(@{$args{terms}}, 0, $args{splitno})) {
+        my $data;
+        $data .= '&by=' . $args{by} if defined $args{by};
+        map { $data .= '&arg[]=' . $_ } @next;
 
+        # TODO/Idea: let callback handle both @results and $response (aur-search union/intersection)
+        my $response = query_curl($path, '--data-raw', $data);
         defined $args{callback} ? push(@results, $args{callback}->($response)) 
                                 : push(@results, $response);
     }
     return @results;
-}
-
-sub query {
-    return query_multi(splitno => 1, @_);
 }
 
 # vim: set et sw=4 sts=4 ft=perl:
