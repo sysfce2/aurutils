@@ -127,7 +127,7 @@ fi
 
 # Save stdin/depends in array (2 passes)
 if (( recurse )); then
-    mapfile -t packages < <(aur depends --pkgbase "$@")
+    mapfile -t packages < <(aur depends --reverse "$@" | tsort)
     wait "$!" || exit
 
 elif (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then

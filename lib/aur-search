@@ -1,152 +1,208 @@
-#!/bin/bash
-# aur-search - search for AUR packages
-[[ -v AUR_DEBUG ]] && set -o xtrace
-argv0=search
-AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use v5.20;
 
-# default options
-multiple=section search_by=name-desc sort_key=Name type=search mode=query color=auto
+use POSIX qw(strftime setlocale LC_NUMERIC LC_TIME LC_ALL);
+use locale qw(:numeric :time);
 
-usage() {
-    printf >&2 'usage: %s [-adimnqrsv] [-k key] pkgname...\n' "$argv0"
-    exit 1
+use Term::ANSIColor qw(:constants);
+use constant OSC8 => "\033]8";
+use constant ST   => "\033\\";
+
+use AUR::Json qw(parse_json_aur write_json);
+use AUR::Query qw(query query_multi);
+my $argv0 = 'search';
+my $aur_location = $ENV{AUR_LOCATION} // 'https://aur.archlinux.org';
+
+# sprintf, strftime()
+setlocale(LC_NUMERIC, 'C');
+setlocale(LC_TIME,    'C');
+
+sub format_long {
+    my $pkg = shift;
+    # Custom fixed order for info output
+    my @keys = (
+	    'Name'       , 'PackageBase' , 'Version'        , 'Description' , 'URL',
+	    'Keywords'   , 'License'     , 'Maintainer'     , 'Submitter'   , 'NumVotes',
+	    'Popularity' , 'OutOfDate'   , 'FirstSubmitted' , 'LastModified', 'Depends',
+	    'MakeDepends', 'CheckDepends', 'OptDepends'
+	);
+    my $url = join("/", $aur_location, $pkg->{'Name'});
+    say BOLD, sprintf("%-15s", "AUR URL:"), RESET, ' ', $url;
+
+    # XXX: overlap with info_expand_field() from aur-format
+    for my $k (@keys) {
+        my $f;
+
+        if (ref $pkg->{$k} eq 'ARRAY') {
+            $f = join(' ', @{$pkg->{$k} // ['-']});
+        } elsif ($k eq 'LastModified' or $k eq 'OutOfDate' or $k eq 'FirstSubmitted') {
+            $f = defined $pkg->{$k} ? gmtime $pkg->{$k} : '-';
+        } else {
+            $f = $pkg->{$k} // '-';
+        }
+        say BOLD, sprintf("%-15s", "$k:"), RESET, ' ', $f;
+    }
+} 
+
+sub format_short {
+    my $pkg   = shift;
+    my $name  = $pkg->{'Name'};
+    my $desc  = $pkg->{'Description'};
+    my $ver   = $pkg->{'Version'};
+    my $votes = $pkg->{'NumVotes'};
+
+    # Formatted fields
+    my $ood  = defined $pkg->{'OutOfDate' } 
+        ? strftime("(Out-of-date: %d %B %Y)", gmtime $pkg->{'OutOfDate'}) : "";
+    my $orph = defined $pkg->{'Maintainer'} 
+        ? "" : "(Orphaned) ";
+    my $pop  = sprintf("%.2f", $pkg->{'Popularity'});
+    my $pre  = sprintf("%s%saur/%s%s%s", BOLD, BLUE, RESET, BOLD, $name);
+
+    # OSC sequences
+    if (not exists $ENV{ANSI_COLORS_DISABLED}) {
+        $pre = sprintf("%s;;%s%s%s%s;;%s", OSC8, "$aur_location/packages/$name", ST, $pre, OSC8, ST);
+    }
+
+    say $pre, ' ', GREEN, $ver, RESET, ' (+', $votes, ' ', $pop, '%) ', 
+        $orph, BOLD, RED, $ood, RESET;
+    say '    ', $desc // '-';
 }
 
-source /usr/share/makepkg/util/parseopts.sh
+# Set union by hash value
+sub results_union {
+    my ($target, $results, $seen, $union_key) = @_;
 
-opt_short='f:k:adimnqrsv'
-opt_long=('any' 'info' 'search' 'desc' 'maintainer' 'name' 'depends' 'verbose'
-          'short' 'color:' 'makedepends' 'optdepends' 'checkdepends' 'key:'
-          'json' 'format:')
-opt_hidden=('dump-options' 'raw' 'format-stdin' 'table')
+    if (!keys %{$seen}) {
+        %{$seen} = map { $_->{$union_key} => 1 } @{$results};
+    }
+    push(@{$results}, grep { !$seen->{$_->{$union_key}}++ } @{$target});
+ }
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
-    usage
-fi
-set -- "${OPTRET[@]}"
+# Set intersection by hash value
+sub results_isect {
+    my ($target, $results, $isect_key) = @_;
+    my %seen = map { $_->{$isect_key} => 1 } @{$target};
 
-unset format format_str format_args query_args
-while true; do
-    case "$1" in
-        -a|--any)
-            multiple=union ;;
-        -i|--info)
-            type=info ;;
-        -s|--search)
-            type=search ;;
-        -d|--desc)
-            search_by=name-desc ;;
-        -m|--maintainer)
-            search_by=maintainer ;;
-        -n|--name)
-            search_by=name ;;
-        --depends)
-            search_by=depends ;;
-        --makedepends)
-            search_by=makedepends ;;
-        --optdepends)
-            search_by=optdepends ;;
-        --checkdepends)
-            search_by=checkdepends ;;
-        --color)
-            shift; color=$1 ;;
-        -q|--short)
-            format=short ;;
-        -v|--verbose)
-            format=long ;;
-        -f|--format)
-            shift; format_str=$1
-            format=custom ;;
-        --format-stdin)
-            mode=stdin ;;
-        -r|--raw|--json)
-            format=json ;;
-        -k|--key)
-            shift; sort_key=$1 ;;
-        # deprecated options
-        --table)
-            printf >&2 'deprecation notice: --table is replaced by aur-format\n'
-            format=table ;;
-        --dump-options)
-            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
-            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
-            exit ;;
-        --) shift; break ;;
-    esac
-    shift
-done
+    @{$results} = grep { $seen{$_->{$isect_key}} } @{$results};
+ }
 
-# Colored messages on both stdout and stderr may be desired if stdout is not
-# connected to a terminal, e.g. when piping to less -R. (#585) When printing to
-# a file, they should be disabled instead. Default to `--color=auto` but allow
-# specifying other modes.
-colorize=0
-if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
-    if [[ $color == 'auto' ]]; then
-        [[ -t 1 ]] && colorize=1
+# Sort a flattened array of hashes
+sub results_rsort {
+    my ($results, $sort_key, $reverse) = @_;
 
-    elif [[ $color == 'always' ]]; then
-        colorize=1
+    # Sort entries by value of specified key
+    if ($sort_key eq 'Popularity' or $sort_key eq 'NumVotes') {
+        @{$results} = sort { $a->{$sort_key} <=> $b->{$sort_key} } @{$results};
+    } elsif (length $sort_key) {
+        @{$results} = sort { $a->{$sort_key} cmp $b->{$sort_key} } @{$results};
+    }
+    if ($reverse) {
+        @{$results} = reverse @{$results};
+    }
+}
 
-    elif [[ $color != 'none' ]]; then
-        printf >&2 '%s: invalid --color mode\n' "$argv0"
-        exit 1
-    fi
-fi
+unless(caller) {
+    # option handling
+    use Getopt::Long;
+    my $opt_multiple  = 'section';
+    my $opt_type      = 'search';
+    my $opt_search_by = 'name-desc';
+    my $opt_sort_key  = '';
+    my $opt_color     = 'auto';
+    my $opt_reverse   = 0;
+    my $opt_format    = '';
 
-if ! (( $# )) && ! [[ $mode == "stdin" ]]; then
-    usage
-fi
+    # XXX: add option to disable set operations, --time-format
+    GetOptions (
+        'a|any'        => sub { $opt_multiple  = 'union' },
+        'i|info'       => sub { $opt_type      = 'info' },
+        's|search'     => sub { $opt_type      = 'search' },
+        'd|desc'       => sub { $opt_search_by = 'name-desc' },
+        'm|maintainer' => sub { $opt_search_by = 'maintainer' },
+        'n|name'       => sub { $opt_search_by = 'name' },
+        'depends'      => sub { $opt_search_by = 'depends' },
+        'makedepends'  => sub { $opt_search_by = 'makedepends' },
+        'optdepends'   => sub { $opt_search_by = 'optdepends' },
+        'checkdepends' => sub { $opt_search_by = 'checkdepends' },
+        'q|short'      => sub { $opt_format    = 'short' },
+        'v|verbose'    => sub { $opt_format    = 'long' },
+        'J|json'       => sub { $opt_format    = 'json' },
+        'color=s'      => \$opt_color,
+        'r|reverse'    => \$opt_reverse,
+        'k|key=s'      => \$opt_sort_key
+    ) or exit(1);
 
-# set format depending on query type (#319)
-case $type in
-      info) format=${format-long}  ;;
-    search) format=${format-short} ;;
-esac
+    # Colored messages on both stdout and stderr may be desired if stdout is not
+    # connected to a terminal, e.g. when piping to less -R. (#585) When printing
+    # to a file, they should be disabled instead. Default to `--color=auto` but
+    # allow specifying other modes.
+    my $colorize = 0;
+    if (not defined $ENV{AUR_DEBUG}) {
+        if (($opt_color eq 'auto' and -t STDOUT) or $opt_color eq 'always') {
+            $colorize = 1;
+        }
+    }
+    if ($colorize == 0) {
+        $ENV{ANSI_COLORS_DISABLED} = 1;
+    }
 
-# intersection of results (#313)
-# XXX: set intersection key from `search_by` value
-case $multiple in
-    section) format_args+=(--isect 'Name') ;;
-      union) format_args+=(--union 'Name') ;;
-esac
+    # Set format depending on query type (#319)
+    if (not length($opt_format)) {
+        $opt_format = $opt_type eq 'info' ? 'long' : 'short';
+    }
 
-# output filters
-case $format in
-    short)
-        format_args+=(-f '%n\t%v\t%d\t%m\t%w\t%p\t%o\n')
-        info() { aur search--helper -v COLORIZE="$colorize" -v URL="$AUR_LOCATION/packages" -v SEARCH=1; } ;;
-    long)
-        format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
-        info() { aur search--helper -v COLORIZE="$colorize" -v URL="$AUR_LOCATION/packages" -v INFO=1  ; } ;;
-    table) # deprecated
-        format_args+=(-f '%n\t%b\t%v\t%d\t%U\t%K\t%e\t%m\t%w\t%p\t%o\t%S\t%L\t%D\t%M\t%c\t%O\t%C\t%P\n')
-        info() { aur search--helper; } ;;
-    custom)
-        format_args+=(-f "$format_str")
-        info() { aur search--helper; } ;; # NOOP, exit 1 if no lines processed
-    json)
-        format_args+=(--json)
-        info() { aur search--helper; } ;;
-esac
+    # Retrieve JSON responses
+    my @results;
 
-case $mode in
-    query)
-        input() { aur query -t "$type" -b "$search_by" "$@"; } ;;
-    stdin)
-        input() { tee; } ;; # JSON from stdin, e.g. aur-pkglist
-esac
+    # TODO: handle '-' as stdin argument
+    if ($opt_type eq 'search') {
+        # Apply union/intersection starting at the first argument
+        my %query_args = (type => 'search', by => $opt_search_by, callback => \&parse_json_aur);
+        my $first = shift;
+        @results = query(pkgs => [$first], %query_args);
 
-# main pipeline
-input "$@" | aur format "${format_args[@]}" -k "$sort_key" -v --time-format="%s" | info
-pstate=("${PIPESTATUS[@]}")
+        my %seen;
+        for my $arg (@ARGV) {
+            my @next = query(pkgs => [$arg], %query_args);
 
-if (( pstate[0] )) || (( pstate[1] )); then
-    exit 2 # aur-query or aurweb response error
+            if ($opt_multiple eq 'union') {
+                results_union(\@next, \@results, \%seen, 'Name');
+            }
+            elsif ($opt_multiple eq 'section') {
+                results_isect(\@next, \@results, 'Name');
+            }
+            else {
+                push(@results, @next);
+            }
+        }
+    }
+    elsif ($opt_type eq 'info') {
+        # Union/intersection do not apply to info-style requests
+        @results = query_multi(pkgs => \@ARGV, type => 'info', callback => \&parse_json_aur);
+    }
+    exit(1) if scalar @results == 0;
 
-elif (( pstate[2] )); then
-    exit 1 # no results found
-fi
+    # Apply sorting criteria
+    if (length $opt_sort_key or $opt_reverse) {
+        results_rsort(\@results, $opt_sort_key, $opt_reverse);
+    }
+    # Format results to standard output
+    if ($opt_format eq 'short') {
+        map { format_short($_) } @results;
+    }
+    elsif ($opt_format eq 'long') {
+        my $i = 0;
+        map { format_long($_); say '' if ++$i < scalar @results } @results;
+    }
+    elsif ($opt_format eq 'json') {
+        write_json(\@results);
+    }
+    else {
+        die 'invalid format';
+    }
+}
 
-# vim: set et sw=4 sts=4 ft=sh:
+# vim: set et sw=4 sts=4 ft=perl:

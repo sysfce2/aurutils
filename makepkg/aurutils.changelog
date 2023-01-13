@@ -12,15 +12,18 @@
     - add `examples/sync-asroot`
     - add `--user` to `aur-build--pkglist`
     - add `AUR_GPG`, `AUR_REPO_ADD`, `AUR_MAKEPKG` environment variables
-  + updates for aur-build(1)
 
 * `aur-chroot`
   + remove `--packagelist` (deprecated in v8)
   + run `sudo --preserve-env` when `AUR_PACMAN_AUTH` is empty or `sudo`
 
 * `aur-depends`
-  + performance improvements
-  + add `--json`
+  + perl rewrite
+  + add `--json`, `--reverse`
+  + take provides on the command-line into account (#837)
+    - add `--no-provides`
+  + default output changed to `--graph --pkgbase`
+    - ordered output with `aur-depends --reverse | tsort`
 
 * `aur-fetch`
   + add `aur-fetch--mirror` helper for `aur.git` mirrors
@@ -38,19 +41,18 @@
   + add `--json`, `--jsonl`
 
 * `aur-query`
+  + perl rewrite
   + remove support for parallel (`AUR_QUERY_PARALLEL`) and `GET` requests
-  + set operations (union, intersection) are moved to `aur-format`
-    - remove `--any`
-  + print curl command-lines with `--dry-run`
-    - remove `--dump-curl-config`
-  + `--raw` output is now the default
-    - remove `--exit-if-empty`, `--raw`
+  + set operations (union, intersection) are moved to `aur-search`
+    - remove `--any`, `--exit-if-empty`
+    - `--raw` is noop
+  + remove `--dump-curl-config`
+    - print command-lines with `AUR_DEBUG=1`
 
 * `aur-search`
-  + performance improvements
-  + add `--format`, taking a `package-query`-like string
-  + add `--format-stdin`
-  + deprecate `--table`
+  + perl rewrite
+  + add `--reverse`
+    - `-r` is now an alias to `--reverse`
 
 * `aur-sync`
   + add diagnostic for missing packages with `--continue`

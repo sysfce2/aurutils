@@ -40,3 +40,4 @@ install: install-aur
 	@install -Dm644 examples/* -t '$(DESTDIR)$(SHRDIR)/doc/$(PROGNM)/examples'
 	@install -dm755 aurutils '$(DESTDIR)$(ETCDIR)/$(PROGNM)'
 	@$(MAKE) -C completions DESTDIR='$(DESTDIR)' install-bash install-zsh
+	@$(MAKE) -C perl DESTDIR='$(DESTDIR)' install-perl

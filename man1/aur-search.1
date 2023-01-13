@@ -107,8 +107,10 @@ Search for packages with keywords in
 .BR checkdepends .
 .
 .SH EXIT STATUS
-The exit status is 0 on valid results, 1 if no results were found, or
-2 if an AUR error occurred (such as "Too many results").
+The exit status is 0 on valid results, 1 if no results were found, 2 on an
+.BR aur\-query (1)
+error, or
+4 if an AUR error occurred (such as "Too many results").
 .
 .SH SEE ALSO
 .ad l

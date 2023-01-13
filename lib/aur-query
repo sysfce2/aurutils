@@ -3,88 +3,40 @@ use strict;
 use warnings;
 use v5.20;
 
+use AUR::Query qw(query query_multi);
 my $argv0 = 'query';
-my @curl_args = ('-A', 'aurutils', '-fgLsSq');
-
-# environment variables
-my $aur_location = $ENV{AUR_LOCATION} // 'https://aur.archlinux.org';
-my $aur_rpc      = $ENV{AUR_QUERY_RPC} // $aur_location . "/rpc";
-my $aur_rpc_ver  = $ENV{AUR_QUERY_RPC_VERSION} // 5;
-my $aur_splitno  = $ENV{AUR_QUERY_RPC_SPLITNO} // 5000;
-
-# https://code.activestate.com/recipes/577450-perl-url-encode-and-decode/#c6
-sub urlencode {
-    my $s = shift;
-    $s =~ s/([^A-Za-z0-9])/sprintf("%%%2.2X", ord($1))/ge;
-    return $s;
-}
 
 # option handling
 use Getopt::Long;
 my $opt_by;
-my $opt_dry_run;
 my $opt_type = "";
 
-GetOptions('t|type=s'  => \$opt_type,
-           'b|by=s'    => \$opt_by,
-           'n|dry-run' => \$opt_dry_run)
-    or exit(1);
+GetOptions('t|type=s' => \$opt_type,
+           'b|by=s'   => \$opt_by,
+           'r|raw'    => sub { } # noop
+) or exit(1);
 
-if ($opt_type eq "search" or $opt_type eq "suggest") {
-    $aur_splitno = 1;
-}
-
-# process package names from stdin or the command-line
+# process package names from the command-line
 if (not scalar(@ARGV)) {
     say STDERR "$argv0: at least one argument required";
     exit(1);
 }
-if ($ARGV[0] eq "-" or $ARGV[0] eq "/dev/stdin") {
-    while (my $arg = <STDIN>) {
-        chomp($arg);
-        push(@ARGV, $arg);
-    }
-    shift(@ARGV);
+if (not length($opt_type)) {
+    say STDERR "$argv0: type must be specified";
+    exit(1);
 }
+my $index = grep { $ARGV[$_] eq '-' or $ARGV[$_] eq '/dev/stdin' } (0 .. @ARGV-1);
 
-# generate POST data
-my @forms;
-my $NR = 0;
-
-# URI/URI::QueryParam is extremely slow for large inputs. Build the form data
-# by hand and use sprintf to encode the package names.
-for my $target (@ARGV) {
-    if ($NR % $aur_splitno == 0) {
-        # Create new form element
-        push @forms, "";
-
-        # Set fields and values
-        $forms[$#forms] .= '&v='    . $aur_rpc_ver;
-        $forms[$#forms] .= '&type=' . $opt_type;
-        $forms[$#forms] .= '&by='   . $opt_by if defined($opt_by);
-    }
-    $forms[$#forms] .= '&arg[]=' . urlencode($target);
-    $NR++;
+if ($index > 0) {
+    splice(@ARGV, $index, 1);  # remove '-'
+    push(@ARGV, <STDIN>);      # add arguments from stdin
+    chomp(@ARGV);              # remove newlines
 }
+my %args = (type => $opt_type, by => $opt_by, pkgs => \@ARGV, callback => sub { say @_ });
 
-# Output as JSON lines
-for my $form (@forms) {
-    my @cmd = ('curl', @curl_args, $aur_rpc, '--data-raw', $form);
-
-    if ($opt_dry_run) {
-        say join(" ", map(qq/'$_'/, @cmd));
-    } else {
-        my $child_pid = open(my $fh, "-|", @cmd) or die $!;
-
-        if ($child_pid) { # parent process
-            say <$fh>;
-            die "$argv0: response error (multi-line output)" if defined(<$fh>);
-
-            waitpid($child_pid, 0);
-        }
-        # Return a generic error code on `curl` failure, to avoid overlap with
-        # codes from other tools which use pipelines (`aur-repo`, `aur-vercmp`).
-        # 2 is the same code returned if `curl` is not found in `open` above.
-        exit(2) if $?;
-    }
+# search requests take a single argument only
+if ($opt_type eq "search" or $opt_type eq "suggest") {
+    query(%args);
+} else {
+    query_multi(%args);
 }
