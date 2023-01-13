@@ -333,7 +333,8 @@ if (( ! sign_pkg )); then
     fi
 
 elif [[ -v GPGKEY ]]; then
-    gpg --list-keys "$GPGKEY"
+    #shellcheck disable=SC2086
+    ${AUR_GPG:-gpg} --list-keys "$GPGKEY"
     gpg_args+=(-u "$GPGKEY")
 fi
 
