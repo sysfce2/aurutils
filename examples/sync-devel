@@ -16,6 +16,7 @@ filter_vcs() {
 }
 
 # Scratch space for intermediary results.
+mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
 trap 'rm -rf "$tmp"' EXIT
 
