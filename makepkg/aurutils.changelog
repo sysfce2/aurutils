@@ -61,7 +61,6 @@
 
 * `aur-view`
   + add `--exclude`, `--prefix`
-  + print diagnostic on invalid git revision (#894)
 
 * `aur-format`
   + new helper
