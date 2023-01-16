@@ -204,7 +204,16 @@ unless(caller) {
         'a|all'           => \$opt_show_all
     ) or exit(1);
 
-    # TODO: handle '-' as stdin argument
+    # Handle '-' to take packages from stdin
+    my $index = grep { $ARGV[$_] eq '-' or $ARGV[$_] eq '/dev/stdin' } (0 .. @ARGV-1);
+
+    if ($index > 0) {
+        splice(@ARGV, $index, 1);  # remove '-'
+        push(@ARGV, <STDIN>);      # add arguments from stdin
+        chomp(@ARGV);              # remove newlines
+    }
+
+    # Variable dependency types (#826)
     my @types;
     push(@types, 'Depends')      if $opt_depends;
     push(@types, 'MakeDepends')  if $opt_makedepends;
@@ -231,3 +240,5 @@ unless(caller) {
         exit(1);
     }
 }
+
+# vim: set et sw=4 sts=4 ft=perl:
