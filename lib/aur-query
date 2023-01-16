@@ -40,3 +40,5 @@ if ($opt_type eq "search" or $opt_type eq "suggest" or $opt_type eq "suggest-pkg
 } else {
     query_multi(terms => \@ARGV, %query_args);
 }
+
+# vim: set et sw=4 sts=4 ft=perl:
