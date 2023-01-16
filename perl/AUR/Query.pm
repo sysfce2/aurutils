@@ -70,6 +70,9 @@ sub query_curl {
 
 sub query {
     my %args = (type => undef, term => undef, by => undef, callback => undef, @_);
+    if (not defined $args{term}) {
+        die 'query: no search term supplied';
+    }
     my $path = "$aur_rpc/v$aur_rpc_ver/$args{type}/$args{term}";
 
     if (defined $args{by}) {
@@ -83,6 +86,10 @@ sub query {
 sub query_multi {
     my %args = (type => undef, by => undef, terms => [], splitno => $aur_splitno, callback => undef, @_);
     my $path = "$aur_rpc/v$aur_rpc_ver/$args{type}";
+
+    if (scalar @{$args{terms}} == 0) {
+        die 'query_multi: no search terms supplied';
+    }
     my @results;
 
     # n-ary queue processing (aurweb term limit)
