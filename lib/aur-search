@@ -142,6 +142,15 @@ unless(caller) {
         'k|key=s'       => \$opt_sort_key
     ) or exit(1);
 
+    # Handle '-' to take packages from stdin
+    my $index = grep { $ARGV[$_] eq '-' or $ARGV[$_] eq '/dev/stdin' } (0 .. @ARGV-1);
+
+    if ($index > 0) {
+        splice(@ARGV, $index, 1);  # remove '-'
+        push(@ARGV, <STDIN>);      # add arguments from stdin
+        chomp(@ARGV);              # remove newlines
+    }
+
     if (not scalar @ARGV) {
         say STDERR 'error: at least one search term needed';
         exit(1);
