@@ -53,6 +53,8 @@
   + perl rewrite
   + add `--reverse`
     - `-r` is now an alias to `--reverse`
+  + add `--submitter`, `--provides`, `--conflicts`, `--replaces`, 
+    `--keywords`, `--comaintainers`
 
 * `aur-sync`
   + add diagnostic for missing packages with `--continue`

@@ -117,24 +117,35 @@ unless(caller) {
 
     # XXX: add option to disable set operations, --time-format
     GetOptions (
-        'a|any'        => sub { $opt_multiple  = 'union' },
-        'i|info'       => sub { $opt_type      = 'info' },
-        's|search'     => sub { $opt_type      = 'search' },
-        'd|desc'       => sub { $opt_search_by = 'name-desc' },
-        'm|maintainer' => sub { $opt_search_by = 'maintainer' },
-        'n|name'       => sub { $opt_search_by = 'name' },
-        'depends'      => sub { $opt_search_by = 'depends' },
-        'makedepends'  => sub { $opt_search_by = 'makedepends' },
-        'optdepends'   => sub { $opt_search_by = 'optdepends' },
-        'checkdepends' => sub { $opt_search_by = 'checkdepends' },
-        'q|short'      => sub { $opt_format    = 'short' },
-        'v|verbose'    => sub { $opt_format    = 'long' },
-        'J|json'       => sub { $opt_format    = 'json' },
-        'color=s'      => \$opt_color,
-        'r|reverse'    => \$opt_reverse,
-        'k|key=s'      => \$opt_sort_key
+        'a|any'         => sub { $opt_multiple  = 'union' },
+        'i|info'        => sub { $opt_type      = 'info' },
+        's|search'      => sub { $opt_type      = 'search' },
+        'd|desc'        => sub { $opt_search_by = 'name-desc' },
+        'm|maintainer'  => sub { $opt_search_by = 'maintainer' },
+        'n|name'        => sub { $opt_search_by = 'name' },
+        'depends'       => sub { $opt_search_by = 'depends' },
+        'makedepends'   => sub { $opt_search_by = 'makedepends' },
+        'optdepends'    => sub { $opt_search_by = 'optdepends' },
+        'checkdepends'  => sub { $opt_search_by = 'checkdepends' },
+        'submitter'     => sub { $opt_search_by = 'submitter' },
+        'provides'      => sub { $opt_search_by = 'provides' },
+        'conflicts'     => sub { $opt_search_by = 'conflicts' },
+        'replaces'      => sub { $opt_search_by = 'replaces' },
+        'keywords'      => sub { $opt_search_by = 'keywords' },
+        'groups'        => sub { $opt_search_by = 'groups' },
+        'comaintainers' => sub { $opt_search_by = 'comaintainers' },
+        'q|short'       => sub { $opt_format    = 'short' },
+        'v|verbose'     => sub { $opt_format    = 'long' },
+        'J|json|raw'    => sub { $opt_format    = 'json' },
+        'color=s'       => \$opt_color,
+        'r|reverse'     => \$opt_reverse,
+        'k|key=s'       => \$opt_sort_key
     ) or exit(1);
 
+    if (not scalar @ARGV) {
+        say STDERR 'error: at least one search term needed';
+        exit(1);
+    }
     # Colored messages on both stdout and stderr may be desired if stdout is not
     # connected to a terminal, e.g. when piping to less -R. (#585) When printing
     # to a file, they should be disabled instead. Default to `--color=auto` but

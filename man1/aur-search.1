@@ -80,31 +80,32 @@ Search by package name and description.
 .
 .TP
 .BR \-m ", " \-\-maintainer
-Search by maintainer.
+Search by package maintainer.
+.
+.TP
+.BR \-\-submitter
+Search by package submitter.
 .
 .TP
 .BR \-n ", " \-\-name
 Search by package name.
 .
 .TP
-.BR \-\-depends
+.BR \-\-depends ", " \-\-makedepends ", " \-\-optdepends ", " 
+.BR \-\-checkdepends ", " \-\-provides ", " \-\-conflicts ", " 
+.BR \-\-replaces ", " \-\-groups ", " "\-\-comaintainers"
 Search for packages with keywords in
-.BR depends .
-.
-.TP
-.B \-\-makedepends
-Search for packages with keywords in
-.BR makedepends .
-.
-.TP
-.B \-\-optdepends
-Search for packages with keywords in
-.BR optdepends .
-.
-.TP
-.B \-\-checkdepends
-Search for packages with keywords in
-.BR checkdepends .
+.BR depends ,
+.BR makedepends ,
+.BR optdepends ,
+.BR checkdepends ,
+.BR provides ,
+.BR conflicts ,
+.BR replaces ,
+.BR groups
+and
+.BR comaintainers ,
+respectively.
 .
 .SH EXIT STATUS
 The exit status is 0 on valid results, 1 if no results were found, 2 on an
