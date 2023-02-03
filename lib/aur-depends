@@ -5,6 +5,7 @@ use v5.20;
 
 use AUR::Json qw(parse_json_aur write_json);
 use AUR::Query qw(query_multi);
+use AUR::Options qw(add_from_stdin);
 my $argv0 = 'depends';
 
 sub chain {
@@ -28,9 +29,6 @@ sub chain {
         if (not scalar(@level) and $a == 1) {
             say STDERR "$argv0: no packages found";
             exit(1);
-        }
-        elsif (not scalar(@level)) {
-            last;  # no results
         }
         @depends = ();
 
@@ -69,6 +67,9 @@ sub chain {
                     $results{$dep} = 'None';
                 }
             }
+        }
+	if (not scalar(@depends)) {
+            last;  # no further results
         }
     }
     return \%results, \%reqby, \%shlibs;
@@ -205,12 +206,11 @@ unless(caller) {
     ) or exit(1);
 
     # Handle '-' to take packages from stdin
-    my $index = grep { $ARGV[$_] eq '-' or $ARGV[$_] eq '/dev/stdin' } (0 .. @ARGV-1);
+    add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
 
-    if ($index > 0) {
-        splice(@ARGV, $index, 1);  # remove '-'
-        push(@ARGV, <STDIN>);      # add arguments from stdin
-        chomp(@ARGV);              # remove newlines
+    if (not scalar(@ARGV)) {
+	say STDERR "$argv0: at least one argument required";
+	exit(1);
     }
 
     # Variable dependency types (#826)

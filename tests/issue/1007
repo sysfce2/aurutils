@@ -10,7 +10,7 @@ aur fetch aurutils aurutils-git yuzu
 cd aurutils
 git config --add aurutils.rebase true
 echo '# test for issue/1007' >>PKGBUILD
-git commit -m 'test for issue/1007' PKGBUILD
+git -c user.name='test' -c user.email='test@localhost' commit -m 'test for issue/1007' PKGBUILD
 head1=$(git rev-parse --verify HEAD)
 
 # HEAD is 1 commit behind
@@ -22,7 +22,7 @@ head2=$(git rev-parse --verify HEAD)
 cd ../yuzu
 git reset --hard HEAD^1
 echo '# test for issue/1007' >>PKGBUILD
-git commit -m 'test for issue/1007' PKGBUILD
+git -c user.name='test' -c user.email='test@localhost' commit -m 'test for issue/1007' PKGBUILD
 head3=$(git rev-parse --verify HEAD)
 
 # merge can be solved as fast-forward

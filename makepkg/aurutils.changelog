@@ -48,6 +48,7 @@
     - `--raw` is noop
   + remove `--dump-curl-config`
     - print command-lines with `AUR_DEBUG=1`
+  + `-t` / `--type` is now a required parameter
 
 * `aur-search`
   + perl rewrite
@@ -55,6 +56,7 @@
     - `-r` is now an alias to `--reverse`
   + add `--submitter`, `--provides`, `--conflicts`, `--replaces`, 
     `--keywords`, `--comaintainers`
+  + exit 4 on AUR response errors such as `query too small` (was: exit 2)
 
 * `aur-sync`
   + add diagnostic for missing packages with `--continue`

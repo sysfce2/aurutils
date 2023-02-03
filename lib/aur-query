@@ -4,6 +4,7 @@ use warnings;
 use v5.20;
 
 use AUR::Query qw(query query_multi);
+use AUR::Options qw(add_from_stdin);
 my $argv0 = 'query';
 
 # option handling
@@ -16,21 +17,17 @@ GetOptions('t|type=s' => \$opt_type,
            'r|raw'    => sub { } # noop
 ) or exit(1);
 
-# process package names from the command-line
-if (not scalar(@ARGV)) {
-    say STDERR "$argv0: at least one argument required";
-    exit(1);
-}
 if (not length($opt_type)) {
     say STDERR "$argv0: type must be specified";
     exit(1);
 }
-my $index = grep { $ARGV[$_] eq '-' or $ARGV[$_] eq '/dev/stdin' } (0 .. @ARGV-1);
 
-if ($index > 0) {
-    splice(@ARGV, $index, 1);  # remove '-'
-    push(@ARGV, <STDIN>);      # add arguments from stdin
-    chomp(@ARGV);              # remove newlines
+# Handle '-' to take packages from stdin
+add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
+
+if (not scalar(@ARGV)) {
+    say STDERR "$argv0: at least one argument required";
+    exit(1);
 }
 my %query_args = (type => $opt_type, by => $opt_by, callback => sub { say @_ });
 

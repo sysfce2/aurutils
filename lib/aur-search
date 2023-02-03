@@ -12,6 +12,7 @@ use constant ST   => "\033\\";
 
 use AUR::Json qw(parse_json_aur write_json);
 use AUR::Query qw(query query_multi);
+use AUR::Options qw(add_from_stdin);
 my $argv0 = 'search';
 my $aur_location = $ENV{AUR_LOCATION} // 'https://aur.archlinux.org';
 
@@ -143,18 +144,13 @@ unless(caller) {
     ) or exit(1);
 
     # Handle '-' to take packages from stdin
-    my $index = grep { $ARGV[$_] eq '-' or $ARGV[$_] eq '/dev/stdin' } (0 .. @ARGV-1);
-
-    if ($index > 0) {
-        splice(@ARGV, $index, 1);  # remove '-'
-        push(@ARGV, <STDIN>);      # add arguments from stdin
-        chomp(@ARGV);              # remove newlines
-    }
+    add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
 
     if (not scalar @ARGV) {
         say STDERR 'error: at least one search term needed';
         exit(1);
     }
+
     # Colored messages on both stdout and stderr may be desired if stdout is not
     # connected to a terminal, e.g. when piping to less -R. (#585) When printing
     # to a file, they should be disabled instead. Default to `--color=auto` but

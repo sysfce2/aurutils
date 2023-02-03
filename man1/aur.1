@@ -1,4 +1,4 @@
-.TH AUR 1 2021-12-06 AURUTILS
+.TH AUR 1 2023-02-03 AURUTILS
 .SH NAME
 aur \- helper tool for the arch user repository
 .
@@ -120,58 +120,6 @@ Inspect
 repositories.
 .RE
 .
-.SH EXIT STATUS
-Programs follow a subset of errno(3), or preserve command status where
-applicable.
-.
-.SH ENVIRONMENT
-Environment variables for
-.B aur
-programs are prefixed with
-.BR AUR .
-Where applicable, standard variables such as
-.B XDG_CONFIG_HOME
-are respected. Variables supported by specific programs are listed
-in their respective man pages (see
-.BR "AUR COMMANDS" ).
-.PP
-Variables can be set in the user environment or in
-.IR $XDG_CONFIG_HOME/aurutils/env ,
-using a key/value format separated by newlines. For example:
-.PP
-.RS
-.EX
-AURDEST=/home/custompkgs
-AUR_PACMAN_AUTH=sudo --askpass
-AUR_PAGER=ranger
-AUR_REPO=custom
-.EE
-.RE
-.
-.TP
-.B AUR_DEBUG
-Setting this variable enables debug mode (typically
-.B xtrace
-for
-.BR bash (1)
-scripts) in
-.B aur
-programs.
-.
-.TP
-.B AUR_EXEC_PATH
-The path in which
-.B aur
-searches for commands, prepended to
-.BR $PATH .
-Defaults to
-.BR /usr/lib/aurutils .
-.
-.TP
-.B NO_COLOR
-Output colorization can be disabled by setting this environment
-variable.
-.
 .SH CREATING A LOCAL REPOSITORY
 A local repository may be configured directly in
 .BR /etc/pacman.conf ,
@@ -288,19 +236,19 @@ is the interactive shell.
 Run actions on the dependency tree of an AUR package:
 .PP
 .EX
-    $ aur depends foo | while read \-r pkg; do ... done
+    $ aur depends \-r foo \-n | tsort | while read \-r pkg; do ... done
 .EE
 .PP
-Retrieve AUR packages and their dependencies recursively:
+Retrieve AUR pkgbases and their dependencies recursively:
 .PP
 .EX
-    $ aur depends --pkgbase foo | aur fetch -
+    $ aur depends \-r foo | tsort | aur fetch \-
 .EE
 .PP
 Retrieve all AUR packages from a given maintainer:
 .PP
 .EX
-    $ aur search -m mcaur --table | cut -f2 | uniq -u | aur fetch -
+    $ aur search \-m mcaur \-\-json | aur format \-f \(aq%b\\n\(aq | aur fetch \-
 .EE
 .PP
 Build
@@ -340,7 +288,6 @@ only contains one local repository, the above may be shortened to:
     $ aur repo \-\-upgrades
 .EE
 .
-.
 .SS Arch User Repository - advanced usage
 Print packages from the
 .I custom
@@ -353,7 +300,7 @@ repository that are unavailable in the AUR:
 As above, but for orphaned packages:
 .PP
 .EX
-    $ pacman \-Slq custom | aur query \-t info - | \e
+    $ pacman \-Slq custom | aur query \-t info \- | \e
           jq \-r \(aq.results[] | select(.Maintainer == null)\(aq
 .EE
 .PP
@@ -486,6 +433,58 @@ variable towards it:
 .EX
     $ export PACMAN=/usr/local/bin/mypacman
 .EE
+.
+.SH ENVIRONMENT
+Environment variables for
+.B aur
+programs are prefixed with
+.BR AUR .
+Where applicable, standard variables such as
+.B XDG_CONFIG_HOME
+are respected. Variables supported by specific programs are listed
+in their respective man pages (see
+.BR "AUR COMMANDS" ).
+.PP
+Variables can be set in the user environment or in
+.IR $XDG_CONFIG_HOME/aurutils/env ,
+using a key/value format separated by newlines. For example:
+.PP
+.RS
+.EX
+AURDEST=/home/custompkgs
+AUR_PACMAN_AUTH=sudo --askpass
+AUR_PAGER=ranger
+AUR_REPO=custom
+.EE
+.RE
+.
+.TP
+.B AUR_DEBUG
+Setting this variable enables debug mode (typically
+.B xtrace
+for
+.BR bash (1)
+scripts) in
+.B aur
+programs.
+.
+.TP
+.B AUR_EXEC_PATH
+The path in which
+.B aur
+searches for commands, prepended to
+.BR $PATH .
+Defaults to
+.BR /usr/lib/aurutils .
+.
+.TP
+.B NO_COLOR
+Output colorization can be disabled by setting this environment
+variable.
+.
+.SH EXIT STATUS
+Programs follow a subset of errno(3), or preserve command status where
+applicable.
 .
 .SH AUTHORS
 .MT https://github.com/AladW
