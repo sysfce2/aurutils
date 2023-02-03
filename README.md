@@ -1,4 +1,3 @@
-[![build](https://img.shields.io/github/workflow/status/aladw/aurutils/CI)](https://github.com/AladW/aurutils/actions/workflows/ci.yml)
 [![license](https://img.shields.io/github/license/aladw/aurutils)](LICENSE)
 [![aur](https://img.shields.io/aur/version/aurutils)](https://aur.archlinux.org/packages/aurutils)
 
