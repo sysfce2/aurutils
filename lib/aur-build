@@ -8,6 +8,9 @@ machine=$(uname -m)
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
+# Avoid CDPATH screwing with cd (#1047)
+unset -v CDPATH
+
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 truncate=1
 
@@ -340,8 +343,9 @@ fi
 
 while IFS= read -ru "$fd" path; do
     # Use two cd calls to handle absolute paths in --arg-file
-    cd "$startdir"
-    cd "$path"
+    cd -- "$startdir"
+    # $path can be empty or user-supplied (#1047)
+    cd -- ./"$path"
 
     # Allow running repo-add(8) on existing packages (#839)
     create_package=1
@@ -388,10 +392,10 @@ while IFS= read -ru "$fd" path; do
                 run_msg 2 ${AUR_MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
-        cd "$var_tmp"
+        cd -- "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
     else
-        cd "$var_tmp"
+        cd -- "$var_tmp"
         # pkglist has paths to $db_root/<pkg>
     fi
 
@@ -432,7 +436,7 @@ while IFS= read -ru "$fd" path; do
     fi
 
     # Update database
-    cd "$db_root"
+    cd -- "$db_root"
     #shellcheck disable=SC2086
     LANG=C ${AUR_REPO_ADD:-repo-add} "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 

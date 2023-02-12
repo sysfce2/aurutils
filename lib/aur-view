@@ -3,9 +3,12 @@
 [[ -v AUR_DEBUG ]] && set -o xtrace
 set -o errexit
 argv0=view
-XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
+XDG_DATA_HOME=$(realpath -- "${XDG_DATA_HOME:-$HOME/.local/share}")
 AUR_VIEW_DB=${AUR_VIEW_DB:-$XDG_DATA_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+
+# Avoid CDPATH screwing with cd (#1047)
+unset -v CDPATH
 
 # default options
 log_fmt='diff' log_args=() excludes=() patch=1 prefix=0
@@ -77,12 +80,12 @@ if (( patch )); then
 fi
 
 # shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXX")
 trap 'trap_exit' EXIT
 
 # Directory for git checksums (revisions viewed by the user, #379)
-mkdir -p "$AUR_VIEW_DB"
+mkdir -p -- "$AUR_VIEW_DB"
 
 # Take input from a file instead of redirecting stdin (#871)
 packages=()
@@ -158,7 +161,7 @@ if [[ -v AUR_PAGER ]]; then
 
 elif type -P vifm >/dev/null; then
     # Avoid directory prefix in printed paths (#452)
-    cd "$tmp"
+    cd -- "$tmp"
 
     { # Print patch files
       find . -maxdepth 1 -type f
