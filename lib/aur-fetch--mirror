@@ -2,10 +2,10 @@
 set -o errexit
 [[ -v AUR_DEBUG ]] && set -o xtrace
 #argv0=fetch--mirror
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+XDG_CACHE_HOME=$(realpath -- "${XDG_CACHE_HOME:-$HOME/.cache}")
 AUR_MIRROR=${AUR_MIRROR:-https://github.com/archlinux/aur}
 AUR_MIRROR_TTL=${AUR_MIRROR_TTL:-300}
-AUR_ROOT=${AUR_ROOT:-$XDG_CACHE_HOME/aur}
+AUR_ROOT=$(realpath -- "${AUR_ROOT:-$XDG_CACHE_HOME/aur}")
 startdir=$PWD
 local_clones=0
 
@@ -42,7 +42,7 @@ git_ls_remote_ttl() {
 
 exec {fd}< "$AUR_ROOT"
 { flock --wait 5 "$fd" || exit 1
-  cd -- ./"$AUR_ROOT"
+  cd -- "$AUR_ROOT"
 
   # Shallow clone
   if [[ ! $(git rev-parse --is-inside-git-dir 2>/dev/null) ]]; then

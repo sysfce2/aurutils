@@ -3,10 +3,10 @@
 [[ -v AUR_DEBUG ]] && set -o xtrace
 set -o errexit
 argv0=sync
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
-XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
-AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
+XDG_CACHE_HOME=$(realpath -- "${XDG_CACHE_HOME:-$HOME/.cache}")
+XDG_CONFIG_HOME=$(realpath -- "${XDG_CONFIG_HOME:-$HOME/.config}")
+XDG_STATE_HOME=$(realpath -- "${XDG_STATE_HOME:-$HOME/.local/state}")
+AURDEST=$(realpath -- "${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}")
 AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -380,7 +380,7 @@ if ! select_pkgbase graph_0 graph_0 | tee graph | tsort >queue; then
 fi
 
 if [[ -s queue ]]; then
-    cd -- ./"$AURDEST"
+    cd -- "$AURDEST"
 else
     plain >&2 "there is nothing to do"
     exit
@@ -439,7 +439,7 @@ elif (( AUR_SYNC_USE_NINJA )); then
     # generate build.ninja
     # input:  $AURDEST/pkgbase/PKGBUILD
     # output: $ninja_dir/pkgbase.stamp
-    cd -- ./"$ninja_dir"
+    cd -- "$ninja_dir"
     swap "$tmp"/graph | sort -k1b,1 -k1 -u | aur sync--ninja "$AURDEST" >build.ninja \
         -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 

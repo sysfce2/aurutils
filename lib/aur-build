@@ -344,8 +344,7 @@ fi
 while IFS= read -ru "$fd" path; do
     # Use two cd calls to handle absolute paths in --arg-file
     cd -- "$startdir"
-    # $path can be empty or user-supplied (#1047)
-    cd -- ./"$path"
+    cd -- "$path"
 
     # Allow running repo-add(8) on existing packages (#839)
     create_package=1

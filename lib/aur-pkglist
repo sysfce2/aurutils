@@ -4,7 +4,7 @@
 argv0=pkglist
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
-AUR_METADEST=${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0}
+AUR_METADEST=$(realpath -- "${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0}") || exit
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # Avoid CDPATH screwing with cd (#1047)
@@ -100,7 +100,7 @@ fi
 
 # packages.gz cache
 install -dm700 -- "$AUR_METADEST"
-cd -- ./"$AUR_METADEST" || exit
+cd -- "$AUR_METADEST" || exit
 
 if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
     update=1
