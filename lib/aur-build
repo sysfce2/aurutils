@@ -208,11 +208,11 @@ done
 : "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
 
 # shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
 
 # shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/var/tmp}/aurutils-$UID"
+mkdir -pm 0700 -- "${TMPDIR:-/var/tmp}/aurutils-$UID"
 var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXXXX")
 
 trap 'trap_exit' EXIT

@@ -73,7 +73,7 @@ if (( ! $# )); then
 fi
 
 # shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
@@ -94,7 +94,7 @@ for n in "${packages[@]}"; do
         wait -n
     fi
 
-    { mkdir -p "$tmp/$n"
+    { mkdir -p -- "$tmp/$n"
 
       if ! env -C "$n" nice -n 20 makepkg "${makepkg_args[@]}" >"$tmp/$n"/log 2>&1; then
           echo $? >"$tmp/$n"/failed

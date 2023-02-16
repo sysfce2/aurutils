@@ -113,7 +113,7 @@ while true; do
 done
 
 # shellcheck disable=SC2174
-mkdir -pm 0700 "${TMPDIR:-/tmp}/aurutils-$UID"
+mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
 
