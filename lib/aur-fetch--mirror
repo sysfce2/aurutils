@@ -94,7 +94,7 @@ for b in "${target_remotes[@]}"; do
     # XXX: "Cloning into an existing directory is only allowed if the
     # directory is empty"
     if [[ ! -d $b/.git ]] && mkdir -- "$b"; then
-        cd -- ./"$b"
+        cd -- "$b"
         git init --quiet
         git remote add origin "$AUR_ROOT"
 
