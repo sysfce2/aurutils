@@ -442,11 +442,26 @@ while IFS= read -ru "$fd" path; do
     if (( chroot )) || (( no_sync )); then
         continue
     else
-        # Helper which can be used for e.g. sudoers rules (#1012)
-        # Like `makepkg --syncdeps`, this affects the host and so uses
+        # Like `makepkg --syncdeps`, the following affects the host and so uses
         # the host pacman configuration. --pacman-conf (which may also
         # point to a world-writeable file) is not applied.
-        aur build--sync "$db_name"
+        #shellcheck disable=SC2086
+        ${AUR_PACMAN_AUTH:-sudo} pacsync "$db_name"
+        #shellcheck disable=SC2086
+        ${AUR_PACMAN_AUTH:-sudo} pacsync "$db_name" --dbext=.files
+
+        # Retrieve upgrade targets
+        targets=()
+        while IFS='/' read -r repo name; do
+            [[ $repo == "$db_name" ]] && targets+=("$repo/$name")
+        done < <(pacman -Sup --print-format '%r/%n')
+        wait "$!"
+
+        if (( ${#targets[@]} )); then
+            printf >&2 "%s: upgrading packages in repository '%s'\n" "$argv0" "$db_name"
+            #shellcheck disable=SC2086
+            printf '%s\n' "${targets[@]}" | ${AUR_PACMAN_AUTH:-sudo} pacman -S --noconfirm -
+        fi
     fi
 done
 

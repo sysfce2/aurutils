@@ -95,7 +95,7 @@ $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repo-purge -f cust
 `aur-build` operates as a regular user, with the following exceptions:
 
 * installation of package dependencies with `makepkg -s`;
-* updating the local repository with `aur-build--sync`;
+* updating the local repository with `pacman -S`;
 * interacting with an nspawn container with `aur-chroot`.
 
 Instead of elevating to the root user for these tasks, `aur-build` can be run as
