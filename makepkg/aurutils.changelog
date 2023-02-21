@@ -1,3 +1,18 @@
+## 12
+
+* `aur-build`
+  + remove helper `aur-build--sync`
+
+* `aur-view`
+  + use null seperated lists as input to vifm(1)
+
+* `lib`
+  + unset `CDPATH` where needed
+  + use `getopt` instead of `parseopts.sh` from libmakepkg
+
+* `man1`
+  + documentation updates
+
 ## 11
 
 * `aur-build`
