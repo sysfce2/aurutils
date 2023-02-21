@@ -8,6 +8,12 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 format=check target=aur all=0 quiet=0
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 my_vercmp() {
     if [[ $1 == "$2" ]]; then
         printf '%d' 0 # common case
@@ -74,7 +80,6 @@ usage() {
 }
 
 source /usr/share/makepkg/util/message.sh
-source /usr/share/makepkg/util/parseopts.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
@@ -84,10 +89,11 @@ opt_short='p:u:acq'
 opt_long=('all' 'current' 'path:' 'quiet' 'upair:')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset aux repo upair
 while true; do
