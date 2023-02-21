@@ -2,15 +2,11 @@
 set -o errexit
 [[ -v AUR_DEBUG ]] && set -o xtrace
 #argv0=fetch--mirror
-XDG_CACHE_HOME=$(realpath -- "${XDG_CACHE_HOME:-$HOME/.cache}")
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AUR_MIRROR=${AUR_MIRROR:-https://github.com/archlinux/aur}
 AUR_MIRROR_TTL=${AUR_MIRROR_TTL:-300}
-AUR_ROOT=$(realpath -- "${AUR_ROOT:-$XDG_CACHE_HOME/aur}")
-startdir=$PWD
+AUR_ROOT=${AUR_ROOT:-$XDG_CACHE_HOME/aur}
 local_clones=0
-
-# Avoid CDPATH screwing with cd (#1047)
-unset -v CDPATH
 
 if [[ $1 = '--lclone' ]]; then
     local_clones=1
@@ -42,7 +38,7 @@ git_ls_remote_ttl() {
 
 exec {fd}< "$AUR_ROOT"
 { flock --wait 5 "$fd" || exit 1
-  cd -- "$AUR_ROOT"
+  git() { command git -C "$AUR_ROOT" "$@"; }
 
   # Shallow clone
   if [[ ! $(git rev-parse --is-inside-git-dir 2>/dev/null) ]]; then
@@ -52,7 +48,7 @@ exec {fd}< "$AUR_ROOT"
 
   # Keep a refcache to filter out packages which are not in AUR. This is
   # includes unlisted packages (unlike `aur pkglist --pkgbase`)
-  git_ls_remote_ttl 'remote-pkgbase'
+  git_ls_remote_ttl "$AUR_ROOT"/remote-pkgbase
 
   # Retrieve list of active remotes
   mapfile -t active_remotes < <(git_active_remotes | grep -v 'main')
@@ -74,6 +70,7 @@ exec {fd}< "$AUR_ROOT"
   #     git branch --force "$b" origin/"$b"
   # done
 } >&2
+unset -f git
 
 # ------------------------------------------------------------
 # Step 2. Propagate each branch in the mirror to a local clone
@@ -89,12 +86,11 @@ git_srcdest_origin() {
 }
 
 for b in "${target_remotes[@]}"; do
-    cd -- "$startdir"
-
     # XXX: "Cloning into an existing directory is only allowed if the
     # directory is empty"
     if [[ ! -d $b/.git ]] && mkdir -- "$b"; then
-        cd -- "$b"
+        git() { command git -C "$b" "$@"; }
+
         git init --quiet
         git remote add origin "$AUR_ROOT"
 
@@ -109,6 +105,7 @@ for b in "${target_remotes[@]}"; do
         results+=("$b:$head")
     fi >&2
 done
+unset -f git
 
 # The lock is only released here, because we do not want an instance to modify
 # AUR_ROOT while local git-clones are still underway. Additionally, local clones
