@@ -13,6 +13,12 @@ unset -v CDPATH
 # default options
 log_fmt='diff' log_args=() excludes=() patch=1 prefix=0
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -26,21 +32,15 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/message.sh
-source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
-    [[ -t 2 ]] && colorize
-fi
-
 opt_short='a:'
 opt_long=('format:' 'arg-file:' 'revision:' 'no-patch' 'confirm' 'exclude:' 'prefix')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset queue revision prefix
 while true; do
@@ -101,7 +101,7 @@ else
 fi
 
 if (( ! ${#packages[@]} )); then
-    plain >&2 "there is nothing to do"
+    printf >&2 "there is nothing to do"
     exit
 fi
 
@@ -120,7 +120,7 @@ for pkg in "${packages[@]}"; do
     if head=$(git rev-parse "${revision:-HEAD}"); then
         heads[$pkg]=$head
     else
-        error '%s: %s: revision %s not found' "$argv0" "$pkg" "${revision:-HEAD}"
+        printf >&2 '%s: %s: revision %s not found\n' "$argv0" "$pkg" "${revision:-HEAD}"
         exit 2
     fi
 
@@ -132,7 +132,7 @@ for pkg in "${packages[@]}"; do
     if [[ -f $AUR_VIEW_DB/$pkg ]] && read -r view < "$AUR_VIEW_DB/$pkg"; then
         # Check if hash points to an existing object
         if ! git cat-file -e "$view"; then
-            error '%s: %s: invalid git revision' "$argv0" "$AUR_VIEW_DB/$pkg"
+            printf >&2 '%s: %s: invalid git revision\n' "$argv0" "$AUR_VIEW_DB/$pkg"
             exit 22
         fi
 
@@ -142,7 +142,7 @@ for pkg in "${packages[@]}"; do
         fi
 
     elif [[ -f $AUR_VIEW_DB/$pkg ]]; then
-        error '%s: %s: failed to read revision' "$argv0" "$pkg"
+        printf >&2 '%s: %s: failed to read revision\n' "$argv0" "$pkg"
         exit 1
     fi
 done
@@ -171,7 +171,7 @@ elif type -P vifm >/dev/null; then
     } | vifm -c 'set vifminfo=' -c 'view!' -c '0' -
 
 else
-    error '%s: no viewer found, please install vifm or set AUR_PAGER' "$argv0"
+    printf >&2 '%s: no viewer found, please install vifm or set AUR_PAGER\n' "$argv0"
     exit 1
 fi
 
