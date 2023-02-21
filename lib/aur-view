@@ -3,12 +3,9 @@
 [[ -v AUR_DEBUG ]] && set -o xtrace
 set -o errexit
 argv0=view
-XDG_DATA_HOME=$(realpath -- "${XDG_DATA_HOME:-$HOME/.local/share}")
+XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 AUR_VIEW_DB=${AUR_VIEW_DB:-$XDG_DATA_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-
-# Avoid CDPATH screwing with cd (#1047)
-unset -v CDPATH
 
 # default options
 log_fmt='diff' log_args=() excludes=() patch=1 prefix=0
@@ -160,15 +157,20 @@ if [[ -v AUR_PAGER ]]; then
     fi
 
 elif type -P vifm >/dev/null; then
-    # Avoid directory prefix in printed paths (#452)
-    cd -- "$tmp"
+    # Show hidden directories (.git)
+    shopt -s dotglob
 
     { # Print patch files
-      find . -maxdepth 1 -type f
+      for f in "$tmp"/*; do
+          [[ -f $f ]] && printf '%s\0' "$f"
+      done
 
-      # Print build directories in dependency order
-      find -L "${packages[@]}" -maxdepth 1
-    } | vifm -c 'set vifminfo=' -c 'view!' -c '0' -
+      # Print build directories (non-empty) in dependency order
+      for d in "$tmp"/*/; do
+          printf '%s\0' "$d"/*
+      done
+    # Avoid directory prefix in printed paths (#452)
+    } | env -C "$tmp" vifm -c 'set vifminfo=' -c 'view!' -c '0' -
 
 else
     printf >&2 '%s: no viewer found, please install vifm or set AUR_PAGER\n' "$argv0"
