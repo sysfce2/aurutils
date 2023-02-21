@@ -91,7 +91,7 @@ trap_exit() {
 }
 
 usage() {
-    plain >&2 'usage: %s [-d repo] [--root path] [-cdfoSu] pkgname...' "$argv0"
+    printf >&2 'usage: %s [-d repo] [--root path] [-cdfoSu] pkgname...\n' "$argv0"
     exit 1
 }
 
@@ -103,8 +103,8 @@ fi
 
 # mollyguard for makepkg
 if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
-    warning 'aur-%s is not meant to be run as root.' "$argv0"
-    warning 'To proceed anyway, set the %s variable.' 'AUR_ASROOT'
+    printf >&2 'warning: aur-%s is not meant to be run as root.\n' "$argv0"
+    printf >&2 'warning: To proceed anyway, set the %s variable.\n' 'AUR_ASROOT'
     exit 1
 fi
 
@@ -276,7 +276,7 @@ fi
 mkdir -p -- "$AURDEST"
 
 if (( $# + update + repo_targets == 0 )); then
-    error '%s: no targets specified' "$argv0"
+    printf >&2 '%s: no targets specified\n' "$argv0"
     exit 1
 fi
 
@@ -290,7 +290,7 @@ wait "$!"
 if [[ -w $db_path ]]; then
     msg >&2 'Using [%s] repository' "$db_name"
 else
-    error '%s: %s: permission denied' "$argv0" "$db_path"
+    printf >&2 '%s: %s: permission denied\n' "$argv0" "$db_path"
     exit 13
 fi
 
@@ -334,7 +334,7 @@ if [[ -s $tmp/argv ]]; then
     # depends: $1 pkgname $2 required_by $3 pkgbase $4 pkgver $5 depends_type
     aur depends --table --reverse "${depends_args[@]}" - <"$tmp"/argv >"$tmp"/depends
 else
-    plain >&2 "there is nothing to do"
+    printf >&2 '%s: there is nothing to do\n' "$argv0"
     exit
 fi
 
@@ -387,7 +387,7 @@ fi
 if [[ -s $tmp/queue ]]; then
     cd -- "$AURDEST"
 else
-    plain >&2 "there is nothing to do"
+    printf >&2 '%s: there is nothing to do\n'
     exit
 fi
 
@@ -417,7 +417,7 @@ if (( graph )); then
            done
          } | xargs -0 cat -- | aur graph "${graph_args[@]}"
     then
-        error '%s: failed to verify dependency graph' "$argv0"
+        printf >&2 '%s: failed to verify dependency graph\n' "$argv0"
         exit 1
     fi < "$tmp"/queue | swap >"$tmp"/graph
 
