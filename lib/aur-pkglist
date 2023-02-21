@@ -4,11 +4,8 @@
 argv0=pkglist
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AUR_LOCATION=${AUR_LOCATION:-'https://aur.archlinux.org'}
-AUR_METADEST=$(realpath -- "${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0}") || exit
+AUR_METADEST=${AUR_METADEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-
-# Avoid CDPATH screwing with cd (#1047)
-unset -v CDPATH
 
 # default options
 ttl=300 pkglist=packages update=0 verify=0 use_system_time=0
@@ -100,13 +97,12 @@ fi
 
 # packages.gz cache
 install -dm700 -- "$AUR_METADEST"
-cd -- "$AUR_METADEST" || exit
 
-if [[ ! -s headers_$pkglist || ! -s $pkglist ]]; then
+if [[ ! -s $AUR_METADEST/headers_$pkglist || ! -s $AUR_METADEST/$pkglist ]]; then
     update=1
 
-elif [[ -s $pkglist ]]; then
-    sec_l=$(http_last_modified "headers_$pkglist" | date -f - '+%s')
+elif [[ -s $AUR_METADEST/$pkglist ]]; then
+    sec_l=$(http_last_modified "$AUR_METADEST/headers_$pkglist" | date -f - '+%s')
 
     if (( use_system_time )); then
         sec_d=$(date '+%s')
@@ -120,34 +116,34 @@ elif [[ -s $pkglist ]]; then
 fi
 
 if (( update )); then
-    list_fetch "$AUR_LOCATION/$pkglist.gz" --dump-header "headers_$pkglist"
+    list_fetch "$AUR_LOCATION/$pkglist.gz" --dump-header "$AUR_METADEST/headers_$pkglist" -o "$AUR_METADEST/$pkglist.gz"
 
     if (( verify )); then
-        list_fetch "$AUR_LOCATION/$pkglist.gz.sha256"
-        sha256sum --check --strict --quiet "$pkglist.gz.sha256" || exit
+        list_fetch "$AUR_LOCATION/$pkglist.gz.sha256" -o "$AUR_METADEST/$pkglist.gz.sha256"
+        sha256sum --check --strict --quiet "$AUR_METADEST/$pkglist.gz.sha256" || exit
     fi
 
     if [[ $pkglist == *.json ]]; then
         # Remove newlines separating partial objects, i.e.
         #   [\n{...},\n{...},...\n]  =>  [{...}{...},...]\n
-        { gunzip -c "$pkglist.gz" | tr -d '\n'
+        { gunzip -c "$AUR_METADEST/$pkglist.gz" | tr -d '\n'
           printf '\n'
-        } > "$pkglist"
+        } > "$AUR_METADEST/$pkglist"
     else
-        gunzip -f "$pkglist.gz"
+        gunzip -f "$AUR_METADEST/$pkglist.gz"
     fi
 fi >&2
 
 # pattern match
 case $mode in
     plain)
-        cat "$pkglist" ;;
+        cat "$AUR_METADEST/$pkglist" ;;
     fixed)
-        grep -F "$1" "$pkglist" ;;
+        grep -F "$1" "$AUR_METADEST/$pkglist" ;;
     regex)
-        grep -P "$1" "$pkglist" ;;
+        grep -P "$1" "$AUR_METADEST/$pkglist" ;;
     none)
-        printf '%s\n' "$PWD/$pkglist" ;;
+        printf '%s\n' "$AUR_METADEST/$pkglist" ;;
 esac
 
 # vim: set et sw=4 sts=4 ft=sh:
