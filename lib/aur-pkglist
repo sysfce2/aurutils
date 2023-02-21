@@ -10,6 +10,12 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 # default options
 ttl=300 pkglist=packages update=0 verify=0 use_system_time=0
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 http_last_modified() {
     awk -F', ' '/^[Ll]ast-[Mm]odified:/ {print $2}' "$1"
 }
@@ -27,17 +33,16 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/parseopts.sh
-
 opt_short='t:bqsivFPJISu'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
           'ttl:' 'users' 'verify' 'quiet' 'systime')
 opt_hidden=('dump-options' 'time:' 'json')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset mode
 while true; do
@@ -96,7 +101,7 @@ if ! [[ $ttl =~ [0-9]+ ]]; then
 fi
 
 # packages.gz cache
-install -dm700 -- "$AUR_METADEST"
+mkdir -p -- "$AUR_METADEST"
 
 if [[ ! -s $AUR_METADEST/headers_$pkglist || ! -s $AUR_METADEST/$pkglist ]]; then
     update=1
