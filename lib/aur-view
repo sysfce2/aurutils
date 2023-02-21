@@ -167,7 +167,7 @@ elif type -P vifm >/dev/null; then
 
       # Print build directories (non-empty) in dependency order
       for d in "$tmp"/*/; do
-          printf '%s\0' "$d"/*
+          printf '%s\0' "$d" "$d"/*
       done
     # Avoid directory prefix in printed paths (#452)
     } | env -C "$tmp" vifm -c 'set vifminfo=' -c 'view!' -c '0' -
