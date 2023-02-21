@@ -23,6 +23,12 @@ build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1 columns
 # default options (disabled)
 rotate=0 update=0 repo_targets=0
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 lib32() {
     awk -v arch="$(uname -m)" '{
         if(arch == "i686") {
@@ -90,7 +96,6 @@ usage() {
 }
 
 source /usr/share/makepkg/util/message.sh
-source /usr/share/makepkg/util/parseopts.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
     [[ -t 2 ]] && colorize
@@ -118,10 +123,11 @@ opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
             'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset pkg pkg_i repo repo_p ignore_file
 while true; do
