@@ -1,6 +1,6 @@
 .TH AUR\-FORMAT 1 2022-10-20 AURUTILS
 .SH NAME
-aur\-format \- format AurJson
+aur\-format \- format AurJson output to text strings
 .
 .SH SYNOPSIS
 .SY "aur format"
@@ -166,15 +166,6 @@ error. We can again resort to
 .EX
     aur pkglist \-\-info | aur format \-f "%n\\t%m\\n" \-v |
         gawk \-F'\\t' "{ if ($2 != '-') print $1; }"
-.EE
-.PP
-More attributes can be included, and the output reformatted with
-.BR aur\-search (1):
-.PP
-.EX
-    aur pkglist \-\-info | aur format \-f "%n\\t%v\\t%d\\t%m\\t%w\\t%p\\t%o\\n" \-v |
-        gawk \-F'\\t' "{ if ($4 != '-') print; }" |
-        aur search--helper
 .EE
 .PP
 In case only a limited set of targets is needed,
