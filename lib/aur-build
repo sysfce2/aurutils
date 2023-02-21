@@ -79,16 +79,9 @@ trap_exit() {
 }
 
 usage() {
-    plain >&2 'usage: %s [-acfNS] [-d repo] [--root path] [--margs makepkg_arg...]' "$argv0"
+    printf >&2 'usage: %s [-acfNS] [-d repo] [--root path] [--margs makepkg_arg...]\n' "$argv0"
     exit 1
 }
-
-source /usr/share/makepkg/util/message.sh
-source /usr/share/makepkg/util/parseopts.sh
-
-if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
-    [[ -t 2 ]] && colorize
-fi
 
 # mollyguard for makepkg
 if (( UID == 0 )) && ! [[ -v AUR_ASROOT ]]; then
@@ -108,10 +101,11 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
 while true; do
@@ -219,6 +213,7 @@ trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if (( chroot )); then
+    # XXX: default paths can be set through the Makefile
     default_paths=("/etc/aurutils/pacman-$db_name.conf"
                    "/etc/aurutils/pacman-$machine.conf")
 
@@ -284,7 +279,7 @@ db_root=$(realpath -- "$db_root")
 
 # Check that a valid database extension was retrieved (#700, #1038)
 if [[ -z $AUR_DBEXT ]] && [[ $db_path =~ \.db$ ]]; then
-    error '%s: %s does not have a valid database archive extension' "$argv0" "$db_path"
+    printf >&2 '%s: %s does not have a valid database archive extension\n' "$argv0" "$db_path"
     # TODO: this usually happens on file systems not supporting symbolic links
     # (SMB/CIFS). Add a diagnostic to point towards AUR_DBEXT in this case
     exit 2
@@ -292,16 +287,16 @@ fi
 
 # File permission checks
 if [[ ! -f $db_path ]]; then
-    error '%s: %s: not a regular file' "$argv0" "$db_path"
+    printf >&2 '%s: %s: not a regular file\n' "$argv0" "$db_path"
     exit 2
 elif [[ ! -w $db_path ]]; then
-    error '%s: %s: permission denied' "$argv0" "$db_path"
+    printf >&2 '%s: %s: permission denied\n' "$argv0" "$db_path"
     exit 13
 elif [[ -v pacman_conf ]] && [[ ! -r $pacman_conf ]]; then
-    error '%s: %s: permission denied' "$argv0" "$pacman_conf"
+    printf >&2 '%s: %s: permission denied\n' "$argv0" "$pacman_conf"
     exit 13
 elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
-    error '%s: %s: permission denied' "$argv0" "$makepkg_conf"
+    printf >&2 '%s: %s: permission denied\n' "$argv0" "$makepkg_conf"
     exit 13
 fi
 
@@ -329,7 +324,7 @@ if (( ! sign_pkg )); then
     db_sigs=("$db_root/$db_name".sig "$db_root/$db_name".files.sig)
 
     if [[ -f ${db_sigs[0]} ]]; then
-        error '%s: database signature found, but signing is disabled' "$argv0"
+        printf >&2 '%s: database signature found, but signing is disabled\n' "$argv0"
 
         printf '%q\n' >&2 "${db_sigs[@]}"
         exit 1
@@ -370,7 +365,7 @@ while IFS= read -ru "$fd" path; do
         wait "$!"
 
         if (( ${#exists[@]} )); then
-            warning '%s: skipping existing package (use -f to overwrite)' "$argv0"
+            printf >&2 '%s: warning: skipping existing package (use -f to overwrite)\n' "$argv0"
             create_package=0
 
             printf '%q\n' >&2 "${exists[@]}"
