@@ -22,6 +22,12 @@ git_empty_object=$(git hash-object -t tree /dev/null)
 # default options
 existing=0 recurse=0 discard=0 sync=fetch
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 # XXX: races with multiple fetch instances
 results() {
     local mode=$1 prev=$2 current=$3 path=$4 dest=$5
@@ -51,17 +57,16 @@ XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 }
 
 # option handling
-source /usr/share/makepkg/util/parseopts.sh
-
 opt_short='efrS'
 opt_long=('auto' 'merge' 'reset' 'rebase' 'discard' 'existing' 'results:' 'ff'
           'ff-only' 'no-ff' 'no-commit' 'recurse')
 opt_hidden=('dump-options' 'sync:')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset rebase_args merge_args results_file
 while true; do
