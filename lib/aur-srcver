@@ -9,6 +9,12 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
 num_procs=$(( "$(nproc)" + 2 ))
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 # shellcheck disable=SC2154
 get_full_version() {
     if (( epoch > 0 )); then
@@ -31,16 +37,15 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/parseopts.sh
-
 opt_short=j:
 opt_long=('no-prepare' 'jobs:' 'buildscript:')
 opt_hidden=('dump-options' 'noprepare')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset buildscript
 while true; do
