@@ -274,7 +274,6 @@ if (( rotate )); then
 fi
 
 mkdir -p -- "$AURDEST"
-cd -- "$tmp"
 
 if (( $# + update + repo_targets == 0 )); then
     error '%s: no targets specified' "$argv0"
@@ -303,17 +302,17 @@ fi
       select_ignores_pkgspec "$db_name" "$ignore_file"
   fi
   (( ${#pkg_i[@]} )) && printf '%s\n' "${pkg_i[@]}"
-} | complement <(printf '%s\n' "$@") >igni
+} | complement <(printf '%s\n' "$@") >"$tmp"/igni
 
-if [[ -s igni ]]; then
+if [[ -s $tmp/igni ]]; then
     printf '%s: packages ignored: ' "$argv0"
-    awk -v ORS=' ' '{print} END {printf("\n")}' igni
+    awk -v ORS=' ' '{print} END {printf("\n")}' "$tmp"/igni
 fi >&2
 
 # db_info: $1 pkgname $2 pkgver
 ( set -o pipefail
-  aur repo-parse -p "$db_path" --list | select_ignores igni -
-) >db_info
+  aur repo-parse -p "$db_path" --list | select_ignores "$tmp"/igni -
+) >"$tmp"/db_info
 
 { if (( $# )); then
       # append command-line arguments
@@ -322,39 +321,39 @@ fi >&2
 
   if (( repo_targets )); then
       # append repository packages (all)
-      cut -f1 <db_info
+      cut -f1 <"$tmp"/db_info
 
   elif (( update )); then
       # append repository packages (updated)
-      aur vercmp --quiet <db_info
+      aur vercmp --quiet <"$tmp"/db_info
   fi
-} >argv
+} >"$tmp"/argv
 
-if [[ -s argv ]]; then
+if [[ -s $tmp/argv ]]; then
     # shellcheck disable=SC2094
     # depends: $1 pkgname $2 required_by $3 pkgbase $4 pkgver $5 depends_type
-    aur depends --table --reverse "${depends_args[@]}" - <argv >depends
+    aur depends --table --reverse "${depends_args[@]}" - <"$tmp"/argv >"$tmp"/depends
 else
     plain >&2 "there is nothing to do"
     exit
 fi
 
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
-cut -f2,5 --complement depends | sort -u >pkginfo
+cut -f2,5 --complement "$tmp"/depends | sort -u >"$tmp"/pkginfo
 
-{ cat igni # ignored packages
+{ cat "$tmp"/igni # ignored packages
 
   # Packages with equal or newer versions are taken as complement
   # for the queue. If chkver_argv is enabled, packages on the
   # command-line are excluded from this complement.
   if (( chkver_depth )); then
       # note: AUR cannot be queried by pkgbase (FS#57230)
-      cut -f1,3 pkginfo | aur vercmp -p db_info -c >current
+      cut -f1,3 "$tmp"/pkginfo | aur vercmp -p "$tmp"/db_info -c >"$tmp"/current
 
       # shellcheck disable=SC2002
       case $chkver_depth in
-          1) cat current | complement argv ;;
-          2) cat current ;;
+          1) cat "$tmp"/current | complement "$tmp"/argv ;;
+          2) cat "$tmp"/current ;;
       esac
   fi
 
@@ -366,12 +365,12 @@ cut -f2,5 --complement depends | sort -u >pkginfo
       fi
 
       # Note: this uses pacman's copy of the repo (as used by makepkg -s)
-      cut -f1 pkginfo | aur repo-filter "${filter_args[@]}" | complement argv
+      cut -f1 "$tmp"/pkginfo | aur repo-filter "${filter_args[@]}" | complement "$tmp"/argv
   fi
-} >filter
+} >"$tmp"/filter
 
 # $1 pkgname $2 required_by $3 pkgbase, filter by $1 (depends and self)
-cut -f1-3 depends | select_ignores filter - | lib32 - >graph_0
+cut -f1-3 "$tmp"/depends | select_ignores "$tmp"/filter - | lib32 - >"$tmp"/graph_0
 
 # XXX a flat file is needed for aur-{graph,fetch,view}. `ninja` requires the
 # build files to be present before dependency resolution (with `ninja -n`) can
@@ -380,12 +379,12 @@ cut -f1-3 depends | select_ignores filter - | lib32 - >graph_0
 # aur-fetch with `ninja` alone. `tsort` could either be used in this case (with
 # a less nice diagnostic on cycles), or fetches done in an arbitrary order
 # (e.g. sort -u) with checks for cycles done at build-time.
-if ! select_pkgbase graph_0 graph_0 | tee graph | tsort >queue; then
-    error '%s: dependency cycle detected' "$argv0"
+if ! select_pkgbase "$tmp"/graph_0 "$tmp"/graph_0 | tee "$tmp"/graph | tsort >"$tmp"/queue; then
+    printf >&2 '%s: dependency cycle detected\n' "$argv0"
     exit 22
 fi
 
-if [[ -s queue ]]; then
+if [[ -s $tmp/queue ]]; then
     cd -- "$AURDEST"
 else
     plain >&2 "there is nothing to do"
