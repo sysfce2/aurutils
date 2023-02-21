@@ -3,10 +3,10 @@
 [[ -v AUR_DEBUG ]] && set -o xtrace
 set -o errexit
 argv0=sync
-XDG_CACHE_HOME=$(realpath -- "${XDG_CACHE_HOME:-$HOME/.cache}")
-XDG_CONFIG_HOME=$(realpath -- "${XDG_CONFIG_HOME:-$HOME/.config}")
-XDG_STATE_HOME=$(realpath -- "${XDG_STATE_HOME:-$HOME/.local/state}")
-AURDEST=$(realpath -- "${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}")
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
