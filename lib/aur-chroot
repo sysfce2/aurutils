@@ -16,12 +16,16 @@ makechrootpkg_makepkg_args=()
 # default options
 update=0 build=0 create=0 print_path=0
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 usage() {
     printf 'usage: %s [-BU] [--create] [-CDM path] [package...]\n' "$argv0"
     exit 1
 }
-
-source /usr/share/makepkg/util/parseopts.sh
 
 opt_short='C:D:M:x:BU'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
@@ -29,10 +33,11 @@ opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
           'makechrootpkg-args:' 'margs:' 'cargs:')
 opt_hidden=('dump-options')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset bindmounts_ro bindmounts_rw makepkg_conf pacman_conf
 while true; do
