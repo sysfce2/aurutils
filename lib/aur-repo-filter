@@ -8,6 +8,12 @@ arch_repo=(core extra testing community{,-testing} multilib{,-testing})
 # default options
 sync_repo=0
 
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
 # The command line will hit ARG_MAX on approximately 70k packages;
 # spread arguments with xargs (and printf, as a shell built-in).
 satisfies() {
@@ -32,16 +38,15 @@ usage() {
     exit 1
 }
 
-source /usr/share/makepkg/util/parseopts.sh
-
 opt_short='d:a'
 opt_long=('all' 'sync' 'config:' 'database:' 'sysroot:')
 opt_hidden=('dump-options' 'repo:')
 
-if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
     usage
 fi
-set -- "${OPTRET[@]}"
 
 unset argv_repo sift_args info_args
 while true; do
