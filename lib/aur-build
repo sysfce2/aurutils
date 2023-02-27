@@ -116,6 +116,7 @@ while true; do
         -f|--force)
             overwrite=1 ;;
         --rebuild)
+            : optval
             shift; pkgrel_incr=$1
             overwrite=1 ;;
         -c|--chroot)

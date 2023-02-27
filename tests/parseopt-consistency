@@ -10,7 +10,13 @@ parse_loop() {
       split($0, patterns,"|")                 # split on |
       getline                                 # ask for next line for shift check
       for (i in patterns) {                   # print options accordingly
-        print ($1 ~ /^shift/) ? patterns[i] ":" : patterns[i]
+        if ($2 ~ /^optval/) {
+          print patterns[i] "::"
+        } else if ($1 ~ /^shift/) {
+          print patterns[i] ":"
+        } else {
+          print patterns[i]
+        }
       }
     }
   }'
