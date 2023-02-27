@@ -33,7 +33,7 @@ opt_short='a:'
 opt_long=('format:' 'arg-file:' 'revision:' 'no-patch' 'confirm' 'exclude:' 'prefix')
 opt_hidden=('dump-options')
 
-if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
     eval set -- "$opts"
 else
     usage

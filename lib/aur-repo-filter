@@ -42,7 +42,7 @@ opt_short='d:a'
 opt_long=('all' 'sync' 'config:' 'database:' 'sysroot:')
 opt_hidden=('dump-options' 'repo:')
 
-if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
     eval set -- "$opts"
 else
     usage

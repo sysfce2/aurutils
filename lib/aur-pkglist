@@ -38,7 +38,7 @@ opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
           'ttl:' 'users' 'verify' 'quiet' 'systime')
 opt_hidden=('dump-options' 'time:' 'json')
 
-if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}")" -n "$argv0" -- "$@"); then
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
     eval set -- "$opts"
 else
     usage
