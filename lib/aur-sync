@@ -387,7 +387,7 @@ fi
 if [[ -s $tmp/queue ]]; then
     cd -- "$AURDEST"
 else
-    printf >&2 '%s: there is nothing to do\n'
+    printf >&2 '%s: there is nothing to do\n' "$argv0"
     exit
 fi
 
