@@ -290,24 +290,31 @@ The
 file for chroot and local repository operations.
 .RB ( "aur\-build \-\-pacman\-conf" ", " "aur-repo \-\-config" )
 .
-.SS Aliases
 .TP
-.BR \-\-rebuild
-Alias for
-.BR "\-f \-\-nover\-argv" .
+.BR \-\-rebuild ", " \-\-rebuild=\fIINCR\fR
+Rebuild a package with an optional
+.I pkgrel
+increment
+.RB ( "aur\-build \-\-rebuild" ).
+Implies
+.BR \-\-nover\-argv .
 .
 .TP
-.BR \-\-rebuildtree ", " \-\-rebuild\-tree
-Alias for
-.BR "\-f \-\-nover" .
+.BR \-\-rebuildtree ", " \-\-rebuild\-tree=\fIINCR\fR
+Rebuild a package and its dependencies with an optional
+.I pkgrel
+increment
+.RB ( "aur\-build \-\-rebuild" ).
+Implies
+.BR \-\-nover .
 .
 .TP
-.BR \-\-rebuildall ", " \-\-rebuild\-all
-As
-.BR \-\-rebuild\-tree ,
-but append all packages in the repository (see
-.BR \-d )
-as targets. May be used together with
+.BR \-\-rebuildall ", " \-\-rebuild\-all=\fIINCR\fR
+Rebuild all packages in a local repository with an optional
+.I pkgrel
+increment
+.RB ( "aur-build \-\-rebuild" ).
+May be used together with
 .B \-o
 to repopulate source directories in
 .BR $AURDEST .

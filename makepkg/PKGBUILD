@@ -1,6 +1,6 @@
 # Maintainer: Alad Wenter <https://github.com/AladW>
 pkgname=aurutils-git
-pkgver=10b.r243.g35530702
+pkgver=11.r31.g5caec9b6
 pkgrel=1
 pkgdesc='helper tools for the arch user repository'
 url='https://github.com/AladW/aurutils'
@@ -20,7 +20,8 @@ optdepends=('bash-completion: bash completion'
             'perl-json-xs: faster JSON serialization'
             'ninja: aur-sync ninja support'
             'bat: view-delta example script'
-            'git-delta: view-delta example script')
+            'git-delta: view-delta example script'
+            'setconf: aur-build --rebuild')
 
 pkgver() {
     cd aurutils

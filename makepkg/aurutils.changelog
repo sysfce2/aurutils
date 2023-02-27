@@ -1,7 +1,11 @@
 ## 12
 
 * `aur-build`
-  + remove helper `aur-build--sync`
+  + merge helper `aur-build--sync` back to `aur-build`
+  + add `--rebuild` with optional `pkgrel` increment
+
+* `aur-sync`
+  + add optional `pkgrel` increment for `--rebuild`, `--rebuild-tree`, `--rebuild-all`
 
 * `aur-view`
   + use null seperated lists as input to vifm(1)

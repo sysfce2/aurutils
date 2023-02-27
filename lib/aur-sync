@@ -114,7 +114,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
           'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
           'no-view' 'no-provides' 'no-build' 'rmdeps' 'sign' 'temp' 'upgrades'
-          'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
+          'pkgver' 'rebuild::' 'rebuild-tree::' 'rebuild-all::' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
           'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:'
           'rebase' 'reset' 'ff' 'exclude:' 'columns' 'prefix')
@@ -170,11 +170,11 @@ while true; do
             repo_p+=("${repo[@]}")
             provides=1 ;;
         --rebuild)
-            build_args+=(-f); chkver_depth=1 ;;
+            shift; build_args+=("--rebuild=$1"); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
-            build_args+=(-f); chkver_depth=0 ;;
+            shift; build_args+=("--rebuild=$1"); chkver_depth=0;;
         --rebuildall|--rebuild-all)
-            build_args+=(-f); chkver_depth=0; repo_targets=1 ;;
+            shift; build_args+=("--rebuild=$1"); chkver_depth=0; repo_targets=1 ;;
         -u|--upgrades)
             update=1 ;;
         # database options

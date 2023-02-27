@@ -97,7 +97,7 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
           'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'makepkg-args:' 'user:'
-          'margs:' 'buildscript:')
+          'margs:' 'buildscript:' 'rebuild::')
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:')
 
@@ -107,7 +107,7 @@ else
     usage
 fi
 
-unset db_name db_path db_root makepkg_conf pacman_conf results_file queue
+unset buildscript db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
 while true; do
     case "$1" in
         # build options
@@ -115,13 +115,17 @@ while true; do
             shift; queue=$1 ;;
         -f|--force)
             overwrite=1 ;;
+        --rebuild)
+            shift; pkgrel_incr=$1
+            overwrite=1 ;;
         -c|--chroot)
             chroot=1 ;;
         -d|--database|--repo)
             shift; db_name=$1
             repo_args+=(--repo "$1") ;;
         --buildscript)
-            shift; makepkg_common_args+=(-p "$1")
+            shift; buildscript=$1
+            makepkg_common_args+=(-p "$1")
             pkglist_args+=(-p "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
@@ -300,6 +304,12 @@ elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
     exit 13
 fi
 
+# pkgrel increments valid by PKGBUILD(5)
+if [[ $pkgrel_incr ]] && ! { [[ $pkgrel_incr == '1' ]] || [[ $pkgrel_incr == '.1' ]]; }; then
+    printf >&2 '%s: %s: invalid pkgrel increment\n' "$argv0" "$pkgrel_incr"
+    exit 1
+fi
+
 # Write successfully built packages to file (#437, #980)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
@@ -378,6 +388,12 @@ while IFS= read -ru "$fd" path; do
     fi
 
     if (( create_package )); then
+        # Increase pkgrel before rebuilding a package (#1046)
+        if [[ $pkgrel_incr ]]; then
+            printf >&2 '%s: increasing pkgrel by value %s\n' "$argv0" "$pkgrel_incr"
+            setconf "${buildscript-PKGBUILD}" "pkgrel+=$pkgrel_incr"
+        fi
+
         if (( chroot )); then
             PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
         else

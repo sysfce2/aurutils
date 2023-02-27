@@ -149,6 +149,29 @@ function run priorly with
 .BR \-\-pkgver .
 .
 .TP
+.BR \-\-rebuild ", " \-\-rebuild=\fIINCR\fR
+As
+.BR \-\-force ,
+but supports an optional
+.I pkgrel
+increment. Supported values for
+.B \-\-rebuild
+are
+.B 1
+and
+.BR .1 .
+Latter indicates an increase in subrelease level, and usually avoids
+conflicts with intermediate PKGBUILD updates.
+.
+.IP
+Rebuilds are commonly done when package dependencies are updated
+in an incompatible way, such that the original package is no longer
+functional.
+.I pkgrel
+increments ensure that the newly built package is propagated to all
+clients of the local repository.
+.
+.TP
 .BR \-S ", " \-\-sign ", " \-\-gpg\-sign
 Sign built packages and the database
 .RB ( "repo\-add \-s" )
