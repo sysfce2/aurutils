@@ -120,7 +120,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'rebase' 'reset' 'ff' 'exclude:' 'columns' 'prefix')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
-            'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
+            'rebuildall::' 'rebuildtree::' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
             'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
