@@ -171,13 +171,13 @@ while true; do
             provides=1 ;;
         --rebuild)
             : optval
-            shift; build_args+=("--rebuild=$1"); chkver_depth=1 ;; #optval
+            shift; build_args+=("--rebuild=$1"); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
             : optval
-            shift; build_args+=("--rebuild=$1"); chkver_depth=0 ;; #optval
+            shift; build_args+=("--rebuild=$1"); chkver_depth=0 ;;
         --rebuildall|--rebuild-all)
             : optval
-            shift; build_args+=("--rebuild=$1"); chkver_depth=0; repo_targets=1 ;; #optval
+            shift; build_args+=("--rebuild=$1"); chkver_depth=0; repo_targets=1 ;;
         -u|--upgrades)
             update=1 ;;
         # database options
