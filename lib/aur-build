@@ -384,7 +384,7 @@ while IFS= read -ru "$fd" path; do
         # Increase pkgrel before rebuilding a package (#1046)
         if [[ $pkgrel_incr ]]; then
             printf >&2 '%s: increasing pkgrel by value %s\n' "$argv0" "$pkgrel_incr"
-            env -C "$path" setconf "$buildscript.$$" "pkgrel+=$pkgrel_incr"
+            env -C "$path" setconf "$buildscript" "pkgrel+=$pkgrel_incr"
         fi
 
         if (( chroot )); then
