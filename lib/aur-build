@@ -5,7 +5,6 @@ set -o errexit
 shopt -s extglob
 argv0=build
 machine=$(uname -m)
-startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # Avoid CDPATH screwing with cd (#1047)
@@ -59,11 +58,6 @@ EOF
     done
 }
 
-run_msg() {
-    printf >&2 'Running %s\n' "${*:$1}"
-    "${@:2}"
-}
-
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -107,7 +101,7 @@ else
     usage
 fi
 
-unset buildscript db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
+unset db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
 while true; do
     case "$1" in
         # build options
@@ -125,8 +119,7 @@ while true; do
             shift; db_name=$1
             repo_args+=(--repo "$1") ;;
         --buildscript)
-            shift; buildscript=$1
-            makepkg_common_args+=(-p "$1")
+            shift; makepkg_common_args+=(-p "$1")
             pkglist_args+=(-p "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
@@ -321,13 +314,13 @@ if (( chroot )); then
     # Update pacman and makepkg configuration for the chroot build
     # queue. A full system upgrade is run on the /root container to
     # avoid lenghty upgrades for makechrootpkg -u.
-    run_msg 2 aur chroot --create --update "${chroot_args[@]}"
+    aur chroot --create --update "${chroot_args[@]}"
 fi
 
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
 else
-    exec {fd}< <(printf '\n')
+    exec {fd}< <(echo "$PWD")
 fi
 
 # Early consistency check for signed database
@@ -347,11 +340,10 @@ elif [[ -v GPGKEY ]]; then
     gpg_args+=(-u "$GPGKEY")
 fi
 
-while IFS= read -ru "$fd" path; do
-    # Use two cd calls to handle absolute paths in --arg-file
-    cd -- "$startdir"
-    [[ $path ]] && cd -- "$path"
+# Change to private directory
+cd -- "$var_tmp"
 
+while IFS= read -ru "$fd" path; do
     # Allow running repo-add(8) on existing packages (#839)
     create_package=1
     pkglist=()
@@ -359,7 +351,7 @@ while IFS= read -ru "$fd" path; do
     # Run pkgver function before --packagelist (#500)
     if (( run_pkgver )); then
         #shellcheck disable=SC2086
-        ${AUR_MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
+        env -C "$path" ${AUR_MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not
@@ -370,7 +362,7 @@ while IFS= read -ru "$fd" path; do
         while IFS=':' read -r pkgpath; do
             [[ -f $pkgpath ]] && exists+=("$pkgpath")
         done < <(
-            PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
+            env -C "$path" PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
         )
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
@@ -392,22 +384,19 @@ while IFS= read -ru "$fd" path; do
         # Increase pkgrel before rebuilding a package (#1046)
         if [[ $pkgrel_incr ]]; then
             printf >&2 '%s: increasing pkgrel by value %s\n' "$argv0" "$pkgrel_incr"
-            setconf "${buildscript-PKGBUILD}" "pkgrel+=$pkgrel_incr"
+            env -C "$path" setconf "$buildscript.$$" "pkgrel+=$pkgrel_incr"
         fi
 
         if (( chroot )); then
-            PKGDEST="$var_tmp" run_msg 2 aur chroot --build "${chroot_args[@]}"
+            env -C "$path" PKGDEST="$var_tmp" aur chroot --build "${chroot_args[@]}"
         else
             #shellcheck disable=SC2086
-            PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
-                run_msg 2 ${AUR_MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
+            env -C "$path" PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
+                ${AUR_MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
-
-        cd -- "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
     else
-        cd -- "$var_tmp"
-        # pkglist has paths to $db_root/<pkg>
+        : # pkglist has paths to $db_root/<pkg>
     fi
 
     # Sign any packages without signatures, even if the packages are existing.
@@ -447,9 +436,8 @@ while IFS= read -ru "$fd" path; do
     fi
 
     # Update database
-    cd -- "$db_root"
     #shellcheck disable=SC2086
-    LANG=C ${AUR_REPO_ADD:-repo-add} "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
+    env -C "$db_root" LANG=C ${AUR_REPO_ADD:-repo-add} "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
 
     if (( chroot )) || (( no_sync )); then
         continue
