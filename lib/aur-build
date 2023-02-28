@@ -299,7 +299,7 @@ elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
 fi
 
 # pkgrel increments valid by PKGBUILD(5)
-if [[ $pkgrel_incr ]] && ! { [[ $pkgrel_incr == '1' ]] || [[ $pkgrel_incr == '.1' ]]; }; then
+if [[ $pkgrel_incr ]] && ! [[ $pkgrel_incr =~ ^[0-9]*\.?[0-9]+$ ]]; then
     printf >&2 '%s: %s: invalid pkgrel increment\n' "$argv0" "$pkgrel_incr"
     exit 1
 fi
