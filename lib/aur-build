@@ -5,6 +5,7 @@ set -o errexit
 shopt -s extglob
 argv0=build
 machine=$(uname -m)
+startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # Avoid CDPATH screwing with cd (#1047)
@@ -320,7 +321,7 @@ fi
 if [[ -v queue ]]; then
     exec {fd}< "$queue"
 else
-    exec {fd}< <(echo "$PWD")
+    exec {fd}< <(echo "$startdir")
 fi
 
 # Early consistency check for signed database
@@ -340,10 +341,9 @@ elif [[ -v GPGKEY ]]; then
     gpg_args+=(-u "$GPGKEY")
 fi
 
-# Change to private directory
-cd -- "$var_tmp"
-
 while IFS= read -ru "$fd" path; do
+    cd -- "$startdir"
+
     # Allow running repo-add(8) on existing packages (#839)
     create_package=1
     pkglist=()
@@ -394,9 +394,12 @@ while IFS= read -ru "$fd" path; do
             env -C "$path" PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
                 ${AUR_MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
+
+        cd -- "$var_tmp"
         pkglist=(!(*.sig)) # discard makepkg --sign from package list (#410)
     else
-        : # pkglist has paths to $db_root/<pkg>
+        cd -- "$var_tmp"
+        # pkglist has paths to $db_root/<pkg>
     fi
 
     # Sign any packages without signatures, even if the packages are existing.
