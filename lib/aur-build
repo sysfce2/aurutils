@@ -92,7 +92,7 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
           'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'makepkg-args:' 'user:'
-          'margs:' 'buildscript:' 'rebuild::')
+          'margs:' 'buildscript:')
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:')
 
@@ -109,10 +109,6 @@ while true; do
         -a|--arg-file)
             shift; queue=$1 ;;
         -f|--force)
-            overwrite=1 ;;
-        --rebuild)
-            : optval
-            shift; pkgrel_incr=$1
             overwrite=1 ;;
         -c|--chroot)
             chroot=1 ;;
@@ -299,12 +295,6 @@ elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
     exit 13
 fi
 
-# pkgrel increments valid by PKGBUILD(5)
-if [[ $pkgrel_incr ]] && ! [[ $pkgrel_incr =~ ^[0-9]*\.?[0-9]+$ ]]; then
-    printf >&2 '%s: %s: invalid pkgrel increment\n' "$argv0" "$pkgrel_incr"
-    exit 1
-fi
-
 # Write successfully built packages to file (#437, #980)
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
@@ -381,12 +371,6 @@ while IFS= read -ru "$fd" path; do
     fi
 
     if (( create_package )); then
-        # Increase pkgrel before rebuilding a package (#1046)
-        if [[ $pkgrel_incr ]]; then
-            printf >&2 '%s: increasing pkgrel by value %s\n' "$argv0" "$pkgrel_incr"
-            env -C "$path" setconf "$buildscript" "pkgrel+=$pkgrel_incr"
-        fi
-
         if (( chroot )); then
             env -C "$path" PKGDEST="$var_tmp" aur chroot --build "${chroot_args[@]}"
         else
@@ -445,9 +429,6 @@ while IFS= read -ru "$fd" path; do
     if (( chroot )) || (( no_sync )); then
         continue
     else
-        # Like `makepkg --syncdeps`, the following affects the host and so uses
-        # the host pacman configuration. --pacman-conf (which may also
-        # point to a world-writeable file) is not applied.
         #shellcheck disable=SC2086
         ${AUR_PACMAN_AUTH:-sudo} pacsync "$db_name"
         #shellcheck disable=SC2086
