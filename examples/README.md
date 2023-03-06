@@ -2,6 +2,21 @@ This directory contains simple examples which combine `aur(1)` programs. They
 typically have fixed options, are expected to be modified by the user, and are
 documented line-by-line.
 
+## sync-asroot
+
+`aur-build` operates as a regular user, with the following exceptions:
+
+* installation of package dependencies with `makepkg -s`;
+* updating the local repository with `pacman -S`;
+* interacting with an nspawn container with `aur-chroot`.
+
+Instead of elevating to the root user for these tasks, `aur-build` can be run as
+root, dropping privileges where necessary. `sync-asroot` does do by running
+`makepkg`, `gpg` and `repo-add` with `runuser -u <user>`. Sources are also retrieved this
+way with `runuser -u <user> aur sync`.
+
+Other possible agents are `runuser`, `setpriv`, and `systemd-run`.
+
 ## sync-devel
 
 The aim of this script is to take all VCS (version control) packages in a local
@@ -35,30 +50,6 @@ directories are available. This suggests to use a persistent directory for
 `AURDEST`, instead of the default `$XDG_CACHE_HOME/aurutils/sync` used by
 `aur-sync(1)`.
 
-## view-delta
-
-`aur-view(1)` uses `vifm(1)` or a comparable file manager set in
-`AUR_PAGER` to inspect and edit build files. 
-
-`view-delta` assumes that files are not edited before the build process,
-and takes the following approach:
-
-1. display diffs side-by side with `git-delta`;
-2. display remaining files with `bat` for syntax highlighting.
-
-A pager (defaults to `less`) is used for navigation. To allow aborting
-the inspection process with a non-zero exit code, a confirmation prompt
-is displayed.
-
-`view-delta` can be used as any other file manager taking a directory
-argument:
-
-```bash
-view-delta <path to build files>  # directly
-AUR_PAGER=view-delta aur view ... # with aur-view
-AUR_PAGER=view-delta aur sync ... # with aur-view wrappers
-```
-
 ## sync-list
 
 When using `aur-sync(1)` or `aur-build(1)`, packages accumulate in (one or
@@ -89,22 +80,6 @@ unused upgrades with `aur-sync -u`. Cleanups can then be done periodically:
 $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repo-purge -f custom
 ```
 
-## sync-asroot
-
-
-`aur-build` operates as a regular user, with the following exceptions:
-
-* installation of package dependencies with `makepkg -s`;
-* updating the local repository with `pacman -S`;
-* interacting with an nspawn container with `aur-chroot`.
-
-Instead of elevating to the root user for these tasks, `aur-build` can be run as
-root, dropping privileges where necessary. `sync-asroot` does do by running
-`makepkg`, `gpg` and `repo-add` with `runuser -u <user>`. Sources are also retrieved this
-way with `runuser -u <user> aur sync`.
-
-Other possible agents are `runuser`, `setpriv`, and `systemd-run`.
-
 > **Note**
 > Dropping privileges allows to restrict elevated commands during the build process.
 >
@@ -125,3 +100,27 @@ Other possible agents are `runuser`, `setpriv`, and `systemd-run`.
 > 1. `makechrootpkg` executes any commands contained in the user's `makepkg.conf(5)` as root;
 > 2. arbitrary paths on the host can be overwritten with `makechrootpkg --bind`;
 > 3. any pacman commands inside the nspawn container can be run with `sudo`, including `pacman -U`.
+
+## view-delta
+
+`aur-view(1)` uses `vifm(1)` or a comparable file manager set in
+`AUR_PAGER` to inspect and edit build files. 
+
+`view-delta` assumes that files are not edited before the build process,
+and takes the following approach:
+
+1. display diffs side-by side with `git-delta`;
+2. display remaining files with `bat` for syntax highlighting.
+
+A pager (defaults to `less`) is used for navigation. To allow aborting
+the inspection process with a non-zero exit code, a confirmation prompt
+is displayed.
+
+`view-delta` can be used as any other file manager taking a directory
+argument:
+
+```bash
+view-delta <path to build files>  # directly
+AUR_PAGER=view-delta aur view ... # with aur-view
+AUR_PAGER=view-delta aur sync ... # with aur-view wrappers
+```
