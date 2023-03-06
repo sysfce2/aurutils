@@ -18,8 +18,12 @@ args_csv() {
 # spread arguments with xargs (and printf, as a shell built-in).
 satisfies() {
     #global sift_args
-    unbuffer xargs -a <(printf -- "--satisfies=%s\n" "$@") \
-             pacsift "${sift_args[@]}"
+    # Support `unbuffer` if redirecting from `/dev/tty` is insufficient (#1051)
+    if command -v unbuffer >/dev/null; then
+        unbuffer  xargs -a <(printf -- "--satisfies=%s\n" "$@") pacsift "${sift_args[@]}"
+    else
+        </dev/tty xargs -a <(printf -- "--satisfies=%s\n" "$@") pacsift "${sift_args[@]}"
+    fi
 }
 
 provides() {

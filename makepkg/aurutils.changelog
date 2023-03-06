@@ -3,6 +3,9 @@
 * `aur-build`
   + merge helper `aur-build--sync` back to `aur-build`
 
+* `aur-repo-filter`
+  + `unbuffer` is now optional (#1052)
+
 * `aur-view`
   + use null seperated lists as input to vifm(1)
 
