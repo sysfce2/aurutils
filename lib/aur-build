@@ -345,18 +345,22 @@ while IFS= read -ru "$fd" path; do
         ${AUR_MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
     fi
 
-    # Check if the package is already built, but unlike makepkg, do not
-    # exit with an error when so. A warning avoids a queue of builds
-    # aborting because one member already exists.
+    # Retrieve list of potential package paths. This is used to (optionally)
+    # check if package paths are already available in the local repository
+    # before builds. If so, the build is skipped and the path is passed to
+    # repo-add (create_package=0). If no paths are available, the package is
+    # assumed to not exist and the build proceeds as usual (create_package=1).
     if (( ! overwrite )); then
+        mapfile -t pkgpath < <(PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}")
+
+        if ! wait "$!" || (( ${#pkgpath[@]} == 0 )); then
+            printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
+        fi
+
         exists=()
-        while IFS=':' read -r pkgpath; do
-            [[ -f $pkgpath ]] && exists+=("$pkgpath")
-        done < <(
-            PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
-        )
-        # Preserve the exit status from aur-build--pkglist (#671)
-        wait "$!"
+        for p in "${pkgpath[@]}"; do
+            [[ -f $p ]] && exists+=("$p")
+        done
 
         if (( ${#exists[@]} )); then
             printf >&2 '%s: warning: skipping existing package (use -f to overwrite)\n' "$argv0"

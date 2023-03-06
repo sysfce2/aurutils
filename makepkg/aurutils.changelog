@@ -2,6 +2,7 @@
 
 * `aur-build`
   + merge helper `aur-build--sync` back to `aur-build`
+  + avoid errors with PKGBUILDs that fail to source with `set -e`
 
 * `aur-repo-filter`
   + `unbuffer` is now optional (#1052)

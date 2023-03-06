@@ -1,6 +1,5 @@
 #!/bin/bash
 [[ -v AUR_DEBUG ]] && set -o xtrace
-set -o errexit
 argv0=build--pkglist
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -59,6 +58,8 @@ elif (( UID == 0 )); then
     exit 1
 fi
 
+# Sourcing the PKGBUILD should be done without set -e or other modes
+# to match makepkg behavior (e.g. aur/cemu, aur/nicotine-plus-git)
 # shellcheck disable=SC1090
 source "${buildscript-PKGBUILD}"
 PKGDEST=${PKGDEST:-$PWD}
@@ -81,4 +82,3 @@ case $mode in
         write_srcinfo_content
         ;;
 esac
-
