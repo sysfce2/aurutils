@@ -578,6 +578,27 @@ in
 .BR makepkg (8)
 for details.
 .
+.SS Thread safety
+.B aur\-build
+builds and signs packages inside a private directory located in
+.IR /var/tmp .
+On success, packages and their signatures are moved with
+.BR mv (1),
+which is atomic if the local repository is on the same file system as
+.BR /var/tmp .
+.BR makepkg (8)
+may still write to the
+.B PKGBUILD
+in a shared directory, for example when a
+.I pkgver()
+function is available. Because of this, it is advised to split the
+argument file
+.RB ( "\-a FILE" )
+into independent arguments, or increase the number of jobs with
+.B MAKEFLAGS
+per
+.BR makepkg.conf (5).
+.
 .SH BUGS
 Databases are built with
 .B LANG=C
