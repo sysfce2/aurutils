@@ -101,6 +101,30 @@ unused upgrades with `aur-sync -u`. Cleanups can then be done periodically:
 $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repo-purge -f custom
 ```
 
+## sync-rebuild
+
+Package rebuilds are commonly done when package dependencies are updated in an
+incompatible way, such that the original package is no longer functional.
+`pkgrel` increments ensure that the rebuilt packages are propagated to all
+clients of the local repository.
+
+Assuming a list of rebuild targets is known, `sync-rebuild` performs the
+following steps:
+
+1. Retrieve and inspect all source files with `aur sync`
+2. Retrieve all versions of packages in the local repository
+3. If `pkgver` matches the local repository version, set `pkgrel` in the
+   `PKGBUILD` to the local repository version, incremented by `0.1`. Otherwise,
+   leave the `PKGBUILD` unmodified.
+4. Build the package with `aur-build`. If the build fails, restore the original
+   `PKGBUILD`
+5. Print any targets which are cached by `pacman` but not available in the local
+   repository.
+
+In step 3, the local repository version is written explicitly to the `PKGBUILD`
+in case the incremented version is lost, or otherwise restored (e.g. with
+`git-reset`).
+
 ## view-delta
 
 `aur-view(1)` uses `vifm(1)` or a comparable file manager set in

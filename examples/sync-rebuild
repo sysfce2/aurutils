@@ -1,0 +1,77 @@
+#!/bin/bash
+# rebuild - increase subrelease level based on repository contents
+# requires setconf
+argv0=sync-rebuild
+XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
+AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
+AUR_REPO=${AUR_REPO:-custom}
+buildscript=PKGBUILD
+
+if (( ! $# )); then
+    printf >&2 '%s: no arguments provided\n' "$argv0"
+    exit 1
+fi
+
+# Ensure all sources are available. When not looping over all targets, this step
+# can be left out.  TODO: only clone packages that are already in the local repo
+aur sync -d "$AUR_REPO" --no-build --no-ver-argv -- "$@"
+
+declare -A targets
+for t in "$@"; do
+    targets[$t]=1
+done
+
+declare -A rebuilt failure
+while read -r name version base; do
+    [[ ${targets[$name]} ]] || continue  # restrict to command-line packages
+    [[ ${rebuilt[$name]} ]] && continue  # only run once per pkgbase
+
+    # Copy original PKGBUILD in case of makepkg failure
+    cp -v "$AURDEST/$base/$buildscript"{,.tmp}
+
+    # Check that pkgver is consistent between local repo and PKGBUILD
+    if ! srcver=$(pacini "$AURDEST/$base/.SRCINFO" pkgver); then
+        printf >&2 '%s: no such file or directory: .SRCINFO\n' "$argv0"
+        exit 1
+    fi
+
+    if [[ $srcver != "${version%%-*}" ]]; then
+        printf >&2 '%s: source and local repository version differ\n' "$argv0"
+        printf >&2 '%s: using existing pkgver\n' "$argv0"
+    else
+        # Increase subrelease level to avoid conflicts with intermediate PKGBUILD updates
+        release=${version##*-}
+        printf >&2 '%s: %s: %s -> %s\n' "$argv0" "$base" "$release" "$(awk '{ print $1 += 0.1 }' <<< "$release")"
+        setconf "$AURDEST/$base/$buildscript" "pkgrel=$release"
+        setconf "$AURDEST/$base/$buildscript" "pkgrel+=.1"
+    fi
+
+    # TODO: use different FD for --confirm
+    if env -C "$AURDEST/$base" aur build -d "$AUR_REPO" -srn; then
+        rm "$AURDEST/$base/$buildscript".tmp
+    else
+        mv -v "$AURDEST/$base/$buildscript".tmp "$AURDEST/$base/$buildscript"
+        failure[$name]=$base
+    fi
+    rebuilt[$name]=$base
+done < <(
+    # Resolve pkgname (argv) to pkgbase (AUR checkouts)
+    aur repo -Jd "$AUR_REPO" | aur format -f '%n\t%v\t%b\n'; exit "${PIPESTATUS[0]}"
+)
+wait "$!" || exit
+
+if (( ${#failure[@]} )); then
+    printf >&2 '%s: the following targets failed to build:\n' "$argv0"
+    printf >&2 '%s\n' "${rebuilt_fail[@]}"
+fi
+
+mapfile -t rest < <(
+    grep -Fxvf <(printf '%s\n' "${!rebuilt[@]}") <(printf '%s\n' "$@")
+)
+if (( ${#rest[@]} )); then
+    printf >&2 '%s: the following targets are not available in the local repository:\n' "$argv0"
+    printf >&2 '%s\n' "${rest[@]}"
+
+    printf >&2 '%s: with cached entries:\n' "$argv0"
+    pacsift >&2 "${rest[@]/#/--name=}" --exact --cache 2>/dev/null | pacsort
+fi

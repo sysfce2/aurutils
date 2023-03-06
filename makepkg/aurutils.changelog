@@ -9,6 +9,9 @@
 * `aur-view`
   + use null seperated lists as input to vifm(1)
 
+* `examples`
+  + add `sync-rebuild`
+
 * `lib`
   + unset `CDPATH` where needed
   + use `getopt` instead of `parseopts.sh` from libmakepkg
