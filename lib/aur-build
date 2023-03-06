@@ -333,6 +333,7 @@ fi
 
 while IFS= read -ru "$fd" path; do
     cd -- "$startdir"
+    [[ $path ]] && cd -- "$path"
 
     # Allow running repo-add(8) on existing packages (#839)
     create_package=1
@@ -341,7 +342,7 @@ while IFS= read -ru "$fd" path; do
     # Run pkgver function before --packagelist (#500)
     if (( run_pkgver )); then
         #shellcheck disable=SC2086
-        env -C "$path" ${AUR_MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
+        ${AUR_MAKEPKG:-makepkg} -od "${makepkg_common_args[@]}" >&2
     fi
 
     # Check if the package is already built, but unlike makepkg, do not
@@ -352,7 +353,7 @@ while IFS= read -ru "$fd" path; do
         while IFS=':' read -r pkgpath; do
             [[ -f $pkgpath ]] && exists+=("$pkgpath")
         done < <(
-            env -C "$path" PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
+            PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}"
         )
         # Preserve the exit status from aur-build--pkglist (#671)
         wait "$!"
@@ -372,10 +373,10 @@ while IFS= read -ru "$fd" path; do
 
     if (( create_package )); then
         if (( chroot )); then
-            env -C "$path" PKGDEST="$var_tmp" aur chroot --build "${chroot_args[@]}"
+            PKGDEST="$var_tmp" aur chroot --build "${chroot_args[@]}"
         else
             #shellcheck disable=SC2086
-            env -C "$path" PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
+            PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
                 ${AUR_MAKEPKG:-makepkg} "${makepkg_common_args[@]}" "${makepkg_args[@]}"
         fi
 
