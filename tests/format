@@ -8,7 +8,8 @@ for t in "${tests_t[@]}"; do
     cnt1=$(aur format -f '%n\n' "$t" | wc -l)
 
     # variable input formats
-    case json/${t%%.json} in
+    u=${t%%.json}
+    case ${u##json/} in
         ascii|depends|search|utf-8|none)
             cnt2=$(jq < "$t" '.results | length') ;;
         meta|empty_a)
