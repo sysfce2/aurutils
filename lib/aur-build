@@ -355,6 +355,7 @@ while IFS= read -ru "$fd" path; do
 
         if ! wait "$!" || (( ${#pkgpath[@]} == 0 )); then
             printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
+            unset -v pkgpath
         fi
 
         exists=()
