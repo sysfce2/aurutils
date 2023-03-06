@@ -17,6 +17,27 @@ way with `runuser -u <user> aur sync`.
 
 Other possible agents are `runuser`, `setpriv`, and `systemd-run`.
 
+> **Note**
+> Dropping privileges allows to restrict elevated commands during the build process.
+>
+> For example, if `sudo` is run in the same session as `makepkg` (for example through 
+> `makepkg --syncdeps`), commands in the PKGBUILD or upstream sources may run `sudo` 
+> without authorization for a period of `timeout_timestamp`. This defaults to 5 minutes.
+>
+> The following steps can be taken to avoid this:
+>
+> 1. specify a build user without `sudoers` access;
+> 2. set `timeout_timestamp` to 0;
+> 3. disable the `setuid` bit with `setpriv --no-new-privs`.
+>
+> **Warning**
+> The considerations above do _not_ apply to chroot builds. Building packages with `makechrootpkg`
+> gives the build process unfettered access to the host, regardless of how the build user is configured:
+> 
+> 1. `makechrootpkg` executes any commands contained in the user's `makepkg.conf(5)` as root;
+> 2. arbitrary paths on the host can be overwritten with `makechrootpkg --bind`;
+> 3. any pacman commands inside the nspawn container can be run with `sudo`, including `pacman -U`.
+
 ## sync-devel
 
 The aim of this script is to take all VCS (version control) packages in a local
@@ -79,27 +100,6 @@ unused upgrades with `aur-sync -u`. Cleanups can then be done periodically:
 ```bash
 $ grep -Fxvf list.txt <(aur repo --list | cut -f1) | xargs -r repo-purge -f custom
 ```
-
-> **Note**
-> Dropping privileges allows to restrict elevated commands during the build process.
->
-> For example, if `sudo` is run in the same session as `makepkg` (for example through 
-> `makepkg --syncdeps`), commands in the PKGBUILD or upstream sources may run `sudo` 
-> without authorization for a period of `timeout_timestamp`. This defaults to 5 minutes.
->
-> The following steps can be taken to avoid this:
->
-> 1. specify a build user without `sudoers` access;
-> 2. set `timeout_timestamp` to 0;
-> 3. disable the `setuid` bit with `setpriv --no-new-privs`.
->
-> **Warning**
-> The considerations above do _not_ apply to chroot builds. Building packages with `makechrootpkg`
-> gives the build process unfettered access to the host, regardless of how the build user is configured:
-> 
-> 1. `makechrootpkg` executes any commands contained in the user's `makepkg.conf(5)` as root;
-> 2. arbitrary paths on the host can be overwritten with `makechrootpkg --bind`;
-> 3. any pacman commands inside the nspawn container can be run with `sudo`, including `pacman -U`.
 
 ## view-delta
 
