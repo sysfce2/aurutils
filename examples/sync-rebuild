@@ -62,7 +62,7 @@ wait "$!" || exit
 
 if (( ${#failure[@]} )); then
     printf >&2 '%s: the following targets failed to build:\n' "$argv0"
-    printf >&2 '%s\n' "${rebuilt_fail[@]}"
+    printf >&2 '%s\n' "${failure[@]}"
 fi
 
 mapfile -t rest < <(
