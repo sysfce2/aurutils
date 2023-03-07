@@ -351,17 +351,14 @@ while IFS= read -ru "$fd" path; do
     # repo-add (create_package=0). If no paths are available, the package is
     # assumed to not exist and the build proceeds as usual (create_package=1).
     if (( ! overwrite )); then
-        mapfile -t pkgpath < <(PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}")
-
-        if ! wait "$!" || (( ${#pkgpath[@]} == 0 )); then
-            printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
-            unset -v pkgpath
-        fi
-
         exists=()
-        for p in "${pkgpath[@]}"; do
-            [[ -f $p ]] && exists+=("$p")
-        done
+        while read -r pkgpath; do
+            [[ -f $pkgpath ]] && exists+=("$pkgpath")
+        done < <(PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}")
+
+        if ! wait "$!"; then
+            printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
+        fi
 
         if (( ${#exists[@]} )); then
             printf >&2 '%s: warning: skipping existing package (use -f to overwrite)\n' "$argv0"
