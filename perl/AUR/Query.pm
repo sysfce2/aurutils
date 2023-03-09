@@ -98,14 +98,14 @@ sub query_multi {
 
     # n-ary queue processing (aurweb term limit)
     while (my @next = splice(@{$args{terms}}, 0, $args{splitno})) {
-	my $data;
+        my $data;
         map { $data .= '&arg[]=' . urlencode($_) } @next;
 
         # XXX: let callback handle both @results and $response (aur-search union/intersection)
         my $response = query_curl("$aur_rpc/v$aur_rpc_ver/$args{type}", '--data-raw', $data);
 
-	defined $args{callback} ? push(@results, $args{callback}->($response))
-	                        : push(@results, $response);
+        defined $args{callback} ? push(@results, $args{callback}->($response))
+                                : push(@results, $response);
     }
     return @results;
 }
