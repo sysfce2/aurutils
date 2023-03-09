@@ -68,25 +68,29 @@ sub query_curl {
     return $str;
 }
 
+# XXX: accept arbitrary suffix/parameter instead of $by
 sub query {
     my %args = (type => undef, term => undef, by => undef, callback => undef, @_);
     if (not defined $args{term}) {
         die 'query: no search term supplied';
     }
-    my $path = "$aur_rpc/v$aur_rpc_ver/$args{type}/$args{term}";
+    my $term = urlencode($args{term});
+    my $path = "$aur_rpc/v$aur_rpc_ver/$args{type}/$term";
 
     if (defined $args{by}) {
         $path = join('?by=', $path, $args{by});
     }
-    defined $args{callback} ? return $args{callback}->(query_curl($path))
-                            : return query_curl($path);
+    my $response = query_curl($path);
+
+    defined $args{callback} ? return $args{callback}->($response)
+                            : return $response;
 }
 
 # XXX: this can also be used to split GET requests
 sub query_multi {
-    my %args = (type => undef, by => undef, terms => [], splitno => $aur_splitno, callback => undef, @_);
-    my $path = "$aur_rpc/v$aur_rpc_ver/$args{type}";
-
+    my %args = (type => undef, terms => [], splitno => $aur_splitno, callback => undef, @_);
+    croak if defined $args{by}; # searches should be done with query()
+    
     if (scalar @{$args{terms}} == 0) {
         die 'query_multi: no search terms supplied';
     }
@@ -94,14 +98,14 @@ sub query_multi {
 
     # n-ary queue processing (aurweb term limit)
     while (my @next = splice(@{$args{terms}}, 0, $args{splitno})) {
-        my $data;
-        $data .= '&by=' . $args{by} if defined $args{by};
-        map { $data .= '&arg[]=' . $_ } @next;
+	my $data;
+        map { $data .= '&arg[]=' . urlencode($_) } @next;
 
-        # TODO/Idea: let callback handle both @results and $response (aur-search union/intersection)
-        my $response = query_curl($path, '--data-raw', $data);
-        defined $args{callback} ? push(@results, $args{callback}->($response)) 
-                                : push(@results, $response);
+        # XXX: let callback handle both @results and $response (aur-search union/intersection)
+        my $response = query_curl("$aur_rpc/v$aur_rpc_ver/$args{type}", '--data-raw', $data);
+
+	defined $args{callback} ? push(@results, $args{callback}->($response))
+	                        : push(@results, $response);
     }
     return @results;
 }
