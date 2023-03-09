@@ -36,6 +36,10 @@ if [[ -f ${AUR_ENV=$XDG_CONFIG_HOME/aurutils/env} ]]; then
     wait "$!"
 fi
 
+if [[ -v AUR_DEBUG ]]; then
+    printf >&2 'aur version %s\n' "$aur_version"
+fi
+
 case $1 in
     --version)
         printf >&2 'aur version %s\n' "$aur_version"
