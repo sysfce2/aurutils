@@ -1,10 +1,10 @@
-.TH AUR-DEPENDS 1 2023-01-13 AURUTILS
+.TH AUR-DEPENDS 1 2023-03-10 AURUTILS
 .SH NAME
 aur\-depends \- retrieve dependencies using aurweb
 .
 .SH SYNOPSIS
 .SY "aur depends"
-.OP \-abGnt
+.OP \-anrtJ
 .IR "pkgname [pkgname...]"
 .YS
 .
@@ -12,28 +12,29 @@ aur\-depends \- retrieve dependencies using aurweb
 .B aur\-depends
 solves dependencies for packages provided on the command line using
 .BR aur\-query (1).
-The transitive closure of dependencies within AUR is computed. Dependency
-information is printed to standard output as edges
-.BR \%pkgbase\etdepends ,
-where
+If a hyphen is specified, packages are taken from standard input.
+.PP
+The transitive closure of dependencies within AUR is computed, with
+Dependency information printed to standard output as edges
+.IR \%pkgbase\etdepends .
+By default,
 .I depends
-is resolved to
-.BR pkgbase
-by default.
+resolves to
+.BR pkgbase .
 .
 .SH OPTIONS
+.TP
+.BR \-a ", " \-\-all
+Include direct
+.BR pacman (8)
+dependencies of dependencies in the output.
+.
 .TP
 .BR \-n ", " \-\-pkgname
 Print dependency information to stdout as
 .BR pkgname
 instead of
 .BR pkgbase .
-.
-.TP
-.BR \-a ", " \-\-all
-Include direct
-.BR pacman (8)
-dependencies of dependencies in the output.
 .
 .TP
 .BR \-t ", " \-\-table
@@ -53,6 +54,19 @@ and
 .
 .TP
 .BR \-r ", " \-\-reverse
+Print
+.I \%depends\etpkgbase
+pairs as input for
+.BR tsort (1).
+When combined with
+.BR \-\-table ,
+the
+.I depends
+column is replaced with reverse dependencies
+.RI ( requiredby ).
+Version information is left out in this case. When combined with
+.BR \-\-all ,
+unknown reverse dependencies are marked with a hyphen.
 .
 .TP
 .BR \-J ", " \-\-json
@@ -70,7 +84,9 @@ of dependencies by default.
 .I optdepends
 can be taken into account with the
 .BR \-\-optdepends
-option. Types can be removed selectively with
+option.
+.PP
+Types can be removed selectively with
 the
 .BR \-\-no\-depends ,
 .BR \-\-no\-makedepends ,
@@ -78,12 +94,24 @@ and
 .B \-\-no\-checkdepends
 options. In particular, these options may be used to bypass cycles
 between dependencies of differing types.
-.
-.TP
-.BR \-\-no\-provides
+.PP
+Support for virtual dependencies
+.RI ( provides )
+can be disabled with the
+.B \-\-no\-provides
+option. In particular, any packages listed on the command-line can
+only provide themselves with this option enabled.
 .
 .SH NOTES
-Version information is ignored for dependencies. See
+While versioned dependencies are listed, they are ignored when
+resolving the dependency graph. This is because versioned queries are
+not supported by aurweb, and no additional comparisons are done by
+.BR aur\-depends .
+The resulting
+.B .SRCINFO
+files can however be checked for consistency with
+.BR aur\-graph (1).
+See
 .B FS#54906
 for details.
 .
@@ -92,8 +120,7 @@ for details.
 .nh
 .BR aur (1),
 .BR aur\-graph (1),
-.BR aur\-query (1),
-.BR jq (1)
+.BR aur\-query (1)
 .
 .SH AUTHORS
 .MT https://github.com/AladW
