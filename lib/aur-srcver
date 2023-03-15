@@ -115,7 +115,8 @@ for n in "${packages[@]}"; do
     { mkdir -p -- "$tmp/$i"
       echo "$n" > "$tmp/$i"/path
 
-      if ! env -C "$n" nice -n 20 makepkg "${makepkg_args[@]}" >"$tmp/$i"/log 2>&1; then
+      #shellcheck disable=SC2086
+      if ! env -C "$n" nice -n 20 ${AUR_MAKEPKG:-makepkg} "${makepkg_args[@]}" >"$tmp/$i"/log 2>&1; then
           echo $? >"$tmp/$i"/failed
       fi
     } &

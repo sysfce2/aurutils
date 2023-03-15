@@ -63,6 +63,23 @@ When reading arguments with
 .B \-\-arg\-file
 or from standard input, assume delimitation by null bytes instead of newlines.
 .
+.SH ENVIRONMENT
+.TP
+.B AUR_MAKEPKG
+The command used to update
+.B pkgver
+in the
+.IR PKGBUILD .
+Any
+.BR makepkg (8)
+options forwarded (see
+.BR \-\-margs )
+must be supported by this command, as well as
+.IR \-\-nobuild ,
+.IR \-\-nodeps ,
+and
+.IR \-\-skipinteg .
+.
 .SH SEE ALSO
 .ad l
 .nh
