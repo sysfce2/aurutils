@@ -38,6 +38,14 @@ usage() {
     exit 1
 }
 
+# mollyguard for makepkg
+if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
+    printf >&2 'warning: aur-%s is not meant to be run as root.\n' "$argv0"
+    printf >&2 'warning: To proceed anyway, set the %s variable.\n' 'AUR_ASROOT'
+    exit 1
+fi
+
+# option parsing
 opt_short=a:j:z
 opt_long=('arg-file:' 'no-prepare' 'jobs:' 'buildscript:' 'margs:' 'makepkg-args:' 'null')
 opt_hidden=('dump-options' 'noprepare')
