@@ -1,3 +1,21 @@
+## 13
+
+* `aur-build`
+  + add `--null` (`-z`)
+
+* `aur-srcver`
+  + accept arbitrary source directories as arguments
+  + add `--arg-file` (`-a`), `--null` (`-z`), `--margs`
+  + add `AUR_MAKEPKG` environment variable
+
+## 12.1
+
+* `AUR.pm`
+  + call `urlencode()` when retrieving URIs with `AUR::Query` (#1053)
+
+* `aur-depends`
+  + documentation updates
+
 ## 12
 
 * `aur-build`

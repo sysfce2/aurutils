@@ -16,7 +16,7 @@ chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 truncate=1
 
 # default arguments (empty)
 chroot_args=() pacconf_args=() repo_args=() repo_add_args=() pkglist_args=()
-makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=()
+makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=() read_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
@@ -86,13 +86,13 @@ if (( UID == 0 )) && ! [[ -v AUR_ASROOT ]]; then
 fi
 
 ## option parsing
-opt_short='a:d:D:U:AcCfnrsvLNRST'
+opt_short='a:d:D:U:AcCfnrsvzLNRST'
 opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
           'verify' 'directory:' 'no-sync' 'pacman-conf:' 'remove' 'pkgver'
           'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'makepkg-args:' 'user:'
-          'margs:' 'buildscript:')
+          'margs:' 'buildscript:' 'null')
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:')
 
@@ -184,6 +184,8 @@ while true; do
             shift; results_file=$1 ;;
         --results-append)
             shift; results_file=$1; truncate=0 ;;
+        -z|--null)
+            read_args+=(-d $'\0') ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -331,7 +333,7 @@ elif [[ -v GPGKEY ]]; then
     gpg_args+=(-u "$GPGKEY")
 fi
 
-while IFS= read -ru "$fd" path; do
+while IFS= read "${read_args[@]}" -ru "$fd" path; do
     cd -- "$startdir"
     [[ $path ]] && cd -- "$path"
 

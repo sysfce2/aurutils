@@ -6,6 +6,7 @@ argv0=srcver
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
+# XXX: --skipinteg is an optional argument
 makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
 num_procs=$(( "$(nproc)" + 2 ))
 
@@ -37,8 +38,16 @@ usage() {
     exit 1
 }
 
-opt_short=j:
-opt_long=('no-prepare' 'jobs:' 'buildscript:')
+# mollyguard for makepkg
+if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
+    printf >&2 'warning: aur-%s is not meant to be run as root.\n' "$argv0"
+    printf >&2 'warning: To proceed anyway, set the %s variable.\n' 'AUR_ASROOT'
+    exit 1
+fi
+
+# option parsing
+opt_short=a:j:z
+opt_long=('arg-file:' 'no-prepare' 'jobs:' 'buildscript:' 'margs:' 'makepkg-args:' 'null')
 opt_hidden=('dump-options' 'noprepare')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -47,16 +56,23 @@ else
     usage
 fi
 
-unset buildscript
+unset arg_file buildscript mapfile_args
 while true; do
     case "$1" in
+        -a|--arg-file)
+            shift; arg_file=$1 ;;
         --noprepare|--no-prepare)
             makepkg_args+=(--noprepare) ;;
+        --makepkg-args|--margs)
+            shift; IFS=, read -a arg -r <<< "$1"
+            makepkg_args+=("${arg[@]}") ;;
         -j|--jobs)
             shift; num_procs=$1 ;;
         --buildscript)
             shift; buildscript=$1
             makepkg_args+=(-p "$1") ;;
+        -z|--null)
+            mapfile_args+=(-d $'\0') ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -73,10 +89,6 @@ if (( $# == 1 )) && [[ $1 == "-" || $1 == "/dev/stdin" ]]; then
     stdin=1
 fi
 
-if (( ! $# )); then
-    usage
-fi
-
 # shellcheck disable=SC2174
 mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
 tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX") || exit
@@ -87,38 +99,53 @@ trap 'trap_exit' EXIT
 # still running in the background. Read all input into an array to
 # avoid this. (cf. aur-view, #958)
 if (( stdin )); then
-    mapfile -t packages
+    mapfile "${mapfile_args[@]}" -t packages
+
+elif [[ -v argfile ]]; then
+    mapfile "${mapfile_args[@]}" -t packages <"$arg_file"
 else
-    packages=("$@")
+    packages=("${@:-$PWD}")
     set --
 fi
 
+# Remove duplicates in pkgbuild dirs
+declare -A seen
+
 i=0 # package counter
 for n in "${packages[@]}"; do
+    n=$(realpath "$n"); [[ ${seen[$n]} ]] && continue
+    seen[$n]=1
+
     if (( i++ >= num_procs )); then
         wait -n
     fi
 
-    { mkdir -p -- "$tmp/$n"
+    { mkdir -p -- "$tmp/$i"
+      echo "$n" > "$tmp/$i"/path
+      mpkg_err=0
 
-      if ! env -C "$n" nice -n 20 makepkg "${makepkg_args[@]}" >"$tmp/$n"/log 2>&1; then
-          echo $? >"$tmp/$n"/failed
+      #shellcheck disable=SC2086
+      env -C "$n" nice -n 20 ${AUR_MAKEPKG:-makepkg} \
+          "${makepkg_args[@]}" >"$tmp/$i"/log 2>&1 || mpkg_err=$?
+
+      if (( mpkg_err )); then
+          echo "$mpkg_err" >"$tmp/$i"/failed
       fi
     } &
 done
 wait
 
-failed=()
+declare -A failed
 for d in "$tmp"/*/; do # iterate over directories
-    n=$(basename "$d")
+    i=$(basename "$d") p=$(<"$d"/path)
 
-    if [[ -e $tmp/$n/failed ]]; then
-        failed+=("$n")
+    if [[ -e $d/failed ]]; then
+        failed[$i]=$p
     else
         # Precautions when sourcing the PKGBUILD have no effect here,
         # because makepkg already sourced the PKGBUILD above.
         # shellcheck disable=SC1090
-        ( source "$n/${buildscript-PKGBUILD}"
+        ( source "$p/${buildscript-PKGBUILD}"
 
           fullver=$(get_full_version)
           printf '%s\t%s\n' "${pkgbase:-$pkgname}" "$fullver"
@@ -126,14 +153,11 @@ for d in "$tmp"/*/; do # iterate over directories
     fi
 done
 
-if (( ${#failed[@]} )); then
-    printf >&2 '8<----\n'
-fi
+for i in "${!failed[@]}"; do
+    printf >&2 '%s: makepkg %s failed for path %s with exit %s\n' \
+               "$argv0" "${makepkg_args[*]}" "${failed[$i]}" "$(<"$tmp/$i"/failed)"
 
-for f in "${failed[@]}"; do
-    printf >&2 '%s: makepkg %s failed for package %s\n' "$argv0" "${makepkg_args[*]}" "$f"
-
-    cat "$tmp/$f"/log >&2
+    cat "$tmp/$i"/log >&2
     printf >&2 '8<----\n'
 done
 
