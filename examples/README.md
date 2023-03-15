@@ -45,8 +45,8 @@ directories are available. This suggests to use a persistent directory for
 
 Instead of elevating to the root user for these tasks, `aur-build` can be run as
 root, dropping privileges where necessary. `sync-asroot` does do by running
-`makepkg`, `gpg` and `repo-add` with `runuser -u <user>`. Sources are also retrieved this
-way with `runuser -u <user> aur sync`.
+`makepkg`, `gpg`, `repo-add` and `aur-build--pkglist` with `runuser -u <user>`.
+Sources are also retrieved this way with `runuser -u <user> aur sync`.
 
 Other possible agents are `runuser`, `setpriv`, and `systemd-run`.
 

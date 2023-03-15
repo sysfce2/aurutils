@@ -388,6 +388,15 @@ options if
 .B aur\-build \-\-pkgver
 is used.
 .
+.B AUR_BUILD_PKGLIST
+The command used to check for built packages in the local
+repository. Defaults to
+.BR "aur build\-\-pkglist" .
+Compared to
+.BR "makepkg \-\-packagelist" ,
+the default command runs faster by not linting the
+.IR PKGBUILD .
+.
 .TP
 .B AUR_GPG
 The command used to sign packages. The arguments
