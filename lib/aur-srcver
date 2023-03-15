@@ -6,6 +6,7 @@ argv0=srcver
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default arguments
+# XXX: --skipinteg is an optional argument
 makepkg_args=('--nobuild' '--nodeps' '--skipinteg')
 num_procs=$(( "$(nproc)" + 2 ))
 
@@ -37,8 +38,8 @@ usage() {
     exit 1
 }
 
-opt_short=j:
-opt_long=('no-prepare' 'jobs:' 'buildscript:')
+opt_short=a:j:z
+opt_long=('arg-file:' 'no-prepare' 'jobs:' 'buildscript:' 'margs:' 'makepkg-args:' 'null')
 opt_hidden=('dump-options' 'noprepare')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -47,16 +48,23 @@ else
     usage
 fi
 
-unset buildscript
+unset arg_file buildscript mapfile_args
 while true; do
     case "$1" in
+        -a|--arg-file)
+            shift; arg_file=$1 ;;
         --noprepare|--no-prepare)
             makepkg_args+=(--noprepare) ;;
+        --makepkg-args|--margs)
+            shift; IFS=, read -a arg -r <<< "$1"
+            makepkg_args+=("${arg[@]}") ;;
         -j|--jobs)
             shift; num_procs=$1 ;;
         --buildscript)
             shift; buildscript=$1
             makepkg_args+=(-p "$1") ;;
+        -z|--null)
+            mapfile_args+=(-d $'\0') ;;
         --dump-options)
             printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
             printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
@@ -83,7 +91,10 @@ trap 'trap_exit' EXIT
 # still running in the background. Read all input into an array to
 # avoid this. (cf. aur-view, #958)
 if (( stdin )); then
-    mapfile -t packages
+    mapfile "${mapfile_args[@]}" -t packages
+
+elif [[ -v argfile ]]; then
+    mapfile "${mapfile_args[@]}" -t packages <"$arg_file"
 else
     packages=("${@:-$PWD}")
     set --

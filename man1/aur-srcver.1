@@ -11,19 +11,29 @@ aur\-srcver \- list version of VCS packages
 .
 .SH DESCRIPTION
 .B aur\-srcver
-takes the names of packages and lists the current
+takes source directories and lists the current
 .I pkgver
-of VCS packages. This is achieved by running
+for each
+.IR PKGBUILD .
+This is achieved by running
 .B "makepkg \-\-skipinteg \-od"
-and parsing the output. If
+and subsequently sourcing the PKGBUILD. If
 .B makepkg
 fails on a given package, the resulting output is shown on standard error.
 .PP
-It is assumed that source directories are already available, and that
-.B aur\-srcver
-is used in the same directory as those source directories.
+Source directories can be specifed on the command-line, from standard
+input when a hyphen is specified, or from a file with the
+.B \-\-arg\-file
+option.
 .
 .SH OPTIONS
+.TP
+.BI \-a " FILE" "\fR, \fP \-\-arg\-file=" FILE
+Read source directories from
+.I FILE
+instead of the command-line. This argument does not take precedence over
+.BR "aur\-srcver \-" .
+.
 .TP
 .BI \-\-buildscript= NAME
 Read the package script
@@ -33,7 +43,7 @@ instead of the
 default.
 .
 .TP
-.B \-\-noprepare
+.BR \-\-noprepare ", " \-\-no\-prepare
 Do not run the prepare() function in the PKGBUILD.
 .
 .TP
@@ -41,6 +51,17 @@ Do not run the prepare() function in the PKGBUILD.
 Set the amount of
 .B makepkg
 processes run in parallel. Defaults to 2 plus the amount of processing units.
+.
+.TP
+.BR \-\-margs ", " \-\-makepkg\-args
+Additional arguments to pass to
+.BR makepkg (8).
+.
+.TP
+.B \-\-null
+When reading arguments with
+.B \-\-arg\-file
+or from standard input, assume delimitation by null bytes instead of newlines.
 .
 .SH SEE ALSO
 .ad l
