@@ -11,19 +11,25 @@ usage() {
     exit 1
 }
 
+# mollyguard for sourcing PKGBUILDs
+if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
+    printf >&2 'warning: aur-%s is not meant to be run as root.\n' "$argv0"
+    printf >&2 'warning: To proceed anyway, set the %s variable.\n' 'AUR_ASROOT'
+    exit 1
+fi
+
 source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
 source /usr/share/makepkg/util/config.sh
 
 # option parsing
-opt_short='p:U:'
-opt_long=('buildscript:' 'user:' 'config:' 'lint' 'srcinfo')
+opt_short='p:'
+opt_long=('buildscript:' 'config:' 'lint' 'srcinfo')
 opt_hidden=('dump-options')
 
 if ! parseopts "$opt_short" "${opt_long[@]}" "${opt_hidden[@]}" -- "$@"; then
     usage
 fi
-orig_argv=("$@")  # original arguments for setpriv(1)
 set -- "${OPTRET[@]}"
 
 unset buildscript build_user makepkg_conf
@@ -31,8 +37,6 @@ while true; do
     case "$1" in
         -p|--buildscript)
             shift; buildscript=$1 ;;
-        -U|--user)
-            shift; build_user=$1 ;;
         --config)
             shift; makepkg_conf=$1 ;;
         --srcinfo)
@@ -47,16 +51,6 @@ while true; do
     esac
     shift
 done
-
-# drop permissions for sourcing PKGBUILDs
-if (( UID == 0 )) && (( $(id -u "$build_user") != 0 )); then
-    exec setpriv --no-new-privs --reuid "$build_user" --regid "$build_user" --init-groups --reset-env \
-         env PKGDEST="$PKGDEST" "${BASH_SOURCE[0]}" "${orig_argv[@]}"
-
-elif (( UID == 0 )); then
-    printf >&2 '%s: unprivileged --user required\n' "$argv0"
-    exit 1
-fi
 
 # Sourcing the PKGBUILD should be done without set -e or other modes
 # to match makepkg behavior (e.g. aur/cemu, aur/nicotine-plus-git)

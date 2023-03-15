@@ -146,8 +146,7 @@ while true; do
         -T|--temp)
             makechrootpkg_args+=(-T) ;;
         -U|--user)
-            shift; makechrootpkg_args+=(-U "$1")
-            pkglist_args+=(-U "$1") ;;
+            shift; makechrootpkg_args+=(-U "$1") ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             makepkg_common_args+=(--ignorearch)
@@ -354,9 +353,10 @@ while IFS= read "${read_args[@]}" -ru "$fd" path; do
     # assumed to not exist and the build proceeds as usual (create_package=1).
     if (( ! overwrite )); then
         exists=()
+        #shellcheck disable=SC2086
         while read -r pkgpath; do
             [[ -f $pkgpath ]] && exists+=("$pkgpath")
-        done < <(PKGDEST="$db_root" aur build--pkglist "${pkglist_args[@]}")
+        done < <(PKGDEST="$db_root" ${AUR_BUILD_PKGLIST:-aur build--pkglist} "${pkglist_args[@]}")
 
         if ! wait "$!"; then
             printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"

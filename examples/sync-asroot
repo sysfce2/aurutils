@@ -32,8 +32,9 @@ build_user=${build_user:-${SUDO_USER:-$USER}}
 build_args+=(-U "$build_user")
 
 build_env=(AUR_MAKEPKG="runuser -u $build_user -- makepkg"
-               AUR_GPG="runuser -u $build_user -- gpg"
-          AUR_REPO_ADD="runuser -u $build_user -- repo-add")
+           AUR_GPG="runuser -u $build_user -- gpg"
+           AUR_REPO_ADD="runuser -u $build_user -- repo-add"
+           AUR_BUILD_PKGLIST="runuser -u $build_user -- aur build--pkglist")
 
 # 2. retrieve sources ------------------------------------------------------------->
 cd "$ninja_dir"
