@@ -153,12 +153,9 @@ for d in "$tmp"/*/; do # iterate over directories
     fi
 done
 
-if (( ${#failed[@]} )); then
-    printf >&2 '8<----\n'
-fi
-
 for i in "${!failed[@]}"; do
-    printf >&2 '%s: makepkg %s failed for path %s with exit %s\n' "$argv0" "${makepkg_args[*]}" "${failed[$i]}" "$(<"$tmp/$i"/failed)"
+    printf >&2 '%s: makepkg %s failed for path %s with exit %s\n' \
+               "$argv0" "${makepkg_args[*]}" "${failed[$i]}" "$(<"$tmp/$i"/failed)"
 
     cat "$tmp/$i"/log >&2
     printf >&2 '8<----\n'
