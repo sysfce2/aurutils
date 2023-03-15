@@ -122,10 +122,14 @@ for n in "${packages[@]}"; do
 
     { mkdir -p -- "$tmp/$i"
       echo "$n" > "$tmp/$i"/path
+      mpkg_err=0
 
       #shellcheck disable=SC2086
-      if ! env -C "$n" nice -n 20 ${AUR_MAKEPKG:-makepkg} "${makepkg_args[@]}" >"$tmp/$i"/log 2>&1; then
-          echo $? >"$tmp/$i"/failed
+      env -C "$n" nice -n 20 ${AUR_MAKEPKG:-makepkg} \
+          "${makepkg_args[@]}" >"$tmp/$i"/log 2>&1 || mpkg_err=$?
+
+      if (( mpkg_err )); then
+          echo "$mpkg_err" >"$tmp/$i"/failed
       fi
     } &
 done
@@ -154,7 +158,7 @@ if (( ${#failed[@]} )); then
 fi
 
 for i in "${!failed[@]}"; do
-    printf >&2 '%s: makepkg %s failed for path %s\n' "$argv0" "${makepkg_args[*]}" "${failed[$i]}"
+    printf >&2 '%s: makepkg %s failed for path %s with exit %s\n' "$argv0" "${makepkg_args[*]}" "${failed[$i]}" "$(<"$tmp/$i"/failed)"
 
     cat "$tmp/$i"/log >&2
     printf >&2 '8<----\n'
