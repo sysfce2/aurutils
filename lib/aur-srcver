@@ -161,4 +161,8 @@ for i in "${!failed[@]}"; do
     printf >&2 '8<----\n'
 done
 
+if (( ${#failed[@]} )); then
+    exit 1 # E_FAIL
+fi
+
 # vim: set et sw=4 sts=4 ft=sh:
