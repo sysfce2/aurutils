@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use v5.20;
 
+use List::Util qw(first);
 use AUR::Json qw(parse_json_aur write_json);
 use AUR::Query qw(query_multi);
 use AUR::Options qw(add_from_stdin);
@@ -125,6 +126,50 @@ sub chain_mod {
     return \%mod;
 }
 
+# Recursively remove nodes from dependency graph (#592)
+# Operates on modified graph: provides are solved first
+sub prune {
+    my ($mod, $installed) = @_;
+
+    # XXX: use Schwartzian transform
+    map {
+        # Every reverse dependency needs to be checked against every pkgname
+        # that is assumed to be installed (quadratic complexity)
+        my $reqby = $mod->{$_}->{'RequiredBy'};  # reference to RequiredBy{ Depends [] }
+
+        for my $deptype (keys %{$reqby}) {  # list returned by keys is a copy
+            my @pruned = ();
+
+            for my $dep (@{$reqby->{$deptype}}) {
+                my $found = first { $dep eq $_ } @{$installed};
+
+                if (not defined ($found)) {
+                    push(@pruned, $dep);
+                }
+            }
+            if (scalar @pruned) {
+                @{$reqby->{$deptype}} = @pruned;
+            }
+            else {
+                delete $reqby->{$deptype};
+            }
+        }
+    } keys %{$mod};
+
+    map {
+        my $name = $_;
+        if (not scalar keys %{$mod->{$name}->{'RequiredBy'}}) {
+            delete $mod->{$name};  # remove targets that are no longer required
+        }
+        my $found = first { $name eq $_ } @{$installed};
+        if (defined $found) {
+            delete $mod->{$name};  # remove targets that are installed
+        }
+    } keys %{$mod}; # list returned by keys is a copy
+
+    return $mod;
+}
+
 # tsv output for usage with aur-sync (aurutils <=10)
 sub table_v10_compat {
     my ($results, $types) = @_;
@@ -189,20 +234,22 @@ unless(caller) {
     my $opt_show_all     = 0;  # implies $opt_pkgname = 1
     my $opt_reverse      = 0;
     my $opt_provides     = 1;
+    my $opt_installed    = [];
 
     GetOptions(
-        'no-depends'      => sub { $opt_depends = 0 },
-        'no-makedepends'  => sub { $opt_makedepends = 0 },
-        'no-checkdepends' => sub { $opt_checkdepends = 0 },
-        'optdepends'      => \$opt_optdepends,
-        'no-provides'     => sub { $opt_provides = 0 },
-        'n|pkgname'       => \$opt_pkgname,
-        'b|pkgbase'       => sub { $opt_pkgname = 0 },
-        'G|graph'         => sub { },  # noop
-        't|table'         => sub { $opt_mode = "table" },
-        'J|json'          => sub { $opt_mode = "json" },
-        'r|reverse'       => \$opt_reverse,
-        'a|all'           => \$opt_show_all
+        'assume-installed=s' => $opt_installed,
+        'no-depends'         => sub { $opt_depends = 0 },
+        'no-makedepends'     => sub { $opt_makedepends = 0 },
+        'no-checkdepends'    => sub { $opt_checkdepends = 0 },
+        'optdepends'         => \$opt_optdepends,
+        'no-provides'        => sub { $opt_provides = 0 },
+        'n|pkgname'          => \$opt_pkgname,
+        'b|pkgbase'          => sub { $opt_pkgname = 0 },
+        'G|graph'            => sub { },  # noop
+        't|table'            => sub { $opt_mode = "table" },
+        'J|json'             => sub { $opt_mode = "json" },
+        'r|reverse'          => \$opt_reverse,
+        'a|all'              => \$opt_show_all
     ) or exit(1);
 
     # Handle '-' to take packages from stdin
@@ -220,9 +267,16 @@ unless(caller) {
     push(@types, 'CheckDepends') if $opt_checkdepends;
     push(@types, 'OptDepends')   if $opt_optdepends;
 
+    # Array notation for --assume-installed
+    @{$opt_installed} = map { split(',', $_) } @{$opt_installed};
+
     # Resolve dependency tree
     my $results = chain_mod(chain(\@ARGV, \@types, 30), $opt_provides, $opt_show_all);
 
+    # Remove transitive dependencies for installed targets (#592)
+    if (scalar @{$opt_installed}) {
+        $results = prune($results, $opt_installed);
+    }
     if ($opt_mode eq 'pairs') {
         pairs($results, ($opt_pkgname or $opt_show_all) ? 'Name' : 'PackageBase', $opt_reverse);
     }

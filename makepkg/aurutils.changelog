@@ -8,12 +8,18 @@
   + remove `--user` (`-U`)
   + only run as root with `AUR_ASROOT` set
 
+* `aur-depends`
+  + add `--assume-installed`
+
 * `aur-srcver`
   + accept arbitrary source directories as arguments
   + add `--arg-file` (`-a`), `--null` (`-z`), `--margs`
   + add `AUR_MAKEPKG` environment variable
   + only run as root with `AUR_ASROOT` set
   + exit 1 if any `makepkg` job failed
+
+* `aur-sync`
+  + `--ignore` now removes dependencies of ignored targets
 
 * `examples`
   + update `sync-asroot` to use `AUR_BUILD_PKGLIST`

@@ -301,12 +301,17 @@ fi
 { if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
       select_ignores_pkgspec "$db_name" "$ignore_file"
   fi
-  (( ${#pkg_i[@]} )) && printf '%s\n' "${pkg_i[@]}"
+  if (( ${#pkg_i[@]} )); then
+      printf '%s\n' "${pkg_i[@]}"
+  fi
 } | complement <(printf '%s\n' "$@") >"$tmp"/igni
 
 if [[ -s $tmp/igni ]]; then
-    printf '%s: packages ignored: ' "$argv0"
-    awk -v ORS=' ' '{print} END {printf("\n")}' "$tmp"/igni
+    mapfile -t pkg_i < "$tmp"/igni
+    printf '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
+
+    # Ignore dependencies from ignored targets (#592)
+    depends_args+=(--assume-installed "$(args_csv "${pkg_i[@]}")")
 fi >&2
 
 # db_info: $1 pkgname $2 pkgver
@@ -341,7 +346,7 @@ fi
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
 cut -f2,5 --complement "$tmp"/depends | sort -u >"$tmp"/pkginfo
 
-{ cat "$tmp"/igni # ignored packages
+{ cat "$tmp"/igni # ignored packages (already included by aur-depends --assume-installed)
 
   # Packages with equal or newer versions are taken as complement
   # for the queue. If chkver_argv is enabled, packages on the
