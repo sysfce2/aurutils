@@ -13,6 +13,7 @@
   + add `--arg-file` (`-a`), `--null` (`-z`), `--margs`
   + add `AUR_MAKEPKG` environment variable
   + only run as root with `AUR_ASROOT` set
+  + exit 1 if any `makepkg` job failed
 
 * `examples`
   + update `sync-asroot` to use `AUR_BUILD_PKGLIST`
