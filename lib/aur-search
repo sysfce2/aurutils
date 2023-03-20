@@ -29,7 +29,7 @@ sub format_long {
 	    'Popularity' , 'OutOfDate'   , 'FirstSubmitted' , 'LastModified', 'Depends',
 	    'MakeDepends', 'CheckDepends', 'OptDepends'
 	);
-    my $url = join("/", $aur_location, $pkg->{'Name'});
+    my $url = join("/", $aur_location, "packages", $pkg->{'Name'});
     say BOLD, sprintf("%-15s", "AUR URL:"), RESET, ' ', $url;
 
     # XXX: overlap with info_expand_field() from aur-format
