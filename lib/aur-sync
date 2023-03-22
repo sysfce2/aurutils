@@ -306,6 +306,7 @@ fi
   fi
 } | complement <(printf '%s\n' "$@") >"$tmp"/igni
 
+# Diagnostic on which packages are ignored
 if [[ -s $tmp/igni ]]; then
     mapfile -t pkg_i < "$tmp"/igni
     printf '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
@@ -314,11 +315,15 @@ if [[ -s $tmp/igni ]]; then
     depends_args+=(--assume-installed "$(args_csv "${pkg_i[@]}")")
 fi >&2
 
-# db_info: $1 pkgname $2 pkgver
-( set -o pipefail
-  aur repo-parse -p "$db_path" --list | select_ignores "$tmp"/igni -
-) >"$tmp"/db_info
+# Retrieve list of local repository packages ($1 pkgname $2 pkgver)
+aur repo-parse -p "$db_path" --list | select_ignores "$tmp"/igni - >"$tmp"/db_info
+repo_err=${PIPESTATUS[0]}
 
+if (( repo_err )); then
+   exit "$repo_err"
+fi
+
+# Build list of AUR targets
 { if (( $# )); then
       # append command-line arguments
       printf '%s\n' "$@"
@@ -334,6 +339,7 @@ fi >&2
   fi
 } >"$tmp"/argv
 
+# Build AUR dependency graph
 if [[ -s $tmp/argv ]]; then
     # shellcheck disable=SC2094
     # depends: $1 pkgname $2 required_by $3 pkgbase $4 pkgver $5 depends_type
