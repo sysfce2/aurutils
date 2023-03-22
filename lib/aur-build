@@ -441,9 +441,16 @@ while IFS= read "${read_args[@]}" -ru "$fd" path; do
 
         # Retrieve upgrade targets
         targets=()
-        while IFS='/' read -r repo name; do
-            [[ $repo == "$db_name" ]] && targets+=("$repo/$name")
-        done < <(pacman -Sup --print-format '%r/%n')
+        while IFS='/' read -ra line; do
+            repo=${line[0]}
+            case $repo in
+                ::\ *)  # pacman prints diagnostics to standard output
+                    printf >&2 '%s\n' "${line[*]}" ;;
+                "$db_name")
+                    name=${line[1]}
+                    targets+=("$db_name/$name") ;;
+            esac
+        done < <(LANG=C pacman -Sup --print-format '%r/%n')
         wait "$!"
 
         if (( ${#targets[@]} )); then
