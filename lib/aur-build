@@ -441,14 +441,12 @@ while IFS= read "${read_args[@]}" -ru "$fd" path; do
 
         # Retrieve upgrade targets
         targets=()
-        while IFS='/' read -ra line; do
-            repo=${line[0]}
-            case $repo in
+        while IFS=/ read -ra line; do
+            case ${line[0]} in
                 ::\ *)  # pacman prints diagnostics to standard output
                     printf >&2 '%s\n' "${line[*]}" ;;
                 "$db_name")
-                    name=${line[1]}
-                    targets+=("$db_name/$name") ;;
+                    targets+=("$db_name/${line[1]}") ;;
             esac
         done < <(LANG=C pacman -Sup --print-format '%r/%n')
         wait "$!"
