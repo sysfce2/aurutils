@@ -59,6 +59,20 @@ EOF
     done
 }
 
+get_local_upgrades() {
+    local repo=$1
+
+    LANG=C pacman -Sup --print-format '%r/%n' | while IFS=/ read -ra line; do
+        case ${line[0]} in
+            "$repo")
+                printf '%s\n' "$repo/${line[1]}" ;;
+            ::\ *)  # XXX: pacman prints diagnostics to standard output
+                printf >&2 '%s\n' "${line[*]}" ;;
+        esac
+    done
+    return "${PIPESTATUS[0]}"
+}
+
 trap_exit() {
     if [[ ! -v AUR_DEBUG ]]; then
         rm -rf -- "$tmp"
@@ -439,16 +453,9 @@ while IFS= read "${read_args[@]}" -ru "$fd" path; do
         #shellcheck disable=SC2086
         ${AUR_PACMAN_AUTH:-sudo} pacsync "$db_name" --dbext=.files
 
-        # Retrieve upgrade targets
-        targets=()
-        while IFS=/ read -ra line; do
-            case ${line[0]} in
-                ::\ *)  # pacman prints diagnostics to standard output
-                    printf >&2 '%s\n' "${line[*]}" ;;
-                "$db_name")
-                    targets+=("$db_name/${line[1]}") ;;
-            esac
-        done < <(LANG=C pacman -Sup --print-format '%r/%n')
+        # Retrieve upgrade targets in local repository. May error in case of
+        # conflicts or dependency errors.
+        mapfile -t targets < <(get_local_upgrades "$db_name")
         wait "$!"
 
         if (( ${#targets[@]} )); then
