@@ -57,6 +57,7 @@ done
 # shellcheck disable=SC1090
 source "${buildscript-PKGBUILD}"
 PKGDEST=${PKGDEST:-$PWD}
+pkgbase=${pkgbase:-${pkgname[0]}}
 
 # PKGEXT (packagelist), CARCH (lint)
 load_makepkg_config "${makepkg_conf-}"
