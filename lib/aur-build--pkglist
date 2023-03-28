@@ -21,6 +21,7 @@ fi
 source /usr/share/makepkg/util/option.sh
 source /usr/share/makepkg/util/parseopts.sh
 source /usr/share/makepkg/util/config.sh
+source /usr/share/makepkg/util/util.sh
 
 # option parsing
 opt_short='p:'
@@ -55,7 +56,7 @@ done
 # Sourcing the PKGBUILD should be done without set -e or other modes
 # to match makepkg behavior (e.g. aur/cemu, aur/nicotine-plus-git)
 # shellcheck disable=SC1090
-source "${buildscript-PKGBUILD}"
+source_safe "${buildscript-PKGBUILD}"
 PKGDEST=${PKGDEST:-$PWD}
 pkgbase=${pkgbase:-${pkgname[0]}}
 
