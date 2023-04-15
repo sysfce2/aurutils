@@ -32,7 +32,7 @@ install-aur: aur
 	@install -Dm755 aur       -t '$(DESTDIR)$(BINDIR)'
 
 install: install-aur
-	@install -Dm755 lib/aur-*  -t '$(DESTDIR)$(LIBDIR)/$(PROGNM)'
+	@install -Dm755 lib/aur-*  -t '$(DESTDIR)$(AURUTILS_LIB_DIR)'
 	@install -Dm644 man1/*     -t '$(DESTDIR)$(SHRDIR)/man/man1'
 	@install -Dm644 man7/*     -t '$(DESTDIR)$(SHRDIR)/man/man7'
 	@install -Dm644 LICENSE    -t '$(DESTDIR)$(SHRDIR)/licenses/$(PROGNM)'
