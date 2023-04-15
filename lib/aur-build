@@ -222,6 +222,19 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
+# Automatically choose the local repository based on the pacman configuration.
+if [[ $db_name ]] && [[ $db_root ]]; then
+    db_path=$db_root/$db_name.${db_ext:-db}
+    db_path=$(realpath -- "$db_path")
+else
+    { IFS=: read -r _ db_name
+      IFS=: read -r _ db_root
+      IFS=: read -r _ db_path # canonicalized
+    } < <(aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
+    wait "$!"
+fi
+db_root=$(realpath -- "$db_root")
+
 if (( chroot )); then
     # XXX: default paths can be set through the Makefile
     default_paths=("/etc/aurutils/pacman-$db_name.conf"
@@ -273,19 +286,6 @@ if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
 fi
-
-# Automatically choose the local repository based on the pacman configuration.
-if [[ $db_name ]] && [[ $db_root ]]; then
-    db_path=$db_root/$db_name.${db_ext:-db}
-    db_path=$(realpath -- "$db_path")
-else
-    { IFS=: read -r _ db_name
-      IFS=: read -r _ db_root
-      IFS=: read -r _ db_path # canonicalized
-    } < <(aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
-    wait "$!"
-fi
-db_root=$(realpath -- "$db_root")
 
 # Check that a valid database extension was retrieved (#700, #1038)
 if [[ -z $AUR_DBEXT ]] && [[ $db_path =~ \.db$ ]]; then
