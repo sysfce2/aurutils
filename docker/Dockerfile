@@ -1,5 +1,5 @@
 FROM archlinux:latest
-LABEL Name=aurutils
+LABEL name=aurutils
 
 # packages, time zone
 RUN pacman -Syu --noconfirm --needed base base-devel
