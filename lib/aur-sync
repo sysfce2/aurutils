@@ -18,10 +18,10 @@ build_args=(--clean --syncdeps)
 depends_args=() repo_args=() view_args=() filter_args=() fetch_args=() graph_args=()
 
 # default options
-build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1 columns=0
+build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
 
 # default options (disabled)
-rotate=0 update=0 repo_targets=0
+rotate=0 update=0 repo_targets=0 columns=0 chroot=0
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -198,7 +198,7 @@ while true; do
             view_args+=(--prefix) ;;  # experimental
         # build options
         -c|--chroot)
-            build_args+=(--chroot) ;;
+            chroot=1; build_args+=(--chroot) ;;
         -f|--force)
             build_args+=(--force) ;;
         --makepkg-args|--margs)
