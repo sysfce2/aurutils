@@ -121,7 +121,7 @@ if [[ $sync == !(auto|merge|rebase|reset|fetch) ]]; then
 fi
 
 if (( ! $# )); then
-    printf >&2 '%s: no arguments given\n' "$argv0"
+    printf >&2 '%s: no targets specified\n' "$argv0"
     exit 1
 fi
 
