@@ -11,19 +11,52 @@ aur\-graph \- print package/dependency directed graph
 .B aur\-graph
 prints out a partial ordering of packages (tab-separated)
 .RB ( pkgbase )
-from
+specified in
 .B .SRCINFO
-files provided on the command-line. If no files are specified, input
-is taken from
-.BR stdin .
-.PP
-To improve performance,
+files. If no files are listed on the command-line, input
+is taken from standard input.
+.
+.SH OPTIONS
+Options can be specified with the
+.B \-v
+parameter. Every option requires a single
+.B \-v
+parameter prepending it.
+.
+.TP
+.BR CHECKDEPENDS=[1|0] ", " DEPENDS=[1|0] ", " MAKEDEPENDS=[1|0]
+When enabled (set to
+.BR 1 ),
+list included
+.BR checkdepends ,
+.BR depends ,
+or
+.BR makedepends .
+For a split package, only global dependencies corresponding to
+.B pkgbase
+are printed. Defaults to
+.BR 0
+for
+.B CHECKDEPENDS
+and
+.BR 1
+for
+.B DEPENDS
+and
+.BR MAKEDEPENDS .
+.
+.TP
+.B PRINTALL=[0,1]
+List all global dependencies for a
+.BR pkgbase .
+Any encountered dependencies are printed as-is, that is, no version
+comparisons are done by
+.BR aur\-graph ,
+nor are results limited to
+.B pkgbase
+encountered in specified
 .B .SRCINFO
-files may be concatenated before processing:
-.PP
-.EX
-    $ cat */.SRCINFO | aur graph | tsort | tac
-.EE
+files.
 .
 .SH EXAMPLES
 .B aur\-graph
@@ -51,6 +84,13 @@ list can be used to build packages in the correct order. For example:
     $ aur build -a deps.txt
 .EE
 .PP
+To improve performance,
+.B .SRCINFO
+files may be concatenated before processing:
+.PP
+.EX
+    $ cat */.SRCINFO | aur graph | tsort | tac
+.EE
 .
 .SH SEE ALSO
 .ad l

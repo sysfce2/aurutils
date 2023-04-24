@@ -99,6 +99,10 @@ END {
         printf("%s\t%s\n", pkgbase, pkgbase)
 
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
+            if (length(PRINTALL) || PRINTALL == 1) {
+                printf("%s\t%s\n", pkgbase, pkg_deps[pkgbase, dep])
+                continue
+            }
             dep_op = "-" # unversioned / no comparison
 
             # valid operators (important: <= before <)
