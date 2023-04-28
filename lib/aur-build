@@ -222,6 +222,17 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
+# Propagate makepkg and pacman configuration to other tools. This needs to be
+# done BEFORE retrieving the local repository name/root.
+if [[ -v pacman_conf ]]; then
+    pacconf_args+=(--config "$pacman_conf")
+fi
+
+if [[ -v makepkg_conf ]]; then
+    makepkg_common_args+=(--config "$makepkg_conf")
+    pkglist_args+=(--config "$makepkg_conf")
+fi
+
 # Automatically choose the local repository based on the pacman configuration.
 if [[ $db_name ]] && [[ $db_root ]]; then
     db_path=$db_root/$db_name.${db_ext:-db}
@@ -274,17 +285,6 @@ if (( chroot )); then
     if (( ${#makechrootpkg_makepkg_args[@]} )); then
         chroot_args+=(--margs "$(args_csv "${makechrootpkg_makepkg_args[@]}")")
     fi
-fi
-
-# Propagate makepkg and pacman configuration to other tools. This needs to be
-# done BEFORE retrieving the local repository name/root.
-if [[ -v pacman_conf ]]; then
-    pacconf_args+=(--config "$pacman_conf")
-fi
-
-if [[ -v makepkg_conf ]]; then
-    makepkg_common_args+=(--config "$makepkg_conf")
-    pkglist_args+=(--config "$makepkg_conf")
 fi
 
 # Check that a valid database extension was retrieved (#700, #1038)
