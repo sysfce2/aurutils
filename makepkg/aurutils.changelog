@@ -1,3 +1,8 @@
+## 13.5
+
+* `aur-build`
+  + use /etc/aurutils/pacman-<db_name>.conf only with `--database` or `AUR_REPO` set
+
 ## 13.4
 
 * `aur-fetch`
