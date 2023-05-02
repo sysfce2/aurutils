@@ -65,7 +65,9 @@ exec {fd}< "$AUR_ROOT"
   printf '%s\n' "${target_remotes[@]}" "${active_remotes[@]}" | git_set_branches
 
   # Retrieve objects
-  git fetch origin "${target_remotes[@]}"
+  if (( ${#target_remotes[@]} )); then
+      git fetch origin "${target_remotes[@]}"
+  fi
 
   # Resetting branches is only needed when .git/config contains both refs/heads
   # and refs/remotes/origin, i.e. when using git-clone. `--lclone` uses git-init
