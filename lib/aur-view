@@ -152,7 +152,7 @@ if [[ -v AUR_PAGER ]]; then
 
     # Use an additional prompt for file managers with no support
     # for exit codes greater 0 (#673)
-    if [[ -v AUR_CONFIRM_PAGER ]]; then
+    if [[ -v AUR_CONFIRM_PAGER ]] && (( AUR_CONFIRM_PAGER )); then
         read -rp $'Press Return to continue or Ctrl+d to abort\n'
     fi
 
