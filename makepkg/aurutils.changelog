@@ -1,3 +1,36 @@
+## 13.4
+
+* `aur-fetch`
+  + exit 0 on empty stdin (`-`, `/dev/stdin`)
+
+* `aur-depends`
+  + exit 0 on empty stdin (`-`, `/dev/stdin`)
+
+* `aur-query`
+  + exit 0 on empty stdin (`-`, `/dev/stdin`)
+
+* `aur-view`
+  + evaluate `AUR_CONFIRM_PAGER`
+
+## 13.3
+
+* `Makefile`
+  + correctly install to `AUR_LIB_DIR`
+
+* `aur-build`
+  + get local repository state before `--chroot` configuration
+
+* `aur-graph`
+  + add `PRINTALL`
+
+* `aur.1`
+  + fixes for `aur-format`
+
+## 13.2
+
+* `build--pkglist`
+  + set `pkgname` as fallback for `pkgbase` (#1058)
+
 ## 13.1
 
 * `aur-fetch`
