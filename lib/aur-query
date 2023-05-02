@@ -22,12 +22,17 @@ if (not length($opt_type)) {
     exit(1);
 }
 
-# Handle '-' to take packages from stdin
-add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
-
 if (not scalar(@ARGV)) {
     say STDERR "$argv0: at least one argument required";
     exit(1);
+}
+
+# Handle '-' to take packages from stdin
+add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
+
+# Exit gracefully on empty stdin, e.g. when piping from `aur repo -u`
+if (not scalar(@ARGV)) {
+    exit(0);
 }
 my %query_args = (type => $opt_type, by => $opt_by, callback => sub { say @_ });
 

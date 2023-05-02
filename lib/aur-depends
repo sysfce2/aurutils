@@ -69,7 +69,7 @@ sub chain {
                 }
             }
         }
-	if (not scalar(@depends)) {
+    if (not scalar(@depends)) {
             last;  # no further results
         }
     }
@@ -252,12 +252,17 @@ unless(caller) {
         'a|all'              => \$opt_show_all
     ) or exit(1);
 
+    if (not scalar(@ARGV)) {
+        say STDERR "$argv0: at least one argument required";
+        exit(1);
+    }
+
     # Handle '-' to take packages from stdin
     add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
 
+    # Exit gracefully on empty stdin, e.g. when piping from `aur repo -u`
     if (not scalar(@ARGV)) {
-	say STDERR "$argv0: at least one argument required";
-	exit(1);
+        exit(0);
     }
 
     # Variable dependency types (#826)

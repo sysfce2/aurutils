@@ -142,6 +142,11 @@ else
     set --
 fi
 
+# Exit gracefully on empty stdin, e.g. when piping from `aur repo -u`.
+if (( ! ${#packages[@]} )); then
+    exit 0
+fi
+
 # Update revisions in local AUR mirror
 declare -A local_clones
 
