@@ -7,7 +7,7 @@ ETCDIR ?= /etc
 AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
 AURUTILS_VERSION ?= $(shell git describe --tags || true)
 ifeq ($(AURUTILS_VERSION),)
-AURUTILS_VERSION := 13.1
+AURUTILS_VERSION := 13.4
 endif
 AURUTILS_SHELLCHECK = $(wildcard lib/*)
 
