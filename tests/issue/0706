@@ -1,8 +1,15 @@
 #!/bin/bash
+# expected: empty output, exit 0
 out=$(aur query -t info - </dev/null)
 err=$?
+{ [[ ! $out ]] && (( err == 0 )); } || exit
 
-# expected: empty output, exit 1
-[[ ! $out ]] && (( err == 1 ))
+out=$(aur depends - </dev/null)
+err=$?
+{ [[ ! $out ]] && (( err == 0 )); } || exit
+
+out=$(aur fetch - </dev/null)
+err=$?
+{ [[ ! $out ]] && (( err == 0 )); } || exit
 
 # vim: set et sw=4 sts=4 ft=sh:
