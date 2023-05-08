@@ -1,3 +1,8 @@
+## 13.6
+
+* `aur-depends`
+  + fix output when non-AUR targets are specified on the command-line (#1062)
+
 ## 13.5
 
 * `aur-build`
