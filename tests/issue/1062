@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 check_pairs() {
     # datamash distinguishes empty and missing fields, so a manual
     # implementation is needed
@@ -9,11 +10,40 @@ check_pairs() {
         }
     }'
 }
+
 check_table() {
     datamash -W check
 }
 
-aur depends            git aurutils 2>/dev/null | check_pairs || exit
-aur depends --all      git aurutils 2>/dev/null | check_pairs || exit
-aur depends --table    git aurutils 2>/dev/null | check_table || exit
-aur depends --table -r git aurutils 2>/dev/null | check_table || exit
+check_count() {
+    local cnt=$1 exp=$2
+
+    if (( cnt != exp )); then
+        echo >&2 "$cnt fields encountered, expected $exp"
+        exit 1
+    else
+        echo >&2 "$cnt fields"
+    fi
+}
+
+# check consistent output
+aur depends            git aurutils 2>/dev/null | check_pairs
+aur depends --all      git aurutils 2>/dev/null | check_pairs
+aur depends --table    git aurutils 2>/dev/null | check_table
+aur depends --table -r git aurutils 2>/dev/null | check_table
+
+# git is non-AUR dependency specified on command-line
+cnt=$(aur depends --json git aurutils | jq length)
+check_count "$cnt" 2
+
+# single AUR dependency from command-line
+cnt=$(aur depends --json aurutils | jq length)
+check_count "$cnt" 1
+
+# git is included as non-AUR dependency for aurutils
+cnt=$(aur depends --json --all git aurutils | jq length)
+check_count "$cnt" 5
+
+# list all direct dependencies
+cnt=$(aur depends --json --all aurutils | jq length)
+check_count "$cnt" 5

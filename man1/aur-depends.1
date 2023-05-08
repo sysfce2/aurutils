@@ -27,7 +27,8 @@ resolves to
 .BR \-a ", " \-\-all
 Include direct
 .BR pacman (8)
-dependencies of dependencies in the output.
+dependencies of dependencies in the output. Implies
+.BR \-\-pkgname .
 .
 .TP
 .BR \-n ", " \-\-pkgname
@@ -35,6 +36,9 @@ Print dependency information to stdout as
 .BR pkgname
 instead of
 .BR pkgbase .
+Unless
+.B \-\-all
+is specified, only AUR dependencies are printed.
 .
 .TP
 .BR \-t ", " \-\-table
