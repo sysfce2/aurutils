@@ -1,0 +1,19 @@
+#!/bin/bash
+check_pairs() {
+    # datamash distinguishes empty and missing fields, so a manual
+    # implementation is needed
+    awk -F'\t' '{
+        if($2 == "" || $1 == "") {
+            print "empty field encountered on line" " " NR >"/dev/stderr"
+              exit(1)
+        }
+    }'
+}
+check_table() {
+    datamash -W check
+}
+
+aur depends            git aurutils 2>/dev/null | check_pairs || exit
+aur depends --all      git aurutils 2>/dev/null | check_pairs || exit
+aur depends --table    git aurutils 2>/dev/null | check_table || exit
+aur depends --table -r git aurutils 2>/dev/null | check_table || exit
