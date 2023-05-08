@@ -34,7 +34,7 @@ aur depends --table -r git aurutils 2>/dev/null | check_table
 
 # git is non-AUR dependency specified on command-line
 cnt=$(aur depends --json git aurutils | jq length)
-check_count "$cnt" 2
+check_count "$cnt" 1
 
 # single AUR dependency from command-line
 cnt=$(aur depends --json aurutils | jq length)

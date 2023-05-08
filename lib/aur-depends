@@ -114,12 +114,22 @@ sub chain_mod {
     } keys %{$results};
 
     # Add reverse dependencies for any remaining targets
-    map {
-        $mod{$_}->{'Name'} = $_;
-        $mod{$_}->{'RequiredBy'} = $reqby->{$_};
-    } grep {
-        $results->{$_} eq 'None'
-    } keys %{$results} if $showall;
+    if ($showall) {
+        map {
+            $mod{$_}->{'Name'} = $_;
+            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
+        } grep {
+            $results->{$_} eq 'None'
+        } keys %{$results};
+    }
+    else {
+        # Remove `None` reverse dependencies (#1062)
+        map {
+            delete $mod{$_};
+        } grep {
+            $results->{$_} eq 'None'
+        } keys %mod;
+    }
 
     return \%mod;
 }
@@ -194,9 +204,6 @@ sub table {
     for my $pkg (values %{$results}) {
         my ($name, $base, $version) = ($pkg->{'Name'}, $pkg->{'PackageBase'}, $pkg->{'Version'});
 
-        # Non-AUR targets are skipped without --all (#1062)
-        next if (not defined $name);
-
         for my $deptype (keys %{$pkg->{'RequiredBy'}}) {
             map { 
                 say join("\t", $name, $_, $base // '-', $version // '-', $deptype);
@@ -212,9 +219,6 @@ sub pairs {
 
     for my $pkg (values %{$results}) {
         my $target = $pkg->{$key};
-
-        # Non-AUR targets are skipped without --all (#1062)
-        next if (not defined $target);
 
         for my $reqby (values %{$pkg->{'RequiredBy'}}) {
             map {
