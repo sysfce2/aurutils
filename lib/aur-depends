@@ -131,7 +131,7 @@ sub chain_mod {
         } keys %mod;
     }
 
-    return \%mod;
+    return \%mod, $reqby, $shlibs;
 }
 
 # Recursively remove nodes from dependency graph (#592)
@@ -282,7 +282,17 @@ unless(caller) {
     @{$opt_installed} = map { split(',', $_) } @{$opt_installed};
 
     # Resolve dependency tree
-    my $results = chain_mod(chain(\@ARGV, \@types, 30), $opt_provides, $opt_show_all);
+    my ($results, $reqby, $shlibs) = chain_mod(chain(\@ARGV, \@types, 30), $opt_provides, $opt_show_all);
+
+    # Remove virtual dependencies with `--show-all` (#1063)
+    if ($opt_show_all and $opt_provides) {
+        # XXX: also include `None` dependencies with `Self` RequiredBy
+        my @virtual = grep {
+            $_ ne $shlibs->{$_}->[0] and $shlibs->{$_}->[1] > 0
+        } keys %{$shlibs};
+
+        $results = prune($results, \@virtual);
+    }
 
     # Remove transitive dependencies for installed targets (#592)
     if (scalar @{$opt_installed}) {
