@@ -257,7 +257,7 @@ unless(caller) {
         't|table'            => sub { $opt_mode = "table" },
         'J|json'             => sub { $opt_mode = "json" },
         'r|reverse'          => \$opt_reverse,
-        'a|all'              => \$opt_show_all
+        'a|all|show-all'     => \$opt_show_all
         ) or exit(1);
 
     if (not scalar(@ARGV)) {
@@ -269,9 +269,7 @@ unless(caller) {
     add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
 
     # Exit gracefully on empty stdin, e.g. when piping from `aur repo -u`
-    if (not scalar(@ARGV)) {
-        exit(0);
-    }
+    exit(0) if not scalar(@ARGV);
 
     # Variable dependency types (#826)
     my @types;
@@ -280,7 +278,7 @@ unless(caller) {
     push(@types, 'CheckDepends') if $opt_checkdepends;
     push(@types, 'OptDepends')   if $opt_optdepends;
 
-    # Array notation for --assume-installed
+    # Array notation for `--assume-installed`
     @{$opt_installed} = map { split(',', $_) } @{$opt_installed};
 
     # Resolve dependency tree
@@ -290,6 +288,8 @@ unless(caller) {
     if (scalar @{$opt_installed}) {
         $results = prune($results, $opt_installed);
     }
+
+    # Main operations
     if ($opt_mode eq 'pairs') {
         pairs($results, ($opt_pkgname or $opt_show_all) ? 'Name' : 'PackageBase', $opt_reverse);
     }
