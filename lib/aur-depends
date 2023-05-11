@@ -14,8 +14,7 @@ sub chain {
     my @depends = @{$targets};
     my (%results, %reqby, %shlibs);
 
-    # Add `Self` type for explicit targets
-    map { $reqby{$_}{'Self'} = [$_] } @{$targets};
+    # Make every explicit target provide itself
     map { $shlibs{$_} = [$_, 0] } @{$targets};
 
     for my $a (1..$max_req) {
@@ -34,7 +33,11 @@ sub chain {
         @depends = ();
 
         for my $node (@level) {
-            $results{$node->{'Name'}} = $node;
+            my $name = $node->{'Name'};
+            $results{$name} = $node;
+
+            # Include `Self` dependency for every target (aur-sync, #1065)
+            push(@{$reqby{$name}{'Self'}}, $name);
 
             # XXX: no check if provides has valid package version (vercmp)
             for my $spec (@{$node->{'Provides'} // []}) {
