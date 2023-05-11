@@ -172,9 +172,11 @@ while true; do
             repo_p+=("${repo[@]}")
             provides=1 ;;
         --rebuild)
+            # Command-line targets are excluded from `repo-filter`
             build_args+=(-f); chkver_depth=1 ;;
         --rebuildtree|--rebuild-tree)
-            build_args+=(-f); chkver_depth=0 ;;
+            # Dependencies may be removed by `repo-filter` (#1066)
+            build_args+=(-f); chkver_depth=0; provides=0 ;;
         --rebuildall|--rebuild-all)
             build_args+=(-f); chkver_depth=0; repo_targets=1 ;;
         -u|--upgrades)
