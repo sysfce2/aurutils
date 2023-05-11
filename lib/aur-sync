@@ -112,14 +112,14 @@ fi
 opt_short='d:D:k:U:AcfLnorRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force'
-          'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-ver-argv'
+          'ignore-arch' 'log' 'no-confirm' 'no-ver' 'no-graph' 'no-sync' 'no-ver-argv'
           'no-view' 'no-provides' 'no-build' 'rmdeps' 'sign' 'temp' 'upgrades'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
           'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:'
           'rebase' 'reset' 'ff' 'exclude:' 'columns' 'prefix')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
-            'nover' 'nograph' 'nover-argv' 'noview' 'noprovides' 'nobuild'
+            'nover' 'nograph' 'nosync' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
             'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
 
@@ -157,6 +157,8 @@ while true; do
             graph_args+=(-v CHECKDEPENDS=0) ;;
         --nograph|--no-graph)
             graph=0 ;;
+        --nosync|--no-sync)
+            build_args+=(--no-sync) ;;
         --nover|--no-ver)
             chkver_depth=0 ;;
         --nover-argv|--no-ver-argv)
