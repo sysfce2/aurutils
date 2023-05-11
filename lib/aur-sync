@@ -276,7 +276,6 @@ if (( rotate )); then
         echo '?'; exit 16 # EBUSY
     fi
 fi
-
 mkdir -p -- "$AURDEST"
 
 if (( $# + update + repo_targets == 0 )); then
@@ -321,10 +320,9 @@ fi >&2
 
 # Retrieve list of local repository packages ($1 pkgname $2 pkgver)
 aur repo-parse -p "$db_path" --list | select_ignores "$tmp"/igni - >"$tmp"/db_info
-repo_err=${PIPESTATUS[0]}
 
-if (( repo_err )); then
-   exit "$repo_err"
+if (( PIPESTATUS[0] )); then
+   exit 2
 fi
 
 # Build list of AUR targets
@@ -437,7 +435,7 @@ if (( graph )); then
     fi < "$tmp"/queue | swap >"$tmp"/graph
 
     # Recompute dependencies to include `provides` (#837)
-    tsort < "$tmp"/graph >"$tmp"/queue
+    tsort < "$tmp"/graph >"$tmp"/queue || exit 22
 fi
 
 # Inspect package files
