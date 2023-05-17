@@ -1,3 +1,8 @@
+## 14.1
+
+* `aur-sync`
+  + fix exit codes for `tsort`, `aur-repo-parse`
+
 ## 14
 
 * `aur-depends`
