@@ -29,6 +29,16 @@ while read -r name fullver base; do
     # Copy original PKGBUILD in case of makepkg failure
     cp -v "$AURDEST/$base/$buildscript"{,.tmp}
 
+    # Retrieve metadata from .SRCINFO (no sourcing of PKGBUILD)
+    if ! [[ -f $AURDEST/$base/.SRCINFO ]]; then
+        printf >&2 '%s: no such file or directory: %s\n' "$argv0" "$AURDEST/$base/.SRCINFO"
+        exit 2
+    fi
+    if ! [[ -r $AURDEST/$base/.SRCINFO ]]; then
+        printf >&2 '%s: permission denied: %s\n' "$argv0" "$AURDEST/$base/.SRCINFO"
+        exit 1
+    fi
+
     # Check that pkgver is consistent between local repo and PKGBUILD
     unset srcver srcrel srcepoch
     while read -r key _ val; do
@@ -40,10 +50,7 @@ while read -r name fullver base; do
     done < <(
         pacini "$AURDEST/$base/.SRCINFO" epoch pkgver pkgrel
     )
-    if ! wait "$!"; then
-        printf >&2 '%s: no such file or directory: .SRCINFO\n' "$argv0"
-        exit 1
-    fi
+    wait "$!"
 
     if [[ -v srcepoch ]]; then
         srcfullver=$srcepoch:$srcver-$srcrel
