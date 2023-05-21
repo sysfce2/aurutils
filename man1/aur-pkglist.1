@@ -10,28 +10,22 @@ aur\-pkglist \- retrieve AUR metadata archives
 .
 .SH DESCRIPTION
 .B aur\-pkglist
-retrieves metadata archives from the AUR, stored as
-.BR git (1)
-repositories. The archives include an array of package names
-.RB ( pkgnames.git/pkgname.json ),
+retrieves metadata archives from the AUR. This includes plain-text lists
+of available package names
+.RB ( packages.gz ),
 AUR users
-.RB ( users.git/users.json ),
-and
+.RB ( users.gz ),
 package bases
-.RB ( pkgbases.git/pkgbase.json ).
-Other metadata is available through
-.RB ( metadata.git/pkgname.json ,
-.BR metadata.git/pkgbase.json ).
-.PP
-See
-.B doc/git\-archive.md
-in the
-.B aurweb
-source tree for detailed information on these formats.
-.PP
-.B aur\-pkglist
-defaults to retrieving
-.BR pkgnames.git/pkgname.json .
+.RB ( pkgbase.gz ),
+and JSON lists of all available metadata
+.RB ( packages-meta-v1.json ,
+.BR packages-meta-v1-ext.json ).
+The JSON lists either match the output of
+.B search
+or
+.B info
+type requests; see
+.BR aur\-query (1).
 .
 .SH OPTIONS
 .TP
@@ -56,18 +50,21 @@ Retrieve
 .BR metadata.git/pkgname.json .
 .
 .TP
-.BR \-\-info\-pkgbase
-Retrieve
-.BR metadata.git/pkgbase.json .
+.BR \-\-plain
+Print the package list to standard output.
 .
 .TP
-.BR \-\-plain
-When retrieving
-.BR pkgname.json ,
-.BR pkgbase.json
-or
-.BR users.json ,
-print each entry separated by a newline.
+.BR \-F ", " \-\-fixed-strings
+Interpret the given
+.I pattern
+as a list of fixed strings, separated by newlines, 
+any of which is to be matched.
+.
+.TP
+.BR \-P ", " \-\-perl\-regexp
+Interpret the given
+.I pattern
+as a Perl-compatible regular expression (PCRE).
 .
 .SS List retrieval options
 .TP
@@ -79,10 +76,7 @@ Update the package list and print its path to standard output.
 Use the system clock when verifying the list modification date (see
 .BR \-\-time ).
 This option should only be used when the clock is synchronized, for example with
-NTP. If this option is not specified, new revisions are retrieved with
-.BR git\-fetch (1)
-on every call of
-.BR aur\-pkglist .
+NTP.
 .
 .TP
 .BR \-t ", " \-\-ttl
@@ -100,10 +94,9 @@ intervals with
 will thus not give any new results.
 .
 .TP
-.BR \-\-gc
-Run
-.B git\-gc \-\-aggressive
-after updating metadata archives.
+.BR \-v ", " \-\-verify
+Verify checksums of the compressed list with
+.BR sha256sum (1).
 .
 .SH ENVIRONMENT
 .TP
@@ -112,32 +105,11 @@ The URI of the AUR endpoint. Defaults to
 .IR https://\:aur.archlinux.org .
 .
 .TP
-.B AUR_ARCHIVE
-The parent URI for metadata archives. Defaults to the value of
-.IR AUR_LOCATION .
-.
-.TP
-.B AUR_ARCHIVE_ROOT
-The parent directory where metadata archives are stored. Defaults to
-.IR $XDG_STATE_HOME/aurweb\-archive .
-.
-.TP
 .B GIT_HTTP_USER_AGENT
 This variable is set to
 .BR aurutils .
 .
 .SH NOTES
-To improve performance of archive updates,
-.B prefetch
-tasks can be run periodically. Similarly, disk usage can be decreased with
-.B gc
-tasks. See
-.BR git\-maintenance (1)
-for details. Alternatively,
-.BR git\-fetch can be run periodically with
-.BR \-\-systime .
-This option assumes a correctly configured (NTP-synchronized) clock.
-.PP
 The following threads provide more background on the AUR metadata archives:
 .PP
 .UR https://\:gitlab.archlinux.org/\:archlinux/\:aurweb/\:-/\:issues/\:172
@@ -156,10 +128,8 @@ RFC for new AUR Metadata Archives format + diffs
 .ad l
 .nh
 .BR aur (1),
-.BR aur\-query (1),
-.BR git\-fetch (1),
-.BR git\-merge (1),
-.BR git\-pull (1)
+.BR curl (1),
+.BR sha256sum (1)
 .
 .SH AUTHORS
 .MT https://github.com/AladW
