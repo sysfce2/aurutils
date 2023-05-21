@@ -33,7 +33,7 @@ usage() {
     exit 1
 }
 
-opt_short='t:bqsivFPJu'
+opt_short='t:bqsivFPu'
 opt_long=('pkgbase' 'search' 'info' 'fixed-strings' 'perl-regexp' 'plain'
           'ttl:' 'users' 'verify' 'quiet' 'systime')
 opt_hidden=('dump-options' 'time:')
