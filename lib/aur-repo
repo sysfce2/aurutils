@@ -19,9 +19,9 @@ usage() {
 }
 
 # option parsing
-opt_short='c:d:r:F:alqtuJS'
+opt_short='c:f:d:r:F:alqtuJS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
-          'list-attr' 'sync' 'upgrades' 'table' 'quiet' 'attr:' 'json' 'jsonl')
+          'list-attr' 'sync' 'upgrades' 'table' 'quiet' 'attr:' 'json' 'jsonl' 'format:' 'delim:')
 opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'attr-list' 'status' 'field:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -30,11 +30,15 @@ else
     usage
 fi
 
-unset mode list db_name db_root status_file pacman_conf vercmp_args attr
+unset mode list db_name db_root format status_file pacman_conf format_args vercmp_args attr
 while true; do
     case $1 in
         -d|--database|--repo)
             shift; db_name=$1 ;;
+        -f|--format)
+            shift; format=$1; mode=format ;;
+        --delim)
+            shift; format_args+=(--delim "$1") ;;
         -r|--root)
             shift; db_root=$1 ;;
         -c|--config)
@@ -172,6 +176,9 @@ fi
 case $mode in
     list|table|json|jsonl)
         aur repo-parse -p "$db_path" --"$mode" "${list_args[@]}"
+        ;;
+    format)
+        aur repo-parse -p "$db_path" --jsonl | aur format "${format_args[@]}" -f "$format"
         ;;
     upgrades)
         aur repo-parse -p "$db_path" --list | aur vercmp "${vercmp_args[@]}"
