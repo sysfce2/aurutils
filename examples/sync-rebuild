@@ -81,10 +81,8 @@ while read -r name fullver base; do
         failure[$name]=$base
     fi
     rebuilt[$name]=$base
-done < <(
-    # Resolve pkgname (argv) to pkgbase (AUR checkouts)
-    aur repo -Jd "$AUR_REPO" | aur format -f '%n\t%v\t%b\n'; exit "${PIPESTATUS[0]}"
-)
+# Resolve pkgname (argv) to pkgbase (AUR checkouts)
+done < <(aur repo -d "$AUR_REPO" -f '%n\t%v\t%b\n')
 wait "$!" || exit
 
 if (( ${#failure[@]} )); then
