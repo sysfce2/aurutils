@@ -65,9 +65,9 @@ sub parse_json_aur {
     my $obj = parse_json($str);
 
     # Possible AUR responses:
-    # - JSON arrays: REST (suggests), metadata archives (pkgnames.git, pkgbases.git)
+    # - JSON arrays: REST (suggests), metadata archives (packages-meta-v1.json)
     # - JSON hashes, `results` array: REST (info, search)
-    # - JSON hashes: metadata archives (pkgname.json, pkgbase.json)
+    # - JSON hashes: `repo-parse` (JSONL)
     if (ref($obj) eq 'HASH' and defined($obj->{'results'})) {
         my $error = $obj->{'error'};
 
@@ -78,7 +78,7 @@ sub parse_json_aur {
         return @{$obj->{'results'}};
     }
     elsif (ref($obj) eq 'HASH') {
-        return values %{$obj};
+        return $obj;
     }
     elsif (ref($obj) eq 'ARRAY') {
         return @{$obj};
