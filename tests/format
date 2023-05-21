@@ -17,7 +17,7 @@ for t in "${tests_t[@]}"; do
         search.jsonl)
             cnt2=$(jq < "$t" -s 'map(.results | length) | add') ;;
     esac
-    [[ $cnt1 == $cnt2 ]]
+    [[ $cnt1 == "$cnt2" ]]
 done
 
 # error codes:
