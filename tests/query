@@ -28,4 +28,4 @@ aur query aurutils
 aur query -t info
 (( $? == 1 )) || exit
 aur query -t info - </dev/null
-(( $? == 1 )) || exit
+(( $? == 0 )) || exit
