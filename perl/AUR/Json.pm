@@ -78,7 +78,7 @@ sub parse_json_aur {
         return @{$obj->{'results'}};
     }
     elsif (ref($obj) eq 'HASH') {
-        return $obj;
+        return ($obj);
     }
     elsif (ref($obj) eq 'ARRAY') {
         return @{$obj};
