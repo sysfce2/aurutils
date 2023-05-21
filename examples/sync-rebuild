@@ -7,6 +7,35 @@ AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
 AUR_REPO=${AUR_REPO:-custom}
 buildscript=PKGBUILD
 
+srcinfo_get_version() {
+    local srcinfo=$1
+    if ! [[ -f $srcinfo ]]; then
+        printf >&2 '%s: no such file or directory: %s\n' "$argv0" "$srcinfo"
+        exit 2
+    fi
+    if ! [[ -r $srcinfo ]]; then
+        printf >&2 '%s: permission denied: %s\n' "$argv0" "$srcinfo"
+        exit 1
+    fi
+
+    # Check that pkgver is consistent between local repo and PKGBUILD
+    local srcver srcrel srcepoch
+    while read -r key _ val; do
+        case $key in
+            pkgver) srcver=$val ;;
+            pkgrel) srcrel=$val ;;
+            epoch)  srcepoch=$val ;;
+        esac
+    done < <(pacini "$srcinfo" epoch pkgver pkgrel)
+    wait "$!" || exit
+
+    if [[ -v srcepoch ]]; then
+        printf '%s' "$srcepoch:$srcver-$srcrel"
+    else
+        printf '%s' "$srcver-$srcrel"
+    fi
+}
+
 if (( ! $# )); then
     printf >&2 '%s: no arguments provided\n' "$argv0"
     exit 1
@@ -30,35 +59,8 @@ while read -r name fullver base; do
     cp -v "$AURDEST/$base/$buildscript"{,.tmp}
 
     # Retrieve metadata from .SRCINFO (no sourcing of PKGBUILD)
-    if ! [[ -f $AURDEST/$base/.SRCINFO ]]; then
-        printf >&2 '%s: no such file or directory: %s\n' "$argv0" "$AURDEST/$base/.SRCINFO"
-        exit 2
-    fi
-    if ! [[ -r $AURDEST/$base/.SRCINFO ]]; then
-        printf >&2 '%s: permission denied: %s\n' "$argv0" "$AURDEST/$base/.SRCINFO"
-        exit 1
-    fi
+    srcfullver=$(srcinfo_get_version "$AURDEST/$base/.SRCINFO")
 
-    # Check that pkgver is consistent between local repo and PKGBUILD
-    unset srcver srcrel srcepoch
-    while read -r key _ val; do
-        case $key in
-            pkgver) srcver=$val ;;
-            pkgrel) srcrel=$val ;;
-            epoch)  srcepoch=$val ;;
-        esac
-    done < <(
-        pacini "$AURDEST/$base/.SRCINFO" epoch pkgver pkgrel
-    )
-    wait "$!"
-
-    if [[ -v srcepoch ]]; then
-        srcfullver=$srcepoch:$srcver-$srcrel
-    else
-        srcfullver=$srcver-$srcrel
-    fi
-
-    # XXX: use vercmp to ensure upgrades
     if [[ ${srcfullver%%-*} != "${fullver%%-*}" ]]; then
         printf >&2 '%s: source and local repository version differ\n' "$argv0"
         printf >&2 '%s: using existing pkgver\n' "$argv0"
@@ -66,6 +68,7 @@ while read -r name fullver base; do
         # Increase subrelease level to avoid conflicts with intermediate PKGBUILD updates
         release=${fullver##*-}
         printf >&2 '%s: %s: %s -> %s\n' "$argv0" "$base" "$release" "$(awk '{ print $1 += 0.1 }' <<< "$release")"
+
         setconf "$AURDEST/$base/$buildscript" "pkgrel=$release"
         setconf "$AURDEST/$base/$buildscript" "pkgrel+=.1"
     fi
