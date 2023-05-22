@@ -84,9 +84,23 @@ if (( ! ${#makechrootpkg_args[@]} )); then
     makechrootpkg_args=(-c)
 fi
 
+# default paths depend on devtools version (#1072)
+# XXX: use installation prefix (aur-chroot.in)
+if [[ -d /usr/share/devtools/makepkg.conf.d ]]; then
+    makepkg_conf_default=/usr/share/devtools/makepkg.conf.d/$machine.conf
+else
+    makepkg_conf_default=/usr/share/devtools/makepkg-$machine.conf
+fi
+
+if [[ -d /usr/share/devtools/pacman.conf.d ]]; then
+    pacman_conf_default=/usr/share/devtools/pacman.conf.d/$suffix.conf
+else
+    pacman_conf_default=/usr/share/devtools/pacman-$suffix.conf
+fi
+
 # required for chroot creation and update
 # if specified, copied to the container by arch-nspawn
-makepkg_conf=${makepkg_conf:-/usr/share/devtools/makepkg-$machine.conf}
+makepkg_conf=${makepkg_conf:-$makepkg_conf_default}
 
 if [[ ! -f $makepkg_conf ]]; then
     printf >&2 '%s: %q is not a file\n' "$argv0" "$makepkg_conf"
@@ -98,7 +112,7 @@ fi
 
 # required for chroot creation and update
 # if specified, copied to the container by arch-nspawn
-pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$suffix.conf}
+pacman_conf=${pacman_conf:-$pacman_conf_default}
 
 if [[ ! -f $pacman_conf ]]; then
     printf >&2 '%s: %q is not a file\n' "$argv0" "$pacman_conf"
