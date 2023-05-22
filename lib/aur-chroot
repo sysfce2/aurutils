@@ -84,9 +84,25 @@ if (( ! ${#makechrootpkg_args[@]} )); then
     makechrootpkg_args=(-c)
 fi
 
+# default paths depend on devtools version (#1072)
+if ! archbuild_path=$(command -v archbuild 2>/dev/null); then
+    printf >&2 '%s: devtools not installed\n' "$argv0"
+    exit 2
+fi
+buildtoolver=$(awk -F= '/BUILDTOOLVER/ {print $2}' "$archbuild_path")
+
+# XXX: use installation prefix (aur-chroot.in)
+if (( $(vercmp "$buildtoolver" '1:1.0.0-1') >= 0 )); then
+    makepkg_conf_default=/usr/share/devtools/makepkg.conf.d/$machine.conf
+    pacman_conf_default=/usr/share/devtools/pacman.conf.d/$suffix.conf
+else
+    makepkg_conf_default=/usr/share/devtools/makepkg-$machine.conf
+    pacman_conf_default=/usr/share/devtools/pacman-$suffix.conf
+fi
+
 # required for chroot creation and update
 # if specified, copied to the container by arch-nspawn
-makepkg_conf=${makepkg_conf:-/usr/share/devtools/makepkg-$machine.conf}
+makepkg_conf=${makepkg_conf:-$makepkg_conf_default}
 
 if [[ ! -f $makepkg_conf ]]; then
     printf >&2 '%s: %q is not a file\n' "$argv0" "$makepkg_conf"
@@ -98,7 +114,7 @@ fi
 
 # required for chroot creation and update
 # if specified, copied to the container by arch-nspawn
-pacman_conf=${pacman_conf:-/usr/share/devtools/pacman-$suffix.conf}
+pacman_conf=${pacman_conf:-$pacman_conf_default}
 
 if [[ ! -f $pacman_conf ]]; then
     printf >&2 '%s: %q is not a file\n' "$argv0" "$pacman_conf"

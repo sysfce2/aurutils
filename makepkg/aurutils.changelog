@@ -1,3 +1,13 @@
+## 15.2
+
+* `aur-chroot`
+  + adjust default `makepkg`, `pacman` paths depending on `devtools` version (#1072)
+
+## 15.1
+
+* `aur-pkglist`
+  + remove deprecated options (`-J` (`--json`), `-I`, `-S`) [fixup]
+
 ## 15
 
 * `aur-repo`
