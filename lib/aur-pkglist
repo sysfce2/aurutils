@@ -89,7 +89,7 @@ elif [[ ! -v mode ]]; then
 fi
 
 if ! [[ $ttl =~ [0-9]+ ]]; then
-    printf >&2 "error: --ttl requires an integer ('%s' provided)\n" "$ttl"
+    printf >&2 "%s: --ttl requires an integer ('%s' provided)\n" "$argv0" "$ttl"
     exit 1
 fi
 

@@ -147,7 +147,7 @@ unless(caller) {
     add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
 
     if (not scalar @ARGV) {
-        say STDERR 'error: at least one search term needed';
+        say STDERR "$argv0: at least one search term needed";
         exit(1);
     }
 
