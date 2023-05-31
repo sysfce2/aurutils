@@ -1,3 +1,8 @@
+## 15.3
+
+* `aur-pkglist`, `aur-view`, `aur-search`
+  + prefix errors with command name
+
 ## 15.2
 
 * `aur-chroot`
