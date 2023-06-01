@@ -123,7 +123,17 @@ following steps:
 
 In step 3, the local repository version is written explicitly to the `PKGBUILD`
 in case the incremented version is lost, or otherwise restored (e.g. with
-`git-reset`).
+`git-reset`). The fractional part is always increased; for example, a `pkgrel`
+of `35.9` is increased to `35.10`, not `36`.
+
+> **Note**
+> Packages are rebuilt in sequential order. When rebuilds in dependency order are
+> required, `arch-rebuild-order` can be used as follows:
+>
+> `$ arch-rebuild-order --repos=custom <targets...>`
+>
+> If one dependency fails to build, `sync-rebuild` will try rebuilding the package
+> that depends on it anyway. To avoid this, use the `--fail-fast` option.
 
 ## view-delta
 

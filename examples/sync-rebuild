@@ -1,102 +1,250 @@
-#!/bin/bash
-# rebuild - increase subrelease level based on repository contents
-# requires setconf
-argv0=sync-rebuild
-XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
-AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/sync}
-AUR_REPO=${AUR_REPO:-custom}
-buildscript=PKGBUILD
+#!/usr/bin/env python3
+""" Rebuild AUR packages against newer dependencies
+"""
+import json
+import fileinput
+import sys
+import os
+import subprocess
 
-srcinfo_get_version() {
-    local srcinfo=$1
-    if ! [[ -f $srcinfo ]]; then
-        printf >&2 '%s: no such file or directory: %s\n' "$argv0" "$srcinfo"
-        exit 2
-    fi
-    if ! [[ -r $srcinfo ]]; then
-        printf >&2 '%s: permission denied: %s\n' "$argv0" "$srcinfo"
-        exit 1
-    fi
+from srcinfo.parse import parse_srcinfo
+from decimal import Decimal
+from pyalpm import vercmp
+from xdg import BaseDirectory
 
-    # Check that pkgver is consistent between local repo and PKGBUILD
-    local srcver srcrel srcepoch
-    while read -r key _ val; do
-        case $key in
-            pkgver) srcver=$val ;;
-            pkgrel) srcrel=$val ;;
-            epoch)  srcepoch=$val ;;
-        esac
-    done < <(pacini "$srcinfo" epoch pkgver pkgrel)
-    wait "$!" || exit
+# Get the path to user-specific cache files
+ARGV0 = 'sync-rebuild'
+cache_dir = BaseDirectory.xdg_cache_home
+aurdest = os.path.join(cache_dir, 'aurutils/sync')
 
-    if [[ -v srcepoch ]]; then
-        printf '%s' "$srcepoch:$srcver-$srcrel"
-    else
-        printf '%s' "$srcver-$srcrel"
-    fi
-}
+if 'AURDEST' in os.environ:
+    aurdest = os.getenv('AURDEST')
 
-if (( ! $# )); then
-    printf >&2 '%s: no arguments provided\n' "$argv0"
-    exit 1
-fi
 
-# Ensure all sources are available. When not looping over all targets, this step
-# can be left out.  TODO: only clone packages that are already in the local repo
-aur sync -d "$AUR_REPO" --no-build --no-ver-argv -- "$@"
+def run_readline(arg_list):
+    """Run the output from a command line-by-line.
 
-declare -A targets
-for t in "$@"; do
-    targets[$t]=1
-done
+    `aur` programs typically use newline delimited output. Here, this function
+    is used with `aur repo` to read JSON objects, with each line representing
+    one local repository package.
 
-declare -A rebuilt failure
-while read -r name fullver base; do
-    [[ ${targets[$name]} ]] || continue  # restrict to command-line packages
-    [[ ${rebuilt[$name]} ]] && continue  # only run once per pkgbase
+    """
+    with subprocess.Popen(arg_list, stdout=subprocess.PIPE) as process:
+        while True:
+            output = process.stdout.readline()
+            if output == b'':
+                break
+            if output:
+                yield output.strip()
 
-    # Copy original PKGBUILD in case of makepkg failure
-    cp -v "$AURDEST/$base/$buildscript"{,.tmp}
+        return_code = process.poll()
+        if return_code > 0:
+            sys.exit(return_code)
 
-    # Retrieve metadata from .SRCINFO (no sourcing of PKGBUILD)
-    srcfullver=$(srcinfo_get_version "$AURDEST/$base/.SRCINFO")
 
-    if [[ ${srcfullver%%-*} != "${fullver%%-*}" ]]; then
-        printf >&2 '%s: source and local repository version differ\n' "$argv0"
-        printf >&2 '%s: using existing pkgver\n' "$argv0"
-    else
-        # Increase subrelease level to avoid conflicts with intermediate PKGBUILD updates
-        release=${fullver##*-}
-        printf >&2 '%s: %s: %s -> %s\n' "$argv0" "$base" "$release" "$(awk '{ print $1 += 0.1 }' <<< "$release")"
+def srcinfo_get_version(srcinfo):
+    """Return the full version string from a .SRCINFO file.
 
-        setconf "$AURDEST/$base/$buildscript" "pkgrel=$release"
-        setconf "$AURDEST/$base/$buildscript" "pkgrel+=.1"
-    fi
+    The `epoch` key is optional, `pkgver` and `pkgrel` are assumed present.
 
-    # TODO: use different FD for --confirm
-    if env -C "$AURDEST/$base" aur build -d "$AUR_REPO" -srn; then
-        rm "$AURDEST/$base/$buildscript".tmp
-    else
-        mv -v "$AURDEST/$base/$buildscript".tmp "$AURDEST/$base/$buildscript"
-        failure[$name]=$base
-    fi
-    rebuilt[$name]=$base
-# Resolve pkgname (argv) to pkgbase (AUR checkouts)
-done < <(aur repo -d "$AUR_REPO" -f '%n\t%v\t%b\n')
-wait "$!" || exit
+    """
+    with open(srcinfo, 'r', encoding='utf-8') as file:
+        (data, errors) = parse_srcinfo(file.read())
+        if errors:
+            sys.exit(1)
 
-if (( ${#failure[@]} )); then
-    printf >&2 '%s: the following targets failed to build:\n' "$argv0"
-    printf >&2 '%s\n' "${failure[@]}"
-fi
+        epoch  = data.get('epoch')
+        pkgver = data['pkgver']
+        pkgrel = data['pkgrel']
 
-mapfile -t rest < <(
-    grep -Fxvf <(printf '%s\n' "${!rebuilt[@]}") <(printf '%s\n' "$@")
-)
-if (( ${#rest[@]} )); then
-    printf >&2 '%s: the following targets are not available in the local repository:\n' "$argv0"
-    printf >&2 '%s\n' "${rest[@]}"
+        if epoch is not None:
+            return epoch + ':' + pkgver, pkgrel
+        return pkgver, pkgrel
 
-    printf >&2 '%s: with cached entries:\n' "$argv0"
-    pacsift >&2 "${rest[@]/#/--name=}" --exact --cache 2>/dev/null | pacsort
-fi
+
+def increase_decimal(decimal_number, increment, n_digits=2):
+    """Only increase the fractional part of a number.
+    """
+    # Convert the decimal number and increment to Decimal objects
+    decimal_num = Decimal(str(decimal_number))
+    inc = Decimal(str(increment))
+    
+    # Calculate the increased decimal
+    increased_decimal = decimal_num + inc
+
+    # Convert the increased decimal to a formatted string with fixed precision
+    precision = '.' + str(n_digits) + 'f'
+    increased_decimal_str = format(increased_decimal, precision)
+
+    return increased_decimal_str
+
+
+def update_pkgrel(buildscript, backup, pkgname, pkgrel=None, increment=0.1):
+    """Update pkgrel in a PKGBUILD by a given increment.
+
+    The original PKGBUILD is backed up before modification. Modifications assume
+    a single caller and are not thread-safe.
+
+    """
+    n_digits = sum(ch.isdigit() for ch in str(increment).strip('0'))
+
+    with fileinput.input(buildscript, inplace=True, backup=backup) as finput:
+        for line in finput:
+            pkgrel_keyword = 'pkgrel='
+
+            if line.startswith(pkgrel_keyword):
+                # Extract and update the current pkgrel value
+                if pkgrel is None:
+                    pkgrel = float(line.split('=')[1])  # Only the last written pkgrel holds
+                new_pkgrel = increase_decimal(pkgrel, increment, n_digits)
+
+                # Print bumped pkgrel to standard error
+                print(f'{ARGV0}: {pkgname}: {pkgrel} -> {new_pkgrel}', file=sys.stderr)
+
+                # Replace the pkgrel value in the line
+                line = f'{pkgrel_keyword}{new_pkgrel}\n'
+
+            # Write the modified line to stdout (which redirects to the PKGBUILD file)
+            print(line, end='')
+
+
+# TODO: use vercmp to ensure rebuilds
+# XXX: perform rebuilds in dependency order, abort reverse depends when depends fails (sync--ninja)
+def rebuild_packages(repo_targets, db_name, fail_fast=False):
+    """Rebuild a series of packages in succession
+    """
+    # TODO: user-specified build arguments (e.g. --chroot)
+    build_cmd = ['aur', 'build', '-srn']
+
+    if db_name is not None:
+        build_cmd.extend('--database', db_name)
+
+    # Check that `pkgver` is consistent between local repository and .SRCINFO
+    rebuilds = {}
+
+    for pkgname, pkg in repo_targets.items():
+        # Only run once per pkgbase
+        if pkgname in rebuilds:
+            continue
+
+        # Retrieve metdata from local repository entry
+        pkgbase = pkg['PackageBase']
+        pkgver, pkgrel = pkg['Version'].rsplit('-', 1)
+
+        # Retrieve metadata from .SRCINFO
+        src_dir = os.path.join(aurdest, pkgbase)
+        src_pkgver, _ = srcinfo_get_version(os.path.join(src_dir, '.SRCINFO'))
+
+        # Set backup file for PKGBUILD
+        buildscript = os.path.join(src_dir, 'PKGBUILD')
+        backup = '.tmp'
+        remove_backup = False
+
+        # Increase subrelease level to avoid conflicts with intermediate
+        # PKGBUILD updates
+        if src_pkgver == pkgver:
+            update_pkgrel(buildscript, backup, pkgname, pkgrel=float(pkgrel), increment=0.1)
+            remove_backup = True
+        else:
+            print(f'{ARGV0}: source and local repository version differ', file=sys.stderr)
+            print(f'{ARGV0}: using existing pkgver', file=sys.stderr)
+
+        failed_rebuilds = {}
+
+        # Build package with modified pkgrel
+        try:
+            subprocess.run(build_cmd, check=True, cwd=src_dir)
+
+            # Build process completed successfully, remove backup PKGBUILD if it
+            # was created above
+            if remove_backup:
+                os.remove(buildscript + backup)
+
+        except subprocess.CalledProcessError:
+            # Build process failed, revert to unmodified PKGBUILD
+            print(f'{ARGV0}: {pkgbase}: build failed, reverting PKGBUILD', file=sys.stderr)
+            os.replace(buildscript + backup, buildscript)
+
+            # --fail-fast: if a package failed to build, also consider remaining targets as failed
+            if fail_fast:
+                print(f'{ARGV0}: {pkgbase}: build failed, exiting', file=sys.stderr)
+                return rebuilds, list(set(repo_targets) - set(rebuilds))
+
+            # Mark rebuild as failure for later reporting to the user
+            failed_rebuilds[pkgname] = pkgbase
+
+        rebuilds[pkgname] = pkgbase
+
+        return rebuilds, failed_rebuilds
+
+
+def print_cached_packages(args):
+    """Print cached packages in `vercmp` order
+    """
+    name_args = ['--name=' + item for item in args]
+    pacsift   = ['pacsift', *name_args, '--exact', '--cache']
+
+    p1 = subprocess.Popen(pacsift, stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(['pacsort'], stdin=p1.stdout, stderr=subprocess.PIPE)
+    p2.communicate()  # wait for the pipeline to finish
+
+
+def main(targets, db_name, fail_fast):
+    # Ensure all sources are available. Only packages are cloned that are
+    # already available in the local repository.
+    sync_cmd  = ['aur', 'sync', '--no-build', '--no-ver-argv']
+    repo_cmd  = ['aur', 'repo', '--jsonl']
+
+    if db_name is not None:
+        sync_cmd.extend('--database', db_name)
+        repo_cmd.extend('--database', db_name)
+
+    repo_targets = {}
+
+    # Read repository contents line by line to handle potentially large databases
+    for pkg_str in run_readline(repo_cmd):
+        pkg = json.loads(pkg_str)
+        pkgname = pkg['Name']
+
+        # Restrict to packages specified on the command-line
+        if pkgname in targets:
+            repo_targets[pkgname] = {
+                'PackageBase': pkg['PackageBase'], 'Version' : pkg['Version']
+            }
+
+    # Clone targets that are part of the local repository
+    if len(repo_targets) > 0:
+        sync_cmd.extend(list(repo_targets.keys()))
+        subprocess.run(sync_cmd, check=True)
+    else:
+        print(f'{ARGV0}: no targets in local repository', file=sys.stderr)
+        sys.exit(1)
+
+    rebuilds, failed = rebuild_packages(repo_targets, db_name, fail_fast)
+
+    if len(failed) > 0:
+        print(f'{ARGV0}: the following targets failed to build:', file=sys.stderr)
+        print('\n'.join(rebuilds.keys()), file=sys.stderr)
+
+    rest = list(set(targets) - set(rebuilds.keys()) - set(failed.keys()))
+
+    if len(rest) > 0:
+        print(f'{ARGV0}: the following targets are unavailable in the local repository',
+              file=sys.stderr)
+        print('\n'.join(rest), file=sys.stderr)
+
+        # Print any stale cached packages
+        print(f'\n{ARGV0}: with cached entries:', file=sys.stderr)
+        print_cached_packages(rest)
+
+
+# Parse user arguments when run directly
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(prog='sync-rebuild', description='rebuild packages')
+    parser.add_argument('-d', '--database')
+    parser.add_argument('--fail-fast', action='store_true')
+    parser.add_argument('targets', nargs='+')
+    args = parser.parse_args()
+
+    main({i:1 for i in args.targets}, args.database, args.fail_fast)
