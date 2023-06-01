@@ -9,7 +9,7 @@ import subprocess
 
 from srcinfo.parse import parse_srcinfo
 from decimal import Decimal
-from pyalpm import vercmp
+#from pyalpm import vercmp
 from xdg import BaseDirectory
 
 # Get the path to user-specific cache files
