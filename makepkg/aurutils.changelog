@@ -3,6 +3,9 @@
 * `aur-build`
   + support makepkg configuration in `/etc/aurutils` (#1076)
 
+* `aur-depends`
+  + add `--jsonl`
+
 ## 15.4
 
 * `examples`
