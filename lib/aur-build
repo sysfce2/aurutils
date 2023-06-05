@@ -228,17 +228,31 @@ if (( chroot )); then
     # is not configured on the host. Therefore, $db_name is only used for the
     # default paths below when specified on the command-line or through `AUR_REPO`.
     if [[ $db_name ]]; then
-        default_paths=("/etc/aurutils/pacman-$db_name.conf" "/etc/aurutils/pacman-$machine.conf")
+        default_pacman_paths=("/etc/aurutils/pacman-$db_name.conf"
+            "/etc/aurutils/pacman-$machine.conf")
+        default_makepkg_paths=("/etc/aurutils/makepkg-$db_name.conf"
+            "/etc/aurutils/makepkg-$machine.conf")
     else
-        default_paths=("/etc/aurutils/pacman-$machine.conf")
+        default_pacman_paths=("/etc/aurutils/pacman-$machine.conf")
+        default_makepkg_paths=("/etc/aurutils/makepkg-$machine.conf")
     fi
 
     # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
     # /etc/aurutils/pacman-<repo>.conf or /etc/aurutils/pacman-<uname>.conf in
     # aur-build, and pass it on to aur-chroot (#824, #846)
-    for def in "${default_paths[@]}"; do
+    for def in "${default_pacman_paths[@]}"; do
         if [[ -f $def ]] && [[ ! -v pacman_conf ]]; then
             pacman_conf=$def
+            break
+        fi
+    done
+
+    # The same as above but for /etc/aurutils/makepkg-<repo>.conf or
+    # /etc/aurutils/makepkg-<uname>.conf. If the file is not found, fallback to
+    # makepkg.conf files in /usr/share/devtools.
+    for def in "${default_makepkg_paths[@]}"; do
+        if [[ -f $def ]] && [[ ! -v makepkg_conf ]]; then
+            makepkg_conf=$def
             break
         fi
     done
@@ -246,7 +260,7 @@ if (( chroot )); then
     # No pacman configuration is available for the container, or it points to a
     # non-existing file. Print a matching diagnostic and exit.
     if [[ ! -v pacman_conf ]]; then
-        diag_pacman_conf "${default_paths[@]}"
+        diag_pacman_conf "${default_pacman_paths[@]}"
         exit 2
 
     elif [[ ! -f $pacman_conf ]]; then
@@ -260,8 +274,8 @@ if (( chroot )); then
     if [[ -v makepkg_conf ]]; then
         chroot_args+=(--makepkg-conf "$makepkg_conf")
     else
-        # When makechrootpkg calls makepkg inside the container, it uses the above 
-        # makepkg.conf for most variables including PKGEXT. (makepkg --packagelist)
+        # When `makechrootpkg` calls `makepkg` inside the container, it uses the devtools
+        # `makepkg.conf` for most variables including PKGEXT. (`makepkg --packagelist`)
         makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
         unset PKGEXT
     fi
