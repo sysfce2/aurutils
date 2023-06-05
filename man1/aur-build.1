@@ -112,11 +112,19 @@ for this configuration file, as certain directives (e.g.
 .BR IgnorePkg )
 may cause issues in the container. It is recommended to instead copy
 the template in
-.B /usr/share/devtools/pacman-extra.conf
+.B /usr/share/devtools/pacman.conf.d/extra.conf
 or
-.B /usr/share/devtools/pacman-multilib.conf
+.B /usr/share/devtools/pacman.conf.d/multilib.conf
 and make the necessary adjustments. Due to devtools limitations, any
 desired repositories should be configured explicitly in this copy.
+.
+.IP
+Similarly,
+.B /etc/aurutils/makepkg-<database>.conf
+and
+.B /etc/aurutils/makepkg-<arch>.conf
+are copied to the container when available. Their creation is however
+not required, unlike the pacman configuration described above.
 .
 .TP
 .BR \-f ", " \-\-force
