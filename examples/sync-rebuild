@@ -189,7 +189,7 @@ def print_cached_packages(args):
     p2.communicate()  # wait for the pipeline to finish
 
 
-def main(targets, db_name, fail_fast):
+def main(targets, db_name, fail_fast, run_sync):
     # Ensure all sources are available. Only packages are cloned that are
     # already available in the local repository.
     sync_cmd  = ['aur', 'sync', '--no-build', '--no-ver-argv']
@@ -215,7 +215,8 @@ def main(targets, db_name, fail_fast):
     # Clone targets that are part of the local repository
     if len(repo_targets) > 0:
         sync_cmd.extend(list(repo_targets.keys()))
-        subprocess.run(sync_cmd, check=True)
+        if run_sync:
+            subprocess.run(sync_cmd, check=True)
     else:
         print(f'{ARGV0}: no targets in local repository', file=sys.stderr)
         sys.exit(1)
@@ -244,7 +245,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog=f'{ARGV0}', description='rebuild packages')
     parser.add_argument('-d', '--database')
     parser.add_argument('--fail-fast', action='store_true')
+    parser.add_argument('--no-sync', action='store_false')
     parser.add_argument('targets', nargs='+')
     args = parser.parse_args()
 
-    main({i:1 for i in args.targets}, args.database, args.fail_fast)
+    main({i:1 for i in args.targets}, args.database, args.fail_fast, args.no_sync)
