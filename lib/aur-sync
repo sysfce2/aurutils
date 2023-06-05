@@ -117,7 +117,7 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'pkgver' 'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:'
           'remove' 'provides-from:' 'new' 'prevent-downgrade' 'verify'
           'makepkg-args:' 'format:' 'no-check' 'keep-going:' 'user:'
-          'rebase' 'reset' 'ff' 'exclude:' 'columns' 'prefix')
+          'rebase' 'reset' 'ff' 'exclude:' 'columns' 'prefix' 'save:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nosync' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
@@ -129,7 +129,7 @@ else
     usage
 fi
 
-unset pkg pkg_i repo repo_p ignore_file
+unset pkg pkg_i repo repo_p ignore_file out_file
 while true; do
     case "$1" in
         # sync options
@@ -148,6 +148,8 @@ while true; do
             build=0 ;;
         --columns)
             build=0; columns=1 ;;
+        --save)
+            shift; out_file=$1 ;;
         --optdepends)
             depends_args+=(--optdepends)
             graph_args+=(-v OPTDEPENDS=1) ;;
@@ -281,6 +283,13 @@ mkdir -p -- "$AURDEST"
 if (( $# + update + repo_targets == 0 )); then
     printf >&2 '%s: no targets specified\n' "$argv0"
     exit 1
+fi
+
+# Write --no-build / --columns results to a file (#1077)
+if [[ -v out_file ]]; then
+    out_file=$(realpath -- "$out_file")
+else
+    out_file=/dev/stdout
 fi
 
 # Retrieve path to local repo (#448, #700)
@@ -445,7 +454,7 @@ fi
 
 # Input for aur-sync--ninja
 if (( columns )); then
-    swap "$tmp"/graph | sort -k1b,1 -k1 -u
+    swap "$tmp"/graph | sort -k1b,1 -k1 -u >"$out_file"
 
 # Build dependency tree with ninja (#908)
 elif (( AUR_SYNC_USE_NINJA )); then
@@ -490,7 +499,7 @@ elif (( build )); then
 else
     while read -r pkg; do
         [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
-    done < "$tmp"/queue
+    done <"$tmp"/queue >"$out_file"
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
