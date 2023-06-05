@@ -259,6 +259,7 @@ unless(caller) {
         'G|graph'            => sub { },  # noop
         't|table'            => sub { $opt_mode = "table" },
         'J|json'             => sub { $opt_mode = "json" },
+        'jsonl'              => sub { $opt_mode = "jsonl" },
         'r|reverse'          => \$opt_reverse,
         'a|all|show-all'     => \$opt_show_all
         ) or exit(1);
@@ -314,6 +315,9 @@ unless(caller) {
     }
     elsif ($opt_mode eq 'json') {
         write_json($results);
+    }
+    elsif ($opt_mode eq 'jsonl') {
+        map { write_json $results->{$_} } keys %{$results};
     }
     else {
         say STDERR "$argv0: invalid mode selected";
