@@ -53,6 +53,7 @@ sub handler_search {
 
 sub parse_db {
     my ($fh, $db_path, $first, $handler, $search_expr, $search_label, @varargs) = @_;
+    (my $repo = basename($db_path)) =~ s/\.db?+$//;
     my $count = 0;
     my ($entry, $filename, $attr, $attr_label);
 
@@ -74,6 +75,7 @@ sub parse_db {
             # New entry in the database (hashref)
             %{$entry} = ();
             $entry->{'DBPath'} = $db_path;
+            $entry->{'Repository'} = $repo;
             $entry->{$repo_add_attributes{$first}} = $filename;
         }
         elsif ($row =~ /^%.+%$/) {

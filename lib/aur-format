@@ -29,6 +29,7 @@ my %aur_formats = (
     'm' => ['string',   'Maintainer'    ],
     'n' => ['string',   'Name'          ],
     'r' => ['string',   'DBPath'        ],  # aur-repo-parse
+    'R' => ['string',   'Repository'    ],  # aur-repo-parse
     'U' => ['string',   'URL'           ],
     'v' => ['string',   'Version'       ],
     's' => ['string',   'Submitter'     ],  # aur-pkglist
