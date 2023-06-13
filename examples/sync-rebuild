@@ -117,7 +117,7 @@ def rebuild_packages(repo_targets, db_name, fail_fast=False):
     build_cmd = ['aur', 'build', '-srn']
 
     if db_name is not None:
-        build_cmd.extend('--database', db_name)
+        build_cmd.extend(('--database', db_name))
 
     # Check that `pkgver` is consistent between local repository and .SRCINFO
     rebuilds = {}
@@ -196,8 +196,8 @@ def main(targets, db_name, fail_fast, run_sync):
     repo_cmd  = ['aur', 'repo', '--jsonl']
 
     if db_name is not None:
-        sync_cmd.extend('--database', db_name)
-        repo_cmd.extend('--database', db_name)
+        sync_cmd.extend(('--database', db_name))
+        repo_cmd.extend(('--database', db_name))
 
     repo_targets = {}
 
