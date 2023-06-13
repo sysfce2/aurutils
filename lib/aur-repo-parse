@@ -202,7 +202,7 @@ unless (caller) {
                'd|delim'     => \$opt_delim,
                'list-attr'   => \$opt_list_attr,
                'p|path=s'    => \@opt_db_path,
-               'search=s'    => \$opt_search,
+               's|search=s'  => \$opt_search,
                'search-by=s' => \$opt_search_by)
         or exit(1);
 
