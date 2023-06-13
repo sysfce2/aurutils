@@ -126,6 +126,13 @@ in case the incremented version is lost, or otherwise restored (e.g. with
 `git-reset`). The fractional part is always increased; for example, a `pkgrel`
 of `35.9` is increased to `35.10`, not `36`.
 
+`aur-repo` can be used to retrieve a list of packages that depend on specific
+package. For example:
+
+```bash
+aur repo --search '^python.*' --search-by depends --list
+```
+
 > **Note**
 > Packages are rebuilt in sequential order. When rebuilds in dependency order are
 > required, `arch-rebuild-order` can be used as follows:
