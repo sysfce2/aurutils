@@ -194,7 +194,7 @@ case $mode in
     path)
         printf '%s\n' "$db_path"
         ;;
-    status)
+    *)
         printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path"
         ;;
 esac
