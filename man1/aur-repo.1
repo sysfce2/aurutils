@@ -139,6 +139,25 @@ location, or any other location when using
 .BR \-\-sync .
 .
 .TP
+.BI \-s " REGEXP" "\fR,\fP \-\-search=" REGEXP
+Limit results to matches specified by
+.IR PATTERN .
+.
+.TP
+.BI \-\-search\-by= FIELD
+The field (see
+.BR \-\-attr )
+matched on with
+.BR \-\-search .
+Defaults to
+.BR name .
+If
+.B FIELD
+corresponds to an array value such as
+.BR depends ,
+at least one value in the array should match.
+
+.TP
 .BI \-r " PATH" "\fR,\fP \-\-root=" PATH
 The path to the root of a local repository. 
 .

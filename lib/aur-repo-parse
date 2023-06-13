@@ -40,8 +40,26 @@ my %repo_add_numeric = (
     'BUILDDATE' => 1, 'CSIZE' => 1, 'ISIZE' => 1
 );
 
+sub handler_cond {
+    my ($handler, $expr, $data, @args) = @_;
+
+    if (length($expr) and defined($data)) {
+        if (ref($data) eq 'ARRAY') {
+            # Search entry-by-entry on arrays
+            $handler->(@args) if grep(/$expr/, @{$data});
+        } elsif ($data =~ /$expr/) {
+            $handler->(@args);
+        } else {
+            return 0;
+        }
+    } elsif (defined($data)) {
+        $handler->(@args);
+    }
+    return 1;
+}
+
 sub parse_db {
-    my ($fh, $db_path, $first, $handler, @varargs) = @_;
+    my ($fh, $db_path, $first, $handler, $cond_expr, $cond_label, @varargs) = @_;
     my $count = 0;
     my ($entry, $filename, $attr, $attr_label);
 
@@ -52,10 +70,14 @@ sub parse_db {
             $filename = readline($fh);
             chomp($filename);
 
-            # Run handler on previous entry
-            $handler->($entry, $count, 0, @varargs) if ($count > 0);
-            $count++;
+            # Evaluate condition on previous entry and run handler
+            my @handler_args = ($entry, $count, 0, @varargs);
 
+            if ($count > 0) {
+                $count++ if handler_cond($handler, $cond_expr, $entry->{$cond_label}, @handler_args);
+            } else {
+                $count++;
+            }
             # New entry in the database (hashref)
             %{$entry} = ();
             $entry->{'DBPath'} = $db_path;
@@ -89,7 +111,11 @@ sub parse_db {
         }
     }
     # Process last entry
-    $handler->($entry, $count, 1, @varargs) if ($count > 0);
+    my @handler_args = ($entry, $count, 1, @varargs);
+
+    if ($count > 0) {
+        handler_cond($handler, $cond_expr, $entry->{$cond_label}, @handler_args);
+    }
     return $count;
 }
 
@@ -163,17 +189,21 @@ unless (caller) {
     my $opt_attr = "";
     my @opt_db_path;
     my $opt_stdin = 0;
+    my $opt_search = "";
+    my $opt_search_by = 'Name';
 
     # optional arguments
-    GetOptions('J|json'    => \$opt_json,
-               'jsonl'     => \$opt_jsonl,
-               'F|attr=s'  => \$opt_attr,
-               'l|list'    => \$opt_list,
-               'q|quiet'   => \$opt_quiet,
-               't|table'   => \$opt_table,
-               'd|delim'   => \$opt_delim,
-               'list-attr' => \$opt_list_attr,
-               'p|path=s'  => \@opt_db_path)
+    GetOptions('J|json'      => \$opt_json,
+               'jsonl'       => \$opt_jsonl,
+               'F|attr=s'    => \$opt_attr,
+               'l|list'      => \$opt_list,
+               'q|quiet'     => \$opt_quiet,
+               't|table'     => \$opt_table,
+               'd|delim'     => \$opt_delim,
+               'list-attr'   => \$opt_list_attr,
+               'p|path=s'    => \@opt_db_path,
+               'search=s'    => \$opt_search,
+               'search-by=s' => \$opt_search_by)
         or exit(1);
 
     if (scalar(@ARGV) > 0 and ($ARGV[0] eq "-" or $ARGV[0] eq "/dev/stdin")) {
@@ -220,9 +250,17 @@ unless (caller) {
         exit(1);
     }
 
+    # Verify search field
+    my $opt_search_attr = $repo_add_attributes{uc($opt_search_by)};
+
+    if (not defined $opt_search_attr) {
+        say STDERR "$argv0: unknown attribute '$opt_search_by'";
+        exit(2);
+    }
+
     # Take input from stdin instead of a pacman database
     if ($opt_stdin) {
-        parse_db(*STDIN, "/dev/stdin", 'FILENAME', $handler, @varargs);
+        parse_db(*STDIN, "/dev/stdin", 'FILENAME', $handler, $opt_search, $opt_search_attr, @varargs);
         exit(0);
     }
 
@@ -246,7 +284,7 @@ unless (caller) {
         my $child_pid = open(my $fh, "-|", @extract) or die $!;
 
         if ($child_pid) { # parent process
-            my $count = parse_db($fh, $db_abs_path, 'FILENAME', $handler, @varargs);
+            my $count = parse_db($fh, $db_abs_path, 'FILENAME', $handler, $opt_search, $opt_search_attr, @varargs);
 
             waitpid($child_pid, 0);
         }
