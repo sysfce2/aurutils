@@ -129,7 +129,7 @@ else
     usage
 fi
 
-unset pkg pkg_i repo repo_p ignore_file out_file
+unset pkg pkg_i repo repo_p ignore_file stdout_file
 while true; do
     case "$1" in
         # sync options
@@ -149,7 +149,7 @@ while true; do
         --columns)
             build=0; columns=1 ;;
         --save)
-            shift; out_file=$1 ;;
+            shift; stdout_file=$1 ;;
         --optdepends)
             depends_args+=(--optdepends)
             graph_args+=(-v OPTDEPENDS=1) ;;
@@ -286,10 +286,8 @@ if (( $# + update + repo_targets == 0 )); then
 fi
 
 # Write --no-build / --columns results to a file (#1077)
-if [[ -v out_file ]]; then
-    out_file=$(realpath -- "$out_file")
-else
-    out_file=/dev/stdout
+if [[ -v stdout_file ]]; then
+    stdout_file=$(realpath -- "$stdout_file")
 fi
 
 # Retrieve path to local repo (#448, #700)
@@ -454,7 +452,11 @@ fi
 
 # Input for aur-sync--ninja
 if (( columns )); then
-    swap "$tmp"/graph | sort -k1b,1 -k1 -u >"$out_file"
+    # Avoid /dev/stdout (#1083)
+    if [[ -v stdout_file ]]; then
+        exec 1>"$stdout_file"
+    fi
+    swap "$tmp"/graph | sort -k1b,1 -k1 -u
 
 # Build dependency tree with ninja (#908)
 elif (( AUR_SYNC_USE_NINJA )); then
@@ -497,9 +499,13 @@ elif (( AUR_SYNC_USE_NINJA )); then
 elif (( build )); then
     aur build "${build_args[@]}" -a "$tmp"/queue -d "$db_name" --root "$db_root"
 else
+    # Avoid /dev/stdout (#1083)
+    if [[ -v stdout_file ]]; then
+        exec 1>"$stdout_file"
+    fi
     while read -r pkg; do
         [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
-    done <"$tmp"/queue >"$out_file"
+    done <"$tmp"/queue
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
