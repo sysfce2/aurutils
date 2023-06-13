@@ -2,6 +2,10 @@
 
 * `aur-repo`
   + `--status` is now the default
+  + add `Repository` to `--json` / `--jsonl` output
+
+* `aur-format`
+  + add `%R` format option
 
 * `perl`
   + `write_json()` now returns a string
