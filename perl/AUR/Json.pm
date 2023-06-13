@@ -17,8 +17,8 @@ AUR::Json - Perl interface to AurJson
 
   my $json;
   my @results = parse_json_aur($json);
-  my $object = parse_json($json);
-  write_json($object);
+  my $object  = parse_json($json);
+  my $str     = write_json($object);
 
 =head1 DESCRIPTION
 
