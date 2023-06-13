@@ -1,21 +1,14 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
+use v5.20;
 
 use open ":std", ":encoding(UTF-8)";
-use v5.20;
 use Cwd 'abs_path';
 use File::Basename;
-my $argv0 = 'repo-parse';
-my $aur_json;
 
-# Fallback to slower perl-based JSON parsing
-if (eval { require JSON::XS; 1 }) {
-    $aur_json = JSON::XS->new;
-} else {
-    require JSON::PP;
-    $aur_json = JSON::PP->new;
-}
+use AUR::Json qw(write_json);
+my $argv0 = 'repo-parse';
 
 # Attributes which (where applicable) match AurJson, such that `aur-repo-parse --json`
 # can be piped to `aur-format`.
@@ -121,7 +114,7 @@ sub parse_db {
 
 sub repo_json {
     my ($pkg, $count, $last) = @_;
-    my $json_text = $aur_json->encode($pkg);
+    my $json_text = write_json($pkg);
 
     print "[" if ($count == 1);
     print "," if ($count > 1);
@@ -132,7 +125,7 @@ sub repo_json {
 
 sub repo_jsonl {
     my ($pkg, $count, $last) = @_;
-    my $json_text = $aur_json->encode($pkg);
+    my $json_text = write_json($pkg);
 
     print $json_text . "\n";
 }
@@ -222,11 +215,9 @@ unless (caller) {
     my ($handler, @varargs);
 
     if ($opt_json) {
-        $aur_json->canonical();
         $handler = \&repo_json;
     }
     elsif ($opt_jsonl) {
-        $aur_json->canonical();
         $handler = \&repo_jsonl;
     }
     elsif (length($opt_attr) and defined($repo_add_attributes{$opt_attr})) {

@@ -214,7 +214,7 @@ unless(caller) {
         map { format_long($_); say '' if ++$i < scalar @results } @results;
     }
     elsif ($opt_format eq 'json') {
-        write_json(\@results);
+        say write_json(\@results);
     }
     else {
         die 'invalid format';

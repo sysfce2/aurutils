@@ -314,10 +314,10 @@ unless(caller) {
         table_v10_compat($results, \@types);
     }
     elsif ($opt_mode eq 'json') {
-        write_json($results);
+        say write_json($results);
     }
     elsif ($opt_mode eq 'jsonl') {
-        map { write_json $results->{$_} } keys %{$results};
+        map { say write_json $results->{$_} } keys %{$results};
     }
     else {
         say STDERR "$argv0: invalid mode selected";

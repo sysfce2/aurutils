@@ -3,6 +3,9 @@
 * `aur-repo`
   + `--status` is now the default
 
+* `perl`
+  + `write_json()` now returns a string
+
 ## 15.7
 
 * `aur-repo`

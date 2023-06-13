@@ -40,7 +40,7 @@ Alad Wenter <https://github.com/AladW/aurutils>
 
 =cut
 
-my $aur_json;
+our $aur_json;
 
 # Fallback to slower perl-based JSON parsing
 if (eval { require JSON::XS; 1 }) {
@@ -91,7 +91,8 @@ sub parse_json_aur {
 
 sub write_json {
     my $obj = shift;
-    say $aur_json->canonical()->encode($obj);
+    my $str = $aur_json->canonical()->encode($obj);
+    return $str;
 }
 
 # vim: set et sw=4 sts=4 ft=perl:
