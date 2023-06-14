@@ -32,7 +32,7 @@ def run_readline(arg_list):
     with subprocess.Popen(arg_list, stdout=subprocess.PIPE) as process:
         while True:
             output = process.stdout.readline()
-            if output == b'':
+            if output == b'' and process.poll() is not None:
                 break
             if output:
                 yield output.strip()
@@ -184,7 +184,7 @@ def print_cached_packages(args):
     name_args = ['--name=' + item for item in args]
     pacsift   = ['pacsift', *name_args, '--exact', '--cache']
 
-    p1 = subprocess.Popen(pacsift, stdout=subprocess.PIPE)
+    p1 = subprocess.Popen(pacsift, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     p2 = subprocess.Popen(['pacsort'], stdin=p1.stdout, stderr=subprocess.PIPE)
     p2.communicate()  # wait for the pipeline to finish
 
@@ -217,25 +217,24 @@ def main(targets, db_name, fail_fast, run_sync):
         sync_cmd.extend(list(repo_targets.keys()))
         if run_sync:
             subprocess.run(sync_cmd, check=True)
+
+        rebuilds, failed = rebuild_packages(repo_targets, db_name, fail_fast)
+
+        if len(failed) > 0:
+            print(f'{ARGV0}: the following targets failed to build:', file=sys.stderr)
+            print(' '.join(rebuilds.keys()), file=sys.stderr)
+
+        rest = list(set(targets) - set(rebuilds.keys()) - set(failed.keys()))
     else:
-        print(f'{ARGV0}: no targets in local repository', file=sys.stderr)
-        sys.exit(1)
-
-    rebuilds, failed = rebuild_packages(repo_targets, db_name, fail_fast)
-
-    if len(failed) > 0:
-        print(f'{ARGV0}: the following targets failed to build:', file=sys.stderr)
-        print('\n'.join(rebuilds.keys()), file=sys.stderr)
-
-    rest = list(set(targets) - set(rebuilds.keys()) - set(failed.keys()))
+        rest = list(targets)
 
     if len(rest) > 0:
         print(f'{ARGV0}: the following targets are unavailable in the local repository',
               file=sys.stderr)
-        print('\n'.join(rest), file=sys.stderr)
+        print(' '.join(rest), file=sys.stderr)
 
         # Print any stale cached packages
-        print(f'\n{ARGV0}: with cached entries:', file=sys.stderr)
+        print(f'{ARGV0}: with cached entries:', file=sys.stderr)
         print_cached_packages(rest)
 
 
