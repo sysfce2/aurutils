@@ -3,9 +3,6 @@
 * `examples`
   + fixes for `sync-rebuild`
 
-* `aur`
-  `--env` now prints `PERL5LIB`
-
 ## 16
 
 * `aur-repo`
@@ -17,6 +14,9 @@
 
 * `perl`
   + `write_json()` now returns a string
+
+* `aur`
+  `--env` now prints `PERL5LIB`
 
 ## 15.7
 
