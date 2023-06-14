@@ -1,3 +1,11 @@
+## 16.1
+
+* `examples`
+  + fixes for `sync-rebuild`
+
+* `aur`
+  `--env` now prints `PERL5LIB`
+
 ## 16
 
 * `aur-repo`
