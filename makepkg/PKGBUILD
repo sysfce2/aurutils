@@ -11,13 +11,12 @@ changelog=aurutils.changelog
 sha256sums=('SKIP')
 conflicts=('aurutils')
 provides=("aurutils=${pkgver%%.r*}")
-depends=('git' 'pacutils' 'curl' 'perl')
+depends=('git' 'pacutils' 'curl' 'bash' 'perl' 'perl-json-xs')
 makedepends=('git')
 optdepends=('bash-completion: bash completion'
             'zsh: zsh completion'
             'devtools: aur-chroot'
             'vifm: default pager'
-            'perl-json-xs: faster JSON serialization'
             'ninja: aur-sync ninja support'
             'bat: view-delta example script'
             'git-delta: view-delta example script'
