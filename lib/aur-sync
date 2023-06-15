@@ -508,16 +508,18 @@ elif (( AUR_SYNC_USE_NINJA )); then
         printf '%s\n' "$ninja_dir"
     fi
 
-else
+elif (( build )); then
     # Apply `--save` (#1091)
+    if [[ -v stdout_file ]]; then
+        cat "$tmp"/queue.realpath >"$stdout_file"
+    fi
+
+    aur build "${build_args[@]}" -a "$tmp"/queue.realpath -d "$db_name" --root "$db_root"
+else
     if [[ -v stdout_file ]]; then
         cat "$tmp"/queue.realpath >"$stdout_file"
     else
         cat "$tmp"/queue.realpath
-    fi
-
-    if (( build )); then
-        aur build "${build_args[@]}" -a "$tmp"/queue.realpath -d "$db_name" --root "$db_root"
     fi
 fi
 
