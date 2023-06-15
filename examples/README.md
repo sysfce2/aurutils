@@ -134,8 +134,9 @@ aur repo --search '^python.*' --search-by depends --list
 ```
 
 > **Note**
-> Packages are rebuilt in sequential order. When rebuilds in dependency order are
-> required, `arch-rebuild-order` can be used as follows:
+> By default, AUR packages are rebuilt in dependency order. When using
+> `--no-sync` or non-AUR packages, targets are rebuilt in sequential order. In
+> this case, `arch-rebuild-order` can be used as follows:
 >
 > `$ arch-rebuild-order --repos=custom <targets...>`
 >

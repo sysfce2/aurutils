@@ -6,6 +6,7 @@ import fileinput
 import sys
 import os
 import subprocess
+import tempfile
 
 from srcinfo.parse import parse_srcinfo
 from decimal import Decimal
@@ -21,7 +22,7 @@ if 'AURDEST' in os.environ:
     aurdest = os.getenv('AURDEST')
 
 
-def run_readline(arg_list):
+def run_readline(command, check=True):
     """Run the output from a command line-by-line.
 
     `aur` programs typically use newline delimited output. Here, this function
@@ -29,7 +30,7 @@ def run_readline(arg_list):
     one local repository package.
 
     """
-    with subprocess.Popen(arg_list, stdout=subprocess.PIPE) as process:
+    with subprocess.Popen(command, stdout=subprocess.PIPE) as process:
         while True:
             output = process.stdout.readline()
             if output == b'' and process.poll() is not None:
@@ -38,8 +39,8 @@ def run_readline(arg_list):
                 yield output.strip()
 
         return_code = process.poll()
-        if return_code > 0:
-            sys.exit(return_code)
+        if return_code > 0 and check:
+            raise subprocess.CalledProcessError(return_code, command)
 
 
 def srcinfo_get_version(srcinfo):
@@ -87,6 +88,7 @@ def update_pkgrel(buildscript, backup, pkgname, pkgrel=None, increment=0.1):
 
     """
     n_digits = sum(ch.isdigit() for ch in str(increment).strip('0'))
+    new_pkgrel = None
 
     with fileinput.input(buildscript, inplace=True, backup=backup) as finput:
         for line in finput:
@@ -98,14 +100,13 @@ def update_pkgrel(buildscript, backup, pkgname, pkgrel=None, increment=0.1):
                     pkgrel = float(line.split('=')[1])  # Only the last written pkgrel holds
                 new_pkgrel = increase_decimal(pkgrel, increment, n_digits)
 
-                # Print bumped pkgrel to standard error
-                print(f'{ARGV0}: {pkgname}: {pkgrel} -> {new_pkgrel}', file=sys.stderr)
-
                 # Replace the pkgrel value in the line
                 line = f'{pkgrel_keyword}{new_pkgrel}\n'
 
             # Write the modified line to stdout (which redirects to the PKGBUILD file)
             print(line, end='')
+
+    return new_pkgrel
 
 
 # TODO: use vercmp to ensure rebuilds
@@ -143,8 +144,11 @@ def rebuild_packages(repo_targets, db_name, fail_fast=False):
         # Increase subrelease level to avoid conflicts with intermediate
         # PKGBUILD updates
         if src_pkgver == pkgver:
-            update_pkgrel(buildscript, backup, pkgname, pkgrel=float(pkgrel), increment=0.1)
+            new_pkgrel = update_pkgrel(buildscript, backup, pkgname, pkgrel=float(pkgrel), increment=0.1)
             remove_backup = True
+
+            # Print bumped pkgrel to standard error
+            print(f'{ARGV0}: {pkgname}: {pkgver}-{pkgrel} -> {pkgver}-{new_pkgrel}', file=sys.stderr)
         else:
             print(f'{ARGV0}: source and local repository version differ', file=sys.stderr)
             print(f'{ARGV0}: using existing pkgver', file=sys.stderr)
@@ -215,16 +219,46 @@ def main(targets, db_name, fail_fast, run_sync):
     # Clone targets that are part of the local repository
     if len(repo_targets) > 0:
         sync_cmd.extend(list(repo_targets.keys()))
-        if run_sync:
-            subprocess.run(sync_cmd, check=True)
 
-        rebuilds, failed = rebuild_packages(repo_targets, db_name, fail_fast)
+        if run_sync:
+            repo_targets_ordered = {}  # `dict` preserves order since python >=3.6
+
+            # Temporary file for dependency order
+            with tempfile.NamedTemporaryFile() as sync_queue:
+                sync_cmd.extend(['--save', sync_queue.name])
+
+                # Clone AUR targets and retrieve dependency order. Dependencies
+                # not in the local repository already will be added as targets.
+                # XXX: requires at least one valid AUR target
+                subprocess.run(sync_cmd, check=True)
+
+                with open(sync_queue.name, 'r') as f:
+                    for line in f.readlines():
+                        name = os.path.basename(line.rstrip())
+                        repo_targets_ordered[name] = repo_targets[name]
+
+            # Local repository targets not retrieved by `aur-sync` are missing from AUR
+            # XXX: append to queue if target directories are available
+            not_aur = list(set(repo_targets.keys()) - set(repo_targets_ordered.keys()))
+ 
+            # Build in dependency order
+            rebuilds, failed = rebuild_packages(repo_targets_ordered, db_name, fail_fast)
+        else:
+            not_aur = []
+
+            # Build in sequential (argument) order
+            # XXX: support other directories than AURDEST
+            rebuilds, failed = rebuild_packages(repo_targets, db_name, fail_fast)
+
+        if len(not_aur) > 0:
+            print(f'{ARGV0}: the following targets are not in AUR:', file=sys.stderr)
+            print(' '.join(not_aur), file=sys.stderr)
 
         if len(failed) > 0:
             print(f'{ARGV0}: the following targets failed to build:', file=sys.stderr)
-            print(' '.join(rebuilds.keys()), file=sys.stderr)
+            print(' '.join(failed.keys()), file=sys.stderr)
 
-        rest = list(set(targets) - set(rebuilds.keys()) - set(failed.keys()))
+        rest = list(set(targets) - set(rebuilds.keys()) - set(failed.keys()) - set(not_aur))
     else:
         rest = list(targets)
 
