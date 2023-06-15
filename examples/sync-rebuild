@@ -192,8 +192,8 @@ def print_cached_packages(args):
 def main(targets, db_name, fail_fast, run_sync):
     # Ensure all sources are available. Only packages are cloned that are
     # already available in the local repository.
-    sync_cmd  = ['aur', 'sync', '--no-build', '--no-ver-argv']
-    repo_cmd  = ['aur', 'repo', '--jsonl']
+    sync_cmd = ['aur', 'sync', '--no-build', '--no-ver-argv']
+    repo_cmd = ['aur', 'repo', '--jsonl']
 
     if db_name is not None:
         sync_cmd.extend(('--database', db_name))
