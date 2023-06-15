@@ -439,73 +439,86 @@ if (( graph )); then
     then
         printf >&2 '%s: failed to verify dependency graph\n' "$argv0"
         exit 1
-    fi < "$tmp"/queue | swap >"$tmp"/graph
+    fi <"$tmp"/queue | swap >"$tmp"/graph
 
     # Recompute dependencies to include `provides` (#837)
     tsort < "$tmp"/graph >"$tmp"/queue || exit 22
 fi
+
+{ # Sort dependencies (`aur-sync--ninja`, `--columns`)
+  swap "$tmp"/graph | sort -k1b,1 -k1 -u >"$tmp"/graph.ninja
+
+  # Resolve absolute paths (`--no-build`)
+  while read -r pkg; do
+      [[ $pkg ]] && printf '%s\n' "$AURDEST/$pkg"
+  done <"$tmp"/queue >"$tmp"/queue.realpath
+}
 
 # Inspect package files
 if (( view )); then
     aur view -a "$tmp"/queue "${view_args[@]}"
 fi
 
-# Input for aur-sync--ninja
 if (( columns )); then
-    # Avoid /dev/stdout (#1083)
     if [[ -v stdout_file ]]; then
-        exec 1>"$stdout_file"
+        cat "$tmp"/graph.ninja >"$stdout_file"
+    else
+        cat "$tmp"/graph.ninja
     fi
-    swap "$tmp"/graph | sort -k1b,1 -k1 -u
 
 # Build dependency tree with ninja (#908)
 elif (( AUR_SYNC_USE_NINJA )); then
-    # directory for stamp files (concurrent aur-sync processes)
+    # Directory for stamp files (concurrent aur-sync processes)
     mkdir -p -- "$XDG_STATE_HOME"/aurutils/$argv0
     ninja_dir=$XDG_STATE_HOME/aurutils/$argv0/ninja-$USER-$$
     mkdir -- "$ninja_dir"
 
-    # generate build.ninja
+    # Apply `--save` (#1091)
+    if [[ -v stdout_file ]]; then
+        cat "$tmp"/graph.ninja >"$stdout_file"
+    fi
+
+    # Generate build.ninja
     # input:  $AURDEST/pkgbase/PKGBUILD
     # output: $ninja_dir/pkgbase.stamp
-    cd -- "$ninja_dir"
-    swap "$tmp"/graph | sort -k1b,1 -k1 -u | aur sync--ninja "$AURDEST" >build.ninja \
+    aur sync--ninja "$AURDEST" <"$tmp"/graph.ninja >"$ninja_dir"/build.ninja \
         -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 
-    if (( build )) && NINJA_STATUS='[%s/%t] ' ninja -k "$keep_going"; then
-        # remove ninja directory on successful build
+    if (( build )) && NINJA_STATUS='[%s/%t] ' ninja -C "$ninja_dir" -k "$keep_going"; then
+        # Remove ninja directory on successful build
         rm -rf "$ninja_dir"
 
     elif (( build )); then
-        # print all targets in dependency order
-        NINJA_STATUS='[%s/%t] ' ninja -nC /var/empty -f "$PWD"/build.ninja | \
+        # Print all targets in dependency order
+        NINJA_STATUS='[%s/%t] ' ninja -nC /var/empty -f "$ninja_dir"/build.ninja | \
             # [\w@\.\-\+]: valid characters for pkgname
             # alternative: [^\s]+ from rule `env -C ... > pkgbase.stamp`
             pcregrep -o1 -o3 '(\[\d+/\d+\] )(.+?)([\w@\.\-\+]+)(\.stamp)' | while read -r status pkg
         do
-            if [[ -f $pkg.stamp ]]; then
+            if [[ -f $ninja_dir/$pkg.stamp ]]; then
                 printf "${BOLD}${BLUE}%s${ALL_OFF} %s\t${BOLD}${GREEN}[OK]${ALL_OFF}\n" "$status" "$pkg"
             else
                 printf "${BOLD}${BLUE}%s${ALL_OFF} %s\t${BOLD}${RED}[FAIL]${ALL_OFF}\n" "$status" "$pkg"
             fi
         done | column -t
 
-        # preserve ninja directory
-        printf '%s: build files at %s\n' "$argv0" "$(pwd -P)"
+        # Preserve ninja directory
+        printf '%s: build files at %s\n' "$argv0" "$ninja_dir"
     else
-        printf '%s\n' "$(pwd -P)"
+        printf '%s\n' "$ninja_dir"
     fi
 
-elif (( build )); then
-    aur build "${build_args[@]}" -a "$tmp"/queue -d "$db_name" --root "$db_root"
 else
-    # Avoid /dev/stdout (#1083)
+    # Apply `--save` (#1091)
     if [[ -v stdout_file ]]; then
-        exec 1>"$stdout_file"
+        cat "$tmp"/queue.realpath >"$stdout_file"
+    else
+        cat "$tmp"/queue.realpath
     fi
-    while read -r pkg; do
-        [[ $pkg ]] && printf '%s\n' "$(pwd -P)/$pkg"
-    done <"$tmp"/queue
+
+    if (( build )); then
+        aur build "${build_args[@]}" -a "$tmp"/queue.realpath -d "$db_name" --root "$db_root"
+    fi
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
