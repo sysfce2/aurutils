@@ -256,7 +256,7 @@ unless (caller) {
         exit(0);
     }
 
-    # bsdtar does not support extracting multiple files in a single invocation,
+    # bsdtar(1) does not support extracting multiple files in a single invocation,
     # so fork a new process for each specified path.
     for my $db_path (@opt_db_path) {
         my $db_abs_path = abs_path($db_path);
@@ -267,12 +267,13 @@ unless (caller) {
             exit(2);
         }
 
-        # Retrieve repository name by removing right-most extension
-        my @idx;
-        while ($db_name =~ /\.(db|files).*?/g) {
-            @idx = ($-[0], $+[0]);
+        # repo-add(8) only accepts *.db or *.db.tar* extensions
+        if ($db_name =~ /\.(db|files)(?=($|\.tar(\.\w+){1}$))/g) {
+            $db_name = substr $db_name, 0, $-[0];
+        } else {
+            say STDERR "$argv0: $db_name does not have a valid database archive extension";
+            exit(1);
         }
-        $db_name = substr $db_name, 0, $idx[0];
 
         # When parsing the database, do not require a full extraction to either memory or disk
         # by reading `tar` output line-by-line. It is not strictly necessary to depend on
