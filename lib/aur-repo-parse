@@ -249,10 +249,11 @@ unless (caller) {
         say STDERR "$argv0: unknown attribute '$opt_search_by'";
         exit(2);
     }
+    my @parse_db_args = ($handler, $opt_search, $opt_search_attr, @varargs);
 
     # Take input from stdin instead of a pacman database
     if ($opt_stdin) {
-        parse_db(*STDIN, "/dev/stdin", 'local', 'FILENAME', $handler, $opt_search, $opt_search_attr, @varargs);
+        parse_db(*STDIN, "/dev/stdin", 'local', 'FILENAME', @parse_db_args);
         exit(0);
     }
 
@@ -268,7 +269,7 @@ unless (caller) {
         }
 
         # repo-add(8) only accepts *.db or *.db.tar* extensions
-        if ($db_name =~ /\.(db|files)(?=($|\.tar(\.\w+){1}$))/g) {
+        if ($db_name =~ /\.(db|files)(\.tar(\.\w+)?)?$/g) {
             $db_name = substr $db_name, 0, $-[0];
         } else {
             say STDERR "$argv0: $db_name does not have a valid database archive extension";
@@ -285,7 +286,7 @@ unless (caller) {
         my $child_pid = open(my $fh, "-|", @extract) or die $!;
 
         if ($child_pid) { # parent process
-            my $count = parse_db($fh, $db_abs_path, $db_name, 'FILENAME', $handler, $opt_search, $opt_search_attr, @varargs);
+            my $count = parse_db($fh, $db_abs_path, $db_name, 'FILENAME', @parse_db_args);
 
             waitpid($child_pid, 0);
         }
