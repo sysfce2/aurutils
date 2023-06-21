@@ -8,10 +8,10 @@ import os
 import subprocess
 import tempfile
 
-from srcinfo.parse import parse_srcinfo
 from decimal import Decimal
 #from pyalpm import vercmp
 from xdg import BaseDirectory
+from srcinfo.parse import parse_srcinfo
 
 # Get the path to user-specific cache files
 ARGV0 = 'sync-rebuild'
@@ -69,7 +69,7 @@ def increase_decimal(decimal_number, increment, n_digits=2):
     # Convert the decimal number and increment to Decimal objects
     decimal_num = Decimal(str(decimal_number))
     inc = Decimal(str(increment))
-    
+
     # Calculate the increased decimal
     increased_decimal = decimal_num + inc
 
@@ -80,7 +80,7 @@ def increase_decimal(decimal_number, increment, n_digits=2):
     return increased_decimal_str
 
 
-def update_pkgrel(buildscript, backup, pkgname, pkgrel=None, increment=0.1):
+def update_pkgrel(buildscript, backup, pkgrel=None, increment=0.1):
     """Update pkgrel in a PKGBUILD by a given increment.
 
     The original PKGBUILD is backed up before modification. Modifications assume
@@ -144,11 +144,12 @@ def rebuild_packages(repo_targets, db_name, fail_fast=False):
         # Increase subrelease level to avoid conflicts with intermediate
         # PKGBUILD updates
         if src_pkgver == pkgver:
-            new_pkgrel = update_pkgrel(buildscript, backup, pkgname, pkgrel=float(pkgrel), increment=0.1)
+            new_pkgrel = update_pkgrel(buildscript, backup, pkgrel=float(pkgrel), increment=0.1)
             remove_backup = True
 
             # Print bumped pkgrel to standard error
-            print(f'{ARGV0}: {pkgname}: {pkgver}-{pkgrel} -> {pkgver}-{new_pkgrel}', file=sys.stderr)
+            print(f'{ARGV0}: {pkgname}: {pkgver}-{pkgrel} -> {pkgver}-{new_pkgrel}',
+                  file=sys.stderr)
         else:
             print(f'{ARGV0}: source and local repository version differ', file=sys.stderr)
             print(f'{ARGV0}: using existing pkgver', file=sys.stderr)
@@ -182,15 +183,15 @@ def rebuild_packages(repo_targets, db_name, fail_fast=False):
         return rebuilds, failed_rebuilds
 
 
-def print_cached_packages(args):
+def print_cached_packages(pkgnames):
     """Print cached packages in `vercmp` order
     """
-    name_args = ['--name=' + item for item in args]
+    name_args = ['--name=' + item for item in pkgnames]
     pacsift   = ['pacsift', *name_args, '--exact', '--cache']
 
-    p1 = subprocess.Popen(pacsift, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-    p2 = subprocess.Popen(['pacsort'], stdin=p1.stdout, stderr=subprocess.PIPE)
-    p2.communicate()  # wait for the pipeline to finish
+    with subprocess.Popen(pacsift, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as p1:
+        with subprocess.Popen(['pacsort'], stdin=p1.stdout, stderr=subprocess.PIPE) as p2:
+            p2.communicate()
 
 
 def main(targets, db_name, fail_fast, run_sync):
