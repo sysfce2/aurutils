@@ -7,13 +7,30 @@ import sys
 import os
 import subprocess
 import tempfile
+import shutil
 
 from pwd import getpwnam
 from decimal import Decimal
 #from pyalpm import vercmp
-from xdg import BaseDirectory
 from srcinfo.parse import parse_srcinfo
 ARGV0 = 'sync-rebuild'
+
+def xdg_cache_home(user=None):
+    """Retrieve XDG_CACHE_HOME from the XDG Base Directory specification
+    """
+    if user is not None:
+        user_home = os.path.expanduser("~" + user)
+    else:
+        user_home = os.path.expanduser("~")
+    cache_home = os.path.join(user_home, '.cache')
+
+    # Note: this only retrieves `XDG_CACHE_HOME` from the current user
+    # environment regardless if `user` is specified.
+    if 'XDG_CACHE_HOME' in os.environ:
+        return os.getenv('XDG_CACHE_HOME')
+
+    return cache_home
+
 
 def run_readline(command, check=True):
     """Run the output from a command line-by-line.
@@ -73,17 +90,16 @@ def increase_decimal(decimal_number, increment, n_digits=2):
     return increased_decimal_str
 
 
-def update_pkgrel(buildscript, backup, pkgrel=None, increment=0.1):
+def update_pkgrel(buildscript, pkgrel=None, increment=0.1):
     """Update pkgrel in a PKGBUILD by a given increment.
 
-    The original PKGBUILD is backed up before modification. Modifications assume
-    a single caller and are not thread-safe.
-
+    Modifications assume a single caller and are not thread-safe.
     """
     n_digits = sum(ch.isdigit() for ch in str(increment).strip('0'))
     new_pkgrel = None
 
-    with fileinput.input(buildscript, inplace=True, backup=backup) as finput:
+    # Creates PKGBUILD.bak which is deleted when `finput` is closed
+    with fileinput.input(buildscript, inplace=True) as finput:
         for line in finput:
             pkgrel_keyword = 'pkgrel='
 
@@ -133,11 +149,13 @@ def rebuild_packages(repo_targets, db_name, start_dir, fail_fast=False, user=Non
         # Set backup file for PKGBUILD
         buildscript = os.path.join(src_dir, 'PKGBUILD')
         backup = '.tmp'
+
+        shutil.copy(buildscript, buildscript + backup)
         remove_backup = False
 
         # Increase subrelease level to avoid conflicts with intermediate PKGBUILD updates
         if src_pkgver == pkgver:
-            new_pkgrel = update_pkgrel(buildscript, backup, pkgrel=float(pkgrel), increment=0.1)
+            new_pkgrel = update_pkgrel(buildscript, pkgrel=float(pkgrel), increment=0.1)
             remove_backup = True
 
             # Print bumped pkgrel to standard error
@@ -162,7 +180,7 @@ def rebuild_packages(repo_targets, db_name, start_dir, fail_fast=False, user=Non
                     'AUR_REPO_ADD'     : f'runuser -u {user} -- repo-add',
                     'AUR_BUILD_PKGLIST': f'runuser -u {user} -- aur build--pkglist'
                 }
-                subprocess.run(build_cmd, check=True, env=dict(os.environ, **asroot_env), cwd=src_dir)
+                subprocess.run(build_cmd, check=True, cwd=src_dir, env=dict(os.environ, **asroot_env))
 
             # Build process completed successfully, remove backup PKGBUILD if it
             # was created above
@@ -324,11 +342,11 @@ if __name__ == '__main__':
         raise NotImplementedError('--user requires --chroot')
 
     # Get the path to user-specific cache files
-    # XXX: use the --user $HOME directory, if specified
+    # Note: this only retrieves `AURDEST` from the current user environment.
     if 'AURDEST' in os.environ:
         aurdest = os.getenv('AURDEST')
     else:
-        aurdest = os.path.join(BaseDirectory.xdg_cache_home, 'aurutils/sync')
+        aurdest = os.path.join(xdg_cache_home(args.user), 'aurutils/sync')
 
     main({i:1 for i in args.targets}, args.database, aurdest, 
          args.fail_fast, args.no_sync, args.chroot, args.user)
