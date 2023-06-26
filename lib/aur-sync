@@ -459,24 +459,30 @@ if (( view )); then
     aur view -a "$tmp"/queue "${view_args[@]}"
 fi
 
-if (( columns )); then
-    if [[ -v stdout_file ]]; then
-        cat "$tmp"/graph.ninja >"$stdout_file"
-    else
-        cat "$tmp"/graph.ninja
-    fi
+# `--columns` / `--no-build` output
+if (( columns )) && [[ -v stdout_file ]]; then
+    cat "$tmp"/graph.ninja >"$stdout_file"
+
+elif (( columns )); then
+    cat "$tmp"/graph.ninja
+
+elif ! (( build )) && [[ -v stdout_file ]]; then
+    cat "$tmp"/queue.realpath >"$stdout_file"
+
+elif ! (( build )); then
+    cat "$tmp"/queue.realpath
 
 # Build dependency tree with ninja (#908)
 elif (( AUR_SYNC_USE_NINJA )); then
-    # Directory for stamp files (concurrent aur-sync processes)
-    mkdir -p -- "$XDG_STATE_HOME"/aurutils/$argv0
-    ninja_dir=$XDG_STATE_HOME/aurutils/$argv0/ninja-$USER-$$
-    mkdir -- "$ninja_dir"
-
     # Apply `--save` (#1091)
     if [[ -v stdout_file ]]; then
         cat "$tmp"/graph.ninja >"$stdout_file"
     fi
+
+    # Directory for stamp files (concurrent aur-sync processes)
+    mkdir -p -- "$XDG_STATE_HOME"/aurutils/$argv0
+    ninja_dir=$XDG_STATE_HOME/aurutils/$argv0/ninja-$USER-$$
+    mkdir -- "$ninja_dir"
 
     # Generate build.ninja
     # input:  $AURDEST/pkgbase/PKGBUILD
@@ -484,11 +490,10 @@ elif (( AUR_SYNC_USE_NINJA )); then
     aur sync--ninja "$AURDEST" <"$tmp"/graph.ninja >"$ninja_dir"/build.ninja \
         -- aur build "${build_args[@]}" -d "$db_name" --root "$db_root"
 
-    if (( build )) && NINJA_STATUS='[%s/%t] ' ninja -C "$ninja_dir" -k "$keep_going"; then
+    if NINJA_STATUS='[%s/%t] ' ninja -C "$ninja_dir" -k "$keep_going"; then
         # Remove ninja directory on successful build
         rm -rf "$ninja_dir"
-
-    elif (( build )); then
+    else
         # Print all targets in dependency order
         NINJA_STATUS='[%s/%t] ' ninja -nC /var/empty -f "$ninja_dir"/build.ninja | \
             # [\w@\.\-\+]: valid characters for pkgname
@@ -504,23 +509,13 @@ elif (( AUR_SYNC_USE_NINJA )); then
 
         # Preserve ninja directory
         printf '%s: build files at %s\n' "$argv0" "$ninja_dir"
-    else
-        printf '%s\n' "$ninja_dir"
     fi
-
-elif (( build )); then
+else
     # Apply `--save` (#1091)
     if [[ -v stdout_file ]]; then
         cat "$tmp"/queue.realpath >"$stdout_file"
     fi
-
     aur build "${build_args[@]}" -a "$tmp"/queue.realpath -d "$db_name" --root "$db_root"
-else
-    if [[ -v stdout_file ]]; then
-        cat "$tmp"/queue.realpath >"$stdout_file"
-    else
-        cat "$tmp"/queue.realpath
-    fi
 fi
 
 # vim: set et sw=4 sts=4 ft=sh:
