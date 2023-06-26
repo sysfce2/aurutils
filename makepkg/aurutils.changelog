@@ -7,6 +7,11 @@
   + remove `python-pyxdg` dependency (#1096)
   + fixes for `sync-rebuild` (#1096)
 
+## 16.5
+
+* `examples`
+  + add `--chroot`, `--user` for `sync-rebuild`
+
 ## 16.4
 
 * `aur-repo-parse`
