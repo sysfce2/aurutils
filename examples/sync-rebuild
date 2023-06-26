@@ -11,9 +11,25 @@ import tempfile
 from pwd import getpwnam
 from decimal import Decimal
 #from pyalpm import vercmp
-from xdg import BaseDirectory
 from srcinfo.parse import parse_srcinfo
 ARGV0 = 'sync-rebuild'
+
+def xdg_cache_home(user=None):
+    """Retrieve XDG_CACHE_HOME from the XDG Base Directory specification
+    """
+    if user is not None:
+        user_home = os.path.expanduser("~" + user)
+    else:
+        user_home = os.path.expanduser("~")
+    cache_home = os.path.join(user_home, '.cache')
+
+    # Note: this only retrieves `XDG_CACHE_HOME` from the current user
+    # environment regardless if `user` is specified.
+    if 'XDG_CACHE_HOME' in os.environ:
+        return os.getenv('XDG_CACHE_HOME')
+
+    return cache_home
+
 
 def run_readline(command, check=True):
     """Run the output from a command line-by-line.
@@ -324,11 +340,11 @@ if __name__ == '__main__':
         raise NotImplementedError('--user requires --chroot')
 
     # Get the path to user-specific cache files
-    # XXX: use the --user $HOME directory, if specified
+    # Note: this only retrieves `AURDEST` from the current user environment.
     if 'AURDEST' in os.environ:
         aurdest = os.getenv('AURDEST')
     else:
-        aurdest = os.path.join(BaseDirectory.xdg_cache_home, 'aurutils/sync')
+        aurdest = os.path.join(xdg_cache_home(args.user), 'aurutils/sync')
 
     main({i:1 for i in args.targets}, args.database, aurdest, 
          args.fail_fast, args.no_sync, args.chroot, args.user)
