@@ -129,7 +129,6 @@ def rebuild_packages(repo_targets, db_name, start_dir, vcs=False, fail_fast=Fals
         build_cmd.extend(('--database', db_name))
 
     if user is not None:
-        build_cmd.extend(('--user', user))
         pkglist_cmd = ['runuser', '-u', user, '--'] + pkglist_cmd
 
     # Check that `pkgver` is consistent between local repository and .SRCINFO
@@ -187,7 +186,8 @@ def rebuild_packages(repo_targets, db_name, start_dir, vcs=False, fail_fast=Fals
                     'AUR_REPO_ADD'     : f'runuser -u {user} -- repo-add',
                     'AUR_BUILD_PKGLIST': f'runuser -u {user} -- aur build--pkglist'
                 }
-                subprocess.run(build_cmd, check=True, cwd=src_dir, env=dict(os.environ, **asroot_env))
+                subprocess.run([*build_cmd, '--user', user], check=True, cwd=src_dir, 
+                               env=dict(os.environ, **asroot_env))
 
             # Build process completed successfully, remove backup PKGBUILD if it
             # was created above
