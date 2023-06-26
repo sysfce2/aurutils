@@ -119,16 +119,18 @@ def update_pkgrel(buildscript, pkgrel=None, increment=0.1):
 
 
 # TODO: use vercmp to ensure rebuilds, abort reverse depends when depends fails (sync--ninja)
-def rebuild_packages(repo_targets, db_name, start_dir, fail_fast=False, user=None, *build_args):
+def rebuild_packages(repo_targets, db_name, start_dir, vcs=False, fail_fast=False, user=None, *build_args):
     """Rebuild a series of packages in successive order.
     """
-    build_cmd = ['aur', 'build'] + list(*build_args)
+    build_cmd   = ['aur', 'build'] + list(*build_args)
+    pkglist_cmd = ['aur', 'build--pkglist', '--srcinfo']
 
     if db_name is not None:
         build_cmd.extend(('--database', db_name))
 
     if user is not None:
         build_cmd.extend(('--user', user))
+        pkglist_cmd = ['runuser', '-u', user, '--'] + pkglist_cmd
 
     # Check that `pkgver` is consistent between local repository and .SRCINFO
     rebuilds = {}
@@ -141,6 +143,11 @@ def rebuild_packages(repo_targets, db_name, start_dir, fail_fast=False, user=Non
         # Retrieve metdata from local repository entry
         pkgbase = pkg['PackageBase']
         pkgver, pkgrel = pkg['Version'].rsplit('-', 1)
+
+        # Regenerate .SRCINFO for VCS packages
+        if vcs:
+            with open(os.path.join(srcdir, '.SRCINFO')) as outfile:
+                subprocess.run(pkglist_cmd, stdout=outfile, check=True, cwd=src_dir)
 
         # Retrieve metadata from .SRCINFO
         src_dir = os.path.join(start_dir, pkgbase)
@@ -225,7 +232,7 @@ def chown_pw_name(name, path):
     os.chown(path, uid, gid)
 
 
-def main(targets, db_name, start_dir, fail_fast, run_sync, chroot, user):
+def main(targets, db_name, start_dir, vcs, fail_fast, run_sync, chroot, user):
     # Ensure all sources are available. Only packages are cloned that are
     # already available in the local repository.
     sync_cmd = ['aur', 'sync', '--no-build', '--no-ver-argv']
@@ -287,13 +294,13 @@ def main(targets, db_name, start_dir, fail_fast, run_sync, chroot, user):
 
             # Build in dependency order
             rebuilds, failed = rebuild_packages(repo_targets_ordered, db_name, start_dir, 
-                                                fail_fast, user, build_args)
+                                                vcs, fail_fast, user, build_args)
         else:
             not_aur = []
 
             # Build in sequential (argument) order
             rebuilds, failed = rebuild_packages(repo_targets, db_name, start_dir, 
-                                                fail_fast, user, build_args)
+                                                vcs, fail_fast, user, build_args)
 
         if len(not_aur) > 0:
             print(f'{ARGV0}: the following targets are not in AUR:', file=sys.stderr)
@@ -324,6 +331,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--database')
     parser.add_argument('-c', '--chroot', action='store_true')
     parser.add_argument('-U', '--user')
+    parser.add_argument('--vcs', action='store_true')
     parser.add_argument('--fail-fast', action='store_true')
     parser.add_argument('--no-sync', action='store_false')
     parser.add_argument('targets', nargs='+')
@@ -349,4 +357,4 @@ if __name__ == '__main__':
         aurdest = os.path.join(xdg_cache_home(args.user), 'aurutils/sync')
 
     main({i:1 for i in args.targets}, args.database, aurdest, 
-         args.fail_fast, args.no_sync, args.chroot, args.user)
+         args.vcs, args.fail_fast, args.no_sync, args.chroot, args.user)
