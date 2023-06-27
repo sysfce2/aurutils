@@ -32,7 +32,7 @@ def xdg_cache_home(user=None):
     return cache_home
 
 
-def run_readline(command, check=True):
+def run_readline(command, check=True, cwd=None):
     """Run the output from a command line-by-line.
 
     `aur` programs typically use newline delimited output. Here, this function
@@ -40,7 +40,7 @@ def run_readline(command, check=True):
     one local repository package.
 
     """
-    with subprocess.Popen(command, stdout=subprocess.PIPE) as process:
+    with subprocess.Popen(command, stdout=subprocess.PIPE, cwd=cwd) as process:
         while True:
             output = process.stdout.readline()
             if output == b'' and process.poll() is not None:
@@ -122,14 +122,14 @@ def update_pkgrel(buildscript, pkgrel=None, increment=0.1):
 def rebuild_packages(repo_targets, db_name, start_dir, vcs=False, fail_fast=False, user=None, *build_args):
     """Rebuild a series of packages in successive order.
     """
-    build_cmd   = ['aur', 'build'] + list(*build_args)
-    pkglist_cmd = ['aur', 'build--pkglist', '--srcinfo']
+    build_cmd  = ['aur', 'build'] + list(*build_args)
+    srcver_cmd = ['aur', 'srcver']
 
     if db_name is not None:
         build_cmd.extend(('--database', db_name))
 
     if user is not None:
-        pkglist_cmd = ['runuser', '-u', user, '--'] + pkglist_cmd
+        srcver_cmd = ['runuser', '-u', user, '--'] + srcver_cmd
 
     # Check that `pkgver` is consistent between local repository and .SRCINFO
     rebuilds = {}
@@ -142,15 +142,18 @@ def rebuild_packages(repo_targets, db_name, start_dir, vcs=False, fail_fast=Fals
         # Retrieve metdata from local repository entry
         pkgbase = pkg['PackageBase']
         pkgver, pkgrel = pkg['Version'].rsplit('-', 1)
-
-        # Regenerate .SRCINFO for VCS packages
-        if vcs:
-            with open(os.path.join(srcdir, '.SRCINFO')) as outfile:
-                subprocess.run(pkglist_cmd, stdout=outfile, check=True, cwd=src_dir)
-
-        # Retrieve metadata from .SRCINFO
         src_dir = os.path.join(start_dir, pkgbase)
-        src_pkgver, _ = srcinfo_get_version(os.path.join(src_dir, '.SRCINFO'))
+
+        # Run pkgver() function for VCS packages
+        if vcs:
+            for n, pkg_str in enumerate(run_readline(srcver_cmd, cwd=src_dir)):
+                if n > 0:
+                    raise RuntimeError('ambiguous aur-srcver output')
+                src_pkgver = pkg_str.decode('utf-8').split('\t')[1].rsplit('-', 1)[0]
+
+        # Use .SRCINFO for other packages (faster)
+        else:
+            src_pkgver, _ = srcinfo_get_version(os.path.join(src_dir, '.SRCINFO'))
 
         # Set backup file for PKGBUILD
         buildscript = os.path.join(src_dir, 'PKGBUILD')
