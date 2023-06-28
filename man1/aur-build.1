@@ -484,7 +484,7 @@ New users may be created with
 as follows:
 .PP
 .EX
-    # useradd build \-\-system \-\-home\-dir /var/cache/build \-\-create\-home
+    # useradd build \-\-system \-\-home\-dir /var/cache/aurbuild \-\-create\-home
 .EE
 .PP
 Because dependency resolution is not replicated and left to
@@ -494,7 +494,7 @@ Because dependency resolution is not replicated and left to
 in
 .BR /usr/bin/makepkg )
 the
-.I build
+.I aurbuild
 user should be allowed to run
 .BR pacman (8)
 with elevated privileges.
@@ -504,29 +504,28 @@ For example, create the
 file with the following contents:
 .PP
 .EX
-    build ALL = (root) NOPASSWD: /usr/bin/pacman
-    build ALL = (root) NOPASSWD: /usr/bin/pacsync
+    aurbuild ALL = (root) NOPASSWD: /usr/bin/pacman, /usr/bin/pacsync
 .EE
 .PP
 .BR aur\-build (1)
 and related programs such as
 .BR aur\-sync (1)
 can now run as the new
-.I build
+.I aurbuild
 user.
 For example:
 .PP
 .EX
-    # cd /var/cache/build
-    # sudo \-u build git clone https://aur.archlinux.org/mypackage.git
+    # cd /var/cache/aurbuild
+    # sudo \-u aurbuild git clone https://aur.archlinux.org/mypackage.git
     # cd mypackage
-    # sudo \-u build aur build \-d custom
+    # sudo \-u aurbuild aur build \-d custom
 .EE
 .PP
 Any created files in the local repository (such as packages,
 signatures and database files) will be owned by the
-.I build
-user.
+.I aurbuild
+user and group.
 .PP
 See also
 .B Avoiding password prompts
