@@ -297,12 +297,7 @@ fi
 } < <(aur repo "${repo_args[@]}" --status)
 wait "$!"
 
-if [[ -w $db_path ]]; then
-    msg >&2 'Using [%s] repository' "$db_name"
-else
-    printf >&2 '%s: %s: permission denied\n' "$argv0" "$db_path"
-    exit 13
-fi
+msg >&2 'Using [%s] repository' "$db_name"
 
 # Concatenate ignores from file and command-line arguments
 : "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
