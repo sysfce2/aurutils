@@ -1,3 +1,8 @@
+## 17.2
+
+* `examples`
+  + rename `sync-rebuild --vcs` to `--pkgver`
+
 ## 17.1
 
 * `examples`
