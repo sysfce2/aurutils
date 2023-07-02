@@ -150,7 +150,7 @@ def rebuild_packages(repo_targets, db_name, start_dir, pkgver=False, fail_fast=F
             for n, pkg_str in enumerate(run_readline(srcver_cmd, cwd=src_dir)):
                 if n > 0:
                     raise RuntimeError('ambiguous aur-srcver output')
-                src_pkgver = pkg_str.decode('utf-8').split('\t')[1].rsplit('-', 1)[0]
+                src_pkgver, _ = pkg_str.decode('utf-8').split('\t')[1].rsplit('-', 1)
 
         # Use .SRCINFO for other packages (faster)
         else:
