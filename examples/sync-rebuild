@@ -119,7 +119,7 @@ def update_pkgrel(buildscript, pkgrel=None, increment=0.1):
 
 
 # TODO: use vercmp to ensure rebuilds, abort reverse depends when depends fails (sync--ninja)
-def rebuild_packages(repo_targets, db_name, start_dir, vcs=False, fail_fast=False, user=None, *build_args):
+def rebuild_packages(repo_targets, db_name, start_dir, pkgver=False, fail_fast=False, user=None, *build_args):
     """Rebuild a series of packages in successive order.
     """
     build_cmd  = ['aur', 'build'] + list(*build_args)
@@ -145,7 +145,7 @@ def rebuild_packages(repo_targets, db_name, start_dir, vcs=False, fail_fast=Fals
         src_dir = os.path.join(start_dir, pkgbase)
 
         # Run pkgver() function for VCS packages
-        if vcs:
+        if pkgver:
             for n, pkg_str in enumerate(run_readline(srcver_cmd, cwd=src_dir)):
                 if n > 0:
                     raise RuntimeError('ambiguous aur-srcver output')
@@ -235,7 +235,7 @@ def chown_pw_name(name, path):
     os.chown(path, uid, gid)
 
 
-def main(targets, db_name, start_dir, vcs, fail_fast, run_sync, chroot, user):
+def main(targets, db_name, start_dir, pkgver, fail_fast, run_sync, chroot, user):
     # Ensure all sources are available. Only packages are cloned that are
     # already available in the local repository.
     sync_cmd = ['aur', 'sync', '--no-build', '--no-ver-argv']
@@ -297,13 +297,13 @@ def main(targets, db_name, start_dir, vcs, fail_fast, run_sync, chroot, user):
 
             # Build in dependency order
             rebuilds, failed = rebuild_packages(repo_targets_ordered, db_name, start_dir, 
-                                                vcs, fail_fast, user, build_args)
+                                                pkgver, fail_fast, user, build_args)
         else:
             not_aur = []
 
             # Build in sequential (argument) order
             rebuilds, failed = rebuild_packages(repo_targets, db_name, start_dir, 
-                                                vcs, fail_fast, user, build_args)
+                                                pkgver, fail_fast, user, build_args)
 
         if len(not_aur) > 0:
             print(f'{ARGV0}: the following targets are not in AUR:', file=sys.stderr)
@@ -334,7 +334,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--database')
     parser.add_argument('-c', '--chroot', action='store_true')
     parser.add_argument('-U', '--user')
-    parser.add_argument('--vcs', action='store_true')
+    parser.add_argument('--pkgver', action='store_true')
     parser.add_argument('--fail-fast', action='store_true')
     parser.add_argument('--no-sync', action='store_false')
     parser.add_argument('targets', nargs='+')
@@ -360,4 +360,4 @@ if __name__ == '__main__':
         aurdest = os.path.join(xdg_cache_home(args.user), 'aurutils/sync')
 
     main({i:1 for i in args.targets}, args.database, aurdest, 
-         args.vcs, args.fail_fast, args.no_sync, args.chroot, args.user)
+         args.pkgver, args.fail_fast, args.no_sync, args.chroot, args.user)
