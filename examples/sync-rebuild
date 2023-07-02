@@ -146,6 +146,7 @@ def rebuild_packages(repo_targets, db_name, start_dir, pkgver=False, fail_fast=F
 
         # Run pkgver() function for VCS packages
         if pkgver:
+            print(f'{ARGV0}: updating pkgver with aur-srcver', file=sys.stderr)
             for n, pkg_str in enumerate(run_readline(srcver_cmd, cwd=src_dir)):
                 if n > 0:
                     raise RuntimeError('ambiguous aur-srcver output')
@@ -155,19 +156,19 @@ def rebuild_packages(repo_targets, db_name, start_dir, pkgver=False, fail_fast=F
         else:
             src_pkgver, _ = srcinfo_get_version(os.path.join(src_dir, '.SRCINFO'))
 
-        # Set backup file for PKGBUILD
         buildscript = os.path.join(src_dir, 'PKGBUILD')
-        backup = '.tmp'
-        remove_backup = False
+        buildscript_backup = None
 
         # Increase subrelease level to avoid conflicts with intermediate PKGBUILD updates
         if src_pkgver == pkgver:
+            # Set backup file for PKGBUILD
+            buildscript_backup = buildscript + '.tmp'
+
             # Preserve permissions of PKGBUILD
             bst = os.stat(buildscript)
-            shutil.copy2(buildscript, buildscript + backup)
-            shutil.chown(buildscript + backup, user=bst.uid)
+            shutil.copy2(buildscript, buildscript_backup)
+            shutil.chown(buildscript_backup, user=bst.st_uid)
 
-            remove_backup = True
             new_pkgrel = update_pkgrel(buildscript, pkgrel=float(pkgrel), increment=0.1)
 
             # Print bumped pkgrel to standard error
@@ -197,15 +198,17 @@ def rebuild_packages(repo_targets, db_name, start_dir, pkgver=False, fail_fast=F
 
             # Build process completed successfully, remove backup PKGBUILD if it
             # was created above
-            if remove_backup:
-                os.remove(buildscript + backup)
+            if buildscript_backup is not None:
+                os.remove(buildscript_backup)
 
         except subprocess.CalledProcessError:
             # Build process failed, revert to unmodified PKGBUILD
-            print(f'{ARGV0}: build failed, reverting PKGBUILD', file=sys.stderr)
-            os.replace(buildscript + backup, buildscript)
+            if buildscript_backup is not None:
+                print(f'{ARGV0}: build failed, reverting PKGBUILD', file=sys.stderr)
+                os.replace(buildscript_backup, buildscript)
 
-            # --fail-fast: if a package failed to build, also consider remaining targets as failed
+            # --fail-fast: if a package failed to build, also consider
+            # remaining targets as failed
             if fail_fast:
                 print(f'{ARGV0}: {pkgbase}: build failed, exiting', file=sys.stderr)
                 return rebuilds, list(set(repo_targets) - set(rebuilds))
