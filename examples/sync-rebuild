@@ -158,14 +158,17 @@ def rebuild_packages(repo_targets, db_name, start_dir, pkgver=False, fail_fast=F
         # Set backup file for PKGBUILD
         buildscript = os.path.join(src_dir, 'PKGBUILD')
         backup = '.tmp'
-
-        shutil.copy(buildscript, buildscript + backup)
         remove_backup = False
 
         # Increase subrelease level to avoid conflicts with intermediate PKGBUILD updates
         if src_pkgver == pkgver:
-            new_pkgrel = update_pkgrel(buildscript, pkgrel=float(pkgrel), increment=0.1)
+            # Preserve permissions of PKGBUILD
+            bst = os.stat(buildscript)
+            shutil.copy2(buildscript, buildscript + backup)
+            shutil.chown(buildscript + backup, user=bst.uid)
+
             remove_backup = True
+            new_pkgrel = update_pkgrel(buildscript, pkgrel=float(pkgrel), increment=0.1)
 
             # Print bumped pkgrel to standard error
             print(f'{ARGV0}: {pkgname}: {pkgver}-{pkgrel} -> {pkgver}-{new_pkgrel}',
@@ -226,15 +229,6 @@ def print_cached_packages(pkgnames):
             p2.communicate()
 
 
-def chown_pw_name(name, path):
-    """Change owner of a path, taking a user name as argument.
-    """
-    uid = getpwnam(name).pw_uid
-    gid = getpwnam(name).pw_gid
-
-    os.chown(path, uid, gid)
-
-
 def main(targets, db_name, start_dir, pkgver, fail_fast, run_sync, chroot, user):
     # Ensure all sources are available. Only packages are cloned that are
     # already available in the local repository.
@@ -279,7 +273,7 @@ def main(targets, db_name, start_dir, pkgver, fail_fast, run_sync, chroot, user)
             with tempfile.NamedTemporaryFile() as sync_queue:
                 # Read access to build user
                 if user is not None:
-                    chown_pw_name(user, sync_queue.name)
+                    shutil.chown(sync_queue.name, user=user)
 
                 # Clone AUR targets and retrieve dependency order. Dependencies
                 # not in the local repository already will be added as targets.
