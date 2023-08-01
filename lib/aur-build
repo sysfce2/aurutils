@@ -62,14 +62,12 @@ EOF
 get_local_upgrades() {
     local repo=$1
 
-    LANG=C pacman -Sup --print-format '%r/%n' | while IFS=/ read -ra line; do
-        case ${line[0]} in
-            "$repo")
-                printf '%s\n' "$repo/${line[1]}" ;;
-            ::\ *)  # XXX: pacman prints diagnostics to standard output
-                printf >&2 '%s\n' "${line[*]}" ;;
-        esac
-    done
+    # pacman prints diagnostics (::) to standard output, but does not accept
+    # repositories starting in `:: `. Redirect output accordingly.
+    LANG=C pacman -Sup --print-format '%r/%n' | awk -F/ -v repo="$repo" '
+        $1 ~ repo   {print $2}
+        $1 ~ /^:: / {print $0 >"/dev/stderr"}
+    '
     return "${PIPESTATUS[0]}"
 }
 
@@ -229,9 +227,9 @@ if (( chroot )); then
     # default paths below when specified on the command-line or through `AUR_REPO`.
     if [[ $db_name ]]; then
         default_pacman_paths=("/etc/aurutils/pacman-$db_name.conf"
-            "/etc/aurutils/pacman-$machine.conf")
+                              "/etc/aurutils/pacman-$machine.conf")
         default_makepkg_paths=("/etc/aurutils/makepkg-$db_name.conf"
-            "/etc/aurutils/makepkg-$machine.conf")
+                               "/etc/aurutils/makepkg-$machine.conf")
     else
         default_pacman_paths=("/etc/aurutils/pacman-$machine.conf")
         default_makepkg_paths=("/etc/aurutils/makepkg-$machine.conf")
