@@ -220,25 +220,27 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-# XXX: default paths can be set through the Makefile (@ETCDIR@)
+# XXX: default paths can be set through the Makefile
 if (( chroot )); then
     # The pacman configuration in the chroot may contain a local repository that
     # is not configured on the host. Therefore, $db_name is only used for the
     # default paths below when specified on the command-line or through `AUR_REPO`.
     if [[ $db_name ]]; then
-        default_suffixes=("$db_name" "$machine")
+        default_pacman_paths=("/etc/aurutils/pacman-$db_name.conf"
+                              "/etc/aurutils/pacman-$machine.conf")
+        default_makepkg_paths=("/etc/aurutils/makepkg-$db_name.conf"
+                               "/etc/aurutils/makepkg-$machine.conf")
     else
-        default_suffixes=("$machine")
+        default_pacman_paths=("/etc/aurutils/pacman-$machine.conf")
+        default_makepkg_paths=("/etc/aurutils/makepkg-$machine.conf")
     fi
 
     # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
     # /etc/aurutils/pacman-<repo>.conf or /etc/aurutils/pacman-<uname>.conf in
     # aur-build, and pass it on to aur-chroot (#824, #846)
-    for suffix in "${default_suffixes[@]}"; do
-        default=/etc/aurutils/pacman-$suffix.conf
-
-        if [[ -f $default ]] && [[ ! -v pacman_conf ]]; then
-            pacman_conf=$default
+    for def in "${default_pacman_paths[@]}"; do
+        if [[ -f $def ]] && [[ ! -v pacman_conf ]]; then
+            pacman_conf=$def
             break
         fi
     done
@@ -246,11 +248,9 @@ if (( chroot )); then
     # The same as above but for /etc/aurutils/makepkg-<repo>.conf or
     # /etc/aurutils/makepkg-<uname>.conf. If the file is not found, fallback to
     # makepkg.conf files in /usr/share/devtools.
-    for suffix in "${default_suffixes[@]}"; do
-        default=/etc/aurutils/makepkg-$suffix.conf
-
-        if [[ -f $default ]] && [[ ! -v makepkg_conf ]]; then
-            makepkg_conf=$default
+    for def in "${default_makepkg_paths[@]}"; do
+        if [[ -f $def ]] && [[ ! -v makepkg_conf ]]; then
+            makepkg_conf=$def
             break
         fi
     done
