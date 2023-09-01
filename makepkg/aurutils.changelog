@@ -3,6 +3,9 @@
 * `aur-fetch`
   + only run git-rebase/merge on new upstream commits
 
+* `aur-build`
+  + shell escape file names in diagnostics
+
 ## 17.3
 
 * `aur-build`

@@ -28,35 +28,31 @@ args_csv() {
     printf '%s' "${str%,}"
 }
 
+# Print diagnostic on non-moved packages (#794)
 diag_moved_packages() {
-    # Print diagnostic on non-moved packages (#794)
-    cat <<EOF >&2
-Note:
-    aur-build encountered an error before moving packages to the local repository.
-    This may happen when signing built packages with gpg (aur build --sign),
-    or with certain makepkg errors.
+    echo >&2 'Note:'
 
-    The following files were preserved:
+    cat <<EOF | pr -to 4 >&2
+aur-$argv0 encountered an error before moving packages to the local repository.
+This may happen when signing built packages with gpg (aur build --sign),
+or with certain makepkg errors.
+
+The following files were preserved:
 EOF
-    #shellcheck disable=SC2030
-    realpath -z -- "$@" | while read -rd ''; do
-        printf '%8s%s\n' ' ' "$REPLY"
-    done
+    ls --quoting-style=shell-escape -1 -- "$@" | pr -to 8 >&2
 }
 
 diag_pacman_conf() {
-    cat <<EOF >&2
-Error:
-    aur-build could not find a pacman.conf(5) file for container usage. Before
-    using --chroot, make sure this file is created and valid. See OPTIONS in
-    aur-build(1) for configuration details.
+    echo >&2 'Error:'
 
-    The following file paths were checked:
+    cat <<EOF | pr -tro 4 >&2
+aur-$argv0 could not find a pacman.conf(5) file for container usage. Before
+using --chroot, make sure this file is created and valid. See OPTIONS in
+aur-build(1) for configuration details.
+
+The following file paths were checked:
 EOF
-    #shellcheck disable=SC2030
-    realpath -z -- "$@" | while read -rd ''; do
-        printf '%8s%s\n' ' ' "$REPLY"
-    done
+    ls --quoting-style=shell-escape -1 -- "$@" | pr -to 8 >&2
 }
 
 get_local_upgrades() {
