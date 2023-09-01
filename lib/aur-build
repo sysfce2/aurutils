@@ -46,7 +46,7 @@ EOF
 diag_pacman_conf() {
     echo >&2 'Error:'
 
-    cat <<EOF | pr -tro 4 >&2
+    cat <<EOF | pr -to 4 >&2
 aur-$argv0 could not find a pacman.conf(5) file for container usage. Before
 using --chroot, make sure this file is created and valid. See OPTIONS in
 aur-build(1) for configuration details.
