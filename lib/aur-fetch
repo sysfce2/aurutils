@@ -47,6 +47,19 @@ sync_package_config() {
     esac
 }
 
+sync_should_merge() {
+    local dest=$1 pkg=$2
+
+    # Check if last upstream commit can be reached from $dest (typically HEAD)
+    if ! git merge-base --is-ancestor 'master@{u}' "$dest"; then
+        return 0
+    else
+        # Print diagnostic with prefixed argv0 (unlike git)
+        printf >&2 '%s: %s: already up to date\n' "$argv0" "$pkg"
+        return 1
+    fi
+}
+
 usage() {
     cat <<! | base64 -d
 ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
@@ -225,22 +238,25 @@ for pkg in "${packages[@]}"; do
         # Merge in new history
         case $sync_pkg in
             rebase)
-                dest='HEAD'
-                if (( discard )); then
-                    # reset worktree
-                    git checkout ./
-                fi
-                git rebase "${rebase_args[@]}" "$upstream" ;;
+                dest=HEAD
+                if sync_should_merge "$dest" "$pkg"; then
+                    if (( discard )); then
+                        git checkout ./
+                    fi
+                    git rebase "${rebase_args[@]}" "$upstream"
+                fi ;;
             merge)
-                dest='HEAD'
-                if (( discard )); then
-                    # reset worktree if new commits are available
-                    git merge-base --is-ancestor 'master@{u}' HEAD || git checkout ./
-                fi
-                git merge "${merge_args[@]}" "$upstream" ;;
+                dest=HEAD
+                if sync_should_merge "$dest" "$pkg"; then
+                    if (( discard )); then
+                        git checkout ./
+                    fi
+                    git merge "${merge_args[@]}" "$upstream"
+                fi ;;
             reset)
                 dest='master@{u}'
-                git reset --hard 'master@{u}' ;;
+                git reset --hard 'master@{u}'
+                ;;
             fetch)
                 dest='master@{u}'
                 ;;

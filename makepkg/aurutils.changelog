@@ -1,3 +1,8 @@
+## 18
+
+* `aur-fetch`
+  + only run git-rebase/merge on new upstream commits
+
 ## 17.3
 
 * `aur-build`
