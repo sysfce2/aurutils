@@ -39,6 +39,7 @@ or with certain makepkg errors.
 
 The following files were preserved:
 EOF
+    # shellcheck disable=SC2012
     ls --quoting-style=shell-escape -1 -- "$@" | pr -to 8 >&2
 }
 
@@ -52,6 +53,7 @@ aur-build(1) for configuration details.
 
 The following file paths were checked:
 EOF
+    # shellcheck disable=SC2012
     ls --quoting-style=shell-escape -1 -- "$@" | pr -to 8 >&2
 }
 
