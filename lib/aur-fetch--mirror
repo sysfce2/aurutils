@@ -5,6 +5,7 @@ set -o errexit
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 AUR_MIRROR=${AUR_MIRROR:-https://github.com/archlinux/aur}
 AUR_MIRROR_TTL=${AUR_MIRROR_TTL:-300}
+AUR_MIRROR_BRANCH=${AUR_MIRROR_BRANCH:-main}
 AUR_ROOT=${AUR_ROOT:-$XDG_CACHE_HOME/aur}
 startdir=$PWD
 local_clones=0
@@ -27,7 +28,7 @@ git_active_remotes() {
 # XXX: this includes refs/heads (which we do not use) but unlike
 # git-config this accepts multiple arguments in one call
 git_set_branches() {
-    git remote set-branches origin --add main # ensure at least 1 remote
+    git remote set-branches origin --add "$AUR_MIRROR_BRANCH" # ensure at least 1 remote
     sort -u | xargs -d '\n' git remote set-branches origin
 }
 
@@ -46,7 +47,7 @@ exec {fd}< "$AUR_ROOT"
 
   # Shallow clone
   if [[ ! $(git rev-parse --is-inside-git-dir 2>/dev/null) ]]; then
-      git init --bare --initial-branch=main
+      git init --bare --initial-branch="$AUR_MIRROR_BRANCH"
       git remote add origin "$AUR_MIRROR"
   fi
 
@@ -55,7 +56,7 @@ exec {fd}< "$AUR_ROOT"
   git_ls_remote_ttl 'remote-pkgbase'
 
   # Retrieve list of active remotes
-  mapfile -t active_remotes < <(git_active_remotes | grep -v 'main')
+  mapfile -t active_remotes < <(git_active_remotes | grep -v "$AUR_MIRROR_BRANCH")
 
   # Only consider AUR targets
   mapfile -t target_remotes < <(printf '%s\n' "$@" | grep -Fxf 'remote-pkgbase')
