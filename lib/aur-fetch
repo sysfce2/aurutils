@@ -20,7 +20,7 @@ export GIT_HTTP_USER_AGENT=aurutils
 git_empty_object=$(git hash-object -t tree /dev/null)
 
 # default options
-existing=0 recurse=0 discard=0 sync=fetch
+existing=0 recurse=0 discard=0 sync=fetch default_branch=master
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -50,8 +50,8 @@ sync_package_config() {
 sync_should_merge() {
     local dest=$1 pkg=$2
 
-    # Check if last upstream commit can be reached from $dest (typically HEAD)
-    if ! git merge-base --is-ancestor 'master@{u}' "$dest"; then
+    # Check if last upstream commit can be reached from $dest
+    if ! git merge-base --is-ancestor "$default_branch@{u}" "$dest"; then
         return 0
     else
         # Print diagnostic with prefixed argv0 (unlike git)
@@ -72,7 +72,7 @@ XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 # option handling
 opt_short='efrS'
 opt_long=('auto' 'merge' 'reset' 'rebase' 'discard' 'existing' 'results:' 'ff'
-          'ff-only' 'no-ff' 'no-commit' 'recurse')
+          'ff-only' 'no-ff' 'no-commit' 'recurse' 'default-branch:')
 opt_hidden=('dump-options' 'sync:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -108,6 +108,8 @@ while true; do
             merge_args+=(--no-commit) ;;
         --no-ff)
             merge_args+=(--no-ff); rebase_args+=(--no-ff) ;;
+        --default-branch)
+            shift; default_branch=$1 ;;
         # Compatibility options
         --sync)
             shift; sync=$1 ;;
@@ -230,9 +232,11 @@ for pkg in "${packages[@]}"; do
 
         # Set correct branch for rebasing local clones
         if (( AUR_FETCH_USE_MIRROR )); then
-            upstream=origin/$pkg    # master -> origin/$pkg
+            # master -> origin/$pkg
+            upstream=origin/$pkg
         else
-            upstream=origin/master  # master -> origin/master
+            # master -> origin/master
+            upstream=origin/$default_branch
         fi
 
         # Merge in new history
@@ -254,11 +258,11 @@ for pkg in "${packages[@]}"; do
                     git merge "${merge_args[@]}" "$upstream"
                 fi ;;
             reset)
-                dest='master@{u}'
-                git reset --hard 'master@{u}'
+                dest="$default_branch@{u}"
+                git reset --hard "$dest"
                 ;;
             fetch)
-                dest='master@{u}'
+                dest="$default_branch@{u}"
                 ;;
         esac || {
             printf >&2 '%s: failed to %s %s\n' "$argv0" "$sync_pkg" "$pkg"
