@@ -20,7 +20,7 @@ export GIT_HTTP_USER_AGENT=aurutils
 git_empty_object=$(git hash-object -t tree /dev/null)
 
 # default options
-existing=0 recurse=0 discard=0 sync=fetch default_branch=master
+existing=0 recurse=0 discard=0 url=0 sync=fetch
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -72,7 +72,7 @@ XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 # option handling
 opt_short='efrS'
 opt_long=('auto' 'merge' 'reset' 'rebase' 'discard' 'existing' 'results:' 'ff'
-          'ff-only' 'no-ff' 'no-commit' 'recurse' 'default-branch:')
+          'ff-only' 'no-ff' 'no-commit' 'recurse' 'url')
 opt_hidden=('dump-options' 'sync:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -91,6 +91,8 @@ while true; do
             discard=1 ;;
         -e|--existing)
             existing=1 ;;
+        --url)
+            url=1 ;;
         --merge)
             sync=merge ;;
         --rebase)
@@ -108,8 +110,6 @@ while true; do
             merge_args+=(--no-commit) ;;
         --no-ff)
             merge_args+=(--no-ff); rebase_args+=(--no-ff) ;;
-        --default-branch)
-            shift; default_branch=$1 ;;
         # Compatibility options
         --sync)
             shift; sync=$1 ;;
@@ -168,7 +168,7 @@ declare -A local_clones
 # With an AUR mirror, updates are retrieved in two steps. First, updates to the
 # mirror are synchronized with `git-fetch`. Secondly, local clones of the miror
 # are created and are updated with `git-fetch` and `git-merge` as usual.
-if (( AUR_FETCH_USE_MIRROR )); then
+if (( AUR_FETCH_USE_MIRROR )) && (( ! url )); then
     while IFS=':' read -r pkg head; do
         printf "Cloning into '%s'\n" "$pkg"
         git -C "$pkg" --no-pager log --pretty=reference -1
@@ -230,16 +230,9 @@ for pkg in "${packages[@]}"; do
         orig_head=$(git rev-parse --verify --quiet HEAD)
         orig_head=${orig_head:-$git_empty_object}
 
-        # Set correct branch for rebasing local clones
-        if (( AUR_FETCH_USE_MIRROR )); then
-            # master -> origin/$pkg
-            upstream=origin/$pkg
-        else
-            # master -> origin/master
-            upstream=origin/$default_branch
-        fi
-
         # Merge in new history
+        upstream=origin/HEAD
+
         case $sync_pkg in
             rebase)
                 dest=HEAD
@@ -258,11 +251,11 @@ for pkg in "${packages[@]}"; do
                     git merge "${merge_args[@]}" "$upstream"
                 fi ;;
             reset)
-                dest="$default_branch@{u}"
+                dest=$upstream
                 git reset --hard "$dest"
                 ;;
             fetch)
-                dest="$default_branch@{u}"
+                dest=$upstream
                 ;;
         esac || {
             printf >&2 '%s: failed to %s %s\n' "$argv0" "$sync_pkg" "$pkg"
