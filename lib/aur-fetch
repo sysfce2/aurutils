@@ -20,7 +20,7 @@ export GIT_HTTP_USER_AGENT=aurutils
 git_empty_object=$(git hash-object -t tree /dev/null)
 
 # default options
-existing=0 recurse=0 discard=0 url=0 sync=fetch
+existing=0 recurse=0 discard=0 sync=fetch
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -72,7 +72,7 @@ XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
 # option handling
 opt_short='efrS'
 opt_long=('auto' 'merge' 'reset' 'rebase' 'discard' 'existing' 'results:' 'ff'
-          'ff-only' 'no-ff' 'no-commit' 'recurse' 'url')
+          'ff-only' 'no-ff' 'no-commit' 'recurse')
 opt_hidden=('dump-options' 'sync:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -91,8 +91,6 @@ while true; do
             discard=1 ;;
         -e|--existing)
             existing=1 ;;
-        --url)
-            url=1 ;;
         --merge)
             sync=merge ;;
         --rebase)
@@ -168,7 +166,7 @@ declare -A local_clones
 # With an AUR mirror, updates are retrieved in two steps. First, updates to the
 # mirror are synchronized with `git-fetch`. Secondly, local clones of the miror
 # are created and are updated with `git-fetch` and `git-merge` as usual.
-if (( AUR_FETCH_USE_MIRROR )) && (( ! url )); then
+if (( AUR_FETCH_USE_MIRROR )); then
     while IFS=':' read -r pkg head; do
         printf "Cloning into '%s'\n" "$pkg"
         git -C "$pkg" --no-pager log --pretty=reference -1
