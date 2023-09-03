@@ -2,7 +2,6 @@
 
 * `aur-fetch`
   + only run git-rebase/merge on new upstream commits
-  + add `--default-branch`
 
 * `aur-build`
   + shell escape file names in diagnostics
