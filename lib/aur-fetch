@@ -48,10 +48,10 @@ sync_package_config() {
 }
 
 sync_should_merge() {
-    local dest=$1 pkg=$2
+    local upstream=$1 dest=$2 pkg=$3
 
     # Check if last upstream commit can be reached from $dest
-    if ! git merge-base --is-ancestor "$default_branch@{u}" "$dest"; then
+    if ! git merge-base --is-ancestor "$upstream" "$dest"; then
         return 0
     else
         # Print diagnostic with prefixed argv0 (unlike git)
@@ -234,7 +234,7 @@ for pkg in "${packages[@]}"; do
         case $sync_pkg in
             rebase)
                 dest=HEAD
-                if sync_should_merge "$dest" "$pkg"; then
+                if sync_should_merge "$upstream" "$dest" "$pkg"; then
                     if (( discard )); then
                         git checkout ./
                     fi
@@ -242,7 +242,7 @@ for pkg in "${packages[@]}"; do
                 fi ;;
             merge)
                 dest=HEAD
-                if sync_should_merge "$dest" "$pkg"; then
+                if sync_should_merge "$upstream" "$dest" "$pkg"; then
                     if (( discard )); then
                         git checkout ./
                     fi
