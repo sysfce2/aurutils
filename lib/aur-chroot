@@ -166,7 +166,7 @@ if (( create )); then
         # shellcheck disable=SC2086
         $AUR_PACMAN_AUTH mkarchroot -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root "${base_packages[@]}"
     fi
-fi
+fi >&2
 
 # arch-nspawn makes no distinction between a missing working directory
 # and one which does not exist
