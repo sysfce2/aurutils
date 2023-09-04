@@ -34,7 +34,7 @@ diag_moved_packages() {
 
     cat <<EOF | pr -to 4 >&2
 aur-$argv0 encountered an error before moving packages to the local repository.
-This may happen when signing built packages with gpg (aur build --sign),
+This may happen when signing built packages with gpg (aur $argv0 --sign),
 or with certain makepkg errors.
 
 The following files were preserved:
@@ -48,7 +48,7 @@ diag_pacman_conf() {
     cat <<EOF | pr -to 4 >&2
 aur-$argv0 could not find a pacman.conf(5) file for container usage. Before
 using --chroot, make sure this file is created and valid. See OPTIONS in
-aur-build(1) for configuration details.
+aur-$argv0(1) for configuration details.
 
 The following file paths were checked:
 EOF
