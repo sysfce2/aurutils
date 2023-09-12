@@ -110,7 +110,7 @@ sub chain_mod {
     # packages specified on the command-line
     for my $name (keys %{$results}) {
         if ($results->{$name} eq 'None' and defined $shlibs->{$name}) {
-            my $prov = $shlibs->{$_}[0];
+            my $prov = $shlibs->{$name}[0];
 
             $mod{$prov}->{'RequiredBy'} = {
                 %{$mod{$prov}->{'RequiredBy'}}, %{$reqby->{$prov}}
