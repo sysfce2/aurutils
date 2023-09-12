@@ -6,6 +6,9 @@
 * `aur-build`
   + shell escape file names in diagnostics
 
+* `aur-depends`
+  + `RequiredBy` is now a dictionary for every package (`--json`, `--jsonl`)
+
 ## 17.3
 
 * `aur-build`
