@@ -1,0 +1,52 @@
+#!/bin/bash
+set -e
+# multiple attempts for random ordering of hashes
+n_trials=10
+
+err() {
+    echo >&2 "$1"
+    exit 1
+}
+
+for t in {1..$n_trials}; do
+    # bitlbee-libpurple-git provides bitlbee
+    out=$(aur depends bitlbee-libpurple-git bitlbee-discord-git --json)
+
+    if ! [[ $(jq '. | length' <<< "$out") == 2 ]]; then
+        echo >&2 "$out"
+        err '2 dependencies expected (bitlbee-discord-git)'
+    fi
+    if ! [[ $(jq '."bitlbee-libpurple-git".RequiredBy | length' <<< "$out") == 2 ]]; then
+        echo >&2 "$out"
+        err '2 reverse dependencies expected (bitlbee-libpurple-git)'
+    fi
+    if ! [[ $(jq '."bitlbee-discord-git".RequiredBy | length' <<< "$out") == 1 ]]; then
+        echo >&2 "$out"
+        err '1 reverse dependencies expected (bitlbee-discord-git)'
+    fi
+
+    # bitlbee-discord-git requires bitlbee
+    prov=$(aur depends bitlbee-discord-git --json)
+    
+    if ! [[ $(jq '. | length' <<< "$out") == 2 ]]; then
+        echo >&2 "$out"
+        err '2 dependencies expected (bitlbee-discord-git)'
+    fi
+    if ! [[ $(jq '."bitlbee".RequiredBy | length' <<< "$out") == 2 ]]; then
+        echo >&2 "$out"
+        err '2 reverse dependencies expected (bitlbee)'
+    fi
+    if ! [[ $(jq '."bitlbee-discord-git".RequiredBy | length' <<< "$out") == 1 ]]; then
+        echo >&2 "$out"
+        err '1 reverse dependencies expected (bitlbee-discord-git)'
+    fi
+
+    # TODO: same with --all
+    #out=$(aur depends bitlbee-libpurple-git bitlbee-discord-git --json --all)
+
+    #out=$(aur depends bitlbee-discord-git --json-all)
+
+    # TODO: purely virtual dependencies specified on the command-line
+
+    # TODO: --assume-installed
+done

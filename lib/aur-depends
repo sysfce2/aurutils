@@ -36,9 +36,6 @@ sub chain {
             my $name = $node->{'Name'};
             $results{$name} = $node;
 
-            # Include `Self` dependency for every target (aur-sync, #1065)
-            push(@{$reqby{$name}{'Self'}}, $name);
-
             # XXX: no check if provides has valid package version (vercmp)
             for my $spec (@{$node->{'Provides'} // []}) {
                 my ($prov, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
@@ -46,25 +43,23 @@ sub chain {
                 # XXX: only keeps the first provider
                 if (not defined $shlibs{$prov}) {
                     # Use weights to make explicit provides take precedence
-                    $shlibs{$prov} = [$node->{'Name'}, $a]
+                    $shlibs{$prov} = [$node->{'Name'}, $a];
                 }
             }
 
             # Filter out dependency types early (#882)
             for my $deptype (@{$types}) {
-                if (not defined($node->{$deptype})) {
-                    next;  # no dependency of this type
-                }
+                next if not defined($node->{$deptype});  # no dependency of this type
 
                 for my $spec (@{$node->{$deptype}}) {
                     # valid operators (important: <= before <)
                     my ($dep, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
 
                     # populate reverse depends
-                    push(@{$reqby{$dep}{$deptype}}, $node->{'Name'});
+                    $reqby{$dep}{$node->{'Name'}} = $deptype;
 
                     # avoid querying duplicate packages (#4)
-                    next if (defined $results{$dep});
+                    next if defined $results{$dep};
                     push(@depends, $dep);
 
                     # mark as incomplete (retrieved in next step or repo package)
@@ -72,9 +67,7 @@ sub chain {
                 }
             }
         }
-        if (not scalar(@depends)) {
-            last;  # no further results
-        }
+        last if not scalar(@depends);  # no further results
     }
     return \%results, \%reqby, \%shlibs;
 }
@@ -82,58 +75,48 @@ sub chain {
 sub chain_mod {
     my ($results, $reqby, $shlibs, $provides, $showall) = @_;
     %{$shlibs} = () if not $provides;
+
     my %mod;
-
-    # Add reverse dependencies for AUR targets
     say STDERR "query: filtering results" if defined $ENV{'AUR_DEBUG'};
-    map {
-        # Take provides on the command-line into account (#837)
-        if (defined $shlibs->{$_} and $shlibs->{$_}->[1] == 1) {
-            my $name = $shlibs->{$_}->[0];
+    
+    for my $name (keys %{$results}) {
+        if ($results->{$name} eq 'None') {
+            if ($showall) {
+                $mod{$name}->{'Name'} = $name;
+                $mod{$name}->{'RequiredBy'} = $reqby->{$name};
+            }
+            next;
+        }
 
-            # Preserve `Self` deptype of command-line target
-            $mod{$name} = $results->{$name};
-            $mod{$name}->{'RequiredBy'} = {%{$reqby->{$_}}, %{$reqby->{$name}}};
+        # Take provides on the command-line into account (#837)
+        my $prov = $name;
+        if (defined $shlibs->{$name} and $shlibs->{$name}->[1] == 1) {
+            $prov = $shlibs->{$name}->[0];
         }
         # Avoid overriding provides with later target (random ordering of hash!)
-        elsif (not defined $mod{$_}) {
-            $mod{$_} = $results->{$_};
-            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
+        elsif (defined $mod{$name}) {
+            next;
         }
-    } grep {
-        $results->{$_} ne 'None'
-    } keys %{$results};
 
-    # Merge reverse dependencies for purely virtual targets, with
-    # corresponding packages specified on the command-line
-    map {
-        my $name = $shlibs->{$_}[0];
+        # Add data and reverse dependencies for AUR targets
+        $mod{$prov} = $results->{$prov};
+        $mod{$prov}->{'RequiredBy'} = $reqby->{$name};
 
-        for my $deptype (keys %{$reqby->{$_}}) {
-            push(@{$mod{$name}->{'RequiredBy'}{$deptype}}, @{$reqby->{$_}{$deptype}});
+        # Include `Self` dependency for every target (aur-sync, #1065)
+        $mod{$prov}->{'RequiredBy'}->{$prov} = 'Self';
+    }
+    
+    # Merge reverse dependencies for purely virtual targets, with corresponding
+    # packages specified on the command-line
+    for my $name (keys %{$results}) {
+        if ($results->{$name} eq 'None' and defined $shlibs->{$name}) {
+            my $prov = $shlibs->{$_}[0];
+
+            $mod{$prov}->{'RequiredBy'} = {
+                %{$mod{$prov}->{'RequiredBy'}}, %{$reqby->{$prov}}
+            };
         }
-    } grep {
-        $results->{$_} eq 'None' and defined $shlibs->{$_}
-    } keys %{$results};
-
-    # Add reverse dependencies for any remaining targets
-    if ($showall) {
-        map {
-            $mod{$_}->{'Name'} = $_;
-            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
-        } grep {
-            $results->{$_} eq 'None'
-        } keys %{$results};
     }
-    else {
-        # Remove `None` reverse dependencies (#1062)
-        map {
-            delete $mod{$_};
-        } grep {
-            $results->{$_} eq 'None'
-        } keys %mod;
-    }
-
     return \%mod, $reqby, $shlibs;
 }
 
@@ -142,42 +125,32 @@ sub chain_mod {
 sub prune {
     my ($mod, $installed) = @_;
 
-    # XXX: use Schwartzian transform
-    map {
-        # Every reverse dependency needs to be checked against every pkgname
-        # that is assumed to be installed (quadratic complexity)
-        my $reqby = $mod->{$_}->{'RequiredBy'};  # reference to RequiredBy{ Depends [] }
+    for my $name (keys %{$mod}) {  # list returned by `keys` is a copy
+        # Remove installed targets from reverse dependencies
+        my $mod_reqby = $mod->{$name}->{'RequiredBy'};
 
-        for my $deptype (keys %{$reqby}) {  # list returned by keys is a copy
-            my @pruned = ();
+        for my $dep (keys %{$mod_reqby}) {
+            # Every reverse dependency needs to be checked against every pkgname
+            # that is assumed to be installed (quadratic complexity)
+            my $found = first { $dep eq $_ } @{$installed};
 
-            for my $dep (@{$reqby->{$deptype}}) {
-                my $found = first { $dep eq $_ } @{$installed};
-
-                if (not defined ($found)) {
-                    push(@pruned, $dep);
-                }
-            }
-            if (scalar @pruned) {
-                @{$reqby->{$deptype}} = @pruned;
-            }
-            else {
-                delete $reqby->{$deptype};
+            if (defined $found) {
+                delete $mod_reqby->{$found};
             }
         }
-    } keys %{$mod};
+    }
 
-    map {
-        my $name = $_;
-        if (not scalar keys %{$mod->{$name}->{'RequiredBy'}}) {
+    for my $name (keys %{$mod}) {
+        my $mod_reqby = $mod->{$name}->{'RequiredBy'};
+        if (not scalar keys %{$mod_reqby}) {
             delete $mod->{$name};  # remove targets that are no longer required
         }
+
         my $found = first { $name eq $_ } @{$installed};
         if (defined $found) {
             delete $mod->{$name};  # remove targets that are installed
         }
-    } keys %{$mod}; # list returned by keys is a copy
-
+    }
     return $mod;
 }
 
@@ -185,19 +158,23 @@ sub prune {
 sub table_v10_compat {
     my ($results, $types) = @_;
 
-    map {
-        my ($name, $base, $version) = ($_->{'Name'}, $_->{'PackageBase'}, $_->{'Version'});
+    for my $pkg (values %{$results}) {
+        next if not defined $pkg->{'PackageBase'};
+
+        my ($name, $base, $version) = (
+            $pkg->{'Name'}, $pkg->{'PackageBase'}, $pkg->{'Version'}
+        );
         say join("\t", $name, $name, $base, $version, 'Self');
 
         for my $deptype (@{$types}) {
-            my $depends = $_->{$deptype};
+            my $depends = $pkg->{$deptype};
             next if (ref($depends) ne 'ARRAY');
 
             for my $dep (@{$depends}) {
                 say join("\t", $name, $dep, $base, $version, $deptype);
             }
         }
-    } grep { defined $_->{'PackageBase'} } values %{$results};
+    }
 }
 
 # tsv output for usage with aur-sync (aurutils >=11)
@@ -205,12 +182,12 @@ sub table {
     my $results = shift;
 
     for my $pkg (values %{$results}) {
-        my ($name, $base, $version) = ($pkg->{'Name'}, $pkg->{'PackageBase'}, $pkg->{'Version'});
+        my ($name, $base, $version, $reqby) = (
+            $pkg->{'Name'}, $pkg->{'PackageBase'}, $pkg->{'Version'}, $pkg->{'RequiredBy'}
+        );
 
-        for my $deptype (keys %{$pkg->{'RequiredBy'}}) {
-            map { 
-                say join("\t", $name, $_, $base // '-', $version // '-', $deptype);
-            } @{$pkg->{'RequiredBy'}{$deptype}};
+        for my $dep (keys %{$reqby}) {
+            say join("\t", $name, $dep, $base // '-', $version // '-', $reqby->{$dep});
         }
     }
 }
@@ -223,13 +200,11 @@ sub pairs {
     for my $pkg (values %{$results}) {
         my $target = $pkg->{$key};
 
-        for my $reqby (values %{$pkg->{'RequiredBy'}}) {
-            map {
-                my $rdep = $key eq 'Name' ? $_ : $results->{$_}->{$key} // '-';
-                my @pair = $reverse ? ($target, $rdep) : ($rdep, $target);
+        for my $reqby (keys %{$pkg->{'RequiredBy'}}) {
+            my $rdep = $key eq 'Name' ? $reqby : $results->{$reqby}->{$key} // '-';
+            my @pair = $reverse ? ($target, $rdep) : ($rdep, $target);
 
-                say join("\t", @pair);
-            } @{$reqby};
+            say join("\t", @pair);
         }
     }
 }
