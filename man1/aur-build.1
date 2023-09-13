@@ -25,28 +25,27 @@ prefix in
 .BR pacman.conf (5).
 .
 .SH OPTIONS
-The following options require root privileges:
-.BR \-\-syncdeps ,
-.BR \-\-rmdeps ,
-.BR \-\-chroot .
-Unless the
-.B \-\-nosync
-or
-.B \-\-chroot
-options are specified, root privileges are also required for
-.BR pacsync (1)
-and
-.BR "pacman \-S" .
-See the
-.B Repository updates
-section for details.
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A text file describing directories containing a PKGBUILD relative to
 the current directory. If unspecified, the current directory is
 assumed.
 .
-.RE
+.TP
+.BR \-c ", " \-\-chroot
+Build packages inside a
+.BR systemd\-nspawn (1)
+container with
+.BR aur\-chroot .
+Specifying
+.BR aur\-chroot (1)
+options such as
+.B \-\-bind
+or
+\-\-temp
+will append these options to
+.BR aur\-chroot .
+.
 .TP
 .BI \-d " NAME" "\fR,\fP \-\-database=" NAME
 The name of the
@@ -74,57 +73,6 @@ is used for
 .BR pacman (8)
 sync operations regardless of this setting. See also
 .BR \-\-no\-sync .
-.
-.TP
-.BR \-c ", " \-\-chroot
-Build packages inside a
-.BR systemd\-nspawn (1)
-container with
-.BR archbuild .
-The prerequisites for this option are that the
-.BR devtools
-package is installed, and the
-.BR pacman (8)
-configuration for the container is placed in
-.BI /etc/aurutils/pacman-<database>.conf \fR
-where <database> is specified with
-.BR \-\-database .
-.IP
-If
-.B \-\-database
-is not specified or the file
-.BI /etc/aurutils/pacman-<database>.conf \fR
-does not exist,
-.B aur\-build
-falls back to
-.B /etc/aurutils/pacman-<arch>.conf
-where
-.I <arch>
-is the output from
-.BR "uname \-m" .
-A different file path can be chosen with the
-.BR \-\-pacman\-conf
-option.
-.IP
-Care should be taken when copying (or using)
-.B /etc/pacman.conf
-for this configuration file, as certain directives (e.g.
-.BR IgnorePkg )
-may cause issues in the container. It is recommended to instead copy
-the template in
-.B /usr/share/devtools/pacman.conf.d/extra.conf
-or
-.B /usr/share/devtools/pacman.conf.d/multilib.conf
-and make the necessary adjustments. Due to devtools limitations, any
-desired repositories should be configured explicitly in this copy.
-.
-.IP
-Similarly,
-.B /etc/aurutils/makepkg-<database>.conf
-and
-.B /etc/aurutils/makepkg-<arch>.conf
-are copied to the container when available. Their creation is however
-not required, unlike the pacman configuration described above.
 .
 .TP
 .BR \-f ", " \-\-force
@@ -211,8 +159,10 @@ For chroot builds, the file is also used for
 operations inside the container
 .RB ( aur\-chroot " " \-\-pacman\-conf ).
 .IP
+.BR pacman (5)
+calls made by
 .BR makepkg (8)
-calls and local repository upgrades (see the
+and local repository upgrades (see the
 .B Repository updates
 section)
 are unaffected by this option.
@@ -237,60 +187,21 @@ or
 for built packages and packages already available in the local
 repository, respectively.
 .
-.SS makechrootpkg options
-.TP
-.BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
-The base directory for containers. Defaults to
-.BI /var/lib/archbuild/ <chroot\-suffix> \- <arch> \fR.
-.IP
-.RS
-This directory usually contains a
-.B /root
-subdirectory that serves as template for user containers named after
-.IR $SUDO_USER ,
-or
-.B /copy
-if unset.
-.RE
-.
-.TP
-.BR \-N ", " \-\-namcap
-Run
-.BR namcap (1)
-on the built package.
-.
-.TP
-.BR \-T ", " \-\-temp
-Build in a temporary container. (\fBmakechrootpkg \-T\fR) Temporary
-means that the user container has a random name and is removed on
-build completion.
-.
-.TP
-.BI \-U " USER" "\fR,\fP \-\-user=" USER
-Run the host
-.BR makepkg (8)
-instance as the specified user. (\fBmakechrootpkg \-U\fR)
-.
-.TP
-.BI \-\-bind= DIR
-Bind a directory read-only to the container. (\fBmakechrootpkg \-D\fR)
-.
-.TP
-.BI \-\-bind\-rw= DIR
-Bind a directory read-write to the container. (\fBmakechrootpkg \-d\fR)
-.
-.TP
-.BR \-\-checkpkg
-Run
-.BR checkpkg (1)
-on the built package.
-.
 .SS makepkg options
 Additional options may be passed to
 .B makepkg
 by placing them after
-.BR \-\-margs
+.B \-\-margs
 (comma-separated).
+.BR \-\-margs ,
+.BR \-\-ignorearch ,
+and
+.B \-\-nocheck
+are forwarded to
+.BR aur\-chroot
+when the
+.B \-\-chroot
+option is specified.
 .
 .TP
 .BR \-\-nocheck
@@ -458,10 +369,7 @@ of built packages, defaulting to
 .SH NOTES
 .SS Repository updates
 When building on the host (outside of a container), installed packages in the
-local repository are upgraded to the latest available version with
-.BR aur\-build\-\-sync .
-.PP
-This command runs
+local repository are upgraded to the latest available version by running
 .BI "pacsync " <repository>
 followed by
 .BI "pacman \-S \-\-noconfirm " <repository>/<upgrades...> \fR.
@@ -531,6 +439,23 @@ See also
 .B Avoiding password prompts
 in
 .BR aur\-chroot (1).
+.TP
+.B Note:
+The following
+.B aur\-build
+options require root access:
+.BR \-\-syncdeps ,
+.BR \-\-rmdeps ,
+.BR \-\-chroot .
+Root access are also required for
+.BR pacsync (1)
+and
+.BR "pacman \-S" ,
+unless the
+.B \-\-nosync
+or
+.B \-\-chroot
+options are specified.
 .
 .SS PKGBUILD signatures
 GPG signatures defined in the

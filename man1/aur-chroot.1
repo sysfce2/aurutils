@@ -58,10 +58,17 @@ package group is also installed.
 If packages or package groups are listed on the command-line, these
 are installed instead of the above.
 .
+.TP
+.B \-\-path
+Print the path to the container template
+.RI ( $directory/root ).
+.
 .SH OPTIONS
 .TP
 .BI \-D " DIR" "\fR,\fP \-\-directory=" DIR
-The base directory for containers. This directory usually contains a
+The base directory for containers. Defaults to
+.BI /var/lib/aurbuild/ <machine> \fR.
+This directory usually contains a
 .B /root
 subdirectory that serves as template for user containers (named after
 .IR $SUDO_USER ,
@@ -81,38 +88,63 @@ completion.
 .BI \-C " FILE" "\fR,\fP \-\-pacman\-conf=" FILE
 The
 .BR pacman.conf (5)
-file used inside the container. Defaults to
-.IR /usr/share/devtools/pacman\-extra.conf .
+file used inside the container. When unspecified, the following files
+are checked in order:
 .IP
-This file is read with
+.BI /etc/aurutils/pacman-<suffix>.conf
+.br
+.BI /etc/aurutils/pacman-<machine>.conf
+.br
+.BI /usr/share/devtools/pacman.conf.d/<suffix>.conf
+.br
+.BI /usr/share/devtools/pacman.conf.d/aurutils.conf
+.br
+.BI /usr/share/devtools/pacman.conf.d/aurutils\-<machine>.conf
+.IP
+The component
+.I <suffix>
+is optional and specified with the
+.B \-\-suffix
+option. The component
+.I <machine>
+is taken from
+.BR "uname \-m" .
+The resulting file is read with
 .B pacman\-conf
 to retrieve listed
 .B file://
 repositories for bind mounting. (See
 .BR "Accessing a local repository")
+.IP
+.B Warning:
+Care should be taken when copying the configuration from
+.BR /etc/pacman.conf ,
+because certain directives (e.g.
+.BR IgnorePkg )
+may cause issues in the container.
+.IP
+It is recommended to use
+the template in
+.B /usr/share/devtools/pacman.conf.d/extra.conf
+or
+.B /usr/share/devtools/pacman.conf.d/multilib.conf
+instead and make the necessary adjustments. Due to devtools limitations, any
+desired repositories should be configured explicitly in this copy.
 .
 .TP
 .BI \-M " FILE" "\fR,\fP \-\-makepkg\-conf=" FILE
 The
 .BR makepkg.conf (5)
-file used inside the container. Defaults to devtools'
-.IR makepkg\-<machine>.conf .
-.
-.TP
-.B \-\-path
-Print the path to the container template
-.RI ( $directory/root ).
-.
-.TP
-.BR \-x ", " \-\-suffix
-The path component
-.B <suffix>
-in the pacman configuration
-.BR /usr/share/devtools/pacman\-<suffix>.conf .
-Defaults to
-.BR extra .
-A full path may be specified with
-.BR \-\-pacman\-conf .
+file used inside the container. When unspecified, the following files
+are checked in order:
+.IP
+.BI /etc/aurutils/makepkg-<suffix>.conf
+.br
+.BI /etc/aurutils/makepkg-<machine>.conf
+.br
+.BI /usr/share/devtools/makepkg.conf.d/<suffix>.conf
+.br
+.BI /usr/share/devtools/makepkg.conf.d/<machine>.conf
 .
 .SS makechrootpkg options
 .TP
@@ -122,7 +154,7 @@ Arguments (comma-separated) to be passed to
 for 
 .BR \-\-build .
 Defaults to
-.BR "makechrootpkg \-c" .
+.BR "makechrootpkg \-cu" .
 .
 .TP
 .BI \-\-margs= ARGS "\fR,\fP \-\-makepkg\-args=" ARGS
@@ -130,7 +162,9 @@ Additional (comma-separated)
 .B makepkg 
 arguments for
 .BR makechrootpkg .
-A default list of arguments can be listed with
+A default list of
+.BR makepkg (8)
+arguments can be listed with
 .BR "makechrootpkg \-\-help" .
 .
 .TP
@@ -142,6 +176,30 @@ Bind a directory read-only to the container.
 .B \-\-bind\-rw
 Bind a directory read-write to the container.
 .RB ( makechrootpkg " " \-d )
+.
+.TP
+.BR \-\-checkpkg
+Run
+.BR checkpkg (1)
+on the built package.
+.
+.TP
+.BR \-N ", " \-\-namcap
+Run
+.BR namcap (1)
+on the built package.
+.
+.TP
+.BR \-T ", " \-\-temp
+Build in a temporary container. (\fBmakechrootpkg \-T\fR) Temporary
+means that the user container has a random name and is removed on
+build completion.
+.
+.TP
+.BI \-\-user= USER
+Run the host
+.BR makepkg (8)
+instance as the specified user. (\fBmakechrootpkg \-U\fR)
 .
 .SH ENVIRONMENT
 .TP
@@ -198,7 +256,7 @@ internally. For example, to replace
 with
 .IR gcc\-multilib ,
 run
-.B "arch\-nspawn /var/lib/aurbuild/<arch>/root pacman \-S gcc\-multilib"
+.B "arch\-nspawn /var/lib/aurbuild/<machine>/root pacman \-S gcc\-multilib"
 as root.
 .
 .SS Accessing a local repository
@@ -249,7 +307,7 @@ with the respective
 .IR hostname .
 .PP
 .B Warning:
-Due to a bug in
+Due to bugs in
 .BR makechrootpkg ,
 a
 .I NOPASSWD
