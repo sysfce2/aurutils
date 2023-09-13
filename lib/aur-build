@@ -100,7 +100,7 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
           'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'makepkg-args:' 'user:'
-          'margs:' 'buildscript:' 'null')
+          'margs:' 'buildscript:' 'null' 'dbext:')
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:')
 
@@ -110,7 +110,7 @@ else
     usage
 fi
 
-unset db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
+unset db_ext db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
 while true; do
     case "$1" in
         # build options
@@ -123,6 +123,8 @@ while true; do
         -d|--database|--repo)
             shift; db_name=$1
             repo_args+=(--repo "$1") ;;
+        --dbext)
+            shift: db_ext=$1 ;;
         --buildscript)
             shift; makepkg_common_args+=(-p "$1")
             pkglist_args+=(-p "$1") ;;
@@ -203,7 +205,7 @@ while true; do
 done
 
 # Assign environment variables
-: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+db_ext=${db_ext:-$AUR_DBEXT} db_name=${db_name:-$AUR_REPO} db_root=${db_root:-$AUR_DBROOT}
 
 # shellcheck disable=SC2174
 mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
