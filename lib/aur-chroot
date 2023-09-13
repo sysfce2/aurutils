@@ -237,18 +237,18 @@ if [[ ! -d $directory/root ]]; then
     exit 20
 fi
 
-# print path for processing by other tools (e.g. makepkg --packagelist)
-if (( print_path )); then
-    realpath -- "$directory"/root
-    exit $?
-fi
-
 if (( update )); then
     # locking is done by systemd-nspawn
     # shellcheck disable=SC2086
     $AUR_PACMAN_AUTH arch-nspawn -C "$pacman_conf" -M "$makepkg_conf" "$directory"/root \
          "${bindmounts_ro[@]/#/--bind-ro=}" \
          "${bindmounts_rw[@]/#/--bind=}" pacman -Syu --noconfirm "$@"
+fi >&2
+
+# print path for processing by other tools (e.g. makepkg --packagelist)
+if (( print_path )); then
+    realpath -- "$directory"/root
+    exit $?
 fi
 
 if (( build )); then
@@ -258,6 +258,6 @@ if (( build )); then
     $AUR_PACMAN_AUTH "${auth_args[@]}" makechrootpkg -r "$directory" \
          "${bindmounts_ro[@]/#/-D}" "${bindmounts_rw[@]/#/-d}" \
          "${makechrootpkg_args[@]}" -- "${makechrootpkg_makepkg_args[@]}"
-fi
+fi >&2
 
 # vim: set et sw=4 sts=4 ft=sh:
