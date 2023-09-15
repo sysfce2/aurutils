@@ -205,30 +205,41 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-# XXX: Containers typically use a separate makepkg configuration, in
-# particular for PKGEXT. Retrieve the default path, and propagate it
-# to makepkg calls on the host (`makepkg -od`, `makepkg --packagelist`).
 if (( chroot )); then
+    if [[ -v pacman_conf ]]; then
+        chroot_args+=(--pacman-conf "$pacman_conf")
+    elif [[ $db_name ]]; then
+        chroot_args+=(--suffix "$db_name")
+    fi
     if [[ -v makepkg_conf ]]; then
         chroot_args+=(--makepkg-conf "$makepkg_conf")
-    else
-        makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
-        unset PKGEXT
     fi
+
+    # Retrieve the makepkg and pacman configuration used in the container.
+    { IFS=: read -r _ _
+      IFS=: read -r _ pacman_conf
+      IFS=: read -r _ makepkg_conf
+    } < <(aur chroot "${chroot_args[@]}" --status)
+    wait "$!"
+
+    # Ensure PKGEXT defined in the container makepkg.conf is used for
+    # makepkg calls on the host (`makepkg --packagelist`).
+    unset PKGEXT
 fi
+
+# Propagate `makepkg` configuration to other tools.
 if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
 fi
 
-# Propagate pacman configuration to other tools. This must be done
-# BEFORE retrieving the local repository name/root.
+# Automatically choose the local repository based on `pacman`
+# configuration.  With container builds, this repository is not
+# necessarily configured on the host.
 if [[ -v pacman_conf ]]; then
-    chroot_args+=(--pacman-conf "$pacman_conf")
     pacconf_args+=(--config "$pacman_conf")
 fi
 
-# Automatically choose the local repository based on the pacman configuration.
 if [[ $db_name ]] && [[ $db_root ]]; then
     db_path=$db_root/$db_name.${db_ext:-db}
     db_path=$(realpath -- "$db_path")
@@ -250,6 +261,7 @@ if [[ -z $AUR_DBEXT ]] && [[ $db_path =~ \.db$ ]]; then
 fi
 
 # File permission checks
+# XXX: read permissions not necessarily required for chroot builds
 if [[ ! -f $db_path ]]; then
     printf >&2 '%s: %s: not a regular file\n' "$argv0" "$db_path"
     exit 2
@@ -268,13 +280,6 @@ fi
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
     (( truncate )) && true | tee "$results_file"
-fi
-
-if (( chroot )); then
-    # Update pacman and makepkg configuration for the chroot build
-    # queue. A full system upgrade is run on the /root container to
-    # avoid lenghty upgrades for makechrootpkg -u.
-    aur chroot --create --update "${chroot_args[@]}"
 fi
 
 if [[ -v queue ]]; then
@@ -298,6 +303,13 @@ elif [[ -v GPGKEY ]]; then
     #shellcheck disable=SC2086
     ${AUR_GPG:-gpg} --list-keys "$GPGKEY"
     gpg_args+=(-u "$GPGKEY")
+fi
+
+if (( chroot )); then
+    # Update pacman and makepkg configuration for the chroot build
+    # queue. A full system upgrade is run on the /root container to
+    # avoid lenghty upgrades for makechrootpkg -u.
+    aur chroot "${chroot_args[@]}" --create --update
 fi
 
 while IFS= read "${read_args[@]}" -ru "$fd" path; do

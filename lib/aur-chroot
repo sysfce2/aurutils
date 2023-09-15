@@ -9,12 +9,11 @@ machine=$(uname -m)
 
 # default arguments
 directory=/var/lib/aurbuild/$machine
-suffix=extra
 makechrootpkg_args=(-cu)  # XXX: allow unsetting these options?
 makechrootpkg_makepkg_args=()
 
 # default options
-update=0 build=0 create=0 print_path=0
+update=0 build=0 create=0 status=0 print_path=0
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -57,10 +56,10 @@ usage() {
 
 opt_short='C:D:M:x:ABNTU'
 opt_long=('directory:' 'pacman-conf:' 'makepkg-conf:' 'build' 'update'
-          'create' 'bind:' 'bind-rw:' 'user:' 'path' 'makepkg-args:'
+          'create' 'bind:' 'bind-rw:' 'user:' 'makepkg-args:'
           'ignorearch' 'namcap' 'checkpkg' 'temp' 'makechrootpkg-args:'
           'margs:' 'cargs:' 'nocheck' 'suffix:')
-opt_hidden=('dump-options')
+opt_hidden=('dump-options' 'status' 'path')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
     eval set -- "$opts"
@@ -68,7 +67,7 @@ else
     usage
 fi
 
-unset bindmounts_ro bindmounts_rw makepkg_conf pacman_conf
+unset bindmounts_ro bindmounts_rw makepkg_conf pacman_conf suffix
 while true; do
     case "$1" in
         -x|--suffix)
@@ -79,7 +78,9 @@ while true; do
             update=1 ;;
         --create)
             create=1 ;;
-        --path)
+        --status)
+            status=1 ;;
+        --path)  # deprecated
             print_path=1 ;;
         # makepkg options (`--build`)
         -A|--ignorearch)
@@ -181,6 +182,13 @@ elif [[ ! -v makepkg_conf ]]; then
 elif [[ ! -f $makepkg_conf ]]; then
     diag_makepkg_conf "$makepkg_conf"
     exit 2
+fi
+
+# Print paths to container and used makepkg/pacman paths. This does
+# not require a priorly created container.
+if (( status )); then
+    printf 'chroot:%q\npacman:%q\nmakepkg:%q\n' "$directory" "$pacman_conf" "$makepkg_conf"
+    exit 0
 fi
 
 # Custom elevation command (#1024)
