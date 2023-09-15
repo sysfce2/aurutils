@@ -4,7 +4,6 @@
 set -o errexit
 shopt -s extglob
 argv0=build
-machine=$(uname -m)
 startdir=$PWD
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
@@ -15,12 +14,11 @@ unset -v CDPATH
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 truncate=1
 
 # default arguments (empty)
-chroot_args=() pacconf_args=() repo_args=() repo_add_args=() pkglist_args=()
-makepkg_args=() makechrootpkg_makepkg_args=() makepkg_common_args=() read_args=()
+chroot_args=() chroot_makepkg_args=() pacconf_args=() repo_args=() repo_add_args=()
+pkglist_args=() makepkg_args=() makepkg_common_args=() read_args=()
 
 # default arguments
 gpg_args=(--detach-sign --no-armor --batch)
-makechrootpkg_args=(-cu) # -c to clean working copy, -u to sync local repository builds
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -38,19 +36,6 @@ This may happen when signing built packages with gpg (aur $argv0 --sign),
 or with certain makepkg errors.
 
 The following files were preserved:
-EOF
-    printf '%s\n' "${@@Q}" | pr -to 8 >&2
-}
-
-diag_pacman_conf() {
-    echo >&2 'Error:'
-
-    cat <<EOF | pr -to 4 >&2
-aur-$argv0 could not find a pacman.conf(5) file for container usage. Before
-using --chroot, make sure this file is created and valid. See OPTIONS in
-aur-$argv0(1) for configuration details.
-
-The following file paths were checked:
 EOF
     printf '%s\n' "${@@Q}" | pr -to 8 >&2
 }
@@ -100,7 +85,7 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
           'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'makepkg-args:' 'user:'
-          'margs:' 'buildscript:' 'null')
+          'margs:' 'buildscript:' 'null' 'dbext:')
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:')
 
@@ -110,7 +95,7 @@ else
     usage
 fi
 
-unset db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
+unset db_ext db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
 while true; do
     case "$1" in
         # build options
@@ -123,6 +108,8 @@ while true; do
         -d|--database|--repo)
             shift; db_name=$1
             repo_args+=(--repo "$1") ;;
+        --dbext)
+            shift; db_ext=$1 ;;
         --buildscript)
             shift; makepkg_common_args+=(-p "$1")
             pkglist_args+=(-p "$1") ;;
@@ -134,7 +121,7 @@ while true; do
             shift; pacman_conf=$1 ;;
         --pkgver)
             run_pkgver=1; makepkg_args+=(--noextract)
-            makechrootpkg_makepkg_args+=(--holdver) ;;
+            chroot_args+=(--margs '--holdver') ;;
         --root)
             shift; db_root=$1
             repo_args+=(--root "$1") ;;
@@ -142,23 +129,24 @@ while true; do
             sign_pkg=1; repo_add_args+=(-s) ;;
         # chroot options
         -D|--directory)
-            shift; chroot_args+=(-D "$1") ;;
+            shift; chroot_args+=(--directory "$1") ;;
         --bind)
-            shift; makechrootpkg_args+=(-D "$1") ;;
+            shift; chroot_args+=(--bind "$1") ;;
         --bind-rw)
-            shift; makechrootpkg_args+=(-d"$1") ;;
-        -N|--namcap)
-            makechrootpkg_args+=(-n) ;;
-        --checkpkg)
-            makechrootpkg_args+=(-C) ;;
-        -T|--temp)
-            makechrootpkg_args+=(-T) ;;
+            shift; chroot_args+=(--bind-rw "$1") ;;
+        # XXX: different meaning between aur-build -U (--user) and aur-chroot -U (--update)
         -U|--user)
-            shift; makechrootpkg_args+=(-U "$1") ;;
+            shift; chroot_args+=(--user "$1") ;;
+        -N|--namcap)
+            chroot_args+=(--namcap) ;;
+        --checkpkg)
+            chroot_args+=(--checkpkg) ;;
+        -T|--temp)
+            chroot_args+=(-temp) ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
-            makepkg_common_args+=(--ignorearch)
-            makechrootpkg_makepkg_args+=(--ignorearch) ;;
+            chroot_makepkg_args+=(--ignorearch)
+            makepkg_common_args+=(--ignorearch) ;;
         -n|--noconfirm|--no-confirm)
             makepkg_common_args+=(--noconfirm) ;;
         -r|--rmdeps)
@@ -171,12 +159,13 @@ while true; do
         -L|--log)
             makepkg_args+=(--log) ;;
         --nocheck|--no-check)
-            makepkg_args+=(--nocheck)
-            makechrootpkg_makepkg_args+=(--nocheck) ;;
+            chroot_makepkg_args+=(--nocheck)
+            makepkg_args+=(--nocheck) ;;
+        # XXX: cannot take arguments that contain commas (e.g. for file paths)
         --makepkg-args|--margs)
-            shift; IFS=, read -a arg -r <<< "$1"
-            makepkg_args+=("${arg[@]}")
-            makechrootpkg_makepkg_args+=("${arg[@]}") ;;
+            shift; chroot_makepkg_args+=(--margs "$1")
+            IFS=, read -a arg -r <<< "$1"
+            makepkg_args+=("${arg[@]}") ;;
         # repo-add options
         -v|--verify)
             repo_add_args+=(-v) ;;
@@ -203,7 +192,7 @@ while true; do
 done
 
 # Assign environment variables
-: "${db_ext=$AUR_DBEXT}" "${db_root=$AUR_DBROOT}" "${db_repo=$AUR_REPO}"
+db_ext=${db_ext:-$AUR_DBEXT} db_name=${db_name:-$AUR_REPO} db_root=${db_root:-$AUR_DBROOT}
 
 # shellcheck disable=SC2174
 mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
@@ -216,87 +205,41 @@ var_tmp=$(mktemp -d --tmpdir="${TMPDIR:-/var/tmp/}" "aurutils-$UID/$argv0.XXXXXX
 trap 'trap_exit' EXIT
 trap 'exit' INT
 
-# XXX: default paths can be set through the Makefile
 if (( chroot )); then
-    # The pacman configuration in the chroot may contain a local repository that
-    # is not configured on the host. Therefore, $db_name is only used for the
-    # default paths below when specified on the command-line or through `AUR_REPO`.
-    if [[ $db_name ]]; then
-        default_pacman_paths=("/etc/aurutils/pacman-$db_name.conf"
-                              "/etc/aurutils/pacman-$machine.conf")
-        default_makepkg_paths=("/etc/aurutils/makepkg-$db_name.conf"
-                               "/etc/aurutils/makepkg-$machine.conf")
-    else
-        default_pacman_paths=("/etc/aurutils/pacman-$machine.conf")
-        default_makepkg_paths=("/etc/aurutils/makepkg-$machine.conf")
+    if [[ -v pacman_conf ]]; then
+        chroot_args+=(--pacman-conf "$pacman_conf")
+    elif [[ $db_name ]]; then
+        chroot_args+=(--suffix "$db_name")
     fi
-
-    # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
-    # /etc/aurutils/pacman-<repo>.conf or /etc/aurutils/pacman-<uname>.conf in
-    # aur-build, and pass it on to aur-chroot (#824, #846)
-    for def in "${default_pacman_paths[@]}"; do
-        if [[ -f $def ]] && [[ ! -v pacman_conf ]]; then
-            pacman_conf=$def
-            break
-        fi
-    done
-
-    # The same as above but for /etc/aurutils/makepkg-<repo>.conf or
-    # /etc/aurutils/makepkg-<uname>.conf. If the file is not found, fallback to
-    # makepkg.conf files in /usr/share/devtools.
-    for def in "${default_makepkg_paths[@]}"; do
-        if [[ -f $def ]] && [[ ! -v makepkg_conf ]]; then
-            makepkg_conf=$def
-            break
-        fi
-    done
-
-    # No pacman configuration is available for the container, or it points to a
-    # non-existing file. Print a matching diagnostic and exit.
-    if [[ ! -v pacman_conf ]]; then
-        diag_pacman_conf "${default_pacman_paths[@]}"
-        exit 2
-
-    elif [[ ! -f $pacman_conf ]]; then
-        diag_pacman_conf "$pacman_conf"
-        exit 2
-    fi
-    chroot_args+=(--pacman-conf "$pacman_conf")
-
-    # The default path is /usr/share/devtools/makepkg-<uname.conf>, which is
-    # copied to <container path>/etc/makepkg.conf by arch-nspawn.
     if [[ -v makepkg_conf ]]; then
         chroot_args+=(--makepkg-conf "$makepkg_conf")
-    else
-        # When `makechrootpkg` calls `makepkg` inside the container, it uses the devtools
-        # `makepkg.conf` for most variables including PKGEXT. (`makepkg --packagelist`)
-        makepkg_conf=$(aur chroot --path "${chroot_args[@]}")/etc/makepkg.conf
-        unset PKGEXT
     fi
 
-    # Propagate makepkg/makechrootpkg arguments to aur-chroot
-    if (( ${#makechrootpkg_args[@]} )); then
-        chroot_args+=(--cargs "$(args_csv "${makechrootpkg_args[@]}")")
-    fi
-    if (( ${#makechrootpkg_makepkg_args[@]} )); then
-        chroot_args+=(--margs "$(args_csv "${makechrootpkg_makepkg_args[@]}")")
-    fi
+    # Retrieve the makepkg and pacman configuration used in the container.
+    { IFS=: read -r _ _
+      IFS=: read -r _ pacman_conf
+      IFS=: read -r _ makepkg_conf
+    } < <(aur chroot "${chroot_args[@]}" --status)
+    wait "$!"
+
+    # Ensure PKGEXT defined in the container makepkg.conf is used for
+    # makepkg calls on the host (`makepkg --packagelist`).
+    unset PKGEXT
 fi
 
-# Propagate makepkg and pacman configuration to other tools. This must be done
-# BEFORE retrieving the local repository name/root. It should be done AFTER
-# retrieving the container configuration, as it may contain (local) repositories
-# not enabled on the host.
-if [[ -v pacman_conf ]]; then
-    pacconf_args+=(--config "$pacman_conf")
-fi
-
+# Propagate `makepkg` configuration to other tools.
 if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
 fi
 
-# Automatically choose the local repository based on the pacman configuration.
+# Automatically choose the local repository based on `pacman`
+# configuration.  With container builds, this repository is not
+# necessarily configured on the host.
+if [[ -v pacman_conf ]]; then
+    pacconf_args+=(--config "$pacman_conf")
+fi
+
 if [[ $db_name ]] && [[ $db_root ]]; then
     db_path=$db_root/$db_name.${db_ext:-db}
     db_path=$(realpath -- "$db_path")
@@ -318,6 +261,7 @@ if [[ -z $AUR_DBEXT ]] && [[ $db_path =~ \.db$ ]]; then
 fi
 
 # File permission checks
+# XXX: read permissions not necessarily required for chroot builds
 if [[ ! -f $db_path ]]; then
     printf >&2 '%s: %s: not a regular file\n' "$argv0" "$db_path"
     exit 2
@@ -336,13 +280,6 @@ fi
 if [[ -v results_file ]]; then
     results_file=$(realpath -- "$results_file")
     (( truncate )) && true | tee "$results_file"
-fi
-
-if (( chroot )); then
-    # Update pacman and makepkg configuration for the chroot build
-    # queue. A full system upgrade is run on the /root container to
-    # avoid lenghty upgrades for makechrootpkg -u.
-    aur chroot --create --update "${chroot_args[@]}"
 fi
 
 if [[ -v queue ]]; then
@@ -366,6 +303,13 @@ elif [[ -v GPGKEY ]]; then
     #shellcheck disable=SC2086
     ${AUR_GPG:-gpg} --list-keys "$GPGKEY"
     gpg_args+=(-u "$GPGKEY")
+fi
+
+if (( chroot )); then
+    # Update pacman and makepkg configuration for the chroot build
+    # queue. A full system upgrade is run on the /root container to
+    # avoid lenghty upgrades for makechrootpkg -u.
+    aur chroot "${chroot_args[@]}" --create --update
 fi
 
 while IFS= read "${read_args[@]}" -ru "$fd" path; do
@@ -413,7 +357,7 @@ while IFS= read "${read_args[@]}" -ru "$fd" path; do
 
     if (( create_package )); then
         if (( chroot )); then
-            PKGDEST="$var_tmp" aur chroot --build "${chroot_args[@]}"
+            PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --build "${chroot_makepkg_args[@]}"
         else
             #shellcheck disable=SC2086
             PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
