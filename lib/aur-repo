@@ -22,7 +22,7 @@ usage() {
 opt_short='c:f:d:r:s:F:alqtuJS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
           'search:' 'search-by:' 'list-attr' 'sync' 'upgrades' 'table' 'quiet' 
-          'attr:' 'json' 'jsonl' 'format:' 'delim:')
+          'attr:' 'json' 'jsonl' 'format:' 'delim:' 'dbext:')
 opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'attr-list' 'status' 'field:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -31,7 +31,7 @@ else
     usage
 fi
 
-unset mode list db_name db_root format status_file pacman_conf format_args vercmp_args attr
+unset mode list db_ext db_name db_root format status_file pacman_conf format_args vercmp_args attr
 while true; do
     case $1 in
         -d|--database|--repo)
@@ -42,6 +42,8 @@ while true; do
             shift; format_args+=(--delim "$1") ;;
         -r|--root)
             shift; db_root=$1 ;;
+        --dbext)
+            shift; db_ext=$1 ;;
         -c|--config)
             shift; conf_args+=(--config "$1") ;;
         -l|--list)
@@ -86,7 +88,7 @@ while true; do
 done
 
 # assign environment variables
-: "${db_ext=$AUR_DBEXT}" "${db_name=$AUR_REPO}" "${db_root=$AUR_DBROOT}"
+db_ext=${db_ext:-$AUR_DBEXT} db_name=${db_name:-$AUR_REPO} db_root=${db_root:-$AUR_DBROOT}
 
 # parse pacman configuration
 unset conf_file_repo conf_file_serv conf_file_path server
