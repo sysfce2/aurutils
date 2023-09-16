@@ -124,28 +124,30 @@ while true; do
     shift
 done
 
+# XXX: default paths can be set through the Makefile (`aur-chroot.in`)
+etcdir=/etc/aurutils shrdir=/usr/share/devtools
+
 # The pacman configuration in the chroot may contain a local repository that
 # is not configured on the host. Therefore, $db_name is only used for the
 # default paths below when specified on the command-line or through `AUR_REPO`.
-# XXX: default paths can be set through the Makefile (`aur-chroot.in`)
 if [[ -v suffix ]]; then
-    default_pacman_paths=("/etc/aurutils/pacman-$suffix.conf"
-                          "/etc/aurutils/pacman-$machine.conf"
-                          "/usr/share/devtools/pacman.conf.d/$suffix.conf"
-                          "/usr/share/devtools/pacman.conf.d/aurutils.conf"
-                          "/usr/share/devtools/pacman.conf.d/aurutils-$machine.conf")
+    default_pacman_paths=("$etcdir/pacman-$suffix.conf"
+                          "$etcdir/pacman-$machine.conf"
+                          "$shrdir/pacman.conf.d/$suffix.conf"
+                          "$shrdir/pacman.conf.d/aurutils.conf"
+                          "$shrdir/pacman.conf.d/aurutils-$machine.conf")
 
-    default_makepkg_paths=("/etc/aurutils/makepkg-$suffix.conf"
-                           "/etc/aurutils/makepkg-$machine.conf"
-                           "/usr/share/devtools/makepkg.conf.d/$suffix.conf"
-                           "/usr/share/devtools/makepkg.conf.d/$machine.conf")
+    default_makepkg_paths=("$etcdir/makepkg-$suffix.conf"
+                           "$etcdir/makepkg-$machine.conf"
+                           "$shrdir/makepkg.conf.d/$suffix.conf"
+                           "$shrdir/makepkg.conf.d/$machine.conf")
 else
-    default_pacman_paths=("/etc/aurutils/pacman-$machine.conf"
-                          "/usr/share/devtools/pacman.conf.d/aurutils.conf"
-                          "/usr/share/devtools/pacman.conf.d/aurutils-$machine.conf")
+    default_pacman_paths=("$etcdir/pacman-$machine.conf"
+                          "$shrdir/pacman.conf.d/aurutils.conf"
+                          "$shrdir/pacman.conf.d/aurutils-$machine.conf")
 
-    default_makepkg_paths=("/etc/aurutils/makepkg-$machine.conf"
-                           "/usr/share/devtools/makepkg.conf.d/$machine.conf")
+    default_makepkg_paths=("$etcdir/makepkg-$machine.conf"
+                           "$shrdir/makepkg.conf.d/$machine.conf")
 fi
 
 # Change the default /usr/share/devtools/pacman-extra.conf in aur-chroot to
