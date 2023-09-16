@@ -20,6 +20,7 @@
 * `aur-repo`
   + shell escape printed file paths
   + add `--dbext`
+  + require a configured pacman repository (`--database`)
 
 ## 17.3
 
