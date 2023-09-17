@@ -1,3 +1,8 @@
+## 18.1
+
+* `aur-chroot`
+  + Remove `/usr/share/devtools/pacman.conf.d/aurutils.conf` path introduced in v18
+
 ## 18
 
 * `aur-build`
