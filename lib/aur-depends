@@ -15,7 +15,9 @@ sub chain {
     my (%results, %reqby, %shlibs);
 
     # Make every explicit target provide itself
-    map { $shlibs{$_} = [$_, 0] } @{$targets};
+    for my $t (@{$targets}) {
+        $shlibs{$t} = [$t, 0];
+    }
 
     for my $a (1..$max_req) {
         say STDERR join(" ", "query: [$a]", @depends) if defined $ENV{'AUR_DEBUG'};
