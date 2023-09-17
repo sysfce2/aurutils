@@ -134,7 +134,6 @@ if [[ -v suffix ]]; then
     default_pacman_paths=("$etcdir/pacman-$suffix.conf"
                           "$etcdir/pacman-$machine.conf"
                           "$shrdir/pacman.conf.d/$suffix.conf"
-                          "$shrdir/pacman.conf.d/aurutils.conf"
                           "$shrdir/pacman.conf.d/aurutils-$machine.conf")
 
     default_makepkg_paths=("$etcdir/makepkg-$suffix.conf"
@@ -143,7 +142,6 @@ if [[ -v suffix ]]; then
                            "$shrdir/makepkg.conf.d/$machine.conf")
 else
     default_pacman_paths=("$etcdir/pacman-$machine.conf"
-                          "$shrdir/pacman.conf.d/aurutils.conf"
                           "$shrdir/pacman.conf.d/aurutils-$machine.conf")
 
     default_makepkg_paths=("$etcdir/makepkg-$machine.conf"
