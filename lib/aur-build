@@ -227,30 +227,23 @@ if (( chroot )); then
     unset PKGEXT
 fi
 
-# Propagate `makepkg` configuration to other tools.
+# Propagate `makepkg` and `pacman` configuration to other tools.
 if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
+fi
+if [[ -v pacman_conf ]]; then
+    pacconf_args+=(--config "$pacman_conf")
 fi
 
 # Automatically choose the local repository based on `pacman`
 # configuration.  With container builds, this repository is not
 # necessarily configured on the host.
-if [[ -v pacman_conf ]]; then
-    pacconf_args+=(--config "$pacman_conf")
-fi
-
-if [[ $db_name ]] && [[ $db_root ]]; then
-    db_path=$db_root/$db_name.${db_ext:-db}
-    db_path=$(realpath -- "$db_path")
-else
-    { IFS=: read -r _ db_name
-      IFS=: read -r _ db_root
-      IFS=: read -r _ db_path # canonicalized
-    } < <(aur repo --status "${repo_args[@]}" "${pacconf_args[@]}")
-    wait "$!"
-fi
-db_root=$(realpath -- "$db_root")
+{ IFS=: read -r _ db_name
+  IFS=: read -r _ db_root
+  IFS=: read -r _ db_path  # canonicalized
+} < <(aur repo "${repo_args[@]}" "${pacconf_args[@]}" --status)
+wait "$!"
 
 # Check that a valid database extension was retrieved (#700, #1038)
 if [[ -z $db_ext ]] && [[ $db_path =~ \.db$ ]]; then
