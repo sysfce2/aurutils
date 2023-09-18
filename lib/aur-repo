@@ -129,13 +129,13 @@ case $list in
         fi ;;&
     path)
         # XXX: file paths not quoted
-        realpath -- "${conf_file_path[@]}" # resolve repo-add symlinks
+        realpath -- "${conf_file_path[@]}"  # resolve repo-add symlinks
         exit 0 ;;
     repo)
-        printf '%s\n' "${!conf_file_path[@]}"
+        printf '%q\n' "${!conf_file_path[@]}"
         exit 0 ;;
     attr)
-        aur repo-parse --list-attr 
+        aur repo-parse --list-attr  # holds for any repository
         exit ;;
 esac
 
@@ -170,10 +170,10 @@ fi
 case $db_query in
     file)
         if [[ ! $db_root ]]; then
-            printf >&2 '%s: %s: repository root not found\n' "$argv0" "$db_name"
+            printf >&2 '%s: %q: repository root not found\n' "$argv0" "$db_name"
             exit 2
         elif [[ $db_root == *://* ]]; then
-            printf >&2 '%s: %s: object is remote (use -S to query)\n' "$argv0" "$db_root"
+            printf >&2 '%s: %q: object is remote (use -S to query)\n' "$argv0" "$db_root"
             exit 66
         fi
         db_path=$db_root/$db_name.${db_ext:-db}
@@ -187,7 +187,7 @@ case $db_query in
 esac
 
 if [[ ! -f $db_path ]]; then
-    printf >&2 '%s: %s: not a file\n' "$argv0" "$db_path"
+    printf >&2 '%s: %q: not a file\n' "$argv0" "$db_path"
     exit 2
 fi
 
@@ -206,7 +206,7 @@ case $mode in
         aur repo-parse "${parse_args[@]}" -p "$db_path" --attr "$attr"
         ;;
     path)
-        printf '%s\n' "$db_path"
+        printf '%q\n' "$db_path"
         ;;
     *)
         printf 'repo:%q\nroot:%q\npath:%q\n' "$db_name" "$db_root" "$db_path"
