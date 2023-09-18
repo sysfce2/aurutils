@@ -179,7 +179,7 @@ case $db_query in
         ;;
     sync)
         db_path=$pacman_dbpath/sync/$db_name.${db_ext:-db}
-        #db_root=$pacman_dbpath/sync
+        db_root=$pacman_dbpath/sync
         ;;
 esac
 
