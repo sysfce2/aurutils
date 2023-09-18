@@ -110,6 +110,7 @@ while read -r key _ value; do
                 db_root=$server
             fi ;;
         Server=*://*)
+            # XXX: `sync` can be both remote or local
             conf_sync_serv[$section]=$value
 
             if [[ $section == "$db_name" ]] && [[ ! $db_root ]]; then
@@ -127,6 +128,7 @@ case $list in
             exit 2
         fi ;;&
     path)
+        # XXX: file paths not quoted
         realpath -- "${conf_file_path[@]}" # resolve repo-add symlinks
         exit 0 ;;
     repo)
@@ -159,7 +161,7 @@ if [[ ! $db_name ]]; then
     esac
 
 # check $db_name is a configured pacman repository (local or remote, #1113)
-elif [[ ! ${conf_sync_serv[$db_name]} ]]; then
+elif ! { [[ ${conf_sync_serv[$db_name]} ]] || [[ ${conf_file_serv[$db_name]} ]]; }; then
     printf >&2 "%s: %s: repository not configured\n" "$argv0" "$db_name"
     exit 2
 fi
