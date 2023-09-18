@@ -142,7 +142,7 @@ while true; do
         --checkpkg)
             chroot_args+=(--checkpkg) ;;
         -T|--temp)
-            chroot_args+=(-temp) ;;
+            chroot_args+=(--temp) ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
             chroot_makepkg_args+=(--ignorearch)
