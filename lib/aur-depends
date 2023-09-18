@@ -80,45 +80,54 @@ sub chain_mod {
 
     my %mod;
     say STDERR "query: filtering results" if defined $ENV{'AUR_DEBUG'};
-    
-    for my $name (keys %{$results}) {
-        if ($results->{$name} eq 'None') {
-            if ($showall) {
-                $mod{$name}->{'Name'} = $name;
-                $mod{$name}->{'RequiredBy'} = $reqby->{$name};
-            }
-            next;
-        }
 
+    # Use generic variable $_ for iterating %results (pkgname, provides or both)
+    map {
         # Take provides on the command-line into account (#837)
-        my $prov = $name;
-        if (defined $shlibs->{$name} and $shlibs->{$name}->[1] == 1) {
-            $prov = $shlibs->{$name}->[0];
+        if (defined $shlibs->{$_} and $shlibs->{$_}->[1] == 1) {
+            my $name = $shlibs->{$_}->[0];
+
+            # Add data and reverse dependencies for AUR targets
+            $mod{$name} = $results->{$name};
+            $mod{$name}->{'RequiredBy'} = $reqby->{$_};
+
+            # Include `Self` dependency for every target (aur-sync, #1065)
+            $mod{$name}->{'RequiredBy'}->{$name} = 'Self';
         }
         # Avoid overriding provides with later target (random ordering of hash!)
-        elsif (defined $mod{$name}) {
-            next;
+        elsif (not defined $mod{$_}) {
+            $mod{$_} = $results->{$_};
+            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
+
+            # Include `Self` dependency for every target (aur-sync, #1065)
+            $mod{$_}->{'RequiredBy'}->{$_} = 'Self';
         }
+    } grep {
+        $results->{$_} ne 'None'
+    } keys %{$results};
 
-        # Add data and reverse dependencies for AUR targets
-        $mod{$prov} = $results->{$prov};
-        $mod{$prov}->{'RequiredBy'} = $reqby->{$name};
-
-        # Include `Self` dependency for every target (aur-sync, #1065)
-        $mod{$prov}->{'RequiredBy'}->{$prov} = 'Self';
-    }
-    
     # Merge reverse dependencies for purely virtual targets, with corresponding
     # packages specified on the command-line
-    for my $name (keys %{$results}) {
-        if ($results->{$name} eq 'None' and defined $shlibs->{$name}) {
-            my $prov = $shlibs->{$name}[0];
+    map {
+        my $name = $shlibs->{$_}[0];
 
-            $mod{$prov}->{'RequiredBy'} = {
-                %{$mod{$prov}->{'RequiredBy'}}, %{$reqby->{$prov}}
-            };
+        for my $dep (keys %{$reqby->{$_}}) {
+            $mod{$name}->{'RequiredBy'}{$dep} = $reqby->{$_}{$dep};
         }
+    } grep {
+        $results->{$_} eq 'None' and defined $shlibs->{$_} and $shlibs->{$_}[1] > 0
+    } keys %{$results};
+
+    # Add reverse dependencies for non-AUR targets (--show-all)
+    if ($showall) {
+        map {
+            $mod{$_}->{'Name'} = $_;
+            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
+        } grep {
+            $results->{$_} eq 'None'
+        } keys %{$results};
     }
+
     return \%mod, $reqby, $shlibs;
 }
 
@@ -133,7 +142,7 @@ sub prune {
 
         for my $dep (keys %{$mod_reqby}) {
             # Every reverse dependency needs to be checked against every pkgname
-            # that is assumed to be installed (quadratic complexity)
+            # assumed to be installed (quadratic complexity)
             my $found = first { $dep eq $_ } @{$installed};
 
             if (defined $found) {
