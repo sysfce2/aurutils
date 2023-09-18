@@ -91,7 +91,7 @@ done
 db_ext=${db_ext:-$AUR_DBEXT} db_name=${db_name:-$AUR_REPO} db_root=${db_root:-$AUR_DBROOT}
 
 # parse pacman configuration
-declare -A conf_file_serv conf_file_path
+declare -A conf_file_serv conf_file_path conf_sync_serv
 
 while read -r key _ value; do
     case $key=$value in
@@ -110,6 +110,8 @@ while read -r key _ value; do
                 db_root=$server
             fi ;;
         Server=*://*)
+            conf_sync_serv[$section]=$value
+
             if [[ $section == "$db_name" ]] && [[ ! $db_root ]]; then
                 db_root=$value
             fi ;;
@@ -156,8 +158,8 @@ if [[ ! $db_name ]]; then
            ;;
     esac
 
-# double check $db_name is a configured (local) repository
-elif [[ ! ${conf_file_serv[$db_name]} ]]; then
+# check $db_name is a configured pacman repository (local or remote, #1113)
+elif [[ ! ${conf_sync_serv[$db_name]} ]]; then
     printf >&2 "%s: %s: repository not configured\n" "$argv0" "$db_name"
     exit 2
 fi
