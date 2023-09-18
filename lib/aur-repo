@@ -99,18 +99,15 @@ while read -r key _ value; do
             section=${key:1:-1}
             ;;
         DBPath=*)
-            pacman_dbpath=$value
+            pacman_dbpath=${value%/}
             ;;
         Server=file://*)
-            server=${value#file://}
-            conf_file_serv[$section]=$server
-            conf_file_path[$section]=$server/$section.${db_ext:-db}
+            value=${value#file://}
 
-            if [[ $section == "$db_name" ]] && [[ ! $db_root ]]; then
-                db_root=$server
-            fi ;;
+            conf_file_serv[$section]=$value
+            conf_file_path[$section]=$value/$section.${db_ext:-db}
+            ;;&
         Server=*://*)
-            # XXX: `sync` can be both remote or local
             conf_sync_serv[$section]=$value
 
             if [[ $section == "$db_name" ]] && [[ ! $db_root ]]; then
@@ -161,8 +158,8 @@ if [[ ! $db_name ]]; then
     esac
 
 # check $db_name is a configured pacman repository (local or remote, #1113)
-elif ! { [[ ${conf_sync_serv[$db_name]} ]] || [[ ${conf_file_serv[$db_name]} ]]; }; then
-    printf >&2 "%s: %s: repository not configured\n" "$argv0" "$db_name"
+elif ! [[ ${conf_sync_serv[$db_name]} ]]; then
+    printf >&2 "%s: %q: repository not configured\n" "$argv0" "$db_name"
     exit 2
 fi
 
