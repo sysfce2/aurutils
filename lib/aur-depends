@@ -207,6 +207,7 @@ sub table {
 # XXX: include optional column for versioned dependencies
 sub pairs {
     my ($results, $key, $reverse) = @_;
+    my %seen;  # filter out lines with equal pkgbase
 
     for my $pkg (values %{$results}) {
         my $target = $pkg->{$key};
@@ -215,7 +216,8 @@ sub pairs {
             my $rdep = $key eq 'Name' ? $reqby : $results->{$reqby}->{$key} // '-';
             my @pair = $reverse ? ($target, $rdep) : ($rdep, $target);
 
-            say join("\t", @pair);
+            say join("\t", @pair) if not defined $seen{($target, $rdep)};
+            $seen{($target, $rdep)} = 1;
         }
     }
 }
