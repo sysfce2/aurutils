@@ -90,6 +90,11 @@ done
 # assign environment variables
 db_ext=${db_ext:-$AUR_DBEXT} db_name=${db_name:-$AUR_REPO} db_root=${db_root:-$AUR_DBROOT}
 
+# option sanity check
+if [[ $db_query == 'sync' ]] && [[ $db_root ]]; then
+    printf >&2 'warning: ignoring repository root %q with --sync\n' "$db_root"
+fi
+
 # parse pacman configuration
 declare -A conf_file_serv conf_file_path conf_sync_serv
 
@@ -174,8 +179,6 @@ case $db_query in
             exit 66
         fi
         db_path=$db_root/$db_name.${db_ext:-db}
-        db_path=$(realpath -- "$db_path")  # resolve repo-add symlink
-        db_root=$(realpath -- "$db_root")
         ;;
     sync)
         db_path=$pacman_dbpath/sync/$db_name.${db_ext:-db}
@@ -183,10 +186,18 @@ case $db_query in
         ;;
 esac
 
-if [[ ! -f $db_path ]]; then
-    printf >&2 '%s: %q: not a file\n' "$argv0" "$db_path"
+# check file attributes
+if [[ ! -d $db_root ]]; then
+    printf >&2 '%s: %q: no such directory\n' "$argv0" "$db_root"
+    exit 2
+elif [[ ! -f $db_path ]]; then
+    printf >&2 '%s: %q: no such file\n' "$argv0" "$db_path"
     exit 2
 fi
+
+# resolve repo-add symlink
+db_path=$(realpath -- "$db_path")
+db_root=$(realpath -- "$db_root")
 
 # database operations
 case $mode in
