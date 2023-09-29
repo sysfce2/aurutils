@@ -53,10 +53,13 @@ while true; do
     shift
 done
 
+# source follows $PATH, compute absolute path to PKGBUILD (#1115)
+buildscript="$(realpath --strip -- "${buildscript-PKGBUILD}")"
+
 # Sourcing the PKGBUILD should be done without set -e or other modes
 # to match makepkg behavior (e.g. aur/cemu, aur/nicotine-plus-git)
 # shellcheck disable=SC1090
-source_safe "${buildscript-PKGBUILD}"
+source_safe "$buildscript"
 PKGDEST=${PKGDEST:-$PWD}
 pkgbase=${pkgbase:-${pkgname[0]}}
 
