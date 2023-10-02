@@ -14,7 +14,7 @@ unset -v CDPATH
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0 run_pkgver=0 truncate=1
 
 # default arguments (empty)
-chroot_args=() chroot_makepkg_args=() pacconf_args=() repo_args=() repo_add_args=()
+chroot_args=() chroot_build_args=() pacconf_args=() repo_args=() repo_add_args=()
 pkglist_args=() makepkg_args=() makepkg_common_args=() read_args=()
 
 # default arguments
@@ -145,7 +145,7 @@ while true; do
             chroot_args+=(--temp) ;;
         # makepkg options (common)
         -A|--ignorearch|--ignore-arch)
-            chroot_makepkg_args+=(--ignorearch)
+            chroot_build_args+=(--ignorearch)
             makepkg_common_args+=(--ignorearch) ;;
         -n|--noconfirm|--no-confirm)
             makepkg_common_args+=(--noconfirm) ;;
@@ -159,11 +159,11 @@ while true; do
         -L|--log)
             makepkg_args+=(--log) ;;
         --nocheck|--no-check)
-            chroot_makepkg_args+=(--nocheck)
+            chroot_build_args+=(--nocheck)
             makepkg_args+=(--nocheck) ;;
         # XXX: cannot take arguments that contain commas (e.g. for file paths)
         --makepkg-args|--margs)
-            shift; chroot_makepkg_args+=(--margs "$1")
+            shift; chroot_build_args+=(--margs "$1")
             IFS=, read -a arg -r <<< "$1"
             makepkg_args+=("${arg[@]}") ;;
         # repo-add options
@@ -350,7 +350,7 @@ while IFS= read "${read_args[@]}" -ru "$fd" path; do
 
     if (( create_package )); then
         if (( chroot )); then
-            PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --build "${chroot_makepkg_args[@]}"
+            PKGDEST="$var_tmp" aur chroot "${chroot_args[@]}" --build "${chroot_build_args[@]}"
         else
             #shellcheck disable=SC2086
             PKGDEST="$var_tmp" LOGDEST="${LOGDEST:-$PWD}" \
