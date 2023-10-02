@@ -116,12 +116,14 @@ while true; do
         --nosync|--no-sync)
             no_sync=1 ;;
         --makepkg-conf)
-            shift; makepkg_conf=$1 ;;
+            shift; makepkg_conf=$1
+            chroot_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
-            shift; pacman_conf=$1 ;;
+            shift; pacman_conf=$1
+            chroot_args+=(--pacman-conf "$1") ;;
         --pkgver)
             run_pkgver=1; makepkg_args+=(--noextract)
-            chroot_args+=(--margs '--holdver') ;;
+            chroot_build_args+=(--margs '--holdver') ;;
         --root)
             shift; db_root=$1
             repo_args+=(--root "$1") ;;
@@ -206,16 +208,15 @@ trap 'trap_exit' EXIT
 trap 'exit' INT
 
 if (( chroot )); then
-    if [[ -v pacman_conf ]]; then
-        chroot_args+=(--pacman-conf "$pacman_conf")
-    elif [[ $db_name ]]; then
+    # If the database name is specified (no auto-detection), use it for
+    # retrieving pacman and makepkg configuration in /etc/aurutils.
+    if [[ $db_name ]]; then
         chroot_args+=(--suffix "$db_name")
-    fi
-    if [[ -v makepkg_conf ]]; then
-        chroot_args+=(--makepkg-conf "$makepkg_conf")
     fi
 
     # Retrieve the makepkg and pacman configuration used in the container.
+    # The container is created and updated in a later step, after information on
+    # the local repository was retrieved.
     { IFS=: read -r _ _
       IFS=: read -r _ pacman_conf
       IFS=: read -r _ makepkg_conf
@@ -227,13 +228,22 @@ if (( chroot )); then
     unset PKGEXT
 fi
 
-# Propagate `makepkg` and `pacman` configuration to other tools.
+# Propagate `makepkg` and `pacman` configuration to tools on the host.
 if [[ -v makepkg_conf ]]; then
     makepkg_common_args+=(--config "$makepkg_conf")
     pkglist_args+=(--config "$makepkg_conf")
 fi
 if [[ -v pacman_conf ]]; then
     pacconf_args+=(--config "$pacman_conf")
+fi
+
+# File permission checks
+if [[ -v pacman_conf ]] && [[ ! -r $pacman_conf ]]; then
+    printf >&2 '%s: %s: permission denied\n' "$argv0" "$pacman_conf"
+    exit 13
+elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
+    printf >&2 '%s: %s: permission denied\n' "$argv0" "$makepkg_conf"
+    exit 13
 fi
 
 # Automatically choose the local repository based on `pacman`
@@ -254,18 +264,11 @@ if [[ -z $db_ext ]] && [[ $db_path =~ \.db$ ]]; then
 fi
 
 # File permission checks
-# XXX: read permissions not necessarily required for chroot builds
 if [[ ! -f $db_path ]]; then
     printf >&2 '%s: %s: not a regular file\n' "$argv0" "$db_path"
     exit 2
 elif [[ ! -w $db_path ]]; then
     printf >&2 '%s: %s: permission denied\n' "$argv0" "$db_path"
-    exit 13
-elif [[ -v pacman_conf ]] && [[ ! -r $pacman_conf ]]; then
-    printf >&2 '%s: %s: permission denied\n' "$argv0" "$pacman_conf"
-    exit 13
-elif [[ -v makepkg_conf ]] && [[ ! -r $makepkg_conf ]]; then
-    printf >&2 '%s: %s: permission denied\n' "$argv0" "$makepkg_conf"
     exit 13
 fi
 
