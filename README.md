@@ -27,9 +27,11 @@ Upgrade notices are posted to the
 
 ## USAGE
 
-Documentation is included as groff manuals. [`aur(1)`](man1/aur.1) contains a
-general overview, instructions on creating a local repository, and
-several examples.
+Documentation is included as [man pages](https://wiki.archlinux.org/title/Man_page)
+with groff typesetting. They provide a general overview of the various utilities
+with several examples.
+Detailed instructions on how to set up a local repository can be found in the
+section `CREATING A LOCAL REPOSITORY` of the [`aur(1)`](man1/aur.1) man page.
 
 ## TROUBLESHOOTING
 
