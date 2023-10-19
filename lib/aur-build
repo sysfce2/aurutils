@@ -95,7 +95,7 @@ else
     usage
 fi
 
-unset db_ext db_name db_path db_root makepkg_conf pacman_conf results_file pkgrel_incr queue
+unset buildscript db_ext db_name db_path db_root makepkg_conf pacman_conf queue results_file
 while true; do
     case "$1" in
         # build options
@@ -111,7 +111,7 @@ while true; do
         --dbext)
             shift; db_ext=$1 ;;
         --buildscript)
-            shift; makepkg_common_args+=(-p "$1")
+            shift; buildscript=$1; makepkg_common_args+=(-p "$1")
             makepkg_pkglist_args+=(-p "$1") ;;
         --nosync|--no-sync)
             no_sync=1 ;;
@@ -310,9 +310,17 @@ if (( chroot )); then
     aur chroot "${chroot_args[@]}" --create --update
 fi
 
+# Early check for `makepkg` buildscript
+buildscript=${buildscript:-PKGBUILD}
+
 while IFS= read "${read_args[@]}" -ru "$fd" path; do
     cd -- "$startdir"
     [[ $path ]] && cd -- "$path"
+
+    if [[ ! -f $buildscript ]]; then
+        printf >&2 '%s: %q does not exist\n' "$argv0" "$buildscript"
+        exit 2
+    fi
 
     # Allow running repo-add(8) on existing packages (#839)
     create_package=1
@@ -336,9 +344,7 @@ while IFS= read "${read_args[@]}" -ru "$fd" path; do
             [[ -f $pkgpath ]] && exists+=("$pkgpath")
         done < <(PKGDEST="$db_root" ${AUR_BUILD_PKGLIST:-aur build--pkglist} "${makepkg_pkglist_args[@]}")
 
-        if ! wait "$!"; then
-            printf >&2 '%s: warning: failed to retrieve package list\n' "$argv0"
-        fi
+        wait "$!" # Check `build--pkglist` exit status
 
         if (( ${#exists[@]} )); then
             printf >&2 '%s: warning: skipping existing package (use -f to overwrite)\n' "$argv0"
