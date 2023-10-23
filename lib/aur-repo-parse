@@ -33,53 +33,52 @@ my %repo_add_numeric = (
     'BUILDDATE' => 1, 'CSIZE' => 1, 'ISIZE' => 1
 );
 
-sub handler_search {
-    my ($handler, $expr, $data, @args) = @_;
 
-    if (length($expr) and defined($data)) {
-        if (ref($data) eq 'ARRAY') {
-            # Search entry-by-entry on arrays
-            $handler->(@args) if grep(/$expr/, @{$data});
-        } elsif ($data =~ /$expr/) {
-            $handler->(@args);
+sub entry_search {
+    my ($expr, $entry_data) = @_;
+
+    if (length($expr) and defined($entry_data)) {
+        # Search entry-by-entry on arrays
+        if (ref($entry_data) eq 'ARRAY') {
+            return grep(/$expr/, @{$entry_data});
         } else {
-            return 0;
+            return $entry_data =~ /$expr/;
         }
-    } elsif (defined($data)) {
-        $handler->(@args);
+    } else {
+        return defined($entry_data);
     }
-    return 1;
 }
 
 sub parse_db {
-    my ($fh, $db_path, $db_name, $first, $handler, $search_expr, $search_label, @varargs) = @_;
+    my ($fh, $db_path, $db_name, $header, $handler, $search_expr, $search_label, @varargs) = @_;
     my $count = 0;
     my ($entry, $filename, $attr, $attr_label);
 
     while (my $row = <$fh>) {
         chomp($row);
 
-        if ($row =~ /^%\Q$first\E%$/) {
+        if ($row =~ /^%\Q$header\E%$/) {
             $filename = readline($fh);
             chomp($filename);
 
             # Evaluate condition on previous entry and run handler
-            my @handler_args = ($entry, $count, 0, @varargs);
-
             if ($count > 0) {
-                $count++ if handler_search($handler, $search_expr, $entry->{$search_label}, @handler_args);
+                if (entry_search($search_expr, $entry->{$search_label})) {
+                    $handler->($entry, $count, 0, @varargs);
+                }
+                ++$count;
             } else {
-                $count++;
+                ++$count;
             }
             # New entry in the database (hashref)
             %{$entry} = ();
             $entry->{'DBPath'} = $db_path;
             $entry->{'Repository'} = $db_name;
-            $entry->{$repo_add_attributes{$first}} = $filename;
+            $entry->{$repo_add_attributes{$header}} = $filename;
         }
         elsif ($row =~ /^%.+%$/) {
             if (not length($filename)) {
-                die "$argv0: attribute '$first' not set";
+                die "$argv0: attribute '$header' not set";
             }
             $attr = substr($row, 1, -1);
             $attr_label = $repo_add_attributes{$attr};
@@ -105,34 +104,41 @@ sub parse_db {
         }
     }
     # Process last entry
-    my @handler_args = ($entry, $count, 1, @varargs);
-
     if ($count > 0) {
-        handler_search($handler, $search_expr, $entry->{$search_label}, @handler_args);
+        if (entry_search($search_expr, $entry->{$search_label})) {
+            $handler->($entry, $count, 1, @varargs);
+        } else {
+            # Run handler with empty input to ensure correct termination for --json (#1120)
+            $handler->(undef, $count, 1, @varargs);
+        }
     }
     return $count;
 }
 
 sub repo_json {
     my ($pkg, $count, $last) = @_;
-    my $json_text = write_json($pkg);
 
-    print "[" if ($count == 1);
-    print "," if ($count > 1);
+    if (defined $pkg) {
+        print '[' if $count == 1;
+        print ',' if $count  > 1;
 
-    print $json_text;
-    print "]\n" if $last;
+        my $json_text = write_json($pkg);
+        print $json_text;
+    }
+    print "]\n" if $last  == 1;
 }
 
 sub repo_jsonl {
-    my ($pkg, $count, $last) = @_;
-    my $json_text = write_json($pkg);
+    my ($pkg, undef, undef) = @_;
+    return if not defined $pkg;
 
+    my $json_text = write_json($pkg);
     print $json_text . "\n";
 }
 
 sub repo_list {
-    my ($pkg, $count, $last, $delim, $quiet) = @_;
+    my ($pkg, undef, undef, $delim, $quiet) = @_;
+    return if not defined $pkg;
 
     my $name = $pkg->{'Name'};
     my $pver = $pkg->{'Version'};
@@ -145,7 +151,8 @@ sub repo_list {
 }
 
 sub repo_table {
-    my ($pkg, $count, $last, $delim) = @_;
+    my ($pkg, undef, undef, $delim) = @_;
+    return if not defined $pkg;
 
     my $name = $pkg->{'Name'};
     my $base = $pkg->{'PackageBase'};
@@ -161,7 +168,9 @@ sub repo_table {
 }
 
 sub repo_attr {
-    my ($pkg, $count, $last, $attr) = @_;
+    my ($pkg, undef, undef, $attr) = @_;
+    return if not defined $pkg;
+
     my $value = $pkg->{$repo_add_attributes{$attr}};
 
     if (defined($value) and ref($value) eq 'ARRAY') {
