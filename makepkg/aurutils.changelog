@@ -1,3 +1,8 @@
+## 18.4
+
+* `aur-repo`
+  + fix incomplete output with `--search` (`--json`, #1120)
+
 ## 18.3
 
 * `aur-build--pkglist`
