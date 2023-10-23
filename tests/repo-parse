@@ -8,8 +8,8 @@ diff -u <(pacsift --repo=core | expac -S '%n\t%v' - | sort -u) \
         <(aur repo-parse -p "$core_path" --list | sort -u)
 
 # check attributes are up-to-date
-cnt1=$(bsdtar -Oxf "$core_files_path" | grep -Po '(?<=%).+(?=%)' | sort -u | wc -l) \
-cnt2=$(aur repo-parse --list-attr | wc -l)
+cnt1=$({ echo GROUPS; bsdtar -Oxf "$core_files_path" | grep -Po '(?<=%).+(?=%)'; } | sort -u | wc -l) \
+    cnt2=$(aur repo-parse --list-attr | wc -l)
 (( cnt1 == cnt2 ))
 
 # check if output is valid JSON
@@ -42,3 +42,6 @@ json_cnt2=$(bsdtar -Oxf "$core_path" "${core_entries[@]:0:2}" | aur repo-parse -
 [[ $json_cnt2 == 2 ]]
 json_cnt3=$(printf '\n' | aur repo-parse --json - | jq '. | length')
 [[ -z $json_cnt3 ]]
+
+# --json output with constrained entries
+aur repo-parse -p "$core_files_path" --json -s '^a' | jq '. | length' >/dev/null
