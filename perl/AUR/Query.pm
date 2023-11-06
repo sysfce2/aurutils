@@ -39,6 +39,10 @@ our $aur_rpc      = $ENV{AUR_QUERY_RPC} // $aur_location . "/rpc";
 our $aur_rpc_ver  = $ENV{AUR_QUERY_RPC_VERSION} // 5;
 our $aur_splitno  = $ENV{AUR_QUERY_RPC_SPLITNO} // 5000;
 
+=item urlencode()
+
+=cut
+
 # https://code.activestate.com/recipes/577450-perl-url-encode-and-decode/#c6
 sub urlencode {
     my $s = shift;
@@ -68,6 +72,10 @@ sub query_curl {
     return $str;
 }
 
+=item query()
+
+=cut
+
 # XXX: accept arbitrary suffix/parameter instead of $by
 sub query {
     my %args = (type => undef, term => undef, by => undef, callback => undef, @_);
@@ -85,6 +93,10 @@ sub query {
     defined $args{callback} ? return $args{callback}->($response)
                             : return $response;
 }
+
+=item query_multi()
+
+=cut
 
 # XXX: this can also be used to split GET requests
 sub query_multi {

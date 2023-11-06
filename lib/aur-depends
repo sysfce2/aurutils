@@ -6,164 +6,9 @@ use v5.20;
 use List::Util qw(first);
 use AUR::Json qw(parse_json_aur write_json);
 use AUR::Query qw(query_multi);
+use AUR::Depends qw(depends graph prune);
 use AUR::Options qw(add_from_stdin);
 my $argv0 = 'depends';
-
-sub chain {
-    my ($targets, $types, $max_req) = @_;
-    my @depends = @{$targets};
-    my (%results, %reqby, %shlibs);
-
-    # Make every explicit target provide itself
-    for my $t (@{$targets}) {
-        $shlibs{$t} = [$t, 0];
-    }
-
-    for my $a (1..$max_req) {
-        say STDERR join(" ", "query: [$a]", @depends) if defined $ENV{'AUR_DEBUG'};
-
-        if ($a == $max_req) {
-            say STDERR "$argv0: total requests: $a (out of range)";
-            exit(34);
-        }
-        my @level = query_multi(terms => \@depends, type => 'info', callback => \&parse_json_aur);
-
-        if (not scalar(@level) and $a == 1) {
-            say STDERR "$argv0: no packages found";
-            exit(1);
-        }
-        @depends = ();
-
-        for my $node (@level) {
-            my $name = $node->{'Name'};
-            $results{$name} = $node;
-
-            # XXX: no check if provides has valid package version (vercmp)
-            for my $spec (@{$node->{'Provides'} // []}) {
-                my ($prov, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
-
-                # XXX: only keeps the first provider
-                if (not defined $shlibs{$prov}) {
-                    # Use weights to make explicit provides take precedence
-                    $shlibs{$prov} = [$node->{'Name'}, $a];
-                }
-            }
-
-            # Filter out dependency types early (#882)
-            for my $deptype (@{$types}) {
-                next if not defined($node->{$deptype});  # no dependency of this type
-
-                for my $spec (@{$node->{$deptype}}) {
-                    # valid operators (important: <= before <)
-                    my ($dep, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
-
-                    # populate reverse depends
-                    $reqby{$dep}{$node->{'Name'}} = $deptype;
-
-                    # avoid querying duplicate packages (#4)
-                    next if defined $results{$dep};
-                    push(@depends, $dep);
-
-                    # mark as incomplete (retrieved in next step or repo package)
-                    $results{$dep} = 'None';
-                }
-            }
-        }
-        last if not scalar(@depends);  # no further results
-    }
-    return \%results, \%reqby, \%shlibs;
-}
-
-sub chain_mod {
-    my ($results, $reqby, $shlibs, $provides, $showall) = @_;
-    %{$shlibs} = () if not $provides;
-
-    my %mod;
-    say STDERR "query: filtering results" if defined $ENV{'AUR_DEBUG'};
-
-    # Use generic variable $_ for iterating %results (pkgname, provides or both)
-    map {
-        # Take provides on the command-line into account (#837)
-        if (defined $shlibs->{$_} and $shlibs->{$_}->[1] == 1) {
-            my $name = $shlibs->{$_}->[0];
-
-            # Add data and reverse dependencies for AUR targets
-            $mod{$name} = $results->{$name};
-            $mod{$name}->{'RequiredBy'} = $reqby->{$_};
-
-            # Include `Self` dependency for every target (aur-sync, #1065)
-            $mod{$name}->{'RequiredBy'}->{$name} = 'Self';
-        }
-        # Avoid overriding provides with later target (random ordering of hash!)
-        elsif (not defined $mod{$_}) {
-            $mod{$_} = $results->{$_};
-            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
-
-            # Include `Self` dependency for every target (aur-sync, #1065)
-            $mod{$_}->{'RequiredBy'}->{$_} = 'Self';
-        }
-    } grep {
-        $results->{$_} ne 'None'
-    } keys %{$results};
-
-    # Merge reverse dependencies for purely virtual targets, with corresponding
-    # packages specified on the command-line
-    map {
-        my $name = $shlibs->{$_}[0];
-
-        for my $dep (keys %{$reqby->{$_}}) {
-            $mod{$name}->{'RequiredBy'}{$dep} = $reqby->{$_}{$dep};
-        }
-    } grep {
-        $results->{$_} eq 'None' and defined $shlibs->{$_} and $shlibs->{$_}[1] > 0
-    } keys %{$results};
-
-    # Add reverse dependencies for non-AUR targets (--show-all)
-    if ($showall) {
-        map {
-            $mod{$_}->{'Name'} = $_;
-            $mod{$_}->{'RequiredBy'} = $reqby->{$_};
-        } grep {
-            $results->{$_} eq 'None'
-        } keys %{$results};
-    }
-
-    return \%mod, $reqby, $shlibs;
-}
-
-# Recursively remove nodes from dependency graph (#592)
-# Operates on modified graph: provides are solved first
-sub prune {
-    my ($mod, $installed) = @_;
-
-    for my $name (keys %{$mod}) {  # list returned by `keys` is a copy
-        # Remove installed targets from reverse dependencies
-        my $mod_reqby = $mod->{$name}->{'RequiredBy'};
-
-        for my $dep (keys %{$mod_reqby}) {
-            # Every reverse dependency needs to be checked against every pkgname
-            # assumed to be installed (quadratic complexity)
-            my $found = first { $dep eq $_ } @{$installed};
-
-            if (defined $found) {
-                delete $mod_reqby->{$found};
-            }
-        }
-    }
-
-    for my $name (keys %{$mod}) {
-        my $mod_reqby = $mod->{$name}->{'RequiredBy'};
-        if (not scalar keys %{$mod_reqby}) {
-            delete $mod->{$name};  # remove targets that are no longer required
-        }
-
-        my $found = first { $name eq $_ } @{$installed};
-        if (defined $found) {
-            delete $mod->{$name};  # remove targets that are installed
-        }
-    }
-    return $mod;
-}
 
 # tsv output for usage with aur-sync (aurutils <=10)
 sub table_v10_compat {
@@ -223,6 +68,7 @@ sub pairs {
 }
 
 unless(caller) {
+    # Command-line arguments
     use Getopt::Long;
     my $opt_depends      = 1;
     my $opt_makedepends  = 1;
@@ -233,6 +79,7 @@ unless(caller) {
     my $opt_show_all     = 0;  # implies $opt_pkgname = 1
     my $opt_reverse      = 0;
     my $opt_provides     = 1;
+    my $opt_verify       = 1;
     my $opt_installed    = [];
 
     GetOptions(
@@ -242,6 +89,7 @@ unless(caller) {
         'no-checkdepends'    => sub { $opt_checkdepends = 0 },
         'optdepends'         => \$opt_optdepends,
         'no-provides'        => sub { $opt_provides = 0 },
+        'no-verify'          => sub { $opt_verify = 0 },
         'n|pkgname'          => \$opt_pkgname,
         'b|pkgbase'          => sub { $opt_pkgname = 0 },
         'G|graph'            => sub { },  # noop
@@ -249,7 +97,7 @@ unless(caller) {
         'J|json'             => sub { $opt_mode = "json" },
         'jsonl'              => sub { $opt_mode = "jsonl" },
         'r|reverse'          => \$opt_reverse,
-        'a|all|show-all'     => \$opt_show_all
+        'a|all|show-all'     => \$opt_show_all        
         ) or exit(1);
 
     if (not scalar(@ARGV)) {
@@ -272,26 +120,48 @@ unless(caller) {
 
     # Array notation for `--assume-installed`
     @{$opt_installed} = map { split(',', $_) } @{$opt_installed};
-
-    # Resolve dependency tree
-    my ($results, $reqby, $shlibs) = chain_mod(chain(\@ARGV, \@types, 30), $opt_provides, $opt_show_all);
-
-    # Remove virtual dependencies with `--show-all` (#1063)
-    if ($opt_show_all and $opt_provides) {
-        # XXX: also include `None` dependencies with `Self` RequiredBy
-        my @virtual = grep {
-            $_ ne $shlibs->{$_}->[0] and $shlibs->{$_}->[1] > 0
-        } keys %{$shlibs};
-
-        $results = prune($results, \@virtual);
+    
+    # Dependency handling
+    sub callback_query {
+        query_multi(terms => @_, type => 'info', callback => \&parse_json_aur)
     }
 
+    # Retrieve AUR results (JSON -> dict -> extract depends -> repeat until none)
+    my ($results, $pkgdeps, $pkgmap) = depends(\@ARGV, \@types, \&callback_query, 30);
+
+    # Verify dependency requirements
+    my ($dag, $dag_foreign) = graph($results, $pkgdeps, $pkgmap, $opt_verify, $opt_provides);
+
+    my $removals = [];
+
+    # Remove virtual dependencies from dependency graph (#1063)
+    if ($opt_provides) {
+        my @virtual = keys %{$pkgmap};
+        # XXX: assumes <pkgmap> only contains keys with provides != pkgname
+        $removals = prune($dag, \@virtual);
+    }
     # Remove transitive dependencies for installed targets (#592)
     if (scalar @{$opt_installed}) {
-        $results = prune($results, $opt_installed);
+        $removals = prune($dag, $opt_installed);
+    }
+    # Remove packages no longer in graph from results
+    if (scalar @{$removals}) {
+        map { delete $results->{$_} } @{$removals};
     }
 
-    # Main operations
+    # Add `RequiredBy` to results
+    for my $name (keys %{$dag}) {
+        $results->{$name}->{'RequiredBy'} = $dag->{$name};
+    }
+    # Add foreign (non-AUR) packages to results
+    if ($opt_show_all) {
+        for my $name (keys %{$dag_foreign}) {
+            $results->{$name}->{'Name'} = $name;
+            $results->{$name}->{'RequiredBy'} = $dag_foreign->{$name};
+        }
+    }
+
+    # Format results
     if ($opt_mode eq 'pairs') {
         pairs($results, ($opt_pkgname or $opt_show_all) ? 'Name' : 'PackageBase', $opt_reverse);
     }

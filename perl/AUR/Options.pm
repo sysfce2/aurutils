@@ -37,6 +37,10 @@ sub delete_elements {
     }
 }
 
+=item add_from_stdin()
+
+=cut
+
 sub add_from_stdin {
     my ($array_ref, $tokens) = @_;
     my @indices;
