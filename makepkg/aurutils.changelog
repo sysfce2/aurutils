@@ -1,3 +1,8 @@
+## 18.5
+
+* `aur-repo`
+  + prefix pacman.conf in error messages (#1118)
+
 ## 18.4
 
 * `aur-repo`

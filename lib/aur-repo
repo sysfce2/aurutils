@@ -45,7 +45,7 @@ while true; do
         --dbext)
             shift; db_ext=$1 ;;
         -c|--config)
-            shift; conf_args+=(--config "$1") ;;
+            shift; pacman_conf=$1; conf_args+=(--config "$1") ;;
         -l|--list)
             mode=list ;;
         -t|--table)
@@ -164,7 +164,12 @@ if [[ ! $db_name ]]; then
 
 # check $db_name is a configured pacman repository (local or remote, #1113)
 elif ! [[ ${conf_sync_serv[$db_name]} ]]; then
-    printf >&2 "%s: %q: repository not configured\n" "$argv0" "$db_name"
+    # disambiguate used pacman.conf (#1118)
+    if [[ -v pacman_conf ]]; then
+        printf >&2 "%s: %q: repository %q not configured\n" "$argv0" "$pacman_conf" "$db_name"
+    else
+        printf >&2 "%s: repository %q not configured\n" "$argv0" "$db_name"
+    fi
     exit 2
 fi
 
