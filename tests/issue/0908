@@ -16,8 +16,6 @@ CheckSpace
 Include = /etc/pacman.d/mirrorlist
 [extra]
 Include = /etc/pacman.d/mirrorlist
-[community]
-Include = /etc/pacman.d/mirrorlist
 [$tmp_uid]
 SigLevel = Optional TrustAll
 Server = file://$tmp
