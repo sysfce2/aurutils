@@ -122,11 +122,18 @@ while read -r key _ value; do
 done < <(pacman-conf "${conf_args[@]}")
 wait $! || exit
 
+# prefix error messages with pacman.conf (#1118)
+if [[ -v pacman_conf ]]; then
+    err_prefix="$argv0: $pacman_conf"
+else
+    err_prefix="$argv0"
+fi
+
 # list information on available local repositories
 case $list in
     path|repo)
         if ! [[ ${!conf_file_path[*]} ]]; then
-            printf >&2 '%s: no file:// repository configured\n' "$argv0"
+            printf >&2 '%s: no file:// repository configured\n' "$err_prefix"
             exit 2
         fi ;;&
     path)
@@ -150,10 +157,10 @@ if [[ ! $db_name ]]; then
         1) db_root=${conf_file_serv[${conf_file_repo[0]}]}
            db_name=${conf_file_repo[0]}
            ;;
-        0) printf >&2 '%s: no file:// repository configured\n' "$argv0"
+        0) printf >&2 '%s: no file:// repository configured\n' "$err_prefix"
            exit 2
            ;;
-        *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$argv0"
+        *) printf >&2 '%s: repository choice is ambiguous (use -d to specify)\n' "$err_prefix"
 
            for db in "${conf_file_repo[@]}"; do
                printf '%q\t%q\n' "$db" "${conf_file_path[$db]}"
@@ -164,12 +171,7 @@ if [[ ! $db_name ]]; then
 
 # check $db_name is a configured pacman repository (local or remote, #1113)
 elif ! [[ ${conf_sync_serv[$db_name]} ]]; then
-    # disambiguate used pacman.conf (#1118)
-    if [[ -v pacman_conf ]]; then
-        printf >&2 "%s: %q: repository %q not configured\n" "$argv0" "$pacman_conf" "$db_name"
-    else
-        printf >&2 "%s: repository %q not configured\n" "$argv0" "$db_name"
-    fi
+    printf >&2 "%s: repository %q not configured\n" "$err_prefix" "$db_name"
     exit 2
 fi
 
