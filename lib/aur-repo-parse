@@ -64,11 +64,10 @@ sub parse_db {
             # Evaluate condition on previous entry and run handler
             if ($count > 0) {
                 if (entry_search($search_expr, $entry->{$search_label})) {
-                    $handler->($entry, $count, 0, @varargs);
+                    $handler->($entry, $count++, 0, @varargs);
                 }
-                ++$count;
             } else {
-                ++$count;
+                $count++;
             }
             # New entry in the database (hashref)
             %{$entry} = ();
@@ -125,7 +124,7 @@ sub repo_json {
         my $json_text = write_json($pkg);
         print $json_text;
     }
-    print "]\n" if $last  == 1;
+    print "]\n" if $last == 1;
 }
 
 sub repo_jsonl {
