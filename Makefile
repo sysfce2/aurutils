@@ -7,7 +7,7 @@ ETCDIR ?= /etc
 AURUTILS_LIB_DIR ?= $(LIBDIR)/$(PROGNM)
 AURUTILS_VERSION ?= $(shell git describe --tags || true)
 ifeq ($(AURUTILS_VERSION),)
-AURUTILS_VERSION := 18.5
+AURUTILS_VERSION := 19
 endif
 AURUTILS_SHELLCHECK = $(wildcard lib/*)
 
@@ -25,7 +25,10 @@ completion:
 shellcheck: aur
 	@shellcheck -x -f gcc -e 1071 $(AURUTILS_SHELLCHECK)
 
-test: aur shellcheck
+prove:
+	@env -C perl prove
+
+test: aur shellcheck prove
 	@tests/parseopt-consistency
 
 install-aur: aur
