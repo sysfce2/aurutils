@@ -27,10 +27,7 @@ jellyfin
 openrct2-git
 
 # cyclic dependencies - required removal of makedeps
-mingw-w64-gcc-base
-
-# 100+ depends
-plasma-git-meta
+#mingw-w64-gcc-base
 
 # 200+ depends 
 ros-noetic-desktop
