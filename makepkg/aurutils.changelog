@@ -1,3 +1,18 @@
+## 19
+
+* `aur-build`
+  + early check for buildscript
+
+* `aur-depends`
+  + verify dependency version requirements by default
+  + add `--no-verify`
+
+* `aur-repo`
+  + fix invalid output with `--json --search` (#1126)
+
+* `perl`
+  + add `Depends.pm`
+
 ## 18.5
 
 * `aur-repo`

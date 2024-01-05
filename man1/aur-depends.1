@@ -116,6 +116,13 @@ Dependencies can be removed selectively with the
 option. Multiple packages can be specified by separating them with a
 comma.
 .
+.PP
+By default, dependency requirements are checked with
+.BR vercmp (8).
+This can be disabled with the
+.B \-\-no\-verify
+option.
+.
 .SH NOTES
 While versioned dependencies are listed, they are ignored when
 resolving the dependency graph. This is because versioned queries are

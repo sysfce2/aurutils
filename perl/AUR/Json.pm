@@ -4,7 +4,7 @@ use warnings;
 use v5.20;
 
 use Exporter qw(import);
-our @EXPORT = qw(parse_json parse_json_aur write_json);
+our @EXPORT_OK = qw(parse_json parse_json_aur write_json);
 our $VERSION = 'unstable';
 
 =head1 NAME
@@ -51,6 +51,10 @@ else {
     $aur_json = JSON::PP->new;
 }
 
+=item parse_json()
+
+=cut
+
 sub parse_json {
     my $str = shift;
     my $obj = $aur_json->incr_parse($str)
@@ -59,6 +63,10 @@ sub parse_json {
 
     return $obj;
 }
+
+=item parse_json_aur()
+
+=cut
 
 sub parse_json_aur {
     my $str = shift;
@@ -88,6 +96,10 @@ sub parse_json_aur {
         exit(4);
     }
 }
+
+=item write_json()
+
+=cut
 
 sub write_json {
     my $obj = shift;

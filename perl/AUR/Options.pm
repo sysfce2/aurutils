@@ -5,7 +5,7 @@ use v5.20;
 use Carp;
 
 use Exporter qw(import);
-our @EXPORT = qw(add_from_stdin);
+our @EXPORT_OK = qw(add_from_stdin);
 our $VERSION = 'unstable';
 
 =head1 NAME
@@ -36,6 +36,10 @@ sub delete_elements {
 	splice @{$array_ref}, $_, 1;
     }
 }
+
+=item add_from_stdin()
+
+=cut
 
 sub add_from_stdin {
     my ($array_ref, $tokens) = @_;
