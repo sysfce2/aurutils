@@ -7,40 +7,42 @@ use AUR::Query qw(query query_multi);
 use AUR::Options qw(add_from_stdin);
 my $argv0 = 'query';
 
-# option handling
-use Getopt::Long;
-my $opt_by;
-my $opt_type = "";
+unless (caller) {
+    # option handling
+    use Getopt::Long;
+    my $opt_by;
+    my $opt_type = "";
 
-GetOptions('t|type=s' => \$opt_type,
-           'b|by=s'   => \$opt_by,
-           'r|raw'    => sub { } # noop
-) or exit(1);
+    GetOptions(
+        't|type=s' => \$opt_type,
+        'b|by=s'   => \$opt_by,
+        'r|raw'    => sub { } # noop
+    ) or exit(1);
 
-if (not length($opt_type)) {
-    say STDERR "$argv0: type must be specified";
-    exit(1);
-}
+    if (not length($opt_type)) {
+        say STDERR "$argv0: type must be specified";
+        exit(1);
+    }
 
-if (not scalar(@ARGV)) {
-    say STDERR "$argv0: at least one argument required";
-    exit(1);
-}
+    if (not scalar(@ARGV)) {
+        say STDERR "$argv0: at least one argument required";
+        exit(1);
+    }
+    # Handle '-' to take packages from stdin
+    add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
 
-# Handle '-' to take packages from stdin
-add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
+    # Exit gracefully on empty stdin, e.g. when piping from `aur repo -u`
+    if (not scalar(@ARGV)) {
+        exit(0);
+    }
+    my %query_args = (type => $opt_type, by => $opt_by, callback => sub { say @_ });
 
-# Exit gracefully on empty stdin, e.g. when piping from `aur repo -u`
-if (not scalar(@ARGV)) {
-    exit(0);
-}
-my %query_args = (type => $opt_type, by => $opt_by, callback => sub { say @_ });
-
-# search requests take a single argument only
-if ($opt_type eq "search" or $opt_type eq "suggest" or $opt_type eq "suggest-pkgbase") {
-    map { query(term => $_, %query_args) } @ARGV;
-} else {
-    query_multi(terms => \@ARGV, %query_args);
+    # search requests take a single argument only
+    if ($opt_type eq "search" or $opt_type eq "suggest" or $opt_type eq "suggest-pkgbase") {
+        map { query(term => $_, %query_args) } @ARGV;
+    } else {
+        query_multi(terms => \@ARGV, %query_args);
+    }
 }
 
 # vim: set et sw=4 sts=4 ft=perl:
