@@ -5,7 +5,8 @@ use v5.20;
 
 use List::Util qw(first);
 use Carp;
-use Exporter qw(import); our @EXPORT = qw(vercmp extract depends prune graph);
+use Exporter qw(import);
+our @EXPORT_OK = qw(vercmp extract depends prune graph);
 our $VERSION = 'unstable';
 
 =head1 NAME

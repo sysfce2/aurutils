@@ -5,7 +5,7 @@ use v5.20;
 use Carp;
 
 use Exporter qw(import);
-our @EXPORT = qw(add_from_stdin);
+our @EXPORT_OK = qw(add_from_stdin);
 our $VERSION = 'unstable';
 
 =head1 NAME

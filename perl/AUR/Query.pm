@@ -5,7 +5,7 @@ use v5.20;
 use Carp;
 
 use Exporter qw(import);
-our @EXPORT = qw(urlencode query query_multi);
+our @EXPORT_OK = qw(urlencode query query_multi);
 our $VERSION = 'unstable';
 
 =head1 NAME
