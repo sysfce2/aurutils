@@ -290,6 +290,37 @@ The
 file for chroot and local repository operations.
 .RB ( "aur\-build \-\-pacman\-conf" ", " "aur-repo \-\-config" )
 .
+.SS View options
+.TP
+.BI \-\-format= TYPE
+If
+.I TYPE
+is
+.B diff
+or
+.BR log ,
+generate diffs with
+.BR git\-diff (1)
+or
+.BR git\-log (1),
+respectively.
+.RB ( "aur\-view \-\-format" )
+.
+.TP
+.BI \-\-exclude= FILE
+Do not include
+.I FILE
+in the diff output. Can be specified multiple times.
+.RB ( "aur\-view \-\-exclude" )
+.
+.TP
+.BI \-\-prefix
+Prepend package names in the diff output instead of
+.I a/
+and
+.IR b/ .
+.RB ( "aur\-view \-\-prefix" )
+.
 .SH ENVIRONMENT
 Environment variables for other
 .B aur

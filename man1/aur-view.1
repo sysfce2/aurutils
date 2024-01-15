@@ -53,16 +53,29 @@ files are ignored.
 .
 .SH OPTIONS
 .TP
-.B \-\-format
-Can be one of
+.BI \-\-format= TYPE
+If
+.I TYPE
+is
 .B diff
 or
 .BR log ,
-to generate diffs with
+generate diffs with
 .BR git\-diff (1)
-and
+or
 .BR git\-log (1),
-respectively.
+respectively. Defaults to
+.BR diff .
+.
+.TP
+.BI \-\-exclude= FILE
+Do not include
+.I FILE
+in the
+.BR git\-diff (1)
+or
+.BR git\-log (1)
+output. Can be specified multiple times.
 .
 .TP
 .B \-\-no\-patch
@@ -81,13 +94,27 @@ to
 .BR git\-diff (1)
 and
 .BR git\-log (1)
-output.
+output, instead of
+.I a/
+and
+.IR b/ .
 .
 .TP
 .BI \-a " FILE" "\fR,\fP \-\-arg\-file=" FILE
 A textfile describing git repositories relative to the current
 directory. If unspecified, repositories are taken from the
 command-line.
+.
+.TP
+.B \-\-confirm
+Display a confirmation prompt after the file manager has exited
+successfully. See
+.B AUR_PAGER
+and
+.B AUR_CONFIRM_PAGER
+in the
+.B ENVIRONMENT
+section for details.
 .
 .SH ENVIRONMENT
 .TP
@@ -119,10 +146,10 @@ and
 .
 .TP
 .B AUR_CONFIRM_PAGER
-Display an additional prompt after the file manager has exited (see
-.BR AUR_PAGER ).
 If set, display an additional confirmation prompt after the file
-manager has exited successfully. This may be used for (GUI) file
+manager (see
+.BR AUR_PAGER )
+has exited successfully. This may be used for (GUI) file
 managers not supporting an exit status greater zero to indicate
 unreviewed files.
 .
