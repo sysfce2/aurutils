@@ -1,5 +1,7 @@
-#!/bin/awk -f
+#!/bin/gawk -f
 # aur-graph - print package/dependency pairs
+
+# shellcheck disable=all
 
 # < 0 : if ver1 < ver2
 # = 0 : if ver1 == ver2
@@ -33,52 +35,75 @@ function get_vercmp(ver1, ver2, op) {
     }
 }
 
-/pkgbase/ {
-    in_split_pkg = 0
+function setopt(opt, default) {
+    if(opt ~ /[01]/)
+       return opt
+    else
+       return default
+}
+
+function has_valid_arch(attr) {
+    i = index(attr, "_")
+    return !i || (substr(attr, i+1) in arch)
+}
+
+BEGIN {
+    DEPENDS = setopt(DEPENDS, 1)
+    MAKEDEPENDS = setopt(MAKEDEPENDS, 1)
+    CHECKDEPENDS = setopt(CHECKDEPENDS, 1)
+    OPTDEPENDS = setopt(OPTDEPENDS, 0)
+    PRINTALL = setopt(PRINTALL, 0)
+}
+
+$1 == "pkgbase" {
     pkgbase = $3
-    pkgver  = ""
+
+    pkgver = ""
+    in_split_pkg = 0
+    delete(arch)
 
     # track both the pkgbases themselves and their number of deps
     dep_counts[pkgbase] = 0
 }
 
-/^\tpkgver/ {
-    if (!in_split_pkg) {
-        pkgver = $3
-    }
+$1 == "pkgver" && !in_split_pkg {
+    pkgver = $3
 }
 
-/^\tdepends/ {
-    if ((!length(DEPENDS) || DEPENDS == 1) && !in_split_pkg)
-        pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3 # versioned
+$1 == "arch" {
+    arch[$3]
 }
 
-/^\tmakedepends/ {
-    if ((!length(MAKEDEPENDS) || MAKEDEPENDS == 1) && !in_split_pkg)
+index($1, "depends") == 1 && !in_split_pkg {
+    if (DEPENDS && has_valid_arch($1))
         pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
 }
 
-/^\tcheckdepends/ {
-    if ((!length(CHECKDEPENDS) || CHECKDEPENDS == 1) && !in_split_pkg)
+index($1, "makedepends") == 1 && !in_split_pkg {
+    if (MAKEDEPENDS && has_valid_arch($1))
         pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
 }
 
-/^\toptdepends/ {
-    if (OPTDEPENDS == 1 && !in_split_pkg) {
+index($1, "checkdepends") == 1 && !in_split_pkg {
+    if (CHECKDEPENDS && has_valid_arch($1))
         pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
-    }
 }
 
-/^$/ {
+index($1, "optdepends") == 1 && !in_split_pkg {
+    if (OPTDEPENDS && has_valid_arch($1))
+        pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
+}
+
+NF == 0 {
     in_split_pkg = 1
 }
 
-/pkgname/ {
+$1 == "pkgname" {
     pkg_map[$3] = pkgbase # node
     ver_map[$3] = pkgver  # weight
 }
 
-/^\tprovides/ {
+index($1, "provides") == 1 && has_valid_arch($1) {
     split($3, prov, "=")
 
     # if provider is unversioned, use pkgver
@@ -99,7 +124,7 @@ END {
         printf("%s\t%s\n", pkgbase, pkgbase)
 
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
-            if (length(PRINTALL) || PRINTALL == 1) {
+            if (PRINTALL) {
                 printf("%s\t%s\n", pkgbase, pkg_deps[pkgbase, dep])
                 continue
             }
@@ -146,6 +171,5 @@ END {
         }
     }
 
-    if (_vercmp_exit)
-        exit _vercmp_exit
+    exit _vercmp_exit
 }
