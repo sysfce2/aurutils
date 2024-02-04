@@ -7,6 +7,9 @@
   + verify dependency version requirements by default
   + add `--no-verify`
 
+* `aur-graph`
+  + prevent unwanted matches in certain URLs (#1134)
+
 * `aur-repo`
   + fix invalid output with `--json --search` (#1126)
 
