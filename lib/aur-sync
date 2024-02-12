@@ -14,8 +14,8 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 unset -v CDPATH
 
 # default arguments
-build_args=(--clean --syncdeps)
-depends_args=() repo_args=() view_args=() filter_args=() fetch_args=() graph_args=()
+build_args=(--clean --syncdeps) build_repo_args=()
+depends_args=() view_args=() filter_args=() fetch_args=() graph_args=()
 
 # default options
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
@@ -185,9 +185,9 @@ while true; do
             update=1 ;;
         # database options
         -d|--database|--repo)
-            shift; repo_args+=(-d "$1") ;;
+            shift; build_repo_args+=(-d "$1") ;;
         --root)
-            shift; repo_args+=(-r "$1") ;;
+            shift; build_repo_args+=(-r "$1") ;;
         # fetch options
         --ff)
             fetch_args+=(--ff) ;;
@@ -213,7 +213,6 @@ while true; do
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
             shift; build_args+=(--pacman-conf "$1")
-            repo_args+=(--config "$1")
             filter_args+=(--config "$1") ;;
         --pkgver)
             build_args+=(--pkgver) ;;
@@ -290,11 +289,13 @@ if [[ -v stdout_file ]]; then
     stdout_file=$(realpath -- "$stdout_file")
 fi
 
-# Retrieve path to local repo (#448, #700)
+# Retrieve path to local repo (#448, #700, #1135)
 { IFS=: read -r _ db_name
   IFS=: read -r _ db_root
   IFS=: read -r _ db_path
-} < <(aur repo "${repo_args[@]}" --status)
+  IFS=: read -r _ _
+  IFS=: read -r _ _
+} < <(aur build "${build_args[@]}" "${build_repo_args[@]}" --status)
 wait "$!"
 
 msg >&2 'Using [%s] repository' "$db_name"
