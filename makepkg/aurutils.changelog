@@ -15,6 +15,7 @@
 
 * `aur-sync`
   + document `aur-view` options
+  + detect local repositories with `--chroot` configuration (#1135)
 
 * `perl`
   + add `Depends.pm`
