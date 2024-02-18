@@ -34,3 +34,6 @@ ros-noetic-desktop
 
 # contain dependency cycles if checkdepends is considered
 ruby-activemodel
+
+# equality constraint in checkdepends
+python2-cryptography

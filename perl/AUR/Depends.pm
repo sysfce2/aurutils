@@ -225,11 +225,12 @@ sub graph {
             my ($dep_name, $dep_op, $dep_req) = split(/(<=|>=|<|=|>)/, $dep_spec);
 
             if (defined $results->{$dep_name}) {
-                my $dep_ver = $results->{$dep_name}->{'Version'};
+                # Split results version to pkgver and pkgrel
+                my @dep_ver = split("-", $results->{$dep_name}->{'Version'}, 2);
 
                 # Provides take precedence over regular packages,
                 # unless $provides is false.
-                my  ($prov_name, $prov_ver) = ($dep_name, $dep_ver);
+                my  ($prov_name, $prov_ver) = ($dep_name, $dep_ver[0]);
 
                 if ($provides and defined $pkgmap->{$dep_name}) {
                     ($prov_name, $prov_ver) = @{$pkgmap->{$dep_name}};
