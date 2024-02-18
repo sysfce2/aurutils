@@ -45,9 +45,13 @@ select_pkgbase() {
     awk 'NR == FNR {
         map[$1] = $3
         next
-    }
-    $2 in map {
-        printf("%s\t%s\n", $3, map[$2])
+    } {
+        if ($2 in map) {
+            printf("%s\t%s\n", $3, map[$2])
+        }
+        else if ($1 in map) {
+            printf("%s\t%s\n", $3, $3)
+        }
     }' "$@"
 }
 
