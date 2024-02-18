@@ -6,7 +6,7 @@ use v5.20;
 use List::Util qw(first);
 use Carp;
 use Exporter qw(import);
-our @EXPORT_OK = qw(vercmp extract depends prune graph);
+our @EXPORT_OK = qw(vercmp depends prune graph);
 our $VERSION = 'unstable';
 
 =head1 NAME
@@ -82,72 +82,17 @@ sub vercmp {
     }
 }
 
-=item extract()
+=item depends()
 
 Extracts dependency (C<$pkgdeps>) and provider (C<$pkgmap>)
-information from an array of package information hashes, such as
-those from C<Srcinfo.pm> or C<Query.pm>.
+information from an array of package information hashes, retrieved
+through a callback function. An example is <callback_query> from
+C<Query.pm> combined with <parse_json_aur> from C<Json.pm>.
 
-Any I<new> dependencies are added to the returned array value. A
-dependency is considered I<new> if it has no existing entry in the
-C<$results> hash ref. This makes it efficient to use this function
-iteratively for retrieving the dependency graph of a set of targets.
+Dependencies are tallied and only queried when newly encountered.
 
 Verifying if any versioned dependencies can be fulfilled can be done
 subsequently with the C<graph> function.
-
-=cut
-
-sub extract {
-    # hash refs modified in place
-    my ($results, $pkgdeps, $pkgmap, $types, @level) = @_;
-    my @depends = ();
-
-    for my $node (@level) {
-        my $name    = $node->{'Name'};
-        my $version = $node->{'Version'};
-        $results->{$name} = $node;
-
-        # Iterate over explicit provides
-        for my $spec (@{$node->{'Provides'} // []}) {
-            my ($prov, $prov_version) = split(/=/, $spec);
-            
-            # XXX: the first provider takes precedence
-            #      keep multiple providers and warn on ambiguity instead
-            if (not defined $pkgmap->{$prov} and $prov ne $name) {
-                $pkgmap->{$prov} = [$name, $prov_version];
-            }
-        }
-        # Filter out dependency types early (#882)
-        for my $deptype (@{$types}) {
-            next if (not defined($node->{$deptype}));  # no dependency of this type
-
-            for my $spec (@{$node->{$deptype}}) {
-                # Push versioned dependency to global depends
-                push(@{$pkgdeps->{$name}}, [$spec, $deptype]);
-
-                # Valid operators (important: <= before <)
-                my ($dep, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
-
-                # Avoid querying duplicate packages (#4)
-                next if defined $results->{$dep};
-                push(@depends, $dep);
-
-                # Mark as incomplete (retrieved in next step or repo package)
-                # XXX: do not write directly into <results>, but some other
-                # dict shared between <extract> calls
-                $results->{$dep} = 'None';
-            }
-        }
-    }
-    return @depends;
-}
-
-=item depends()
-
-Iteratively call C<extract()> with a callback function. The
-number of times the callback function may be called is specified as a
-separate parameter.
 
 =cut
 
@@ -155,18 +100,20 @@ sub depends {
     my ($targets, $types, $callback, $callback_max_a) = @_;
     my @depends = @{$targets};
 
-    my (%results, %pkgdeps, %pkgmap);
+    my (%results, %pkgdeps, %pkgmap, %tally);
+
+    # Populate depends map with command-line targets (#1136)
+    for my $target (@{$targets}) {
+        push(@{$pkgdeps{$target}}, [$target, 'Self']);
+    }
 
     # XXX: return $a for testing number of requests, e.g. 7 for ros-noetic-desktop
-    for my $a (1..$callback_max_a) {
-        say STDERR join(" ", "callback: [$a]", @depends) if defined $ENV{'AUR_DEBUG'};
-
-        # Check if request limits have been exceeded
-        if ($a == $callback_max_a) {
-            say STDERR __PACKAGE__ . ": total requests: $a (out of range)";
-            exit(34);
+    my $a = 1;
+    while ($a < $callback_max_a)
+    {
+        if (defined $ENV{'AUR_DEBUG'}) {
+            say STDERR join(" ", "callback: [$a]", @depends);
         }
-
         # Use callback to retrieve new hash of results
         my @level = $callback->(\@depends);
 
@@ -174,17 +121,57 @@ sub depends {
             say STDERR __PACKAGE__ . ": no packages found";
             exit(1);
         }
+        $a++;
 
         # Retrieve next level of dependencies from results
-        @depends = extract(\%results, \%pkgdeps, \%pkgmap, $types, @level);
+        @depends = ();
 
+        for my $node (@level) {
+            my $name    = $node->{'Name'};
+            my $version = $node->{'Version'};
+            $results{$name} = $node;
+
+            # Iterate over explicit provides
+            for my $spec (@{$node->{'Provides'} // []}) {
+                my ($prov, $prov_version) = split(/=/, $spec);
+
+                # XXX: the first provider takes precedence
+                #      keep multiple providers and warn on ambiguity instead
+                if (not defined $pkgmap{$prov} and $prov ne $name) {
+                    $pkgmap{$prov} = [$name, $prov_version];
+                }
+            }
+
+            # Filter out dependency types early (#882)
+            $tally{$name} = $a;
+
+            for my $deptype (@{$types}) {
+                next if (not defined($node->{$deptype}));  # no dependency of this type
+
+                for my $spec (@{$node->{$deptype}}) {
+                    # Push versioned dependency to depends map
+                    push(@{$pkgdeps{$name}}, [$spec, $deptype]);
+
+                    # Valid operators (important: <= before <)
+                    my ($dep, $op, $ver) = split(/(<=|>=|<|=|>)/, $spec);
+
+                    # Avoid querying duplicate packages (#4)
+                    next if defined $tally{$dep};
+                    push(@depends, $dep);
+
+                    # Mark as incomplete (retrieved in next level or repo package)
+                    $tally{$dep} = $a;
+                }
+            }
+        }
         if (not scalar(@depends)) {
             last;  # no further results
         }
     }
-    # XXX: workaround for extract() tallying packages in <results> dict
-    for my $pkg (keys %results) {
-        delete $results{$pkg} if $results{$pkg} eq 'None';
+    # Check if request limits have been exceeded
+    if ($a == $callback_max_a) {
+        say STDERR __PACKAGE__ . ": total requests: $a (out of range)";
+        exit(34);
     }
     return \%results, \%pkgdeps, \%pkgmap;
 }
@@ -212,10 +199,10 @@ sub graph {
 
     # Iterate over packages
     for my $name (keys %{$pkgdeps}) {
-        # Add a loop to isolated nodes (#402, #1065)
-        # XXX: distinguish between explicit (command-line) and
-        # implicit (dependencies) targets
-        $dag{$name}{$name} = 'Self';
+        # Add a loop to command-line targets (#402, #1065, #1136)
+        if (defined $pkgdeps->{$name} and $pkgdeps->{$name} eq $name) {
+            $dag{$name}{$name} = 'Self';
+        }
 
         # Iterate over dependencies
         for my $dep (@{$pkgdeps->{$name}}) {
