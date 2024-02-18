@@ -2,6 +2,7 @@
 
 * `aur-build`
   + early check for buildscript
+  + add `--cleanbuild`
 
 * `aur-depends`
   + verify dependency version requirements by default
