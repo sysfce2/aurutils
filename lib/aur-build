@@ -85,7 +85,7 @@ opt_long=('arg-file:' 'chroot' 'database:' 'force' 'root:' 'sign' 'gpg-sign'
           'rmdeps' 'no-confirm' 'no-check' 'ignore-arch' 'log' 'new'
           'makepkg-conf:' 'bind:' 'bind-rw:' 'prevent-downgrade' 'temp'
           'syncdeps' 'clean' 'namcap' 'checkpkg' 'makepkg-args:' 'user:'
-          'margs:' 'buildscript:' 'null' 'dbext:')
+          'margs:' 'buildscript:' 'null' 'dbext:' 'cleanbuild')
 opt_hidden=('dump-options' 'ignorearch' 'noconfirm' 'nocheck' 'nosync' 'repo:'
             'results:' 'results-append:' 'status')
 
@@ -158,6 +158,8 @@ while true; do
         # makepkg options (build)
         -C|--clean)
             makepkg_args+=(--clean) ;;
+        --cleanbuild)
+            makepkg_args+=(--cleanbuild) ;;
         -L|--log)
             makepkg_args+=(--log) ;;
         --nocheck|--no-check)
