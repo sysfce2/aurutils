@@ -17,6 +17,8 @@
 * `aur-sync`
   + document `aur-view` options
   + detect local repositories with `--chroot` configuration (#1135)
+  + add `--clean` / `-C`, `--cleanbuild`
+    - default build command changed to `aur build --syncdeps`
 
 * `perl`
   + add `Depends.pm`

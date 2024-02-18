@@ -223,7 +223,7 @@ for all repositories.
 .
 .SS Build options
 The default build command is
-.BR "aur-build \-\-clean \-\-syncdeps" .
+.BR "aur-build \-\-syncdeps" .
 Specifying
 .BR aur\-build (1)
 options such as
@@ -255,6 +255,16 @@ Do not wait for user input when installing or removing build dependencies.
 .TP
 .BR \-o ", " \-\-nobuild ", " \-\-no\-build
 Print target packages and their paths instead of building them.
+.
+.TP
+.BR \-C ", " \-\-clean
+Clean up leftover work files and directoreis after a successful build.
+.RB ( "aur build \-C" )
+.
+.TP
+.BR \-\-cleanbuild
+Remove the source directory before building the package.
+.RB ( "aur build \-\-cleanbuild" )
 .
 .TP
 .BR \-\-pkgver
