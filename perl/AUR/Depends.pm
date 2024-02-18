@@ -6,7 +6,7 @@ use v5.20;
 use List::Util qw(first);
 use Carp;
 use Exporter qw(import);
-our @EXPORT_OK = qw(vercmp depends prune graph);
+our @EXPORT_OK = qw(vercmp extract prune graph get);
 our $VERSION = 'unstable';
 
 =head1 NAME
@@ -82,7 +82,7 @@ sub vercmp {
     }
 }
 
-=item depends()
+=item extract()
 
 Extracts dependency (C<$pkgdeps>) and provider (C<$pkgmap>)
 information from an array of package information hashes, retrieved
@@ -96,7 +96,7 @@ subsequently with the C<graph> function.
 
 =cut
 
-sub depends {
+sub extract {
     my ($targets, $types, $callback, $callback_max_a) = @_;
     my @depends = @{$targets};
 
@@ -296,5 +296,56 @@ sub prune {
 # sub levels {
 
 # }
+
+=item get()
+
+High-level function which combines <depends>, <prune> and <graph>.
+
+=cut
+
+sub get {
+    my ($targets, $types, $callback, $callback_max_a, $opt_verify,
+        $opt_provides, $opt_installed, $opt_show_all) = @_;
+    
+    # Retrieve AUR results (JSON -> dict -> extract depends -> repeat until none)
+    my ($results, $pkgdeps, $pkgmap) = extract($targets, $types, $callback, $callback_max_a);
+
+    # Verify dependency requirements
+    my ($dag, $dag_foreign) = graph($results, $pkgdeps, $pkgmap, $opt_verify, $opt_provides);
+    my $removals = [];
+
+    # Remove virtual dependencies from dependency graph (#1063)
+    if ($opt_provides) {
+        my @virtual = keys %{$pkgmap};
+
+        # XXX: assumes <pkgmap> only contains keys with provides != pkgname
+        $removals = prune($dag, \@virtual);
+    }
+
+    # Remove transitive dependencies for installed targets (#592)
+    if (scalar @{$opt_installed}) {
+        $removals = prune($dag, $opt_installed);
+    }
+
+    # Remove packages no longer in graph from results
+    if (scalar @{$removals}) {
+        map { delete $results->{$_} } @{$removals};
+    }
+
+    # Add `RequiredBy` to results
+    for my $name (keys %{$dag}) {
+        $results->{$name}->{'RequiredBy'} = $dag->{$name};
+    }
+
+    # Add foreign (non-AUR) packages to results
+    if ($opt_show_all) {
+        for my $name (keys %{$dag_foreign}) {
+            $results->{$name}->{'Name'} = $name;
+            $results->{$name}->{'RequiredBy'} = $dag_foreign->{$name};
+        }
+    }
+    # Return $dag for subsequent application of C<prune>
+    return $results, $dag, $dag_foreign;
+}
 
 # vim: set et sw=4 sts=4 ft=perl:

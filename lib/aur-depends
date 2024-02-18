@@ -6,7 +6,7 @@ use v5.20;
 use List::Util qw(first);
 use AUR::Json qw(parse_json_aur write_json);
 use AUR::Query qw(query_multi);
-use AUR::Depends qw(depends graph prune);
+use AUR::Depends qw(get);
 use AUR::Options qw(add_from_stdin);
 my $argv0 = 'depends';
 
@@ -127,39 +127,8 @@ unless(caller) {
     }
 
     # Retrieve AUR results (JSON -> dict -> extract depends -> repeat until none)
-    my ($results, $pkgdeps, $pkgmap) = depends(\@ARGV, \@types, \&callback_query, 30);
-
-    # Verify dependency requirements
-    my ($dag, $dag_foreign) = graph($results, $pkgdeps, $pkgmap, $opt_verify, $opt_provides);
-
-    my $removals = [];
-
-    # Remove virtual dependencies from dependency graph (#1063)
-    if ($opt_provides) {
-        my @virtual = keys %{$pkgmap};
-        # XXX: assumes <pkgmap> only contains keys with provides != pkgname
-        $removals = prune($dag, \@virtual);
-    }
-    # Remove transitive dependencies for installed targets (#592)
-    if (scalar @{$opt_installed}) {
-        $removals = prune($dag, $opt_installed);
-    }
-    # Remove packages no longer in graph from results
-    if (scalar @{$removals}) {
-        map { delete $results->{$_} } @{$removals};
-    }
-
-    # Add `RequiredBy` to results
-    for my $name (keys %{$dag}) {
-        $results->{$name}->{'RequiredBy'} = $dag->{$name};
-    }
-    # Add foreign (non-AUR) packages to results
-    if ($opt_show_all) {
-        for my $name (keys %{$dag_foreign}) {
-            $results->{$name}->{'Name'} = $name;
-            $results->{$name}->{'RequiredBy'} = $dag_foreign->{$name};
-        }
-    }
+    my ($results, undef, undef) = get(\@ARGV, \@types, \&callback_query, 30,
+        $opt_verify, $opt_provides, $opt_installed, $opt_show_all);
 
     # Format results
     if ($opt_mode eq 'pairs') {
