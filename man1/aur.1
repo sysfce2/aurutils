@@ -393,7 +393,9 @@ in $PATH, for example
 
     # Print directories which do not contain a PKGBUILD file
     for d in "$AURDEST"/*; do
-        [[ \-f $d/PKGBUILD ]] || printf \(aq%s\en\(aq "$d"
+        if [[ \-d $d ]] && [[ ! \-f $d/PKGBUILD ]]; then
+            printf \(aq%s\en\(aq "$d"
+        fi
     done
 .EE
 .
