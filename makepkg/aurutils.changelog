@@ -21,7 +21,7 @@
     - default build command changed to `aur build --syncdeps`
 
 * `perl`
-  + add `Depends.pm`
+  + add `Depends.pm`, `Repo.pm`
 
 ## 18.5
 
