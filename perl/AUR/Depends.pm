@@ -51,7 +51,7 @@ sub vercmp_ops {
     return %ops;
 }
 
-=item vercmp
+=head2 vercmp()
 
 This function provides a simple way to call C<vercmp(8)> from perl code.
 Instead of ordering versions on the command-line, this function takes
@@ -78,11 +78,11 @@ sub vercmp {
         return $cmp{$op}->(vercmp_run($ver1, $ver2), 0);
     }
     else {
-        croak __PACKAGE__ . "invalid vercmp operation";
+        croak "invalid vercmp operation";
     }
 }
 
-=item extract()
+=head2 extract()
 
 Extracts dependency (C<$pkgdeps>) and provider (C<$pkgmap>)
 information from an array of package information hashes, retrieved
@@ -176,7 +176,7 @@ sub extract {
     return \%results, \%pkgdeps, \%pkgmap;
 }
 
-=item graph()
+=head2 graph()
 
 For a set of package-dependency relations (C<$pkgdeps>) and providers
 (C<$pkgmap>), verify if all dependencies and their versions can be
@@ -248,7 +248,7 @@ sub graph {
     return \%dag, \%dag_foreign;
 }
 
-=item prune()
+=head2 prune()
 
 Remove specified nodes from a dependency graph. Every dependency is
 checked against every pkgname provided (quadratic complexity).
@@ -288,7 +288,7 @@ sub prune {
     return \@removals;
 }
 
-=item levels()
+=head2 levels()
 
 =cut
 
@@ -297,7 +297,7 @@ sub prune {
 
 # }
 
-=item get()
+=head2 get()
 
 High-level function which combines <depends>, <prune> and <graph>.
 
