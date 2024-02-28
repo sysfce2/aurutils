@@ -12,9 +12,13 @@ use AUR::Repo qw(check_attr list_attr parse_db);
 my $argv0 = 'repo-parse';
 
 sub repo_json {
-    my ($pkg, $count, $last) = @_;
+    my ($pkg, $count, $last, $db_path, $db_name) = @_;
 
     if (defined $pkg) {
+        # Additional fields for `aur-format`
+        $pkg->{'DBPath'}     = $db_path;
+        $pkg->{'Repository'} = $db_name;
+
         print '[' if $count == 1;
         print ',' if $count  > 1;
 
@@ -25,8 +29,12 @@ sub repo_json {
 }
 
 sub repo_jsonl {
-    my ($pkg, undef, undef) = @_;
+    my ($pkg, undef, undef, $db_path, $db_name) = @_;
     return if not defined $pkg;
+
+    # Additional fields for `aur-format`
+    $pkg->{'DBPath'}     = $db_path;
+    $pkg->{'Repository'} = $db_name;
 
     my $json_text = write_json($pkg);
     print $json_text . "\n";
@@ -121,9 +129,11 @@ unless (caller) {
 
     if ($opt_json) {
         $handler = \&repo_json;
+        # @varargs defined in input loop
     }
     elsif ($opt_jsonl) {
         $handler = \&repo_jsonl;
+        # @varargs defined in input loop
     }
     elsif (length($opt_attr)) {
         my $attr_label = check_attr($opt_attr);
@@ -133,7 +143,7 @@ unless (caller) {
             exit(2);
         }
         $handler = \&repo_attr;
-        @varargs = $attr_label;
+        @varargs = ($attr_label);
     }
     elsif ($opt_list) {
         $handler = \&repo_list;
@@ -141,7 +151,7 @@ unless (caller) {
     }
     elsif ($opt_table) {
         $handler = \&repo_table;
-        @varargs = length($opt_delim) ? $opt_delim : "\t";
+        @varargs = (length($opt_delim) ? $opt_delim : "\t");
     }
     else {
         say STDERR $argv0 . ': no mode specified';
@@ -155,11 +165,14 @@ unless (caller) {
         say STDERR "$argv0: unknown attribute '$opt_search_by'";
         exit(2);
     }
-    my @parse_args = ($handler, $opt_search, $search_label, @varargs);
+    my @parse_args = ($handler, $opt_search, $search_label);
 
     # Take input from stdin instead of a pacman database
     if ($opt_stdin) {
-        parse_db(*STDIN, "/dev/stdin", 'local', 'FILENAME', @parse_args);
+        if ($opt_json or $opt_jsonl) {
+            @varargs = ("/dev/stdin", "local");
+        }
+        parse_db(*STDIN, "/dev/stdin", 'local', 'FILENAME', @parse_args, @varargs);
         exit(0);
     }
 
@@ -192,7 +205,10 @@ unless (caller) {
         my $child_pid = open(my $fh, "-|", @extract) or die $!;
 
         if ($child_pid) { # parent process
-            my $count = parse_db($fh, $db_abs_path, $db_name, 'FILENAME', @parse_args);
+            if ($opt_json or $opt_jsonl) {
+                @varargs = ($db_abs_path, $db_name);
+            }
+            my $count = parse_db($fh, 'FILENAME', @parse_args, @varargs);
 
             waitpid($child_pid, 0);
         }

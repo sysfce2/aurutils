@@ -105,14 +105,6 @@ Parameters:
 
 =back
 
-=item C<$db_path>
-
-=back
-
-=item C<$db_name>
-
-=back
-
 =item C<$header>
 
 =back
@@ -136,7 +128,7 @@ Parameters:
 =cut
 
 sub parse_db {
-    my ($fh, $db_path, $db_name, $header, $handler, $search_expr, $search_label, @varargs) = @_;
+    my ($fh, $header, $handler, $search_expr, $search_label, @varargs) = @_;
     my $count = 0;
     my ($entry, $filename, $attr, $attr_label);
 
@@ -157,8 +149,6 @@ sub parse_db {
             }
             # New entry in the database (hashref)
             %{$entry} = ();
-            $entry->{'DBPath'} = $db_path;
-            $entry->{'Repository'} = $db_name;
             $entry->{$repo_add_attributes{$header}->[1]} = $filename;
         }
         elsif ($row =~ /^%.+%$/) {
