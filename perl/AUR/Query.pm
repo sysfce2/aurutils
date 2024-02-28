@@ -39,7 +39,7 @@ our $aur_rpc      = $ENV{AUR_QUERY_RPC} // $aur_location . "/rpc";
 our $aur_rpc_ver  = $ENV{AUR_QUERY_RPC_VERSION} // 5;
 our $aur_splitno  = $ENV{AUR_QUERY_RPC_SPLITNO} // 5000;
 
-=item urlencode()
+=head2 urlencode()
 
 =cut
 
@@ -72,7 +72,7 @@ sub query_curl {
     return $str;
 }
 
-=item query()
+=head2 query()
 
 =cut
 
@@ -94,7 +94,7 @@ sub query {
                             : return $response;
 }
 
-=item query_multi()
+=head2 query_multi()
 
 =cut
 

@@ -37,7 +37,7 @@ sub delete_elements {
     }
 }
 
-=item add_from_stdin()
+=head2 add_from_stdin()
 
 =cut
 

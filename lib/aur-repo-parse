@@ -8,116 +8,17 @@ use Cwd 'abs_path';
 use File::Basename;
 
 use AUR::Json qw(write_json);
+use AUR::Repo qw(check_attr list_attr parse_db);
 my $argv0 = 'repo-parse';
 
-# Attributes which (where applicable) match AurJson, such that `aur-repo-parse --json`
-# can be piped to `aur-format`.
-my %repo_add_attributes = (
-    'ARCH'      => 'Arch',       'BASE'         => 'PackageBase',   'BUILDDATE'   => 'BuildDate',
-    'CONFLICTS' => 'Conflicts',  'CHECKDEPENDS' => 'CheckDepends',  'CSIZE'       => 'CSize',
-    'DEPENDS'   => 'Depends',    'DESC'         => 'Description',   'FILENAME'    => 'FileName',
-    'ISIZE'     => 'ISize',      'LICENSE'      => 'License',       'MAKEDEPENDS' => 'MakeDepends',
-    'MD5SUM'    => 'Md5Sum',     'NAME'         => 'Name',          'OPTDEPENDS'  => 'OptDepends',
-    'PACKAGER'  => 'Packager',   'PROVIDES'     => 'Provides',      'REPLACES'    => 'Replaces',
-    'SHA256SUM' => 'Sha256Sum',  'URL'          => 'URL',           'VERSION'     => 'Version',
-    'PGPSIG'    => 'PgpSig',     'GROUPS'       => 'Groups',        'FILES'       => 'Files'
-);
-
-my %repo_add_array = (
-    'GROUPS'  => 1, 'LICENSE'    => 1, 'REPLACES'    => 1, 'CONFLICTS'    => 1, 'PROVIDES' => 1,
-    'DEPENDS' => 1, 'OPTDEPENDS' => 1, 'MAKEDEPENDS' => 1, 'CHECKDEPENDS' => 1, 'FILES'    => 1
-);
-
-# md5sum and sha256sum are numeric values, but too large to be represented in int32/64.
-my %repo_add_numeric = (
-    'BUILDDATE' => 1, 'CSIZE' => 1, 'ISIZE' => 1
-);
-
-
-sub entry_search {
-    my ($expr, $entry_data) = @_;
-
-    if (length($expr) and defined($entry_data)) {
-        # Search entry-by-entry on arrays
-        if (ref($entry_data) eq 'ARRAY') {
-            return grep(/$expr/, @{$entry_data});
-        } else {
-            return $entry_data =~ /$expr/;
-        }
-    } else {
-        return defined($entry_data);
-    }
-}
-
-sub parse_db {
-    my ($fh, $db_path, $db_name, $header, $handler, $search_expr, $search_label, @varargs) = @_;
-    my $count = 0;
-    my ($entry, $filename, $attr, $attr_label);
-
-    while (my $row = <$fh>) {
-        chomp($row);
-
-        if ($row =~ /^%\Q$header\E%$/) {
-            $filename = readline($fh);
-            chomp($filename);
-
-            # Evaluate condition on previous entry and run handler
-            if ($count > 0) {
-                if (entry_search($search_expr, $entry->{$search_label})) {
-                    $handler->($entry, $count++, 0, @varargs);
-                }
-            } else {
-                $count++;
-            }
-            # New entry in the database (hashref)
-            %{$entry} = ();
-            $entry->{'DBPath'} = $db_path;
-            $entry->{'Repository'} = $db_name;
-            $entry->{$repo_add_attributes{$header}} = $filename;
-        }
-        elsif ($row =~ /^%.+%$/) {
-            if (not length($filename)) {
-                die "$argv0: attribute '$header' not set";
-            }
-            $attr = substr($row, 1, -1);
-            $attr_label = $repo_add_attributes{$attr};
-
-            if (not defined $attr_label) {
-                warn "$argv0: unknown attribute '$attr'";
-                $attr_label = ucfirst(lc($attr));
-            }
-        }
-        elsif ($row eq "") {
-            next;
-        }
-        else {
-            die unless length($attr) and length($attr_label);
-
-            if (defined($repo_add_numeric{$attr})) {
-                $entry->{$attr_label} = $row + 0; # integer type
-            } elsif (defined($repo_add_array{$attr})) {
-                push(@{$entry->{$attr_label}}, $row); # array type
-            } else {
-                $entry->{$attr_label} = $row; # string type
-            }
-        }
-    }
-    # Process last entry
-    if ($count > 0) {
-        if (entry_search($search_expr, $entry->{$search_label})) {
-            $handler->($entry, $count, 1, @varargs);
-        } else {
-            # Run handler with empty input to ensure correct termination for --json (#1120)
-            $handler->(undef, $count, 1, @varargs);
-        }
-    }
-    return $count;
-}
-
 sub repo_json {
-    my ($pkg, $count, $last) = @_;
+    my ($pkg, $count, $last, $db_path, $db_name) = @_;
 
     if (defined $pkg) {
+        # Additional fields for `aur-format`
+        $pkg->{'DBPath'}     = $db_path;
+        $pkg->{'Repository'} = $db_name;
+
         print '[' if $count == 1;
         print ',' if $count  > 1;
 
@@ -128,8 +29,12 @@ sub repo_json {
 }
 
 sub repo_jsonl {
-    my ($pkg, undef, undef) = @_;
+    my ($pkg, undef, undef, $db_path, $db_name) = @_;
     return if not defined $pkg;
+
+    # Additional fields for `aur-format`
+    $pkg->{'DBPath'}     = $db_path;
+    $pkg->{'Repository'} = $db_name;
 
     my $json_text = write_json($pkg);
     print $json_text . "\n";
@@ -167,10 +72,10 @@ sub repo_table {
 }
 
 sub repo_attr {
-    my ($pkg, undef, undef, $attr) = @_;
+    my ($pkg, undef, undef, $label) = @_;
     return if not defined $pkg;
 
-    my $value = $pkg->{$repo_add_attributes{$attr}};
+    my $value = $pkg->{$label};
 
     if (defined($value) and ref($value) eq 'ARRAY') {
         say join("\n", @{$value});
@@ -194,25 +99,24 @@ unless (caller) {
     my $opt_search = "";
     my $opt_search_by = 'Name';
 
-    # optional arguments
-    GetOptions('J|json'      => \$opt_json,
-               'jsonl'       => \$opt_jsonl,
-               'F|attr=s'    => \$opt_attr,
-               'l|list'      => \$opt_list,
-               'q|quiet'     => \$opt_quiet,
-               't|table'     => \$opt_table,
-               'd|delim'     => \$opt_delim,
-               'list-attr'   => \$opt_list_attr,
-               'p|path=s'    => \@opt_db_path,
-               's|search=s'  => \$opt_search,
-               'search-by=s' => \$opt_search_by)
+    GetOptions('J|json'          => \$opt_json,
+               'jsonl'           => \$opt_jsonl,
+               'F|field|attr=s'  => \$opt_attr,
+               'l|list'          => \$opt_list,
+               'q|quiet'         => \$opt_quiet,
+               't|table'         => \$opt_table,
+               'd|delim'         => \$opt_delim,
+               'list-attr'       => \$opt_list_attr,
+               'p|path=s'        => \@opt_db_path,
+               's|search=s'      => \$opt_search,
+               'search-by=s'     => \$opt_search_by)
         or exit(1);
 
     if (scalar(@ARGV) > 0 and ($ARGV[0] eq "-" or $ARGV[0] eq "/dev/stdin")) {
         $opt_stdin = 1;
     }
     elsif ($opt_list_attr) {
-        say(join("\n", sort(keys(%repo_add_attributes))));
+        say join("\n", list_attr());
         exit(0);
     }
     elsif (scalar(@opt_db_path) < 1 and not $opt_stdin) {
@@ -225,17 +129,21 @@ unless (caller) {
 
     if ($opt_json) {
         $handler = \&repo_json;
+        # @varargs defined in input loop
     }
     elsif ($opt_jsonl) {
         $handler = \&repo_jsonl;
-    }
-    elsif (length($opt_attr) and defined($repo_add_attributes{$opt_attr})) {
-        $handler = \&repo_attr;
-        @varargs = $opt_attr;
+        # @varargs defined in input loop
     }
     elsif (length($opt_attr)) {
-        say STDERR "$argv0: unknown attribute '$opt_attr'";
-        exit(2);
+        my $attr_label = check_attr($opt_attr);
+
+        if (not defined $attr_label) {
+            say STDERR "$argv0: unknown attribute '$opt_attr'";
+            exit(2);
+        }
+        $handler = \&repo_attr;
+        @varargs = ($attr_label);
     }
     elsif ($opt_list) {
         $handler = \&repo_list;
@@ -243,25 +151,28 @@ unless (caller) {
     }
     elsif ($opt_table) {
         $handler = \&repo_table;
-        @varargs = length($opt_delim) ? $opt_delim : "\t";
+        @varargs = (length($opt_delim) ? $opt_delim : "\t");
     }
     else {
         say STDERR $argv0 . ': no mode specified';
         exit(1);
     }
-
+ 
     # Verify search field
-    my $opt_search_attr = $repo_add_attributes{uc($opt_search_by)};
+    my $search_label = check_attr(uc($opt_search_by));
 
-    if (not defined $opt_search_attr) {
+    if (not defined $search_label) {
         say STDERR "$argv0: unknown attribute '$opt_search_by'";
         exit(2);
     }
-    my @parse_db_args = ($handler, $opt_search, $opt_search_attr, @varargs);
+    my @parse_args = ($handler, $opt_search, $search_label);
 
     # Take input from stdin instead of a pacman database
     if ($opt_stdin) {
-        parse_db(*STDIN, "/dev/stdin", 'local', 'FILENAME', @parse_db_args);
+        if ($opt_json or $opt_jsonl) {
+            @varargs = ("/dev/stdin", "local");
+        }
+        parse_db(*STDIN, "/dev/stdin", 'local', 'FILENAME', @parse_args, @varargs);
         exit(0);
     }
 
@@ -294,7 +205,10 @@ unless (caller) {
         my $child_pid = open(my $fh, "-|", @extract) or die $!;
 
         if ($child_pid) { # parent process
-            my $count = parse_db($fh, $db_abs_path, $db_name, 'FILENAME', @parse_db_args);
+            if ($opt_json or $opt_jsonl) {
+                @varargs = ($db_abs_path, $db_name);
+            }
+            my $count = parse_db($fh, 'FILENAME', @parse_args, @varargs);
 
             waitpid($child_pid, 0);
         }

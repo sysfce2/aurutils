@@ -51,7 +51,7 @@ else {
     $aur_json = JSON::PP->new;
 }
 
-=item parse_json()
+=head2 parse_json()
 
 =cut
 
@@ -64,7 +64,7 @@ sub parse_json {
     return $obj;
 }
 
-=item parse_json_aur()
+=head2 parse_json_aur()
 
 =cut
 
@@ -97,7 +97,7 @@ sub parse_json_aur {
     }
 }
 
-=item write_json()
+=head2 write_json()
 
 =cut
 
