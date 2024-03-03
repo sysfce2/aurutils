@@ -49,7 +49,13 @@ root:<root of repository>
 path:<path of repository>
 .PP
 .EE
-This is the default operation.
+Unless
+.B \-\-missing
+is specified,
+.I root
+and
+.I path
+must be existing paths. This is the default operation.
 .RE
 .
 .TP
@@ -95,13 +101,21 @@ See
 .
 .TP
 .BR \-\-list\-path
-List the paths of configured local repositories.
+List the paths of configured local repositories. 
+.IP
+Unless
+.BR \-\-missing
+is specified, all paths must exist.
 .
 .TP
 .BR \-\-path
 List the resolved path of the selected
 .BR pacman (8)
-repository.
+repository. 
+.IP
+Unless
+.BR \-\-missing
+is specified, the path must exist.
 .
 .TP
 .BR \-\-list\-repo
@@ -212,6 +226,15 @@ instead of by their
 .B file://
 path.
 .
+.TP
+.BR \-m ", " \-\-missing
+Do not require paths to exist with
+.BR \-\-status ,
+.BR \-\-path 
+and
+.BR \-\-list\-path .
+.
+.B
 .SH EXAMPLES
 List information on configured local repositories:
 .PP

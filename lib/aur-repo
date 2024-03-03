@@ -5,7 +5,7 @@ argv0=repo
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 
 # default options
-db_query=file mode=none conf_args=() vercmp_args=() parse_args=()
+db_query=file mode=none conf_args=() vercmp_args=() parse_args=() missing=0
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -19,10 +19,10 @@ usage() {
 }
 
 # option parsing
-opt_short='c:f:d:r:s:F:alqtuJS'
+opt_short='c:f:d:r:s:F:almqtuJS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
           'search:' 'search-by:' 'list-attr' 'sync' 'upgrades' 'table' 'quiet' 
-          'attr:' 'json' 'jsonl' 'format:' 'delim:' 'dbext:')
+          'attr:' 'json' 'jsonl' 'format:' 'delim:' 'dbext:' 'missing')
 opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'attr-list' 'status' 'field:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -46,6 +46,8 @@ while true; do
             shift; db_ext=$1 ;;
         -c|--config)
             shift; pacman_conf=$1; conf_args+=(--config "$1") ;;
+        -m|--missing)
+            missing=1 ;;
         -l|--list)
             mode=list ;;
         -t|--table)
@@ -129,6 +131,14 @@ else
     err_prefix="$argv0"
 fi
 
+# existing path is optional for printf modes (#1142)
+if (( missing )); then
+    realpath_args=(--canonicalize-missing)
+else
+    # require all path components to exist
+    realpath_args=(--canonicalize-existing)
+fi
+
 # list information on available local repositories
 case $list in
     path|repo)
@@ -137,10 +147,15 @@ case $list in
             exit 2
         fi ;;&
     path)
-        # XXX: file paths not quoted
-        realpath -- "${conf_file_path[@]}"  # resolve repo-add symlinks
-        exit 0 ;;
+        # resolve repo-add symlinks
+        while IFS= read -rd $'\0'; do
+            printf '%q\n' "$REPLY"  # quote file path
+        done < <(realpath "${realpath_args[@]}" -z -- "${conf_file_path[@]}")
+
+        wait "$!"
+        exit ;;
     repo)
+        # quote repository name
         printf '%q\n' "${!conf_file_path[@]}"
         exit 0 ;;
     attr)
@@ -178,10 +193,7 @@ fi
 # basic file checks
 case $db_query in
     file)
-        if [[ ! $db_root ]]; then
-            printf >&2 '%s: %q: repository root not found\n' "$argv0" "$db_name"
-            exit 2
-        elif [[ $db_root == *://* ]]; then
+        if [[ $db_root == *://* ]]; then
             printf >&2 '%s: %q: object is remote (use -S to query)\n' "$argv0" "$db_root"
             exit 66
         fi
@@ -194,9 +206,8 @@ case $db_query in
 esac
 
 # resolve repo-add symlink
-# path is not required to exist for printf modes (# )
-db_path=$(realpath --canonicalize-missing -- "$db_path")
-db_root=$(realpath --canonicalize-missing -- "$db_root")
+db_path=$(realpath "${realpath_args[@]}" -- "$db_path") || exit 1
+db_root=$(realpath "${realpath_args[@]}" -- "$db_root") || exit 1
 
 # database operations
 case $mode in

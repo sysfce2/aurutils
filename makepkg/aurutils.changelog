@@ -14,7 +14,7 @@
 
 * `aur-repo`
   + fix invalid output with `--json --search` (#1126)
-  + paths are not required to exist with `--path` or `--status`
+  + add `-m` / `--missing`
 
 * `aur-sync`
   + document `aur-view` options
