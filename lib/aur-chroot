@@ -187,7 +187,7 @@ fi
 # Print paths to container and used makepkg/pacman paths. This does
 # not require a priorly created container.
 if (( status )); then
-    printf 'chroot:%q\npacman:%q\nmakepkg:%q\n' "$directory" "$pacman_conf" "$makepkg_conf"
+    printf 'chroot:%s\npacman:%s\nmakepkg:%s\n' "$directory" "$pacman_conf" "$makepkg_conf"
     exit 0
 fi
 

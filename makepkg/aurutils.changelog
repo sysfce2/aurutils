@@ -3,6 +3,10 @@
 * `aur-build`
   + early check for buildscript
   + add `--cleanbuild`
+  + do not shell quote `--status` paths
+
+* `aur-chroot`
+  + do not shell quote `--status` paths
 
 * `aur-depends`
   + verify dependency version requirements by default
@@ -15,6 +19,7 @@
 * `aur-repo`
   + fix invalid output with `--json --search` (#1126)
   + add `-m` / `--missing`
+  + do not shell quote `--status` paths
 
 * `aur-sync`
   + document `aur-view` options

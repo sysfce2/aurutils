@@ -276,9 +276,9 @@ fi
 
 # Propagate pacman/makepkg configuration to other tools (#1135)
 if (( status )); then
-    printf 'repo:%q\nroot:%q\npath:%q\n' "$db_name" "$db_root" "$db_path"
-    printf 'makepkg:%q\n' "${makepkg_conf:--}"
-    printf 'pacman:%q\n'  "${pacman_conf:--}"
+    printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path"
+    printf 'makepkg:%s\n' "${makepkg_conf:--}"
+    printf 'pacman:%s\n'  "${pacman_conf:--}"
     exit 0
 fi
 
