@@ -6,6 +6,7 @@
 
 * `aur-depends`
   + verify dependency version requirements by default
+  + only include `Self` targets for command-line arguments (`--table`, #1136)
   + add `--no-verify`
 
 * `aur-graph`
@@ -13,12 +14,16 @@
 
 * `aur-repo`
   + fix invalid output with `--json --search` (#1126)
+  + paths are not required to exist with `--path` or `--status`
 
 * `aur-sync`
   + document `aur-view` options
   + detect local repositories with `--chroot` configuration (#1135)
   + add `--clean` / `-C`, `--cleanbuild`
     - default build command changed to `aur build --syncdeps`
+
+* `aur(1)`
+  + use `git-clean -ixd` to clean directories with `aur-gc`
 
 * `perl`
   + add `Depends.pm`, `Repo.pm`
