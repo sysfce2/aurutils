@@ -172,7 +172,7 @@ unless (caller) {
         if ($opt_json or $opt_jsonl) {
             @varargs = ("/dev/stdin", "local");
         }
-        parse_db(*STDIN, "/dev/stdin", 'local', 'FILENAME', @parse_args, @varargs);
+        parse_db(*STDIN, 'FILENAME', @parse_args, @varargs);
         exit(0);
     }
 
