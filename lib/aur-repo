@@ -133,10 +133,10 @@ fi
 
 # existing path is optional for printf modes (#1142)
 if (( missing )); then
-    realpath_args=(--canonicalize-missing)
+    realpath_args=(-m)
 else
     # require all path components to exist
-    realpath_args=(--canonicalize-existing)
+    realpath_args=(-e)
 fi
 
 # list information on available local repositories
@@ -148,15 +148,11 @@ case $list in
         fi ;;&
     path)
         # resolve repo-add symlinks
-        while IFS= read -rd $'\0'; do
-            printf '%q\n' "$REPLY"  # quote file path
-        done < <(realpath "${realpath_args[@]}" -z -- "${conf_file_path[@]}")
-
-        wait "$!"
-        exit ;;
+        realpath "${realpath_args[@]}" -- "${conf_file_path[@]}" || exit 2
+        exit 0 ;;
     repo)
         # quote repository name
-        printf '%q\n' "${!conf_file_path[@]}"
+        printf '%s\n' "${!conf_file_path[@]}"
         exit 0 ;;
     attr)
         aur repo-parse --list-attr  # holds for any repository
@@ -206,8 +202,8 @@ case $db_query in
 esac
 
 # resolve repo-add symlink
-db_path=$(realpath "${realpath_args[@]}" -- "$db_path") || exit 1
-db_root=$(realpath "${realpath_args[@]}" -- "$db_root") || exit 1
+db_path=$(realpath "${realpath_args[@]}" -- "$db_path") || exit 2
+db_root=$(realpath "${realpath_args[@]}" -- "$db_root") || exit 2
 
 # database operations
 case $mode in
@@ -224,10 +220,10 @@ case $mode in
         aur repo-parse "${parse_args[@]}" -p "$db_path" --attr "$attr"
         ;;
     path)
-        printf '%q\n' "$db_path"
+        printf '%s\n' "$db_path"
         ;;
     *)
-        printf 'repo:%q\nroot:%q\npath:%q\n' "$db_name" "$db_root" "$db_path"
+        printf 'repo:%s\nroot:%s\npath:%s\n' "$db_name" "$db_root" "$db_path"
         ;;
 esac
 
