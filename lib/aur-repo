@@ -19,10 +19,10 @@ usage() {
 }
 
 # option parsing
-opt_short='c:f:d:r:s:F:almqtuJS'
+opt_short='c:f:d:i:r:s:F:almqtuJS'
 opt_long=('config:' 'database:' 'root:' 'all' 'list' 'path' 'list-path' 'list-repo'
           'search:' 'search-by:' 'list-attr' 'sync' 'upgrades' 'table' 'quiet' 
-          'attr:' 'json' 'jsonl' 'format:' 'delim:' 'dbext:' 'missing')
+          'attr:' 'json' 'jsonl' 'format:' 'delim:' 'dbext:' 'missing' 'ignore:' 'ignore-by:')
 opt_hidden=('dump-options' 'repo:' 'repo-list' 'path-list' 'attr-list' 'status' 'field:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
@@ -70,6 +70,10 @@ while true; do
             shift; parse_args+=(--search "$1") ;;
         --search-by)
             shift; parse_args+=(--search-by "$1") ;;
+        -i|--ignore)
+            shift; parse_args+=(--ignore "$1") ;;
+        --ignore-by)
+            shift; parse_args+=(--ignore-by "$1") ;;
         --path)
             mode=path ;;
         --status)

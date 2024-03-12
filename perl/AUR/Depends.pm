@@ -9,6 +9,9 @@ use Exporter qw(import);
 our @EXPORT_OK = qw(vercmp extract prune graph get);
 our $VERSION = 'unstable';
 
+# Maximum number of calling the callback
+our $aur_callback_max = $ENV{AUR_DEPENDS_CALLBACK_MAX} // 30;
+
 =head1 NAME
 
 AUR::Depends - Resolve dependencies from AUR package information
@@ -97,7 +100,7 @@ subsequently with the C<graph> function.
 =cut
 
 sub extract {
-    my ($targets, $types, $callback, $callback_max_a) = @_;
+    my ($targets, $types, $callback) = @_;
     my @depends = @{$targets};
 
     my (%results, %pkgdeps, %pkgmap, %tally);
@@ -109,7 +112,7 @@ sub extract {
 
     # XXX: return $a for testing number of requests, e.g. 7 for ros-noetic-desktop
     my $a = 1;
-    while ($a < $callback_max_a)
+    while ($a < $aur_callback_max)
     {
         if (defined $ENV{'AUR_DEBUG'}) {
             say STDERR join(" ", "callback: [$a]", @depends);
@@ -169,7 +172,7 @@ sub extract {
         }
     }
     # Check if request limits have been exceeded
-    if ($a == $callback_max_a) {
+    if ($a == $aur_callback_max) {
         say STDERR __PACKAGE__ . ": total requests: $a (out of range)";
         exit(34);
     }
@@ -304,11 +307,10 @@ High-level function which combines <depends>, <prune> and <graph>.
 =cut
 
 sub get {
-    my ($targets, $types, $callback, $callback_max_a, $opt_verify,
-        $opt_provides, $opt_installed, $opt_show_all) = @_;
+    my ($targets, $types, $callback, $opt_verify, $opt_provides, $opt_installed, $opt_show_all) = @_;
     
     # Retrieve AUR results (JSON -> dict -> extract depends -> repeat until none)
-    my ($results, $pkgdeps, $pkgmap) = extract($targets, $types, $callback, $callback_max_a);
+    my ($results, $pkgdeps, $pkgmap) = extract($targets, $types, $callback);
 
     # Verify dependency requirements
     my ($dag, $dag_foreign) = graph($results, $pkgdeps, $pkgmap, $opt_verify, $opt_provides);

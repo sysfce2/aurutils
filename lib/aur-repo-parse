@@ -8,9 +8,42 @@ use Cwd 'abs_path';
 use File::Basename;
 
 use AUR::Json qw(write_json);
-use AUR::Repo qw(check_attr list_attr parse_db);
+use AUR::Repo qw(check_attr check_type list_attr parse_db);
 my $argv0 = 'repo-parse';
 
+# Handlers for filtering data
+sub entry_search {
+    my ($expr, $entry_data) = @_;
+
+    if (length($expr) and defined($entry_data)) {
+        # Search entry-by-entry on arrays
+        if (ref($entry_data) eq 'ARRAY') {
+            return grep(/$expr/, @{$entry_data});
+        } else {
+            return $entry_data =~ /$expr/;
+        }
+    } else {
+        return defined($entry_data);
+    }
+}
+
+# XXX: ignore for array types
+sub repo_filter {
+    my ($callback, $search, $search_by, $ignore, $ignore_by,
+        $pkg, $count, $last, @varargs) = @_;
+
+    my $pkg_ignore = defined $ignore->{$pkg->{$ignore_by}};
+
+    if (entry_search($search, $pkg->{$search_by}) and not $pkg_ignore) {
+        $callback->($pkg, $count, $last, @varargs);
+        return 1;  # increase count (parse_db)
+    } else {
+        $callback->(undef, $count, $last, @varargs);
+        return 0;
+    }
+}
+
+# Handlers for varying output formats
 sub repo_json {
     my ($pkg, $count, $last, $db_path, $db_name) = @_;
 
@@ -84,6 +117,22 @@ sub repo_attr {
     }
 }
 
+sub check_option {
+    my ($opt, $opt_label, $attr_def) = @_;
+
+    if (length $opt) {
+        my $attr = check_attr(uc($opt));
+
+        if (not defined $attr) {
+            say STDERR "$argv0: $opt_label: unknown attribute '$opt'";
+            exit(2);
+        }
+        return $attr;
+    } else {
+        return $attr_def;
+    }
+}
+
 unless (caller) {
     use Getopt::Long;
     my $opt_json = 0;
@@ -96,20 +145,25 @@ unless (caller) {
     my $opt_attr = "";
     my @opt_db_path;
     my $opt_stdin = 0;
-    my $opt_search = "";
-    my $opt_search_by = 'Name';
+    my $opt_search = "" ;
+    my $opt_search_by;
+    my @opt_ignore;
+    my $opt_ignore_by;
 
-    GetOptions('J|json'          => \$opt_json,
-               'jsonl'           => \$opt_jsonl,
-               'F|field|attr=s'  => \$opt_attr,
-               'l|list'          => \$opt_list,
-               'q|quiet'         => \$opt_quiet,
-               't|table'         => \$opt_table,
-               'd|delim'         => \$opt_delim,
-               'list-attr'       => \$opt_list_attr,
-               'p|path=s'        => \@opt_db_path,
-               's|search=s'      => \$opt_search,
-               'search-by=s'     => \$opt_search_by)
+    GetOptions('J|json'         => \$opt_json,
+               'jsonl'          => \$opt_jsonl,
+               'F|field|attr=s' => \$opt_attr,
+               'l|list'         => \$opt_list,
+               'q|quiet'        => \$opt_quiet,
+               't|table'        => \$opt_table,
+               'd|delim'        => \$opt_delim,
+               'list-attr'      => \$opt_list_attr,
+               'p|path=s'       => \@opt_db_path,
+               's|search=s'     => \$opt_search,
+               'search-by=s'    => \$opt_search_by,
+               'i|ignore=s'     => \@opt_ignore,
+               'ignore-by=s'    => \$opt_ignore_by
+        )
         or exit(1);
 
     if (scalar(@ARGV) > 0 and ($ARGV[0] eq "-" or $ARGV[0] eq "/dev/stdin")) {
@@ -125,14 +179,14 @@ unless (caller) {
     }
 
     # Callback function run on each entry in the database
-    my ($handler, @varargs);
+    my ($callback, @varargs);
 
     if ($opt_json) {
-        $handler = \&repo_json;
+        $callback = \&repo_json;
         # @varargs defined in input loop
     }
     elsif ($opt_jsonl) {
-        $handler = \&repo_jsonl;
+        $callback = \&repo_jsonl;
         # @varargs defined in input loop
     }
     elsif (length($opt_attr)) {
@@ -142,37 +196,39 @@ unless (caller) {
             say STDERR "$argv0: unknown attribute '$opt_attr'";
             exit(2);
         }
-        $handler = \&repo_attr;
-        @varargs = ($attr_label);
+        $callback = \&repo_attr;
+        @varargs  = ($attr_label);
     }
     elsif ($opt_list) {
-        $handler = \&repo_list;
-        @varargs = (length($opt_delim) ? $opt_delim : "\t", $opt_quiet);
+        $callback = \&repo_list;
+        @varargs  = (length($opt_delim) ? $opt_delim : "\t", $opt_quiet);
     }
     elsif ($opt_table) {
-        $handler = \&repo_table;
-        @varargs = (length($opt_delim) ? $opt_delim : "\t");
+        $callback = \&repo_table;
+        @varargs  = (length($opt_delim) ? $opt_delim : "\t");
     }
     else {
         say STDERR $argv0 . ': no mode specified';
         exit(1);
     }
- 
-    # Verify search field
-    my $search_label = check_attr(uc($opt_search_by));
 
-    if (not defined $search_label) {
-        say STDERR "$argv0: unknown attribute '$opt_search_by'";
-        exit(2);
-    }
-    my @parse_args = ($handler, $opt_search, $search_label);
+    # Verify search field
+    my $search = length($opt_search) ? $opt_search : "";
+    my $search_by = check_option($opt_search_by, '--search-by', 'Name');
+
+    # Verify ignores field
+    my %ignore;
+    $ignore{$_}++ for (map { split(',', $_) } @opt_ignore);
+    my $ignore_by = check_option($opt_ignore_by, '--ignore-by', 'Name');
 
     # Take input from stdin instead of a pacman database
     if ($opt_stdin) {
-        if ($opt_json or $opt_jsonl) {
-            @varargs = ("/dev/stdin", "local");
-        }
-        parse_db(*STDIN, 'FILENAME', @parse_args, @varargs);
+        @varargs = ("/dev/stdin", "local") if ($opt_json or $opt_jsonl);
+
+        my $count = parse_db(*STDIN, 'FILENAME', sub {
+            repo_filter($callback, $search, $search_by, \%ignore, $ignore_by, @_);
+        }, @varargs);
+
         exit(0);
     }
 
@@ -201,16 +257,14 @@ unless (caller) {
         # the `--verbose` flag printing file names has different behavior for different `tar`
         # versions. Specifically, `bsdtar -xv` does not add a newline after the file path,
         # while `tar -xv` does.
-        my @extract = ('bsdtar', '-Oxf', $db_abs_path);
-        my $child_pid = open(my $fh, "-|", @extract) or die $!;
+        my $child_pid = open(my $fh, "-|", 'bsdtar', '-Oxf', $db_abs_path) or die $!;
 
         if ($child_pid) { # parent process
-            if ($opt_json or $opt_jsonl) {
-                @varargs = ($db_abs_path, $db_name);
-            }
-            my $count = parse_db($fh, 'FILENAME', @parse_args, @varargs);
+            @varargs = ($db_abs_path, $db_name) if ($opt_json or $opt_jsonl);
 
-            waitpid($child_pid, 0);
+            my $count = parse_db($fh, 'FILENAME', sub {
+                repo_filter($callback, $search, $search_by, \%ignore, $ignore_by, @_);
+            }, @varargs);
         }
         exit(2) if $?;
     }

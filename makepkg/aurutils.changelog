@@ -17,9 +17,10 @@
   + prevent unwanted matches in certain URLs (#1134)
 
 * `aur-repo`
-  + fix invalid output with `--json --search` (#1126)
   + add `-m` / `--missing`
+  + add `--ignore`, `--ignore-by`
   + do not shell quote `--status` paths
+  + fix invalid output with `--json --search` (#1126)
 
 * `aur-sync`
   + document `aur-view` options

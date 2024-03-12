@@ -5,7 +5,7 @@ use v5.20;
 
 use Carp;
 use Exporter qw(import);
-our @EXPORT_OK = qw(list_attr check_attr parse_db);
+our @EXPORT_OK = qw(list_attr check_attr check_type parse_db);
 our $VERSION = 'unstable';
 
 =head1 NAME
@@ -72,23 +72,13 @@ sub check_attr {
     return $repo_add_attributes{$attr}->[1];
 }
 
-=head2 entry_search()
+=head2 check_type()
 
 =cut
 
-sub entry_search {
-    my ($expr, $entry_data) = @_;
-
-    if (length($expr) and defined($entry_data)) {
-        # Search entry-by-entry on arrays
-        if (ref($entry_data) eq 'ARRAY') {
-            return grep(/$expr/, @{$entry_data});
-        } else {
-            return $entry_data =~ /$expr/;
-        }
-    } else {
-        return defined($entry_data);
-    }
+sub check_type {
+    my ($attr) = @_;
+    return $repo_add_attributes{$attr}->[0];
 }
 
 =head2 parse_db()
@@ -113,14 +103,6 @@ Parameters:
 
 =back
 
-=item C<$search_expr>
-
-=back
-
-=item C<$search_label>
-
-=back
-
 =item C<@varargs>
 
 =back
@@ -128,7 +110,7 @@ Parameters:
 =cut
 
 sub parse_db {
-    my ($fh, $header, $handler, $search_expr, $search_label, @varargs) = @_;
+    my ($fh, $header, $handler, @varargs) = @_;
     my $count = 0;
     my ($entry, $filename, $attr, $attr_label);
 
@@ -140,13 +122,13 @@ sub parse_db {
             chomp($filename);
 
             # Evaluate condition on previous entry and run handler
+            # XXX: only increase $count if handler returns true?
             if ($count > 0) {
-                if (entry_search($search_expr, $entry->{$search_label})) {
-                    $handler->($entry, $count++, 0, @varargs);
-                }
+                $count++ if $handler->($entry, $count, 0, @varargs);
             } else {
                 $count++;
             }
+
             # New entry in the database (hashref)
             %{$entry} = ();
             $entry->{$repo_add_attributes{$header}->[1]} = $filename;
@@ -182,12 +164,7 @@ sub parse_db {
     }
     # Process last entry
     if ($count > 0) {
-        if (entry_search($search_expr, $entry->{$search_label})) {
-            $handler->($entry, $count, 1, @varargs);
-        } else {
-            # Run handler with empty input to ensure correct termination for --json (#1120)
-            $handler->(undef, $count, 1, @varargs);
-        }
+        $handler->($entry, $count, 1, @varargs);
     }
     return $count;
 }
