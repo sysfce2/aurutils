@@ -15,7 +15,7 @@ unset -v CDPATH
 
 # default arguments
 build_args=(--syncdeps) build_repo_args=()
-depends_args=() view_args=() filter_args=() fetch_args=() graph_args=()
+depends_args=() view_args=() filter_args=() fetch_args=() graph_args=() reparse_args=()
 
 # default options
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
@@ -308,33 +308,32 @@ wait "$!"
 
 msg >&2 'Using [%s] repository' "$db_name"
 
-# Concatenate ignores from file and command-line arguments
+# Ignores file can be the result of process substitution (#880)
 : "${ignore_file=$XDG_CONFIG_HOME/aurutils/sync/ignore}"
 
-# Restrict ignores to local repository with a single pass (#880)
-{ if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
-      select_ignores_pkgspec "$db_name" "$ignore_file"
-  fi
-  if (( ${#pkg_i[@]} )); then
-      printf '%s\n' "${pkg_i[@]}"
-  fi
-} | complement <(printf '%s\n' "$@") >"$tmp"/igni
+if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
+    # Append file ignores to command-line ignores
+    while read -r i; do
+        pkg_i+=("$i")
+    done < <(select_ignores_pkgspec "$db_name" "$ignore_file")
+fi
+
+# Do not include command-line arguments as ignores (#952)
+mapfile -t pkg_i < <(complement <(printf '%s\n' "$@") <(printf '%s\n' "${pkg_i[@]}"))
 
 # Diagnostic on which packages are ignored
-if [[ -s $tmp/igni ]]; then
-    mapfile -t pkg_i < "$tmp"/igni
+if (( ${#pkg_i[@]} )); then
     printf '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
 
+    # Ignore local repository targets
+    reparse_args+=(--ignore "$(args_csv "${pkg_i[@]}")")
+
     # Ignore dependencies from ignored targets (#592)
-    depends_args+=(--assume-installed "$(args_csv "${pkg_i[@]}")")
+    depends_args+=(--ignore "$(args_csv "${pkg_i[@]}")")
 fi >&2
 
 # Retrieve list of local repository packages ($1 pkgname $2 pkgver)
-aur repo-parse -p "$db_path" --list | select_ignores "$tmp"/igni - >"$tmp"/db_info
-
-if (( PIPESTATUS[0] )); then
-   exit 2
-fi
+aur repo-parse "${reparse_args[@]}" -p "$db_path" --list >"$tmp"/db_info
 
 # Build list of AUR targets
 { if (( $# )); then
@@ -368,7 +367,7 @@ fi
 # pkginfo: $1 pkgname $2 pkgbase $3 pkgver
 cut -f2,5 --complement "$tmp"/depends | sort -u >"$tmp"/pkginfo
 
-{ cat "$tmp"/igni # ignored packages (already included by aur-depends --assume-installed)
+{ printf '%s\n' "${pkg_i[@]}" # ignored packages (already included by aur-depends --assume-installed)
 
   # Packages with equal or newer versions are taken as complement
   # for the queue. If chkver_argv is enabled, packages on the
