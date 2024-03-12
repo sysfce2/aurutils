@@ -127,7 +127,7 @@ unless(caller) {
     }
 
     # Retrieve AUR results (JSON -> dict -> extract depends -> repeat until none)
-    my ($results, undef, undef) = get(\@ARGV, \@types, \&callback_query, 30,
+    my ($results, undef, undef) = get(\@ARGV, \@types, \&callback_query,
         $opt_verify, $opt_provides, $opt_installed, $opt_show_all);
 
     # Format results
