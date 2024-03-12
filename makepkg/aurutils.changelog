@@ -1,17 +1,16 @@
 ## 19
 
 * `aur-build`
-  + early check for buildscript
   + add `--cleanbuild`
   + do not shell quote `--status` paths
+  + early check for buildscript
 
 * `aur-chroot`
   + do not shell quote `--status` paths
 
 * `aur-depends`
-  + verify dependency version requirements by default
   + only include `Self` targets for command-line arguments (`--table`, #1136)
-  + add `--no-verify`
+  + verify dependency version requirements (`--verify`)
 
 * `aur-graph`
   + prevent unwanted matches in certain URLs (#1134)

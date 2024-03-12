@@ -357,7 +357,7 @@ if [[ -s $tmp/argv ]]; then
     # depends: $1 pkgname $2 required_by $3 pkgbase $4 pkgver $5 depends_type
     # XXX: dependency requirements are already computed by `aur-graph` below
     # (possibly after local changes). Use `depends --no-verify` accordingly.
-    aur depends --table --reverse --no-verify \
+    aur depends --table --reverse \
         "${depends_args[@]}" - <"$tmp"/argv >"$tmp"/depends
 else
     printf >&2 '%s: there is nothing to do\n' "$argv0"
