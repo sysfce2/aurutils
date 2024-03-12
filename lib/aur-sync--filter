@@ -1,0 +1,71 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use v5.20;
+
+use AUR::Depends qw(prune);
+use AUR::Json    qw(parse_json_aur);
+my $argv0 = "sync--filter";
+
+# TODO: depends: adjust pkgname for lib32
+
+unless(caller) {
+    use Getopt::Long;
+    my $opt_ignore = [];
+    my $opt_json;
+    my $opt_ignore_file;
+
+    GetOptions(
+        'i|ignore=s'      => $opt_ignore,
+        'f|ignore-file=s' => \$opt_ignore_file,
+        'p|path=s'        => \$opt_json
+    ) or exit(1);
+
+    if (not length $opt_json) {
+        say STDERR "$argv0: json path required";
+        exit(1);
+    }
+    @{$opt_ignore} = map { split(',', $_) } @{$opt_ignore};
+
+    # Concatenate ignore targets from file
+    if (length($opt_ignore_file)) {
+        open(my $fh_ignore, '<', $opt_ignore_file) or die $!;
+
+        while(<$fh_ignore>) {
+            chomp $_;
+            push(@{$opt_ignore}, $_) if length($_);
+        }
+        close($fh_ignore);
+    }
+
+    # Read aur-depends output
+    my @results;
+    open(my $fh, '<', $opt_json) or die $!;
+
+    while(<$fh>) {
+        chomp $_;
+        push(@results, parse_json_aur($_));
+    }
+    close($fh);
+
+    # Extract DAG
+    my (%dag, %map);
+    for my $pkg (@results) {
+        $dag{$pkg->{'Name'}} = $pkg->{'RequiredBy'};
+        $map{$pkg->{'Name'}} = $pkg->{'PackageBase'};
+    }
+
+    # Prune ignored targets
+    my $removals = prune(\%dag, $opt_ignore);
+
+    if (defined $ENV{'AUR_DEBUG'}) {
+        say STDERR "$argv0: targets removed: " . join(" ", @{$removals});
+    }
+
+    # Print remaining dependency pairs as pkgbase
+    for my $dep (keys %dag) {
+        for my $name (keys %{$dag{$dep}}) {
+            say $dep . "\t" . $map{$name};
+        }
+    }
+}
