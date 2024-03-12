@@ -79,7 +79,7 @@ unless(caller) {
     my $opt_show_all     = 0;  # implies $opt_pkgname = 1
     my $opt_reverse      = 0;
     my $opt_provides     = 1;
-    my $opt_verify       = 1;
+    my $opt_verify       = 0;
     my $opt_installed    = [];
 
     GetOptions(
@@ -89,7 +89,7 @@ unless(caller) {
         'no-checkdepends' => sub { $opt_checkdepends = 0 },
         'optdepends'      => \$opt_optdepends,
         'no-provides'     => sub { $opt_provides = 0 },
-        'no-verify'       => sub { $opt_verify = 0 },
+        'v|verify'        => \$opt_verify,
         'n|pkgname'       => \$opt_pkgname,
         'b|pkgbase'       => sub { $opt_pkgname = 0 },
         'G|graph'         => sub { },  # noop
