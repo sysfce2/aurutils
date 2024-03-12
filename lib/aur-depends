@@ -83,22 +83,22 @@ unless(caller) {
     my $opt_installed    = [];
 
     GetOptions(
-        'assume-installed=s' => $opt_installed,
-        'no-depends'         => sub { $opt_depends = 0 },
-        'no-makedepends'     => sub { $opt_makedepends = 0 },
-        'no-checkdepends'    => sub { $opt_checkdepends = 0 },
-        'optdepends'         => \$opt_optdepends,
-        'no-provides'        => sub { $opt_provides = 0 },
-        'no-verify'          => sub { $opt_verify = 0 },
-        'n|pkgname'          => \$opt_pkgname,
-        'b|pkgbase'          => sub { $opt_pkgname = 0 },
-        'G|graph'            => sub { },  # noop
-        't|table'            => sub { $opt_mode = "table" },
-        'J|json'             => sub { $opt_mode = "json" },
-        'jsonl'              => sub { $opt_mode = "jsonl" },
-        'r|reverse'          => \$opt_reverse,
-        'a|all|show-all'     => \$opt_show_all        
-        ) or exit(1);
+        'ignore|assume-installed=s' => $opt_installed,
+        'no-depends'      => sub { $opt_depends = 0 },
+        'no-makedepends'  => sub { $opt_makedepends = 0 },
+        'no-checkdepends' => sub { $opt_checkdepends = 0 },
+        'optdepends'      => \$opt_optdepends,
+        'no-provides'     => sub { $opt_provides = 0 },
+        'no-verify'       => sub { $opt_verify = 0 },
+        'n|pkgname'       => \$opt_pkgname,
+        'b|pkgbase'       => sub { $opt_pkgname = 0 },
+        'G|graph'         => sub { },  # noop
+        't|table'         => sub { $opt_mode = "table" },
+        'J|json'          => sub { $opt_mode = "json" },
+        'jsonl'           => sub { $opt_mode = "jsonl" },
+        'r|reverse'       => \$opt_reverse,
+        'a|all|show-all'  => \$opt_show_all
+    ) or exit(1);
 
     if (not scalar(@ARGV)) {
         say STDERR "$argv0: at least one argument required";
