@@ -25,11 +25,9 @@ completion:
 shellcheck: aur
 	@shellcheck -x -f gcc -e 1071 $(AURUTILS_SHELLCHECK)
 
-prove:
-	@env -C perl prove
-
-test: aur shellcheck prove
+test: aur shellcheck
 	@tests/parseopt-consistency
+	@$(MAKE) -C perl test
 
 install-aur: aur
 	@install -Dm755 aur       -t '$(DESTDIR)$(BINDIR)'
