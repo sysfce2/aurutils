@@ -63,9 +63,9 @@ unless(caller) {
     }
 
     # Print remaining dependency pairs as pkgbase
-    for my $dep (keys %dag) {
+    for my $dep (keys %dag) {  # == keys %map
         for my $name (keys %{$dag{$dep}}) {
-            say $dep . "\t" . $map{$name};
+            say $map{$dep} . "\t" . $map{$name} if defined $map{$name};
         }
     }
 }
