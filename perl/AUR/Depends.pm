@@ -288,32 +288,39 @@ sub prune {
             push(@removals, $dep);
         }
     }
+    # XXX: return complement dict instead of array
     return \@removals;
 }
 
-=head2 levels()
-
-=cut
-
-# TODO: compute dependency levels (bfs)
-# sub levels {
-
-# }
-
 =head2 get()
 
-High-level function which combines <depends>, <prune> and <graph>.
+High-level function which combines C<depends>, C<prune> and C<graph>.
+
+Parameters:
+
+=over
+
+=item C<$targets>
+
+=item C<$types>
+
+=item C<$callback>
+
+=item C<$opt_verify>
+
+=back
 
 =cut
 
 sub get {
-    my ($targets, $types, $callback, $opt_verify, $opt_provides, $opt_installed, $opt_show_all) = @_;
+    my ($targets, $types, $callback, $opt_verify, $opt_provides, $opt_installed) = @_;
     
     # Retrieve AUR results (JSON -> dict -> extract depends -> repeat until none)
     my ($results, $pkgdeps, $pkgmap) = extract($targets, $types, $callback);
 
     # Verify dependency requirements
-    my ($dag, $dag_foreign) = graph($results, $pkgdeps, $pkgmap, $opt_verify, $opt_provides);
+    my ($dag, $dag_foreign) = graph($results, $pkgdeps, $pkgmap,
+                                    $opt_verify, $opt_provides);
     my $removals = [];
 
     # Remove virtual dependencies from dependency graph (#1063)
@@ -323,28 +330,14 @@ sub get {
         # XXX: assumes <pkgmap> only contains keys with provides != pkgname
         $removals = prune($dag, \@virtual);
     }
-
     # Remove transitive dependencies for installed targets (#592)
+    # XXX: prune from $dag_foreign as well?
     if (scalar @{$opt_installed}) {
         $removals = prune($dag, $opt_installed);
     }
-
     # Remove packages no longer in graph from results
     if (scalar @{$removals}) {
         map { delete $results->{$_} } @{$removals};
-    }
-
-    # Add `RequiredBy` to results
-    for my $name (keys %{$dag}) {
-        $results->{$name}->{'RequiredBy'} = $dag->{$name};
-    }
-
-    # Add foreign (non-AUR) packages to results
-    if ($opt_show_all) {
-        for my $name (keys %{$dag_foreign}) {
-            $results->{$name}->{'Name'} = $name;
-            $results->{$name}->{'RequiredBy'} = $dag_foreign->{$name};
-        }
     }
     # Return $dag for subsequent application of C<prune>
     return $results, $dag, $dag_foreign;

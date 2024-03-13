@@ -126,10 +126,22 @@ unless(caller) {
         query_multi(terms => @_, type => 'info', callback => \&parse_json_aur)
     }
 
-    # Retrieve AUR results (JSON -> dict -> extract depends -> repeat until none)
-    my ($results, undef, undef) = get(\@ARGV, \@types, \&callback_query,
-        $opt_verify, $opt_provides, $opt_installed, $opt_show_all);
+    # Retrieve AUR results
+    #    JSON -> hash -> extract depends[] -> repeat until none -> prune
+    my ($results, $dag, $dag_foreign) = get(\@ARGV, \@types, \&callback_query,
+        $opt_verify, $opt_provides, $opt_installed);
 
+    # Add `RequiredBy` to results
+    for my $name (keys %{$dag}) {
+        $results->{$name}->{'RequiredBy'} = $dag->{$name};
+    }
+    # Add foreign (non-AUR) packages to results
+    if ($opt_show_all) {
+        for my $name (keys %{$dag_foreign}) {
+            $results->{$name}->{'Name'} = $name;
+            $results->{$name}->{'RequiredBy'} = $dag_foreign->{$name};
+        }
+    }
     # Format results
     if ($opt_mode eq 'pairs') {
         pairs($results, ($opt_pkgname or $opt_show_all) ? 'Name' : 'PackageBase', $opt_reverse);
