@@ -97,6 +97,18 @@ Dependencies are tallied and only queried when newly encountered.
 Verifying if any versioned dependencies can be fulfilled can be done
 subsequently with the C<graph> function.
 
+Parameters:
+
+=over
+
+=item C<$targets>
+
+=item C<$types>
+
+=item C<$callback>
+
+=back
+
 =cut
 
 sub extract {
@@ -190,6 +202,22 @@ Two hashes are kept: one for packages in the set (C<$dag>), and
 another for packages outside it (C<$dag_foreign>). Only relations in
 the former are checked.
 
+Parameters:
+
+=over
+
+=item C<$results>
+
+=item C<$pkgdeps>
+
+=item C<$pkgmap>
+
+=item C<$verify>
+
+=item C<$provides>
+
+=back
+
 =cut
 
 # XXX: <results> only used for versions and checking if AUR target
@@ -218,8 +246,8 @@ sub graph {
                 # Split results version to pkgver and pkgrel
                 my @dep_ver = split("-", $results->{$dep_name}->{'Version'}, 2);
 
-                # Provides take precedence over regular packages,
-                # unless $provides is false.
+                # Provides take precedence over regular packages, unless
+                # $provides is false.
                 my  ($prov_name, $prov_ver) = ($dep_name, $dep_ver[0]);
 
                 if ($provides and defined $pkgmap->{$dep_name}) {
@@ -227,10 +255,9 @@ sub graph {
                 }
 
                 # Run vercmp with provider and versioned dependency
-                # XXX: a dependency can be both fulfilled by a package
-                # and a different package (provides). In this case an
-                # error should only be returned if neither fulfill the
-                # version requirement.
+                # XXX: a dependency can be both fulfilled by a package and a
+                # different package (provides). In this case an error should
+                # only be returned if neither fulfill the version requirement.
                 if (not $verify or vercmp($prov_ver, $dep_req, $dep_op)) {
                     $dag{$prov_name}{$name} = $dep_type;
                 }
@@ -258,9 +285,18 @@ checked against every pkgname provided (quadratic complexity).
 
 The keys of removed nodes are returned in an array.
 
+Parameters:
+
+=over
+
+=item C<$dag>
+
+=item C<$installed>
+
+=back
+
 =cut
 
-# XXX: return complement dict instead of array
 sub prune {
     my ($dag, $installed) = @_;
     my @removals;
@@ -275,7 +311,6 @@ sub prune {
             }
         }
     }
-
     for my $dep (keys %{$dag}) {
         if (not scalar keys %{$dag->{$dep}}) {
             delete $dag->{$dep};  # remove targets that are no longer required

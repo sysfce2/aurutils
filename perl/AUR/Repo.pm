@@ -93,15 +93,9 @@ Parameters:
 
 =item C<$fh>
 
-=back
-
 =item C<$header>
 
-=back
-
 =item C<$handler>
-
-=back
 
 =item C<@varargs>
 
