@@ -323,6 +323,8 @@ sub prune {
             push(@removals, $dep);
         }
     }
+    # Remove non-unique elements
+    @removals = keys %{{ map { $_ => 1 } @removals }};
     # XXX: return complement dict instead of array
     return \@removals;
 }
