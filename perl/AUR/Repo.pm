@@ -116,7 +116,6 @@ sub parse_db {
             chomp($filename);
 
             # Evaluate condition on previous entry and run handler
-            # XXX: only increase $count if handler returns true?
             if ($count > 0) {
                 $count++ if $handler->($entry, $count, 0, @varargs);
             } else {

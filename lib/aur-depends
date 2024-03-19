@@ -3,9 +3,9 @@ use strict;
 use warnings;
 use v5.20;
 
-use List::Util qw(first);
-use AUR::Json qw(parse_json_aur write_json);
-use AUR::Query qw(query_multi);
+use List::Util   qw(first);
+use AUR::Json    qw(parse_json_aur write_json);
+use AUR::Query   qw(query_multi);
 use AUR::Depends qw(get);
 use AUR::Options qw(add_from_stdin);
 my $argv0 = 'depends';

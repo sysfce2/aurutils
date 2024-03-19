@@ -286,16 +286,13 @@ msg >&2 'Using [%s] repository' "$db_name"
 
 if [[ -r $ignore_file ]] && [[ ! -d $ignore_file ]]; then
     # Append file ignores to command-line ignores
-    while read -r i; do
-        pkg_i+=("$i")
-    done < <(select_pkgspec "$db_name" "$ignore_file")
+    while read -r i; do pkg_i+=("$i"); done < <(select_pkgspec "$db_name" "$ignore_file")
 fi
 
 # Diagnostic on which packages are ignored
 if (( ${#pkg_i[@]} )); then
     # Do not include command-line arguments as ignores (#952)
     mapfile -t pkg_i < <(complement <(printf '%s\n' "$@") <(printf '%s\n' "${pkg_i[@]}"))
-
     printf '%s: packages ignored: %s\n' "$argv0" "${pkg_i[*]}"
 
     # Ignore local repository targets (#1146)

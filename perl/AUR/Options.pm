@@ -33,7 +33,7 @@ sub delete_elements {
 
     # Remove indices from end of array first
     for (sort { $b <=> $a } @indices) {
-	splice @{$array_ref}, $_, 1;
+        splice @{$array_ref}, $_, 1;
     }
 }
 
@@ -46,14 +46,14 @@ sub add_from_stdin {
     my @indices;
 
     for my $idx (0..@{$array_ref}-1) {
-	my $match = grep { $array_ref->[$idx] eq $_ } @{$tokens};
-	push(@indices, $idx) if $match > 0;
+        my $match = grep { $array_ref->[$idx] eq $_ } @{$tokens};
+        push(@indices, $idx) if $match > 0;
     }
 
     if (scalar @indices > 0) {
-	delete_elements($array_ref, @indices);        
+        delete_elements($array_ref, @indices);
 
-	push(@{$array_ref}, <STDIN>);  # add arguments from stdin
+        push(@{$array_ref}, <STDIN>);  # add arguments from stdin
         chomp(@{$array_ref});          # remove newlines
     }
 }

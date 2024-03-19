@@ -10,8 +10,8 @@ use Term::ANSIColor qw(:constants);
 use constant OSC8 => "\033]8";
 use constant ST   => "\033\\";
 
-use AUR::Json qw(parse_json_aur write_json);
-use AUR::Query qw(query query_multi);
+use AUR::Json    qw(parse_json_aur write_json);
+use AUR::Query   qw(query query_multi);
 use AUR::Options qw(add_from_stdin);
 my $argv0 = 'search';
 my $aur_location = $ENV{AUR_LOCATION} // 'https://aur.archlinux.org';

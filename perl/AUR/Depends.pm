@@ -29,9 +29,9 @@ Alad Wenter <https://github.com/AladW/aurutils>
 =cut
 
 sub vercmp_run {
-    say STDERR __PACKAGE__ . ': vercmp ' . join(" ", @_)
-	if defined $ENV{'AUR_DEBUG'};
-
+    if (defined $ENV{'AUR_DEBUG'}) {
+        say STDERR __PACKAGE__ . ': vercmp ' . join(" ", @_);
+    }
     my @command = ('vercmp', @_);
     my $child_pid = open(my $fh, "-|", @command) or die $!;
     my $num;
@@ -50,7 +50,7 @@ sub vercmp_ops {
         '>'  => sub { $_[0] >  $_[1] },
         '<=' => sub { $_[0] <= $_[1] },
         '>=' => sub { $_[0] >= $_[1] },
-        );
+    );
     return %ops;
 }
 
