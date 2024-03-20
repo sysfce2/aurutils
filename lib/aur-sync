@@ -164,7 +164,7 @@ while true; do
         -d|--database|--repo)
             shift; build_repo_args+=(-d "$1") ;;
         --root)
-            shift; build_repo_args+=(-r "$1") ;;
+            shift; build_repo_args+=(--root "$1") ;;
         # fetch options
         --ff)
             fetch_args+=(--ff) ;;
