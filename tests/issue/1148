@@ -1,0 +1,10 @@
+#!/bin/bash
+tmp=$(mktemp -d)
+repo-add "$tmp"/extra.db.tar.gz || exit
+
+aur repo -d extra
+(( $? == 66 )) || exit
+aur repo -d extra --root "$tmp"
+(( $? == 0  )) || exit
+aur sync -d extra --root "$tmp" --no-build --no-view aurutils
+(( $? == 0  )) || exit
