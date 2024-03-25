@@ -49,6 +49,19 @@ EOF
     printf '%s\n' "${@@Q}" | pr -to 8 >&2
 }
 
+# Print diagnostic on missing devtools (#1150)
+diag_no_devtools() {
+    echo >&2 'Error:'
+
+    cat <<EOF | pr -to 4 >&2
+aur-$argv0 requires the mkarchroot, makechrootpkg and arch-nspawn utilities.
+These are typically provided by the extra/devtools Arch package.
+
+The following PATH was checked:
+EOF
+    printenv PATH | pr -to 8 >&2
+}
+
 usage() {
     printf 'usage: %s [-BU] [--create] [-CDM path] [package...]\n' "$argv0"
     exit 1
@@ -123,6 +136,11 @@ while true; do
     esac
     shift
 done
+
+if ! type -P mkarchroot || ! type -P arch-nspawn || ! type -P makechrootpkg; then
+    diag_no_devtools
+    exit 2
+fi
 
 # XXX: default paths can be set through the Makefile (`aur-chroot.in`)
 etcdir=/etc/aurutils shrdir=/usr/share/devtools
