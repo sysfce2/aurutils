@@ -264,7 +264,12 @@ fi
   IFS=: read -r _ db_root
   IFS=: read -r _ db_path  # canonicalized
 } < <(aur repo "${repo_args[@]}" --status)
-wait "$!"
+
+# Print an error if `repo --status` fails
+if ! wait "$!"; then
+    printf '%s: error: failed to read repository configuration\n' "$argv0"
+    exit 1
+fi
 
 # Check that a valid database extension was retrieved (#700, #1038)
 if [[ -z $db_ext ]] && [[ $db_path =~ \.db$ ]]; then
