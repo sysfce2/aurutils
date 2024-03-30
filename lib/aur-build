@@ -223,7 +223,12 @@ if (( chroot )); then
       IFS=: read -r _ pacman_conf
       IFS=: read -r _ makepkg_conf
     } < <(aur chroot "${chroot_args[@]}" --status)
-    wait "$!"
+
+    # Print an error if `chroot --status` fails (#1152)
+    if ! wait "$!"; then
+        printf '%s: error: failed to read chroot configuration\n' "$argv0"
+        exit 1
+    fi
 
     # Ensure PKGEXT defined in the container makepkg.conf is used for
     # makepkg calls on the host (`makepkg --packagelist`).
