@@ -277,7 +277,12 @@ fi
   IFS=: read -r _ _
   IFS=: read -r _ _
 } < <(aur build "${build_args[@]}" "${build_repo_args[@]}" --status)
-wait "$!"
+
+# Print an error if `build --status` fails (#1151)
+if ! wait "$!"; then
+    printf '%s: error: failed to read build configuration\n' "$argv0"
+    exit 1
+fi
 
 msg >&2 'Using [%s] repository' "$db_name"
 
