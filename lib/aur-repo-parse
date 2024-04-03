@@ -8,7 +8,7 @@ use Cwd 'abs_path';
 use File::Basename;
 
 use AUR::Json qw(write_json);
-use AUR::Repo qw(check_attr check_type list_attr parse_db);
+use AUR::Repo qw(check_attr list_attr parse_db);
 my $argv0 = 'repo-parse';
 
 # Handlers for filtering data
