@@ -2,10 +2,11 @@ package AUR::Repo;
 use strict;
 use warnings;
 use v5.20;
+use open ":std", ":encoding(UTF-8)";
 
 use Carp;
 use Exporter qw(import);
-our @EXPORT_OK = qw(list_attr check_attr check_type parse_db);
+our @EXPORT_OK = qw(list_attr check_attr check_type parse_db parse_db_file);
 our $VERSION = 'unstable';
 
 =head1 NAME
@@ -162,10 +163,42 @@ sub parse_db {
     return $count;
 }
 
-# =head2 extract_db()
+=head2 parse_db_file()
 
-# =cut
+Parameters:
 
-# sub extract_db {
+=over
 
-# }
+=item C<$db_path>
+
+=item C<$header>
+
+=item C<$handler>
+
+=item C<@varargs>
+
+=back
+
+=cut
+
+sub parse_db_file {
+    my ($db_path, $header, $handler, @varargs) = @_;
+
+    # When parsing the database, do not require a full extraction to either memory or disk
+    # by reading `tar` output line-by-line. It is not strictly necessary to depend on
+    # attribute order (i.e. %FILENAME% occuring in first place) while doing so; however,
+    # the `--verbose` flag printing file names has different behavior for different `tar`
+    # versions. Specifically, `bsdtar -xv` does not add a newline after the file path,
+    # while `tar -xv` does.
+    my $child_pid = open(my $fh, "-|", 'bsdtar', '-Oxf', $db_path) or die $!;
+    my $count;
+
+    if ($child_pid) { # parent process
+        $count = parse_db($fh, $header, $handler, @varargs);
+
+        waitpid($child_pid, 0);
+    }
+    exit(2) if $?;
+
+    return $count;
+}

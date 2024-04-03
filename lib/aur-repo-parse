@@ -3,12 +3,11 @@ use strict;
 use warnings;
 use v5.20;
 
-use open ":std", ":encoding(UTF-8)";
 use Cwd 'abs_path';
 use File::Basename;
 
 use AUR::Json qw(write_json);
-use AUR::Repo qw(check_attr list_attr parse_db);
+use AUR::Repo qw(check_attr list_attr parse_db parse_db_file);
 my $argv0 = 'repo-parse';
 
 # Handlers for filtering data
@@ -221,14 +220,17 @@ unless (caller) {
     $ignore{$_}++ for (map { split(',', $_) } @opt_ignore);
     my $ignore_by = check_option($opt_ignore_by, '--ignore-by', 'Name');
 
+    # Chain callbacks
+    my $handler = sub {
+        repo_filter($callback, $search, $search_by, \%ignore, $ignore_by, @_);
+    };
+
     # Take input from stdin instead of a pacman database
     if ($opt_stdin) {
+        # Additional fields for `aur-format`
         @varargs = ("/dev/stdin", "local") if ($opt_json or $opt_jsonl);
 
-        my $count = parse_db(*STDIN, 'FILENAME', sub {
-            repo_filter($callback, $search, $search_by, \%ignore, $ignore_by, @_);
-        }, @varargs);
-
+        my $count = parse_db(*STDIN, 'FILENAME', $handler, @varargs);
         exit(0);
     }
 
@@ -236,37 +238,24 @@ unless (caller) {
     # so fork a new process for each specified path.
     for my $db_path (@opt_db_path) {
         my $db_abs_path = abs_path($db_path);
-        my $db_name = basename($db_path);
+        my $db_name     = basename($db_path);
 
-        if (not length($db_abs_path)) {
-            say STDERR $argv0 . ": file path '$db_path' not found";
+        if (not length $db_abs_path or not -e $db_abs_path) {
+            say STDERR $argv0 . ": file '$db_path' not found";
             exit(2);
         }
+        # Additional fields for `aur-format`
+        @varargs = ($db_abs_path, $db_name) if ($opt_json or $opt_jsonl);
 
         # repo-add(8) only accepts *.db or *.db.tar* extensions
         if ($db_name =~ /\.(db|files)(\.tar(\.\w+)?)?$/g) {
             $db_name = substr $db_name, 0, $-[0];
-        } else {
-            say STDERR "$argv0: $db_name does not have a valid database archive extension";
+        }
+        else {
+            say STDERR $argv0 . ": $db_name does not have a valid database archive extension";
             exit(1);
         }
-
-        # When parsing the database, do not require a full extraction to either memory or disk
-        # by reading `tar` output line-by-line. It is not strictly necessary to depend on
-        # attribute order (i.e. %FILENAME% occuring in first place) while doing so; however,
-        # the `--verbose` flag printing file names has different behavior for different `tar`
-        # versions. Specifically, `bsdtar -xv` does not add a newline after the file path,
-        # while `tar -xv` does.
-        my $child_pid = open(my $fh, "-|", 'bsdtar', '-Oxf', $db_abs_path) or die $!;
-
-        if ($child_pid) { # parent process
-            @varargs = ($db_abs_path, $db_name) if ($opt_json or $opt_jsonl);
-
-            my $count = parse_db($fh, 'FILENAME', sub {
-                repo_filter($callback, $search, $search_by, \%ignore, $ignore_by, @_);
-            }, @varargs);
-        }
-        exit(2) if $?;
+        my $count = parse_db_file($db_abs_path, 'FILENAME', $handler, @varargs);
     }
 }
 

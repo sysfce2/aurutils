@@ -33,6 +33,8 @@ aur repo-parse || err=$?
 [[ $err == 1 ]]
 aur repo-parse -p /does/not/exist --list || err=$?
 [[ $err == 2 ]]
+aur repo-parse -p /home/not_a_database.db --list || err=$?
+[[ $err == 2 ]]
 
 # --json output with varying number of packages
 core_entries=('acl-*/desc' 'archlinux-keyring-*/desc')
