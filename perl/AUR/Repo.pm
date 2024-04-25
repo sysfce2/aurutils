@@ -117,12 +117,9 @@ sub parse_db {
             chomp($filename);
 
             # Evaluate condition on previous entry and run handler
-            if ($count > 0) {
+            if (defined $entry) {
                 $count++ if $handler->($entry, $count, 0, @varargs);
-            } else {
-                $count++;
             }
-
             # New entry in the database (hashref)
             %{$entry} = ();
             $entry->{$repo_add_attributes{$header}->[1]} = $filename;
@@ -157,9 +154,8 @@ sub parse_db {
         }
     }
     # Process last entry
-    if ($count > 0) {
-        $handler->($entry, $count, 1, @varargs);
-    }
+    $handler->($entry, $count, 1, @varargs);
+
     return $count;
 }
 
