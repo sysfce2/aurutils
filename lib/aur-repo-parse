@@ -31,6 +31,10 @@ sub repo_filter {
     my ($callback, $search, $search_by, $ignore, $ignore_by,
         $pkg, $count, $last, @varargs) = @_;
 
+    if (not defined $pkg) {
+        $callback->(undef, $count, $last, @varargs);
+        return 0;
+    }
     my $pkg_ignore = defined $ignore->{$pkg->{$ignore_by}};
 
     if (entry_search($search, $pkg->{$search_by}) and not $pkg_ignore) {
@@ -51,11 +55,14 @@ sub repo_json {
         $pkg->{'DBPath'}     = $db_path;
         $pkg->{'Repository'} = $db_name;
 
-        print '[' if $count == 1;
-        print ',' if $count  > 1;
+        print '[' if $count == 0;
+        print ',' if $count  > 0;
 
         my $json_text = write_json($pkg);
         print $json_text;
+    }
+    elsif ($count == 0) {
+        print '[' if $last == 1;
     }
     print "]\n" if $last == 1;
 }
