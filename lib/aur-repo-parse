@@ -251,9 +251,6 @@ unless (caller) {
             say STDERR $argv0 . ": file '$db_path' not found";
             exit(2);
         }
-        # Additional fields for `aur-format`
-        @varargs = ($db_abs_path, $db_name) if ($opt_json or $opt_jsonl);
-
         # repo-add(8) only accepts *.db or *.db.tar* extensions
         if ($db_name =~ /\.(db|files)(\.tar(\.\w+)?)?$/g) {
             $db_name = substr $db_name, 0, $-[0];
@@ -262,6 +259,9 @@ unless (caller) {
             say STDERR $argv0 . ": $db_name does not have a valid database archive extension";
             exit(1);
         }
+        # Additional fields for `aur-format`
+        @varargs = ($db_abs_path, $db_name) if ($opt_json or $opt_jsonl);
+
         my $count = parse_db_file($db_abs_path, 'FILENAME', $handler, @varargs);
     }
 }
