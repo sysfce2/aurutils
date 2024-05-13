@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# ensure that %R yields core, not core.db
+aur repo -S -d core --format '%R\n' | grep -Fxq core
