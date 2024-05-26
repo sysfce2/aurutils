@@ -130,7 +130,8 @@ for pkg in "${packages[@]}"; do
         # Check if hash points to an existing object
         if ! git cat-file -e "$view"; then
             printf >&2 '%s: %s: invalid git revision\n' "$argv0" "$AUR_VIEW_DB/$pkg"
-            exit 22
+            printf >&2 '%s: %s: falling back to empty tree\n' "$argv0" "$AUR_VIEW_DB/$pkg" 
+            view=$(git hash-object -t tree /dev/null)
         fi
 
         if [[ $view != "$head" ]]; then
