@@ -47,12 +47,20 @@ function has_valid_arch(attr) {
     return !i || (substr(attr, i+1) in arch)
 }
 
+function print2(str1, str2) {
+    if (REVERSE)
+        printf("%s\t%s\n", str1, str2)
+    else
+        printf("%s\t%s\n", str2, str1)
+}
+
 BEGIN {
     DEPENDS = setopt(DEPENDS, 1)
     MAKEDEPENDS = setopt(MAKEDEPENDS, 1)
     CHECKDEPENDS = setopt(CHECKDEPENDS, 1)
     OPTDEPENDS = setopt(OPTDEPENDS, 0)
     PRINTALL = setopt(PRINTALL, 0)
+    REVERSE = setopt(REVERSE, 0)
 }
 
 $1 == "pkgbase" {
@@ -121,11 +129,11 @@ END {
 
     for (pkgbase in dep_counts) {
         # add a loop to isolated nodes (#402)
-        printf("%s\t%s\n", pkgbase, pkgbase)
+        print2(pkgbase, pkgbase)
 
         for (dep = 1; dep <= dep_counts[pkgbase]; dep++) {
             if (PRINTALL) {
-                printf("%s\t%s\n", pkgbase, pkg_deps[pkgbase, dep])
+                print2(pkgbase, pkg_deps[pkgbase, dep])
                 continue
             }
             dep_op = "-" # unversioned / no comparison
@@ -159,7 +167,7 @@ END {
 
             # run vercmp with provider and versioned dependency
             if (get_vercmp(ver_map[dep_pkgname], dep_pkgver, dep_op)) {
-                printf("%s\t%s\n", pkgbase, pkg_map[dep_pkgname])
+                print2(pkgbase, pkg_map[dep_pkgname])
             } else {
                 printf("invalid node: %s %s (required: %s%s)\n",
                        dep_pkgname, ver_map[dep_pkgname], dep_op, dep_pkgver) > "/dev/stderr"
