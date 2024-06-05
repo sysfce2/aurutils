@@ -83,23 +83,28 @@ $1 == "arch" {
 }
 
 index($1, "depends") == 1 && !in_split_pkg {
-    if (DEPENDS && has_valid_arch($1))
+    if (DEPENDS && has_valid_arch($1)) {
         pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
+    }
 }
 
 index($1, "makedepends") == 1 && !in_split_pkg {
-    if (MAKEDEPENDS && has_valid_arch($1))
+    if (MAKEDEPENDS && has_valid_arch($1)) {
         pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
+    }
 }
 
 index($1, "checkdepends") == 1 && !in_split_pkg {
-    if (CHECKDEPENDS && has_valid_arch($1))
+    if (CHECKDEPENDS && has_valid_arch($1)) {
         pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
+    }
 }
 
 index($1, "optdepends") == 1 && !in_split_pkg {
-    if (OPTDEPENDS && has_valid_arch($1))
-        pkg_deps[pkgbase, ++dep_counts[pkgbase]] = $3
+    if (OPTDEPENDS && has_valid_arch($1)) {
+        split($3, optname, ":")  # split optdepends name from description
+        pkg_deps[pkgbase, ++dep_counts[pkgbase]] = optname[1]
+    }
 }
 
 NF == 0 {
