@@ -128,8 +128,7 @@ sub recurse {
         my @level = $callback->(\@depends);
 
         if (not scalar(@level) and $a == 1) {
-            say STDERR __PACKAGE__ . ": no packages found";
-            exit(1);
+            last;  # no results
         }
         # Retrieve next level of dependencies from results
         @depends = ();
@@ -163,6 +162,17 @@ sub recurse {
         if (not scalar(@depends)) {
             last;  # no further results
         }
+    }
+    # Print which targets have not been found
+    for my $name (@{$targets}) {
+        if (not defined $results{$name}) {
+            say STDERR __PACKAGE__ . ": target not found: $name";
+        }
+    }
+    # Check if results are available
+    if (scalar keys %results == 0) {
+        say STDERR __PACKAGE__ . ": no packages found";
+        exit(1);
     }
     # Check if request limits have been exceeded
     if ($a == $aur_callback_max) {
