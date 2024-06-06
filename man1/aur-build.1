@@ -11,6 +11,7 @@ aur\-build \- build packages to a local repository
 .OP \-\-pkgver
 .OP \-\-root DIRECTORY
 .OP \-\-margs
+.OP \-\-cargs
 .RI [ makepkg_args... ]
 .YS
 .
@@ -166,6 +167,13 @@ and local repository upgrades (see the
 .B Repository updates
 section)
 are unaffected by this option.
+.
+.TP
+.BI \-\-cargs= ARGS "\fR,\fP \-\-makechrootpkg\-args=" ARGS
+Arguments (comma-separated) to be passed to
+.B makechrootpkg
+for chroot builds
+.RB ( aur\-chroot " " \-\-cargs ).
 .
 .TP
 .BR \-\-no\-sync
