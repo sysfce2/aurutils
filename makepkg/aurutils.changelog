@@ -1,3 +1,17 @@
+## 19.6
+
+* `aur-graph`
+  + add `REVERSE`
+
+* `aur-sync`
+  + fix `--optdepends` dependency order (#1164)
+
+* `aur-view`
+  + diff from `/dev/null` on invalid revision (#1162)
+
+* `perl`
+  + `AUR::Depends`: warn about targets that are not found, refactor (#1165)
+
 ## 19.5
 
 * `aur-repo`
