@@ -128,7 +128,7 @@ unless(caller) {
 
     # Retrieve AUR results
     #    JSON -> hash -> extract depends[] -> repeat until none -> prune
-    my ($results, $dag, $dag_foreign) = solve(\@ARGV, \@types, \&callback_query,
+    my ($results, $dag, $dag_foreign) = get(\@ARGV, \@types, \&callback_query,
         $opt_verify, $opt_provides, $opt_installed);
 
     # Add `RequiredBy` to results
