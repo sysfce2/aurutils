@@ -49,9 +49,9 @@ function has_valid_arch(attr) {
 
 function print2(str1, str2) {
     if (REVERSE)
-        printf("%s\t%s\n", str1, str2)
-    else
         printf("%s\t%s\n", str2, str1)
+    else
+        printf("%s\t%s\n", str1, str2)
 }
 
 BEGIN {
