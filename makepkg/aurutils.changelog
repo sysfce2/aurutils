@@ -1,3 +1,13 @@
+## 19.9
+
+* `aur-repo`
+  + warn if a local repository is not configured in pacman.conf (instead of exiting)
+
+## 19.8
+
+* `aur-graph`
+  + fix for "add `-REVERSE`" in 19.6
+
 ## 19.7
 
 * `perl`
