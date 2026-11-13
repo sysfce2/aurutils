@@ -1,0 +1,305 @@
+#!/bin/bash
+# aur-fetch - retrieve build files from the AUR
+
+if [[ -v AUR_DEBUG ]]; then
+    PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
+    set -o xtrace
+fi
+
+usage() {
+    cat <<! | base64 -d
+ICAgICAgICAgICAgIC4tLX5+LF9fCjotLi4uLiwtLS0tLS0tYH5+Jy5fLicKIGAtLCwsICAs
+XyAgICAgIDsnflUnCiAgXywtJyAsJ2AtX187ICctLS4KIChfLyd+fiAgICAgICcnJycoOwoK
+!
+    printf 'usage: fetch [-Sefr] [--rebase|--reset|--merge] [--] pkgname...\n'
+    exit 1
+}
+
+warn() {
+    printf >&2 "%s: $1" fetch "${@:2}"
+}
+
+sync_should_merge() {
+    local upstream=$1 dest=$2 pkg=$3
+
+    # Check if last upstream commit can be reached from $dest
+    if git merge-base --is-ancestor "$upstream" "$dest"; then
+        warn '%s: already up to date\n' "$pkg"
+        return 1
+    fi
+}
+
+AUR_FETCH_USE_MIRROR=${AUR_FETCH_USE_MIRROR:-0}
+AUR_LOCATION=${AUR_LOCATION:-https://aur.archlinux.org}
+
+# Author information for merge commits
+export GIT_AUTHOR_NAME=aurutils
+export GIT_AUTHOR_EMAIL=aurutils@localhost
+export GIT_COMMITTER_NAME=aurutils
+export GIT_COMMITTER_EMAIL=aurutils@localhost
+export GIT_HTTP_USER_AGENT=aurutils
+
+# Placeholder for repositories without commits
+git_empty_object=$(git hash-object -t tree /dev/null)
+
+# Default options
+existing=0 recurse=0 discard=0 sync=fetch
+
+unset -v rebase_args merge_args results_file
+
+# option handling
+opt_short='Sefr'
+opt_long=('auto' 'merge' 'reset' 'rebase' 'discard' 'existing' 'results:' 'ff'
+          'ff-only' 'no-ff' 'no-commit' 'recurse')
+opt_hidden=('dump-options' 'sync:')
+
+if opts=$(getopt -o "$opt_short" -l "$(IFS=,; printf %s,%s "${opt_long[*]}" "${opt_hidden[*]}")" -n fetch -- "$@"); then
+    eval set -- "$opts"
+else
+    usage >&2
+fi
+
+while true; do
+    case $1 in
+        # Fetch options
+        -S|--auto)
+            sync=auto ;;
+        -f|--discard)
+            discard=1 ;;
+        -e|--existing)
+            existing=1 ;;
+        --merge)
+            sync=merge ;;
+        --rebase)
+            sync=rebase ;;
+        --reset)
+            sync=reset ;;
+        --results)
+            shift; results_file=$(realpath -- "$1") ;;
+        # Git options
+        --ff)
+            merge_args+=(--ff) ;;
+        --ff-only)
+            merge_args+=(--ff-only) ;;
+        --no-commit)
+            merge_args+=(--no-commit) ;;
+        --no-ff)
+            merge_args+=(--no-ff); rebase_args+=(--no-ff) ;;
+        # Compatibility options
+        --sync)
+            shift; sync=$1 ;;
+        -r|--recurse)
+            recurse=1 ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
+            printf %s "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
+        --) shift; break ;;
+    esac
+
+    shift
+done
+
+# Default to only allowing fast-forward merges (as git-pull)
+if (( ! ${#merge_args[@]} )); then
+    merge_args=(--ff-only)
+fi
+
+# Option validation
+if [[ $sync != @(auto|merge|rebase|reset|fetch) ]]; then
+    warn '%s: invalid --sync mode\n' "$sync"
+    exit 1
+fi
+
+if (( ! $# )); then
+    warn 'no targets specified\n'
+    exit 1
+fi
+
+# XXX: race with concurrent processes
+if [[ ! $results_file ]]; then
+    results() { :; }
+else
+    : > "$results_file" || exit 1 # truncate file
+
+    results() {
+        local mode=$1 prev=$2 current=$3 path=$4
+
+        if [[ -w $results_file ]]; then
+            printf >> "$results_file" '%s:%s:%s:file://%s\n' "$mode" "$prev" "$current" "$path"
+        fi
+    }
+fi
+
+# Normalise package names given as pkgbases and urls
+declare -A packages
+while read -r remote path; do
+    pkgbase=${path%/}
+    pkgbase=${pkgbase##*/}
+
+    # XXX duplicate pkgbases will inherit the latest remote value. Check for
+    #     duplicates here if you want to preserve the first associated remote.
+    #
+    #     if [[ ! "${packages[$pkgbase]}" ]]; then
+    #         packages["$pkgbase"]=$remote
+    #     fi
+
+    if [[ -n $pkgbase ]]; then
+        packages["$pkgbase"]="$remote"
+    else
+        warn "empty pkgbase for remote '%s', skipping\n" "$remote"
+    fi
+done < <(
+    {
+        if (( recurse )); then
+            aur depends --reverse "$@" | tsort
+        elif [[ $1 = - || $1 = /dev/stdin ]]; then
+            cat
+        else
+            printf '%s\n' "$@"
+        fi
+    } | {
+        while IFS= read -r pkg; do
+            if [[ $pkg != *://* ]]; then
+                printf '%s/%s\n' "$AUR_LOCATION" "$pkg"
+            elif [[ -e $pkg ]]; then
+                warn '%s: invalid pkgname, skipping\n' "$pkg"
+            else
+                printf '%s\n' "$pkg"
+            fi
+        done
+    } | trurl --get '{url} {path}' --url-file -
+)
+wait "$!" || exit
+
+# Check aur-depends retrieved something (#1214)
+if (( recurse )) && ! (( ${#packages[@]} )); then
+    exit 2
+fi
+
+# Update revisions in local AUR mirror
+declare -A is_local_clone
+
+# With an AUR mirror, updates are retrieved in two steps. First, updates to the
+# mirror are synchronized with `git-fetch`. Secondly, local clones of the miror
+# are created and are updated with `git-fetch` and `git-merge` as usual.
+if (( AUR_FETCH_USE_MIRROR > 0 )); then
+    while IFS=: read -r pkg head; do
+        printf "Cloning into '%s'\n" "$pkg"
+        git -C "$pkg" --no-pager log --pretty=reference -1
+
+        results clone "$git_empty_object" "$head" "$PWD"/"$pkg" "$results_file"
+
+        is_local_clone["$pkg"]=$head
+    done < <(aur fetch--mirror --lclone "${!packages[@]}")
+
+    wait "$!" || exit
+fi >&2
+
+
+# Main loop
+for pkg in "${!packages[@]}"; do
+    unset -f git
+    remote=${packages[$pkg]}
+
+    # Local clone by fetch--mirror
+    if [[ ${is_local_clone[$pkg]} ]]; then
+        : # no-op
+
+    # Verify if the repository is hosted on AUR (#959)
+    elif (( existing )) && ! git ls-remote --exit-code "$remote" >/dev/null; then
+        warn '%s: package is not in AUR, skipping\n' "$pkg"
+
+    # Clone package if not existing
+    elif [[ ! -d $pkg/.git ]]; then
+        git clone "$remote" "$pkg" || exit 1
+
+        head=$(git -C "$pkg" rev-parse --verify HEAD)
+
+        if [[ $head ]]; then
+            git -C "$pkg" --no-pager log --pretty=reference -1
+        fi
+
+        results clone "$git_empty_object" "${head:-$git_empty_object}" "$PWD"/"$pkg" "$results_file"
+
+    # Update existing git repository
+    else
+        # Per-package lock
+        exec {fd}< "$pkg"/.git
+        flock --wait 5 "$fd" || exit 1
+
+        # Avoid issues with filesystem boundaries (#274)
+        git() { command git -C "$pkg" "$@"; }
+
+        # Retrieve per-package configuration (aurutils.rebase, #1007)
+        pkg_sync=$sync
+
+        if [[ $sync = auto ]]; then
+            case $(git config --default=false --get --type bool aurutils.rebase) in
+                true)  pkg_sync=rebase ;;
+                false) pkg_sync=merge
+            esac
+
+            warn 'aurutils.rebase is set for %s\n' "$pkg_sync"
+        fi
+
+        # Retrieve new upstream commits
+        git fetch origin || exit
+
+        # Store original HEAD for --results output
+        orig_head=$(git rev-parse --verify --quiet HEAD)
+        orig_head=${orig_head:-$git_empty_object}
+
+        # Merge in new history
+        upstream=origin/HEAD
+
+        # Local clones of the AUR mirror (fetch--mirror --lclone) only have
+        # a remote-tracking branch for the package
+        if ! git rev-parse --verify --quiet "$upstream" >/dev/null; then
+            upstream=origin/$pkg
+        fi
+
+        case $pkg_sync in
+            rebase)
+                dest=HEAD
+
+                if sync_should_merge "$upstream" "$dest" "$pkg"; then
+                    if (( discard )); then
+                        git checkout ./
+                    fi
+
+                    git rebase "${rebase_args[@]}" "$upstream"
+                fi
+            ;;
+            merge)
+                dest=HEAD
+
+                if sync_should_merge "$upstream" "$dest" "$pkg"; then
+                    if (( discard )); then
+                        git checkout ./
+                    fi
+
+                    git merge "${merge_args[@]}" "$upstream"
+                fi
+            ;;
+            reset)
+                dest=$upstream
+
+                git reset --hard "$dest"
+            ;;
+            fetch)
+                dest=$upstream
+        esac || {
+            warn 'failed to %s %s\n' "$pkg_sync" "$pkg"
+            exit 1
+        }
+
+        head=$(git rev-parse --verify "$dest")
+
+        results "$pkg_sync" "$orig_head" "$head" "$PWD"/"$pkg" "$results_file"
+
+        exec {fd}<&- # release lock
+    fi >&2 # print all git output to stderr
+done
+
+# vim: set et sw=4 sts=4 ft=sh:

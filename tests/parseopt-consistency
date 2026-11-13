@@ -5,11 +5,11 @@ export AUR_ASROOT=1
 
 parse_loop() {
   awk '/^while true; do$/,/^done$/ {
-    if ( $0 ~ /^\s*-.*)$/ && $1 != "--)" ) {  # match -<something>) except --)
-      gsub(/[ )]/,"")                         # remove spaces and final parens
-      split($0, patterns,"|")                 # split on |
-      getline                                 # ask for next line for shift check
-      for (i in patterns) {                   # print options accordingly
+    if ( $0 ~ /^[[:space:]]*-.*)$/ && $1 != "--)" ) {  # match -<something>) except --)
+      gsub(/[ )]/,"")                                  # remove spaces and final parens
+      split($0, patterns,"|")                          # split on |
+      getline                                          # ask for next line for shift check
+      for (i in patterns) {                            # print options accordingly
         if ($2 ~ /^optval/) {
           print patterns[i] "::"
         } else if ($1 ~ /^shift/) {
@@ -25,7 +25,7 @@ parse_loop() {
 ret=0
 have_optdump=(aur-build aur-chroot aur-fetch aur-pkglist aur-repo aur-repo-filter aur-srcver aur-sync aur-vercmp aur-view)
 for cmd in "${have_optdump[@]}"; do
-      aurcmd=${BASH_SOURCE%/*}/../lib/$cmd
+      aurcmd=$(find "${BASH_SOURCE%/*}/../lib" -name $cmd)
 
       diff --color -U0 --label "$aurcmd Options" --label "$aurcmd Loop" \
         <(bash --pretty-print -O extglob "$aurcmd" | parse_loop | sort) \

@@ -1,14 +1,20 @@
 #!/bin/bash
 # aur-sync - download and build AUR packages automatically
-[[ -v AUR_DEBUG ]] && set -o xtrace
+
+if [[ -v AUR_DEBUG ]]; then
+    PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+    set -o xtrace
+fi
+
 set -o errexit
 argv0=sync
 XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
 XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
+XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 AURDEST=${AURDEST:-$XDG_CACHE_HOME/aurutils/$argv0}
 AUR_SYNC_USE_NINJA=${AUR_SYNC_USE_NINJA:-0}
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+AUR_SYNC_GNUPGHOME=${AUR_SYNC_GNUPGHOME:-$XDG_DATA_HOME/aurutils/$argv0/gnupg}
 
 # Avoid CDPATH screwing with cd (#1047)
 unset -v CDPATH
@@ -21,7 +27,7 @@ depends_args=() view_args=() filter_args=() fetch_args=() graph_args=() reparse_
 build=1 chkver_depth=2 download=1 view=1 provides=1 graph=1 keep_going=1
 
 # default options (disabled)
-rotate=0 update=0 repo_targets=0 columns=0
+rotate=0 update=0 repo_targets=0 columns=0 auto_key_retrieve=0
 
 args_csv() {
     # shellcheck disable=SC2155
@@ -72,6 +78,17 @@ usage() {
     exit 1
 }
 
+# Clarify tsort errors (#1039)
+diag_depcycle() {
+	echo >&2 'Error:'
+
+cat <<EOF | pr -to 4 >&2
+aur-$argv0 encountered a cycle while resolving dependencies. This may be caused
+by an error in the PKGBUILD or by cyclic checkdepends. For the latter, retry
+building the package(s) with --no-check.
+EOF
+}
+
 source /usr/share/makepkg/util/message.sh
 
 if [[ ! -v NO_COLOR ]] && [[ ! -v AUR_DEBUG ]]; then
@@ -86,7 +103,7 @@ if (( UID == 0 )) && [[ ! -v AUR_ASROOT ]]; then
 fi
 
 # option parsing
-opt_short='d:D:k:U:ACcfLnorRSTuv'
+opt_short='d:D:k:U:ACcfKLnorRSTuv'
 opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'makepkg-conf:' 'pacman-conf:' 'chroot' 'continue' 'force' 'ignore-arch'
           'log' 'no-confirm' 'no-ver' 'no-graph' 'no-sync' 'no-ver-argv' 'no-view'
@@ -94,11 +111,12 @@ opt_long=('bind:' 'bind-rw:' 'database:' 'directory:' 'ignore:' 'root:'
           'rebuild' 'rebuild-tree' 'rebuild-all' 'ignore-file:' 'remove'
           'provides-from:' 'new' 'prevent-downgrade' 'verify' 'makepkg-args:'
           'format:' 'no-check' 'keep-going:' 'user:' 'rebase' 'reset' 'ff' 'exclude:'
-          'columns' 'prefix' 'save:' 'clean' 'cleanbuild')
+          'columns' 'prefix' 'save:' 'clean' 'cleanbuild' 'auto-key-retrieve' 'pool:')
 opt_hidden=('dump-options' 'allan' 'ignorearch' 'ignorefile:' 'noconfirm'
             'nover' 'nograph' 'nosync' 'nover-argv' 'noview' 'noprovides' 'nobuild'
             'rebuildall' 'rebuildtree' 'rm-deps' 'gpg-sign' 'margs:' 'nocheck'
-            'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:')
+            'no-checkdepends' 'nocheckdepends' 'optdepends' 'repo:' 'autokeyretrieve'
+            'base-packages:' 'cargs:' 'makechrootpkg-args:')
 
 if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
     eval set -- "$opts"
@@ -146,6 +164,8 @@ while true; do
             view=0 ;;
         --noprovides|--no-provides)
             provides=0 ;;
+        -K|--auto-key-retrieve|--autokeyretrieve)
+            auto_key_retrieve=1 ;;
         --provides-from)
             shift; IFS=, read -a repo -r <<< "$1"
             repo_p+=("${repo[@]}")
@@ -186,10 +206,14 @@ while true; do
             build_args+=(--force) ;;
         -C|--clean)
             build_args+=(--clean) ;;
+        --base-packages)
+            shift; build_args+=(--base-packages "$1") ;;
         --cleanbuild)
             build_args+=(--cleanbuild) ;;
         --makepkg-args|--margs)
             shift; build_args+=(--margs "$1") ;;
+        --makechrootpkg-args|--cargs)
+            shift; build_args+=(--cargs "$1") ;;
         --makepkg-conf)
             shift; build_args+=(--makepkg-conf "$1") ;;
         --pacman-conf)
@@ -201,6 +225,8 @@ while true; do
             build_args+=(--sign) ;;
         -U|--user)
             shift; build_args+=(--user "$1") ;;
+        --pool)
+            shift; build_args+=(--pool "$1") ;;
         # build options (devtools)
         -D|--directory)
             shift; build_args+=(--directory "$1") ;;
@@ -238,18 +264,8 @@ while true; do
     shift
 done
 
-# shellcheck disable=SC2174
-mkdir -pm 0700 -- "${TMPDIR:-/tmp}/aurutils-$UID"
-tmp=$(mktemp -d --tmpdir "aurutils-$UID/$argv0.XXXXXXXX")
+tmp=$(mktemp -d --tmpdir "aurutils-$argv0.XXXXXXXX") || exit
 trap 'trap_exit' EXIT
-
-# Default to showing PKGBUILD first in patch. (#399)
-orderfile=$XDG_CONFIG_HOME/aurutils/$argv0/orderfile
-mkdir -p -- "${orderfile%/*}"
-
-if [[ ! -s $orderfile ]]; then
-    printf 'PKGBUILD\n' > "$orderfile"
-fi
 
 if (( rotate )); then
     if { hash caesar && target=$(aur pkglist | shuf -n 1); } 2>/dev/null; then
@@ -280,7 +296,7 @@ fi
 
 # Print an error if `build --status` fails (#1151)
 if ! wait "$!"; then
-    printf '%s: error: failed to read build configuration\n' "$argv0"
+    printf >&2 '%s: error: failed to read build configuration\n' "$argv0"
     exit 1
 fi
 
@@ -376,12 +392,13 @@ aur sync--filter -p "$tmp"/depends.jsonl -f "$tmp"/filter >"$tmp"/graph
 # a less nice diagnostic on cycles), or fetches done in an arbitrary order
 # (e.g. sort -u) with checks for cycles done at build-time.
 if ! tsort <"$tmp"/graph >"$tmp"/queue; then
-    printf >&2 '%s: dependency cycle detected\n' "$argv0"
+    diag_depcycle
     exit 22
 fi
 
 if [[ -s $tmp/queue ]]; then
     cd -- "$AURDEST"
+    AURDEST=$PWD  # absolute path for --no-build and sync--ninja
 else
     printf >&2 '%s: there is nothing to do\n' "$argv0"
     exit
@@ -389,36 +406,75 @@ fi
 
 if (( download )); then
     msg >&2 "Retrieving package files"
-    aur fetch -S "${fetch_args[@]}" --discard --results "$tmp"/fetch_results - < "$tmp"/queue >&2
-
-    # shellcheck disable=SC2034
-    while IFS=: read -r mode rev_old rev path; do
-        path=${path#file://} name=${path##*/}
-
-        case $mode in
-            clone)
-                git -C "$path" config diff.orderFile "$orderfile" ;;
-            fetch|merge|rebase|reset)
-                ;;
-        esac
-    done < "$tmp"/fetch_results
+    aur fetch -S "${fetch_args[@]}" --discard - < "$tmp"/queue >&2
 else
     xargs -a "$tmp"/queue stat >/dev/null || exit 2 # ensure all directories are available
 fi
 
-# Verify dependency tree (#20)
+# Inspect package files. Build files are not processed before this point: the
+# queue follows from AUR metadata (aur-depends). Dependencies are resolved a
+# second time from the inspected .SRCINFO files below (aur-graph).
+if (( view )); then
+    aur view -a "$tmp"/queue "${view_args[@]}"
+fi
+
+if (( auto_key_retrieve )); then
+    # shellcheck disable=SC2174
+    mkdir -pm 0700 -- "$AUR_SYNC_GNUPGHOME"
+    declare -A keys_uniq
+
+    # Retrieve unique set of gpg keys to be imported
+    while IFS= read -r path; do
+        if [[ -f $path/.SRCINFO ]]; then
+            mapfile -t keys < <(pacini "$path"/.SRCINFO 'validpgpkeys')
+
+            for key in "${keys[@]}"; do
+                keys_uniq[$key]=1
+            done
+        fi
+    done < "$tmp"/queue
+
+    if (( ${#keys_uniq[@]} )); then
+        for key in "${!keys_uniq[@]}"; do
+            printf >&2 '%s: importing key %s\n' "$argv0" "$key"
+        done
+        # keys are taken from .SRCINFO, and must not be parsed as options
+        GNUPGHOME="$AUR_SYNC_GNUPGHOME" gpg --recv-keys -- "${!keys_uniq[@]}" >&2
+    fi
+
+    # Pass on verified keys to makepkg
+    build_args+=(--makepkg-gnupghome="$AUR_SYNC_GNUPGHOME")
+fi
+
+# Verify dependency tree (#20). The resulting queue is used for the build.
+# Use pacini to preprocess .SRCINFO to avoid CRLF (#1203)
 if (( graph )); then
     if ! { while read -r pkg; do
                [[ $pkg ]] && printf '%s\0' "$pkg/.SRCINFO"
            done
-         } | xargs -0 cat -- | aur graph "${graph_args[@]}"
+         } | xargs -0 cat -- | pacini | aur graph "${graph_args[@]}" REVERSE=1
     then
         printf >&2 '%s: failed to verify dependency graph\n' "$argv0"
         exit 1
-    fi <"$tmp"/queue | swap >"$tmp"/graph
+    fi <"$tmp"/queue >"$tmp"/graph
 
     # Recompute dependencies to include `provides` (#837)
-    tsort < "$tmp"/graph >"$tmp"/queue || exit 22
+    if ! tsort < "$tmp"/graph >"$tmp"/queue.graph; then
+        diag_depcycle
+        exit 22
+    fi
+
+    # The pkgbase is taken from .SRCINFO, and used as build directory below.
+    # It must match a directory which was retrieved and inspected. aurweb
+    # rejects a .SRCINFO with a pkgbase other than the name of the repository:
+    # a mismatch follows from local changes, or a remote other than the AUR.
+    if grep -Fxvf "$tmp"/queue "$tmp"/queue.graph >"$tmp"/queue.unknown; then
+        printf >&2 '%s: pkgbase in .SRCINFO does not match a retrieved package:\n' "$argv0"
+        mapfile -t unknown <"$tmp"/queue.unknown
+        printf >&2 '%q\n' "${unknown[@]}"
+        exit 1
+    fi
+    mv -f -- "$tmp"/queue.graph "$tmp"/queue
 fi
 
 { # Sort dependencies (`aur-sync--ninja`, `--columns`)
@@ -429,11 +485,6 @@ fi
       [[ $pkg ]] && printf '%s\n' "$AURDEST/$pkg"
   done <"$tmp"/queue >"$tmp"/queue.realpath
 }
-
-# Inspect package files
-if (( view )); then
-    aur view -a "$tmp"/queue "${view_args[@]}"
-fi
 
 # `--columns` / `--no-build` output
 if (( columns )) && [[ -v stdout_file ]]; then
@@ -458,7 +509,7 @@ elif (( AUR_SYNC_USE_NINJA )); then
     # Directory for stamp files (concurrent aur-sync processes)
     mkdir -p -- "$XDG_STATE_HOME"/aurutils/$argv0
     ninja_dir=$XDG_STATE_HOME/aurutils/$argv0/ninja-$USER-$$
-    mkdir -- "$ninja_dir"
+    mkdir -- "$ninja_dir" || exit
 
     # Generate build.ninja
     # input:  $AURDEST/pkgbase/PKGBUILD
@@ -485,6 +536,7 @@ elif (( AUR_SYNC_USE_NINJA )); then
 
         # Preserve ninja directory
         printf '%s: build files at %s\n' "$argv0" "$ninja_dir"
+        exit 1
     fi
 else
     # Apply `--save` (#1091)

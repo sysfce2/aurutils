@@ -1,0 +1,228 @@
+#!/usr/bin/env perl
+
+use open ":std", ":encoding(UTF-8)";
+use POSIX qw(strftime);
+use v5.40;
+
+use AUR::Json qw(parse_json parse_json_aur);
+use AUR::Options qw(dump_options);
+my $argv0 = 'format';
+
+# Dictionary for formatter string - subset of package-query(1) format options
+# Save type of attribute (AUR, pacman or both) for --dump-format
+my %aur_formats = (
+    'a' => ['array',    'Arch'          ],
+    'c' => ['array',    'CheckDepends'  ],
+    'C' => ['array',    'Conflicts'     ],
+    'D' => ['array',    'Depends'       ],
+    'e' => ['array',    'License'       ],
+    'F' => ['array',    'Files'         ],  # aur-repo-parse
+    'g' => ['array',    'Groups'        ],
+    'K' => ['array',    'Keywords'      ],
+    'M' => ['array',    'MakeDepends'   ],
+    'O' => ['array',    'OptDepends'    ],
+    'P' => ['array',    'Provides'      ],
+    'b' => ['string',   'PackageBase'   ],
+    'd' => ['string',   'Description'   ],
+    'f' => ['string',   'FileName'      ],  # aur-repo-parse
+    'm' => ['string',   'Maintainer'    ],
+    'n' => ['string',   'Name'          ],
+    'r' => ['string',   'DBPath'        ],  # aur-repo-parse
+    'R' => ['string',   'Repository'    ],  # aur-repo-parse
+    'U' => ['string',   'URL'           ],
+    'v' => ['string',   'Version'       ],
+    's' => ['string',   'Submitter'     ],  # aur-pkglist
+    'L' => ['epoch',    'LastModified'  ],
+    'o' => ['epoch',    'OutOfDate'     ],
+    'S' => ['epoch',    'FirstSubmitted'],
+    'p' => ['numeric',  'Popularity'    ],
+    'w' => ['numeric',  'NumVotes'      ]
+);
+
+# Known AUR types for use with --format, --gron
+my %aur_types = map { ($_->[1] => $_->[0]) } values %aur_formats;
+
+sub tokenize {
+    my ($format, $delim) = @_;
+
+    if (!length($format)) {
+        say STDERR "$argv0: empty format specified";
+        exit(1);
+    }
+    # Unescape shell-quoted strings, e.g. --format '%n\t%v\n'
+    $format =~ s/(?<!\\)\\t/\t/g; # do not unescape '\\t'
+    $format =~ s/(?<!\\)\\n/\n/g;
+    $format =~ s/(?<!\\)\\0/\0/g;
+
+    # Fields and the text which follows them. The first label is empty, for
+    # the text before the first field.
+    my @labels = ("");
+    my @suffix = ("");
+
+    # Read from left to right: after %%, the next character is not a key
+    for my $token ($format =~ /%.?|[^%]+/gs) {
+        if ($token =~ /^%([^%])/) {
+            my $label = $aur_formats{$1} or die $argv0 . ': invalid format key specified';
+
+            push(@labels, $label->[1]);
+            push(@suffix, "");
+        } else {
+            # text, %% or a single % at the end
+            $suffix[-1] .= $token eq '%%' ? '%' : $token;
+        }
+    }
+    return \@labels, \@suffix;
+}
+
+sub info_expand_field {
+    my ($value, $label, $delim, $time_fmt) = @_;
+
+    if (not defined($value)) {
+        return "";
+    } elsif (ref($value) eq 'ARRAY') {
+        return join($delim, @{$value});
+    } elsif ($aur_types{$label} eq 'epoch') {
+        return strftime($time_fmt, gmtime $value);
+    } else {
+        return $value;
+    }
+}
+
+# Expand tokens to AUR data
+sub info_format {
+    my ($pkg, $labels, $rest, $delim, $verbose, $time_fmt) = @_;
+
+    if (ref($pkg) ne 'HASH') {
+        say STDERR "$argv0: --format requires dictionary input";
+        exit(4);
+    }
+
+    my @fmt;
+    for my $i (0..$#{$labels}) {
+        my ($label, $suffix) = ($labels->[$i], $rest->[$i]);
+
+        if (length($label)) {
+            my $field = info_expand_field($pkg->{$label}, $label, $delim, $time_fmt);
+
+            if (not length($field) and $verbose) {
+                $field = "-";
+            }
+            push(@fmt, $field . $suffix);
+        } else {
+            push(@fmt, $suffix);
+        }
+    }
+    my $fmt_string = join('', @fmt);
+    print($fmt_string);
+}
+
+sub info_gron {
+    my ($pkg, $prefix, $key) = @_;
+
+    if (not defined($pkg)) {
+        say join(' = ', $prefix, 'null;');
+    }
+    elsif (not length(ref($pkg))) {
+        # Use known types instead of best-effort basis (`looks_like_number`)
+        my $aur_type = $aur_types{$key // ""};
+
+        if (not (defined $aur_type and ($aur_type eq 'numeric' or $aur_type eq 'epoch'))) {
+            $pkg =~ s/\\/\\\\/g;         # escape backslashes
+            $pkg =~ s/(?<!\\)\"/\\"/g;   # escape double quotes
+            $pkg =~ s/\x1B/\\u001B/g;    # escape ANSI sequences
+            $pkg = "\"$pkg\"";           # enquote
+        }
+        say join(' = ', $prefix, $pkg . ';');
+    }
+    elsif (ref($pkg) eq 'HASH') {
+        say "$prefix = {};";
+
+        for my $key (sort keys %{$pkg}) {
+            my $value = $pkg->{$key};
+
+            info_gron($value, join(".", $prefix, $key), $key);
+        }
+    }
+    elsif (ref($pkg) eq 'ARRAY') {
+        say "$prefix = [];";
+
+        my $index = 0;
+        map { info_gron($_, $prefix . "[" . $index++ . "]", undef) } @{$pkg};
+    }
+}
+
+# https://www.drdobbs.com/scripts-as-modules/184416165
+unless (caller) {
+    # option handling
+    use Getopt::Long;
+    my $opt_mode;
+    my $opt_delim;        # delimiter for arrays
+    my $opt_verbose = 0;  # inserts "-" for empty fields with --format
+    my $opt_format;
+    my $opt_time_fmt;
+
+    my $opt_dump;
+
+    my @opt_spec = (
+        'dump-options'  => \$opt_dump,
+        'f|format=s'    => sub { $opt_mode = 'format',
+                                 $opt_format = $_[1] },
+        'gron'          => sub { $opt_mode = 'gron' },
+        'd|delim=s'     => \$opt_delim,
+        'v|verbose'     => \$opt_verbose,
+        'time-format=s' => \$opt_time_fmt,
+    );
+    GetOptions(@opt_spec) or exit(1);
+
+    if ($opt_dump) {
+        dump_options([grep { !ref } @opt_spec]);
+        exit;
+    }
+
+    if (not length($opt_time_fmt)) {
+        $opt_time_fmt = "%a %b %e %H:%M:%S %Y";
+    }
+    if (not length($opt_delim)) {
+        $opt_delim = " ";
+    }
+    if (not length($opt_mode)) {
+        say STDERR "$argv0: no mode specified";
+        exit(1);
+    }
+
+    # main loops
+    if ($opt_mode eq 'gron') {
+        while (my $row = <ARGV>) {
+            my $obj;
+
+            try {
+                $obj = parse_json($row);
+            }
+            catch ($e) {
+                chomp($e);
+                say STDERR "$argv0: invalid input ($e)";
+                exit(4);
+            }
+
+            info_gron($obj, "json");
+        }
+        die if $!;
+    }
+    elsif ($opt_mode eq 'format') {
+        my ($fmt, $suffix) = tokenize($opt_format);
+        die unless (scalar @{$fmt} eq scalar @{$suffix});
+
+        while (my $row = <ARGV>) {
+            my @results = parse_json_aur($row);
+
+            map { info_format($_, $fmt, $suffix, $opt_delim, $opt_verbose, $opt_time_fmt) } @results;
+        }
+        die if $!;
+    }
+    else {
+        say STDERR "$argv0: unknown mode $opt_mode";
+        exit(1);
+    }
+}
+
+# vim: set et sw=4 sts=4 ft=perl:

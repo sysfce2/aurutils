@@ -1,0 +1,371 @@
+#!/usr/bin/env perl
+use v5.40;
+
+use Cwd 'abs_path';
+use File::Basename;
+
+use AUR::Json qw(write_json);
+use AUR::Options qw(dump_options);
+my $argv0 = 'repo-parse';
+
+my %repo_add_attributes = (
+    'ARCH'         => ['string',  'Arch'         ],
+    'BASE'         => ['string',  'PackageBase'  ],
+    'DESC'         => ['string',  'Description'  ],
+    'FILENAME'     => ['string',  'FileName'     ],
+    'MD5SUM'       => ['string',  'Md5Sum'       ],  # too large for int32/int64
+    'NAME'         => ['string',  'Name'         ],
+    'PACKAGER'     => ['string',  'Packager'     ],
+    'SHA256SUM'    => ['string',  'Sha256Sum'    ],  # too large for int32/int64
+    'URL'          => ['string',  'URL'          ],
+    'VERSION'      => ['string',  'Version'      ],
+    'PGPSIG'       => ['string',  'PgpSig'       ],
+    'CONFLICTS'    => ['array',   'Conflicts'    ],
+    'CHECKDEPENDS' => ['array',   'CheckDepends' ],
+    'DEPENDS'      => ['array',   'Depends'      ],
+    'LICENSE'      => ['array',   'License'      ],
+    'MAKEDEPENDS'  => ['array',   'MakeDepends'  ],
+    'OPTDEPENDS'   => ['array',   'OptDepends'   ],
+    'PROVIDES'     => ['array',   'Provides'     ],
+    'REPLACES'     => ['array',   'Replaces'     ],
+    'GROUPS'       => ['array',   'Groups'       ],
+    'FILES'        => ['array',   'Files'        ],
+    'BUILDDATE'    => ['numeric', 'BuildDate'    ],
+    'CSIZE'        => ['numeric', 'CSize'        ],
+    'ISIZE'        => ['numeric', 'ISize'        ]
+);
+
+sub check_option {
+    my ($opt, $opt_label) = @_;
+    my $attr = $repo_add_attributes{uc($opt)};
+
+    if (not defined $attr) {
+        say STDERR "$argv0: $opt_label: unknown attribute '$opt'";
+        exit(2);
+    }
+    return $attr->[1];
+}
+
+sub parse_db {
+    my ($fh, $header, $handler, @varargs) = @_;
+    my $count = 0;
+    my ($entry, $filename, $attr, $attr_label);
+
+    while (my $row = <$fh>) {
+        chomp($row);
+
+        if ($row =~ /^%\Q$header\E%$/) {
+            $filename = readline($fh);
+            chomp($filename);
+
+            # Evaluate condition on previous entry and run handler
+            if (defined $entry) {
+                $count++ if $handler->($entry, $count, 0, @varargs);
+            }
+            # New entry in the database (hashref)
+            %{$entry} = ();
+            $entry->{$repo_add_attributes{$header}->[1]} = $filename;
+        }
+        elsif ($row =~ /^%.+%$/) {
+            if (not length($filename)) {
+                die __PACKAGE__ . ": attribute '$header' not set";
+            }
+            $attr = substr($row, 1, -1);
+            $attr_label = $repo_add_attributes{$attr}->[1];
+
+            if (not defined $attr_label) {
+                warn __PACKAGE__ . ": unknown attribute '$attr'";
+                $attr_label = ucfirst(lc($attr));
+            }
+        }
+        elsif ($row eq "") {
+            next;
+        }
+        else {
+            die unless length($attr) and length($attr_label);
+
+            if ($repo_add_attributes{$attr}->[0] eq 'numeric') {
+                $entry->{$attr_label} = $row + 0;
+            }
+            elsif ($repo_add_attributes{$attr}->[0] eq 'array') {
+                push(@{$entry->{$attr_label}}, $row);
+            }
+            else {  # Unknown attributes are assumed to have string data
+                $entry->{$attr_label} = $row;
+            }
+        }
+    }
+    # Process last entry
+    $handler->($entry, $count, 1, @varargs);
+
+    return $count;
+}
+
+sub parse_db_file {
+    my ($db_path, $header, $handler, @varargs) = @_;
+
+    # When parsing the database, do not require a full extraction to either memory or disk
+    # by reading `tar` output line-by-line. It is not strictly necessary to depend on
+    # attribute order (i.e. %FILENAME% occuring in first place) while doing so; however,
+    # the `--verbose` flag printing file names has different behavior for different `tar`
+    # versions. Specifically, `bsdtar -xv` does not add a newline after the file path,
+    # while `tar -xv` does.
+    my $child_pid = open(my $fh, "-|", 'bsdtar', '-Oxf', $db_path) or die $!;
+    my $count;
+
+    if ($child_pid) { # parent process
+        $count = parse_db($fh, $header, $handler, @varargs);
+
+        waitpid($child_pid, 0);
+    }
+    exit(2) if $?;
+
+    return $count;
+}
+
+# Handlers for filtering data
+sub entry_search {
+    my ($expr, $entry_data) = @_;
+
+    if (length($expr) and defined($entry_data)) {
+        # Search entry-by-entry on arrays
+        if (ref($entry_data) eq 'ARRAY') {
+            return grep(/$expr/, @{$entry_data});
+        } else {
+            return $entry_data =~ /$expr/;
+        }
+    } else {
+        return defined($entry_data);
+    }
+}
+
+# XXX: ignore for array types
+sub repo_filter {
+    my ($callback, $search, $search_by, $ignore, $ignore_by,
+        $pkg, $count, $last, @varargs) = @_;
+
+    if (not defined $pkg) {
+        $callback->(undef, $count, $last, @varargs);
+        return 0;
+    }
+    my $pkg_ignore = defined $ignore->{$pkg->{$ignore_by}};
+
+    if (entry_search($search, $pkg->{$search_by}) and not $pkg_ignore) {
+        $callback->($pkg, $count, $last, @varargs);
+        return 1;  # increase count (parse_db)
+    } else {
+        $callback->(undef, $count, $last, @varargs);
+        return 0;
+    }
+}
+
+# Handlers for varying output formats
+sub repo_json {
+    my ($pkg, $count, $last, $db_path, $db_name) = @_;
+
+    if (defined $pkg) {
+        # Additional fields for `aur-format`
+        $pkg->{'DBPath'}     = $db_path;
+        $pkg->{'Repository'} = $db_name;
+
+        print '[' if $count == 0;
+        print ',' if $count  > 0;
+
+        my $json_text = write_json($pkg);
+        print $json_text;
+    }
+    elsif ($count == 0) {
+        print '[' if $last == 1;
+    }
+    print "]\n" if $last == 1;
+}
+
+sub repo_jsonl {
+    my ($pkg, undef, undef, $db_path, $db_name) = @_;
+    return if not defined $pkg;
+
+    # Additional fields for `aur-format`
+    $pkg->{'DBPath'}     = $db_path;
+    $pkg->{'Repository'} = $db_name;
+
+    my $json_text = write_json($pkg);
+    print $json_text . "\n";
+}
+
+sub repo_list {
+    my ($pkg, undef, undef, $delim, $quiet) = @_;
+    return if not defined $pkg;
+
+    my $name = $pkg->{'Name'};
+    my $pver = $pkg->{'Version'};
+
+    if ($quiet) {
+        say $name;
+    } else {
+        say join($delim, $name, $pver);
+    }
+}
+
+sub repo_table {
+    my ($pkg, undef, undef, $delim) = @_;
+    return if not defined $pkg;
+
+    my $name = $pkg->{'Name'};
+    my $base = $pkg->{'PackageBase'};
+    my $pver = $pkg->{'Version'};
+
+    say join($delim, $name, $name, $base, $pver, 'Self');
+
+    for my $key ('Depends', 'MakeDepends', 'CheckDepends') {
+        if (ref($pkg->{$key}) eq 'ARRAY') {
+            map { say join($delim, $name, $_, $base, $pver, $key) } @{$pkg->{$key}};
+        }
+    }
+}
+
+sub repo_attr {
+    my ($pkg, undef, undef, $label) = @_;
+    return if not defined $pkg;
+
+    my $value = $pkg->{$label};
+
+    if (defined($value) and ref($value) eq 'ARRAY') {
+        say join("\n", @{$value});
+    } elsif (defined($value)) {
+        say $value;
+    }
+}
+
+unless (caller) {
+    use Getopt::Long;
+    my $opt_json = 0;
+    my $opt_jsonl = 0;
+    my $opt_list = 0;
+    my $opt_list_attr = 0;
+    my $opt_table = 0;
+    my $opt_quiet = 0;
+    my $opt_delim;
+    my $opt_attr;
+    my @opt_db_path;
+    my $opt_stdin = 0;
+    my $opt_search = "" ;
+    my $opt_search_by;
+    my @opt_ignore;
+    my $opt_ignore_by;
+
+    my $opt_dump;
+
+    my @opt_spec = (
+        'dump-options'   => \$opt_dump,
+        'J|json'         => \$opt_json,
+        'jsonl'          => \$opt_jsonl,
+        'F|field|attr=s' => \$opt_attr,
+        'l|list'         => \$opt_list,
+        'q|quiet'        => \$opt_quiet,
+        't|table'        => \$opt_table,
+        'd|delim=s'      => \$opt_delim,
+        'list-attr'      => \$opt_list_attr,
+        'p|path=s'       => \@opt_db_path,
+        's|search=s'     => \$opt_search,
+        'search-by=s'    => \$opt_search_by,
+        'i|ignore=s'     => \@opt_ignore,
+        'ignore-by=s'    => \$opt_ignore_by,
+    );
+    GetOptions(@opt_spec) or exit(1);
+
+    if ($opt_dump) {
+        dump_options([grep { !ref } @opt_spec]);
+        exit;
+    }
+
+    if (scalar(@ARGV) > 0 and ($ARGV[0] eq "-" or $ARGV[0] eq "/dev/stdin")) {
+        $opt_stdin = 1;
+    }
+    elsif ($opt_list_attr) {
+        say join("\n", sort(keys %repo_add_attributes));
+        exit(0);
+    }
+    elsif (scalar(@opt_db_path) < 1 and not $opt_stdin) {
+        say STDERR $argv0 . ': repository path must be specified';
+        exit(1);
+    }
+
+    # Callback function run on each entry in the database
+    my ($callback, @varargs);
+
+    if ($opt_json) {
+        $callback = \&repo_json;
+        # @varargs defined in input loop
+    }
+    elsif ($opt_jsonl) {
+        $callback = \&repo_jsonl;
+        # @varargs defined in input loop
+    }
+    elsif (defined $opt_attr) {
+        my $attr_label = check_option($opt_attr, '--attr');
+
+        $callback = \&repo_attr;
+        @varargs  = ($attr_label);
+    }
+    elsif ($opt_list) {
+        $callback = \&repo_list;
+        @varargs  = (length($opt_delim) ? $opt_delim : "\t", $opt_quiet);
+    }
+    elsif ($opt_table) {
+        $callback = \&repo_table;
+        @varargs  = (length($opt_delim) ? $opt_delim : "\t");
+    }
+    else {
+        say STDERR $argv0 . ': no mode specified';
+        exit(1);
+    }
+
+    # Verify search field
+    my $search = length($opt_search) ? $opt_search : "";
+    my $search_by = defined($opt_search_by) ? check_option($opt_search_by, '--search-by') : 'Name';
+
+    # Verify ignores field
+    my %ignore;
+    $ignore{$_}++ for (map { split(',', $_) } @opt_ignore);
+    my $ignore_by = defined($opt_ignore_by) ? check_option($opt_ignore_by, '--ignore-by') : 'Name';
+
+    # Chain callbacks
+    my $handler = sub {
+        repo_filter($callback, $search, $search_by, \%ignore, $ignore_by, @_);
+    };
+
+    # Take input from stdin instead of a pacman database
+    if ($opt_stdin) {
+        # Additional fields for `aur-format`
+        @varargs = ("/dev/stdin", "local") if ($opt_json or $opt_jsonl);
+
+        my $count = parse_db(*STDIN, 'FILENAME', $handler, @varargs);
+        exit(0);
+    }
+
+    # bsdtar(1) does not support extracting multiple files in a single invocation,
+    # so fork a new process for each specified path.
+    for my $db_path (@opt_db_path) {
+        my $db_abs_path = abs_path($db_path);
+        my $db_name     = basename($db_path);
+
+        if (not length $db_abs_path or not -e $db_abs_path) {
+            say STDERR $argv0 . ": file '$db_path' not found";
+            exit(2);
+        }
+        # repo-add(8) only accepts *.db or *.db.tar* extensions
+        if ($db_name =~ /\.(db|files)(\.tar(\.\w+)?)?$/g) {
+            $db_name = substr $db_name, 0, $-[0];
+        }
+        else {
+            say STDERR $argv0 . ": $db_name does not have a valid database archive extension";
+            exit(1);
+        }
+        # Additional fields for `aur-format`
+        @varargs = ($db_abs_path, $db_name) if ($opt_json or $opt_jsonl);
+
+        my $count = parse_db_file($db_abs_path, 'FILENAME', $handler, @varargs);
+    }
+}
+
+# vim: set et sw=4 sts=4 ft=perl:

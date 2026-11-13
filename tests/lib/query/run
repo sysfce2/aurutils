@@ -1,0 +1,36 @@
+#!/bin/bash
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit
+
+# answer AUR requests from data/aur.json instead of aurweb (see ../../bin/curl)
+export PATH=$PWD/../../bin:$PATH
+export AUR_TEST_FIXTURE=$PWD/data/aur.json
+
+# random position of stdin marker
+cnt=$(aur query -t info aurutils aurutils-git - </dev/null | jq .resultcount)
+(( cnt == 2 )) || exit
+cnt=$(aur query -t info aurutils - aurutils-git </dev/null | jq .resultcount)
+(( cnt == 2 )) || exit
+cnt=$(aur query -t info - aurutils aurutils-git </dev/null | jq .resultcount)
+(( cnt == 2 )) || exit
+
+# concatenation of stdin and command-line arguments
+cnt=$(aur query -t info aurutils - <<< 'aurutils-git' | jq .resultcount)
+(( cnt == 2 )) || exit
+
+# multiple stdin markers
+cnt=$(aur query -t info - - aurutils </dev/null | jq .resultcount)
+(( cnt == 1 )) || exit
+cnt=$(aur query -t info - aurutils - </dev/null | jq .resultcount)
+(( cnt == 1 )) || exit
+cnt=$(aur query -t info aurutils - - </dev/null | jq .resultcount)
+(( cnt == 1 )) || exit
+
+# type is mandatory
+aur query aurutils
+(( $? == 1 )) || exit
+
+# no arguments specified
+aur query -t info
+(( $? == 1 )) || exit
+aur query -t info - </dev/null
+(( $? == 0 )) || exit

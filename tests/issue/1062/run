@@ -1,0 +1,55 @@
+#!/bin/bash
+set -e
+check_pairs() {
+    # datamash distinguishes empty and missing fields, so a manual
+    # implementation is needed
+    awk -F'\t' '{
+        if($2 == "" || $1 == "") {
+            print "empty field encountered on line" " " NR >"/dev/stderr"
+              exit(1)
+        }
+    }'
+}
+
+check_table() {
+    datamash -W check
+}
+
+check_count() {
+    local cnt=$1 exp=$2
+
+    if (( cnt != exp )); then
+        echo >&2 "$cnt fields encountered, expected $exp"
+        exit 1
+    else
+        echo >&2 "$cnt fields"
+    fi
+}
+
+cd "$(dirname "${BASH_SOURCE[0]}")" || exit
+
+# answer AUR requests from data/aur.json instead of aurweb (see ../../bin/curl)
+export PATH=$PWD/../../bin:$PATH
+export AUR_TEST_FIXTURE=$PWD/data/aur.json
+
+# check consistent output
+aur depends            git aurutils 2>/dev/null | check_pairs
+aur depends --all      git aurutils 2>/dev/null | check_pairs
+aur depends --table    git aurutils 2>/dev/null | check_table
+aur depends --table -r git aurutils 2>/dev/null | check_table
+
+# git is non-AUR dependency specified on command-line
+cnt=$(aur depends --json git aurutils | jq length)
+check_count "$cnt" 1
+
+# single AUR dependency from command-line
+cnt=$(aur depends --json aurutils | jq length)
+check_count "$cnt" 1
+
+# git is included as non-AUR dependency for aurutils
+cnt=$(aur depends --json --all git aurutils | jq length)
+check_count "$cnt" 8
+
+# list all direct dependencies
+cnt=$(aur depends --json --all aurutils | jq length)
+check_count "$cnt" 8

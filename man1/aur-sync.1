@@ -26,6 +26,9 @@ Retrieve build files with
 Present build files before their execution with
 .BR aur\-view (1)
 .IP \(bu 4
+Verify dependencies in the presented build files with
+.BR aur\-graph (1)
+.IP \(bu 4
 Build the packages with
 .BR aur-build (1)
 .PP
@@ -47,6 +50,17 @@ Do not download package files.
 .BI \-\-ignore= PACKAGE
 Ignore a package upgrade. Multiple packages can be specified by
 separating them with a comma, or by repeating the \fB\-\-ignore\fR option.
+.PP
+If PACKAGE is listed on the
+.BR aur\-sync
+command line, this option has no effect.
+.PP
+A package is ignored by its package name. A split package is ignored by
+naming each of its names:
+.B \-\-ignore=frida
+leaves
+.I python\-frida
+(same pkgbase) in the queue and the package is built (#864).
 .
 .TP
 .BI \-\-ignore\-file= FILE
@@ -69,6 +83,10 @@ If the
 .I <repository>
 prefix is not specified, targets apply to all local repositories.
 Comments can be specified after a number sign.
+.PP
+If <package> is listed on the
+.BR aur\-sync
+command line, this option has no effect.
 .RE
 .
 .TP
@@ -89,7 +107,14 @@ succeeded builds. Requires
 .
 .TP
 .BR \-\-noview ", " \-\-no\-view
-Do not present build files for inspection.
+Do not present build files for inspection. Build files are presented in
+the order of AUR dependencies
+.RB ( aur\-depends ),
+and are not read by
+.B aur\-sync
+before they were presented. With this option,
+.B .SRCINFO
+files are read without prior inspection.
 .
 .TP
 .BR \-u ", " \-\-upgrades
@@ -116,6 +141,10 @@ Do not handle
 .BR \-\-nograph ", " \-\-no\-graph
 Do not verify the AUR dependency graph with
 .BR aur\-graph (1).
+The verification is based on the
+.B .SRCINFO
+files of the retrieved packages, takes place after their inspection, and
+defines the order in which packages are built.
 .
 .TP
 .BR \-\-nover ", " \-\-no\-ver
@@ -127,6 +156,25 @@ Disable version checking for packages specified on the command line or
 upgrade candidates from
 .BR \-\-upgrades .
 Version checks for package dependencies remain enabled.
+.
+.TP
+.B \-\-rebuild
+Build the packages specified on the command line even if the local
+repository holds the same or a newer version. Short for
+.BR "\-\-force \-\-no\-ver\-argv" .
+Dependencies that are up to date are not rebuilt.
+.
+.TP
+.BR \-\-rebuildtree ", " \-\-rebuild\-tree
+Build the packages specified on the command line and all their AUR
+dependencies, regardless of versions in the local repository or
+packages in other repositories. Implies
+.BR \-\-force ", " \-\-no\-ver " and " \-\-no\-provides .
+.
+.TP
+.BR \-\-rebuildall ", " \-\-rebuild\-all
+Build all packages in the local repository. Implies
+.BR \-\-force " and " \-\-no\-ver .
 .
 .TP
 .BR \-\-noprovides ", " \-\-no\-provides
@@ -161,6 +209,8 @@ single local repository is defined in
 .BR pacman.conf (5).
 See
 .BR aur\-repo (1)
+and
+.BR aur\-build (1)
 for details.
 .
 .TP
@@ -180,6 +230,12 @@ or aborts if multiple are available.
 The location of the repository root. Defaults to the
 .I Server
 value of the configured repository.
+.
+.TP
+.BI \-\-pool= DIR
+The location of the repository pool. The
+.I pool
+is the location for built packages.
 .
 .SS Fetch options
 If new AUR commits are available,
@@ -245,7 +301,21 @@ Build packages in a systemd\-nspawn container.
 .TP
 .BR \-f ", " \-\-force
 Continue the build process if a package with the same name exists.
+This does not disable version checks: a target that is up to date in
+the local repository is removed from the queue before the build. Use
+.B \-\-rebuild
+to build it again.
 .RB ( "aur build \-f" )
+.IP
+Rebuilding a package without increasing
+.B pkgrel
+may result in checksum mismatches when installing it, unless the local
+repository is set as a pacman
+.IR CacheDir .
+See
+.B CacheDir
+in
+.BR aur (1).
 .
 .TP 
 .BR \-n ", " \-\-noconfirm ", " \-\-no\-confirm
@@ -255,6 +325,16 @@ Do not wait for user input when installing or removing build dependencies.
 .TP
 .BR \-o ", " \-\-nobuild ", " \-\-no\-build
 Print target packages and their paths instead of building them.
+.
+.TP
+.BR \-K ", " \-\-autokeyretrieve ", " \-\-auto\-key\-retrieve
+Automatically import PGP keys to
+.BR AUR_SYNC_GNUPGHOME ,
+based on the
+.B validpgpkeys
+array in
+.B .SRCINFO
+files.
 .
 .TP
 .BR \-C ", " \-\-clean
@@ -352,8 +432,15 @@ it is advised to set a persistent path such as
 .IR /home/aurpkgs .
 .
 .TP
+.B AUR_SYNC_GNUPGHOME
+The path where
+.B validpgpkeys
+are imported. Defaults to
+.IR XDG_DATA_HOME/aurutils/sync/gnupg .
+.
+.TP
 .B AUR_SYNC_USE_NINJA
-When set to a positive value, run
+When set to a positive integer value, run
 .B aur\-build
 command-lines with
 .BR ninja .

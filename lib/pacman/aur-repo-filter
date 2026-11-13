@@ -1,0 +1,149 @@
+#!/bin/bash
+# aur-repo-filter - filter packages in the Arch Linux repositories
+
+if [[ -v AUR_DEBUG ]]; then
+     PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[1]}(): }'
+     set -o xtrace
+fi
+
+argv0='repo-filter'
+arch_repo=(core{,-testing} extra{,-testing} multilib{,-testing})
+
+# default options
+sync_repo=0
+
+args_csv() {
+    # shellcheck disable=SC2155
+    local str=$(printf '%s,' "$@")
+    printf '%s' "${str%,}"
+}
+
+# The command line will hit ARG_MAX on approximately 70k packages;
+# spread arguments with xargs (and printf, as a shell built-in).
+satisfies() {
+    #global sift_args
+    # Support `unbuffer` if redirecting from `/dev/tty` is insufficient (#1051)
+    if command -v unbuffer >/dev/null; then
+        unbuffer  xargs -a <(printf -- "--satisfies=%s\n" "$@") pacsift "${sift_args[@]}"
+    else
+        # No controlling terminal, e.g. with cron or CI
+        if ! { : </dev/tty; } 2>/dev/null; then
+            printf >&2 '%s: warning: no terminal available, install expect (unbuffer)\n' "$argv0"
+        fi
+        </dev/tty xargs -a <(printf -- "--satisfies=%s\n" "$@") pacsift "${sift_args[@]}"
+    fi
+}
+
+provides() {
+    #global info_args
+    pacinfo "${info_args[@]}" | awk -F'[:<=>]' '
+        /Name:/       { pkgname=$2; }
+        /Repository:/ { repo=$2
+                        print repo, pkgname, pkgname; }
+        /Provides:/   { print repo, pkgname, $2; }
+        /Replaces:/   { print repo, pkgname, $2; }
+    '
+}
+
+usage() {
+    printf >&2 'usage: %s [-d repo] [-S]\n' "$argv0"
+    exit 1
+}
+
+opt_short='d:a'
+opt_long=('all' 'sync' 'config:' 'database:' 'sysroot:')
+opt_hidden=('dump-options' 'repo:')
+
+if opts=$(getopt -o "$opt_short" -l "$(args_csv "${opt_long[@]}" "${opt_hidden[@]}")" -n "$argv0" -- "$@"); then
+    eval set -- "$opts"
+else
+    usage
+fi
+
+unset argv_repo sift_args info_args
+while true; do
+    case "$1" in
+        -a|--all|--sync)
+            sync_repo=1 ;;
+        -d|--database|--repo)
+            shift; argv_repo+=("$1") ;;
+        --config)
+            shift; sift_args+=(--config="$1")
+            info_args+=(--config="$1") ;;
+        --sysroot)
+            shift; sift_args+=(--sysroot="$1")
+            info_args+=(--sysroot="$1") ;;
+        --dump-options)
+            printf -- '--%s\n' "${opt_long[@]}" ${AUR_DEBUG+"${opt_hidden[@]}"}
+            printf -- '%s' "${opt_short}" | sed 's/.:\?/-&\n/g'
+            exit ;;
+        --) shift; break;;
+    esac
+    shift
+done
+
+if (( sync_repo )); then
+    sift_args+=(--sync)
+elif [[ -v argv_repo ]]; then
+    sift_args+=(--exact "${argv_repo[@]/#/--repo=}")
+else
+    sift_args+=(--exact "${arch_repo[@]/#/--repo=}")
+fi
+
+# check for interactive terminal
+if [[ -t 0 ]]; then
+    cat >&2 <<EOF
+Warning: Input is read from the terminal. You either know what you
+Warning: are doing, or you forgot to pipe data into $argv0.
+Warning: Press CTRL-D to exit.
+EOF
+fi
+
+# associative array for input package names
+declare -A pkgset
+strset=()
+
+while IFS= read -r str; do
+    # store unversioned string as key
+    name=${str%%[<>=]*}
+
+    # store version + operator as value (1 if unavailable)
+    if (( ${#str} - ${#name} )); then
+        pkgset[$name]=${str:${#name}}
+    else
+        pkgset[$name]=1
+    fi
+
+    # store original versioned string
+    strset+=("$str")
+done
+
+# exit on empty stdin
+if ! (( ${#pkgset[@]} )); then
+    exit 0
+fi
+
+# Standard input is taken as "provides[<cmp><version>]", where pacsift
+# checks for a package satisfying this condition. Results are printed
+# as "repository/package", and piped to pacinfo to relate the names of
+# the original provides to its corresponding package(s).
+satisfies "${strset[@]}" | provides | while read -r repo package virtual; do
+    if [[ ${pkgset[$package]} ]]; then
+        printf '%s\n' "$package"
+    fi
+
+    if [[ $virtual != "$package" ]]; then
+        version=${pkgset[$virtual]:-1}
+    else
+        continue
+    fi
+
+    case $version in
+        1) printf >&2 'dependency %s satisfied by %s/%s\n' "$virtual" "$repo" "$package"
+           printf '%s\n' "$virtual" ;;
+        *) printf >&2 'dependency %s%s satisfied by %s/%s\n' "$virtual" "$version" "$repo" "$package"
+           printf '%s\n' "$virtual" ;;
+    esac
+done | sort | uniq
+
+# vim: set et sw=4 sts=4 ft=sh:

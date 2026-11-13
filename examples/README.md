@@ -45,22 +45,30 @@ directories are available. This suggests to use a persistent directory for
 
 Instead of elevating to the root user for these tasks, `aur-build` can be run as
 root, dropping privileges where necessary. `sync-asroot` does do by running
-`makepkg`, `gpg`, `repo-add` and `aur-build--pkglist` with `runuser -u <user>`.
-Sources are also retrieved this way with `runuser -u <user> aur sync`.
+`makepkg`, `gpg`, `repo-add` and `aur-build--pkglist` with `setpriv --reuid <user>`.
+Sources are also retrieved this way with `setpriv --reuid <user> aur sync`.
+`setpriv --no-new-privs` is used, so that these commands can not elevate
+privileges through `setuid` programs such as `sudo`.
 
-Other possible agents are `runuser`, `setpriv`, and `systemd-run`.
+Other possible agents are `runuser` and `systemd-run`.
+
+The build user is specified with `-U` and has no default. If the invoking user
+is specified, package files are retrieved, inspected and built with access to
+the files of this user.
 
 > **Note**
 > Dropping privileges allows to restrict elevated commands during the build process.
 >
-> For example, if `sudo` is run in the same session as `makepkg` (for example through 
-> `makepkg --syncdeps`), commands in the PKGBUILD or upstream sources may run `sudo` 
-> without authorization for a period of `timeout_timestamp`. This defaults to 5 minutes.
+> For example, if `sudo` is run in the same session as `makepkg` (for example by
+> `aur-build--sync` or `aur-chroot`), commands in the PKGBUILD or upstream sources may run `sudo`
+> without authorization for a period of `timestamp_timeout`. This defaults to 5 minutes.
+> As of pacman 7, `makepkg --syncdeps` runs `sudo -k` and does not use or update
+> these credentials.
 >
 > The following steps can be taken to avoid this:
 >
 > 1. specify a build user without `sudoers` access;
-> 2. set `timeout_timestamp` to 0;
+> 2. set `timestamp_timeout` to 0;
 > 3. disable the `setuid` bit with `setpriv --no-new-privs`.
 >
 > **Warning**
@@ -111,7 +119,7 @@ clients of the local repository.
 Assuming a list of rebuild targets is known, `sync-rebuild` performs the
 following steps:
 
-1. Retrieve and inspect all source files with `aur sync`
+1. Retrieve all source files with `aur fetch --existing`
 2. Retrieve all versions of packages in the local repository
 3. If `pkgver` matches the local repository version, set `pkgrel` in the
    `PKGBUILD` to the local repository version, incremented by `0.1`. Otherwise,
@@ -126,6 +134,10 @@ in case the incremented version is lost, or otherwise restored (e.g. with
 `git-reset`). The fractional part is always increased; for example, a `pkgrel`
 of `35.9` is increased to `35.10`, not `36`.
 
+> **Note**
+> If one dependency fails to build, `sync-rebuild` will try rebuilding the package
+> that depends on it anyway. To avoid this, use the `--fail-fast` option.
+
 `aur-repo` can be used to retrieve a list of packages that depend on specific
 package. For example:
 
@@ -133,15 +145,22 @@ package. For example:
 aur repo --search '^python.*' --search-by depends --list
 ```
 
+`aur-sync` can be used to retrieve and inspect new AUR revisions, as well as
+retrieve new dependencies for target packages. For example:
+
+```bash
+aur sync --no-build --no-ver-argv <targets...>
+```
+
 > **Note**
-> By default, AUR packages are rebuilt in dependency order. When using
-> `--no-sync` or non-AUR packages, targets are rebuilt in sequential order. In
-> this case, `arch-rebuild-order` can be used as follows:
+> AUR packages are rebuilt in command-line order. The rebuild order can be
+> retrieved with `arch-rebuild-order` as follows:
 >
 > `$ arch-rebuild-order --repos=custom <targets...>`
 >
-> If one dependency fails to build, `sync-rebuild` will try rebuilding the package
-> that depends on it anyway. To avoid this, use the `--fail-fast` option.
+> This ignores any build dependencies specified in `optdepends`; for
+> AUR targets, `aur depends --optdepends` may be used (although these
+> dependencies need manual installation.)
 
 ## view-delta
 

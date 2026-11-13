@@ -1,3 +1,295 @@
+## 22.2
+
+* `aur`
+  + create temporary files directly in `TMPDIR` (`aur-build`, `aur-srcver`,
+    `aur-sync`, `aur-vercmp`, `aur-view`)
+
+* `aur-build`
+  + only move package files (`*.pkg.tar*`) to the local repository
+  + `build--sync`: exit if no terminal is available, unless `--no-confirm` is specified
+    - `pactrans` takes end-of-file as confirmation
+
+* `aur-sync`
+  + check `pkgbase` in `.SRCINFO` against the retrieved packages
+  + `sync--ninja`: quote the build directory, escape `$` in the build command
+
+* `examples`
+  + `sync-asroot`
+    - require a build user (`-U`)
+    - drop privileges with `setpriv --no-new-privs`
+    - use the home directory of the build user
+    - keep ninja files in a directory owned by root
+    - do not pass an argument with `-f`
+  + `sync-devel`, `vercmp-devel`: create temporary files directly in `TMPDIR`
+  + correct sudoers option and source of cached credentials (`README.md`)
+
+* `make`
+  + add `issue-test` and `test-shell` targets (#1231)
+
+* `man1`
+  + containers are not a security boundary (`aur-chroot.1`)
+  + describe the transaction run by `build--sync`, add warning on the
+    sudoers policy for a build user (`aur-build.1`)
+
+* `tests`
+  + add `build-sync`, `sync-ninja` and `tmpdir`
+  + `issue-test`: exit 1 if a test fails
+
+## 22.1
+
+* `aur-format`
+  + read `%%` as a literal `%` (#1279)
+
+* `tests`
+  + one directory for each test, with `run` and `data`
+  + check the order of `aur-view` and `aur-graph` in `aur-sync`
+
+## 22
+
+* `aur-build`
+  + check the signature of the database file (`<name>.db.sig`)
+  + pass `--dbext` to `aur-repo`
+  + resolve the `--pool` directory
+
+* `aur-depends`
+  + do not report a complete tree as out of range
+    (`AUR_DEPENDS_CALLBACK_MAX`)
+
+* `aur-fetch`
+  + update local clones of the AUR mirror (`AUR_FETCH_USE_MIRROR`, #1278)
+  + `fetch--mirror`: check that `AUR_ROOT` is a bare repository
+
+* `aur-format`
+  + parse the format once
+
+* `aur-graph`
+  + quote versions passed to `vercmp` (#1275)
+    - a dependency version in `.SRCINFO` could run commands
+
+* `aur-pkglist`
+  + check for download errors, keep the cached list (#1276)
+  + run `--verify` in `AUR_METADEST`
+
+* `aur-repo`
+  + `repo-filter`: warn if no terminal is available (#1276)
+  + `repo-filter`: fix usage message
+
+* `aur-sync`
+  + inspect build files before verifying dependencies (#1277)
+    - `aur-view` is run before `aur-graph` and `--auto-key-retrieve`
+    - build files are presented in the order of `aur-depends`
+  + do not pass keys to `gpg` as options (`--auto-key-retrieve`)
+  + return an error if the ninja build fails (`AUR_SYNC_USE_NINJA`)
+  + resolve a relative `AURDEST`
+
+* `completions`
+  + fix override for subcommands with a hyphen (bash)
+
+* `make`
+  + fix `.PHONY` targets in `completions` and `perl`
+  + do not create an `aurutils` directory in the source tree on install
+
+## 21.1
+
+* `aur-build`
+  + replace links in the local repository with `--pool`
+  + use `AUR_MAKEPKG_GNUPGHOME` for `--pkgver`
+  + check the file given with `--buildscript` (#1252)
+  + pass `--makepkg-conf` to `build--pkglist`
+  + `build--sync`: do not forward arguments to `pactrans`
+
+* `aur-chroot`
+  + add `--setenv` arguments for `run0` (#1268)
+
+* `aur-fetch`
+  + read standard input for `-` as the first argument
+  + read `aurutils.rebase` for each package
+  + pass `--ff` to git-merge
+  + strip trailing slashes from URLs
+  + `fetch--mirror`: match the mirror branch exactly
+
+* `aur-graph`
+  + include epoch in package versions
+  + compare dependencies with the full version
+  + try comparison operators in order
+
+* `aur-repo`
+  + use `--root` if no repository is specified
+  + `repo-filter`: update the default repositories
+  + `repo-parse`: take a value for `--delim`
+
+* `aur-srcver`
+  + read targets from `--arg-file`
+
+* `aur-sync`, `aur-build`, `aur-chroot`
+  + print errors to standard error
+
+* `perl`
+  + compare dependencies with the full version in `Depends`
+  + document the remaining `AUR` modules
+
+* `tests`
+  + move shell tests to `tests/lib`
+
+## 21
+
+* `aur-sync`
+  + pass additional arguments through to aur-chroot (#1265)
+
+* `aur-build`
+  + move local repository sync to `build--sync` (#1183)
+    - implement file-based locking (`makepkg` implementation)
+    - implement `pactrans` upgrade
+  + add `--pool` (#1213)
+  + pass additional arguments through to aur-chroot (#1265)
+
+* `aur-fetch`
+  + support mixed url and pkgbase names (#1104)
+  + add trurl(1) as dependency
+
+* `aur-view`
+  + limit orderfile to local git-diff calls (#1241)
+
+* `perl`
+  + add `Depends::tsort` (#1224)
+  + add `AUR::Exception` (#1266)
+  + enable `--dump-options` in Perl scripts (#1263)
+
+* `tests`
+  + add `depends.t` with fixture auto-discovery (#1253)
+
+## 20.5
+
+* `aur-build`
+  + do not define `LOGDEST` explicitly
+  + revert error on partially built package group
+
+* `aur-chroot`
+  + preserve `LOGDEST` and `SRCDEST` by default (#1196)
+  + preserve `SRCPKGDEST`, `MAKEFLAGS` and `PACKAGER` (#1200)
+
+* `aur-graph`
+  + detect sections on keywords (#1228)
+  + don't use `delete` as a function (#1250)
+
+* `aur-repo`
+  + avoid empty output with `-q -u` (#1215)
+
+* `aur-sync`
+  + pre-process .SRCINFO with `pacini` (#1203)
+
+* `examples`
+  + `sync-rebuild`
+    - use `aur-fetch` instead of `aur-sync`
+    - allow handling multiple targets
+
+* `man1`
+  + documentation updates (#1206, #1207)
+  + add setfacl example (aur-build.1)
+
+## 20.4
+
+* `aur-build`
+  + do not skip build on partial results (#1186)
+
+## 20.3
+
+* `perl`
+  + recursively remove targets with `Depends::prune` (#1184)
+
+## 20.2
+
+* `aur-build`
+  + add `AUR_MAKEPKG_GNUPGHOME`, `--makepkg-gnupghome`
+  + propagate `LOGDEST` to `aur-chroot`
+
+* `aur-sync`
+  + add `--auto-key-retrieve`
+    - retrieve PGP keys to `AUR_SYNC_GNUPGHOME` keyring
+    - keyring defaults to `$XDG_DATA_HOME/aurutils/sync/gnupg`
+  + add diagnostic for tsort failure (#1039)
+ 
+## 20.1
+
+* `aur-chroot`
+  + avoid triggering `--status` when `--path` is given (#1181)
+
+## 20
+
+* `aur-chroot`
+  + run `--status` if no modes are specified
+
+* `aur-sync`
+  + move git `orderFile` to `XDG_CONFIG_HOME/aurutils/view/orderfile` (#1167)
+
+* `aur-view`
+  + define missing `XDG_CONFIG_HOME` (#1177)
+
+* `perl`
+  + move `AUR::Repo` to `aur-repo-parse`
+  + move `AUR::Depends::get` to `aur-depends::solve`
+  + move `AUR::Depends::vercmp` to `AUR::Vercmp`
+
+## 19.9
+
+* `aur-repo`
+  + warn if a local repository is not configured in pacman.conf (instead of exiting)
+
+## 19.8
+
+* `aur-graph`
+  + fix for "add `-REVERSE`" in 19.6
+
+## 19.7
+
+* `perl`
+  + `AUR::Depends`: revert broken refactoring (#1166)
+
+## 19.6
+
+* `aur-graph`
+  + add `REVERSE`
+
+* `aur-sync`
+  + fix `--optdepends` dependency order (#1164)
+
+* `aur-view`
+  + diff from `/dev/null` on invalid revision (#1162)
+
+* `perl`
+  + `AUR::Depends`: warn about targets that are not found (#1165)
+
+## 19.5
+
+* `aur-repo`
+  + print `[]` for no matches with `-Js` (#1153)
+
+* `aur-repo-parse`
+  + do not emit repo filename suffix for `Repository` key (#1158)
+
+* `man1`
+  + `ccache` with `aur-chroot` needs `--bind-rw` (#1156)
+
+## 19.4
+
+* `aur-sync`
+  + add error if `aur-build --status` fails
+
+* `aur-build`
+  + add error if `aur-repo --status` or `aur-chroot --status` fails
+
+* `perl`
+  + `AUR::Repo`: add `parse_db_file()`
+
+## 19.3
+
+* Revert 19.2
+
+## 19.2
+
+* `aur-chroot`
+  + add diagnostic when devtools is not installed
+
 ## 19.1
 
 * `aur-sync`
@@ -31,6 +323,7 @@
   + detect local repositories with `--chroot` configuration (#1135)
   + add `--clean` / `-C`, `--cleanbuild`
     - default build command changed to `aur build --syncdeps`
+  + add `aur-sync--filter` helper (#1136, #1140)
 
 * `aur(1)`
   + use `git-clean -ixd` to clean directories with `aur-gc`
@@ -45,6 +338,7 @@
 
 * `aur-build`
   + propagate `--pacman-conf` to local repository upgrade
+  + re-add `aur-build--sync` helper
 
 ## 18.4
 
@@ -659,7 +953,7 @@ retrieved with the `--path` option, e.g for use with `makepkg --config`.
 ## 7
 
 This release adds optional support for the `ninja` build system. If the
-`AUR_SYNC_USE_NINJA` environment variable is set to a positive value,
+`AUR_SYNC_USE_NINJA` environment variable is set to a positive integer value,
 `aur-sync` will generate `build.ninja` where each target has an `aur-build`
 command-line. This allows to continue building a series of packages when
 several failed, with the maximum of failed targets controlled by the `-k` /

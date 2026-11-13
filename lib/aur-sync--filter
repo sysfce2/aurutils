@@ -1,7 +1,5 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
-use v5.20;
+use v5.40;
 
 use AUR::Depends qw(prune);
 use AUR::Json    qw(parse_json_aur);
@@ -56,10 +54,11 @@ unless(caller) {
     }
 
     # Prune ignored targets
-    my $removals = prune(\%dag, $opt_ignore);
+    my @removals = prune(\%dag, $opt_ignore);
 
-    if (defined $ENV{'AUR_DEBUG'}) {
-        say STDERR "$argv0: targets removed: " . join(" ", @{$removals});
+    #if (defined $ENV{'AUR_DEBUG'}) {
+    if (scalar @removals) {
+        say STDERR "$argv0: targets removed: " . join(" ", @removals);
     }
 
     # Print remaining dependency pairs as pkgbase

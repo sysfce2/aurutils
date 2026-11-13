@@ -1,0 +1,231 @@
+#!/usr/bin/env perl
+use v5.40;
+
+use POSIX qw(strftime setlocale LC_NUMERIC LC_TIME LC_ALL);
+use locale qw(:numeric :time);
+
+use Term::ANSIColor qw(:constants);
+use constant OSC8 => "\033]8";
+use constant ST   => "\033\\";
+
+use AUR::Json    qw(parse_json_aur write_json);
+use AUR::Query   qw(query query_multi);
+use AUR::Options qw(add_from_stdin dump_options);
+my $argv0 = 'search';
+my $aur_location = $ENV{AUR_LOCATION} // 'https://aur.archlinux.org';
+
+# sprintf, strftime()
+setlocale(LC_NUMERIC, 'C');
+setlocale(LC_TIME,    'C');
+
+sub format_long {
+    my $pkg = shift;
+    # Custom fixed order for info output
+    my @keys = (
+	    'Name'       , 'PackageBase' , 'Version'        , 'Description' , 'URL',
+	    'Keywords'   , 'License'     , 'Maintainer'     , 'Submitter'   , 'NumVotes',
+	    'Popularity' , 'OutOfDate'   , 'FirstSubmitted' , 'LastModified', 'Depends',
+	    'MakeDepends', 'CheckDepends', 'OptDepends'
+	);
+    my $url = join("/", $aur_location, "packages", $pkg->{'Name'});
+    say BOLD, sprintf("%-15s", "AUR URL:"), RESET, ' ', $url;
+
+    # XXX: overlap with info_expand_field() from aur-format
+    for my $k (@keys) {
+        my $f;
+
+        if (ref $pkg->{$k} eq 'ARRAY') {
+            $f = join(' ', @{$pkg->{$k} // ['-']});
+        } elsif ($k eq 'LastModified' or $k eq 'OutOfDate' or $k eq 'FirstSubmitted') {
+            $f = defined $pkg->{$k} ? gmtime $pkg->{$k} : '-';
+        } else {
+            $f = $pkg->{$k} // '-';
+        }
+        say BOLD, sprintf("%-15s", "$k:"), RESET, ' ', $f;
+    }
+} 
+
+sub format_short {
+    my $pkg   = shift;
+    my $name  = $pkg->{'Name'};
+    my $desc  = $pkg->{'Description'};
+    my $ver   = $pkg->{'Version'};
+    my $votes = $pkg->{'NumVotes'};
+
+    # Formatted fields
+    my $ood  = defined $pkg->{'OutOfDate' } 
+        ? strftime("(Out-of-date: %d %B %Y)", gmtime $pkg->{'OutOfDate'}) : "";
+    my $orph = defined $pkg->{'Maintainer'} 
+        ? "" : "(Orphaned) ";
+    my $pop  = sprintf("%.2f", $pkg->{'Popularity'});
+    my $pre  = sprintf("%s%saur/%s%s%s", BOLD, BLUE, RESET, BOLD, $name);
+
+    # OSC sequences
+    if (not exists $ENV{ANSI_COLORS_DISABLED}) {
+        $pre = sprintf("%s;;%s%s%s%s;;%s", OSC8, "$aur_location/packages/$name", ST, $pre, OSC8, ST);
+    }
+
+    say $pre, ' ', GREEN, $ver, RESET, ' (+', $votes, ' ', $pop, '%) ', 
+        $orph, BOLD, RED, $ood, RESET;
+    say '    ', $desc // '-';
+}
+
+# Set union by hash value
+sub results_union {
+    my ($target, $results, $seen, $union_key) = @_;
+
+    if (!keys %{$seen}) {
+        %{$seen} = map { $_->{$union_key} => 1 } @{$results};
+    }
+    push(@{$results}, grep { !$seen->{$_->{$union_key}}++ } @{$target});
+ }
+
+# Set intersection by hash value
+sub results_isect {
+    my ($target, $results, $isect_key) = @_;
+    my %seen = map { $_->{$isect_key} => 1 } @{$target};
+
+    @{$results} = grep { $seen{$_->{$isect_key}} } @{$results};
+ }
+
+# Sort a flattened array of hashes
+sub results_rsort {
+    my ($results, $sort_key, $reverse) = @_;
+
+    # Sort entries by value of specified key
+    if ($sort_key eq 'Popularity' or $sort_key eq 'NumVotes') {
+        @{$results} = sort { $a->{$sort_key} <=> $b->{$sort_key} } @{$results};
+    } elsif (length $sort_key) {
+        @{$results} = sort { $a->{$sort_key} cmp $b->{$sort_key} } @{$results};
+    }
+    if ($reverse) {
+        @{$results} = reverse @{$results};
+    }
+}
+
+unless(caller) {
+    # option handling
+    use Getopt::Long;
+    my $opt_multiple  = 'section';
+    my $opt_type      = 'search';
+    my $opt_search_by = 'name-desc';
+    my $opt_sort_key  = '';
+    my $opt_color     = 'auto';
+    my $opt_reverse   = 0;
+    my $opt_format    = '';
+
+    # XXX: add option to disable set operations, --time-format
+    my $opt_dump;
+
+    my @opt_spec = (
+        'dump-options'  => \$opt_dump,
+        'a|any'         => sub { $opt_multiple  = 'union' },
+        'i|info'        => sub { $opt_type      = 'info' },
+        's|search'      => sub { $opt_type      = 'search' },
+        'd|desc'        => sub { $opt_search_by = 'name-desc' },
+        'm|maintainer'  => sub { $opt_search_by = 'maintainer' },
+        'n|name'        => sub { $opt_search_by = 'name' },
+        'depends'       => sub { $opt_search_by = 'depends' },
+        'makedepends'   => sub { $opt_search_by = 'makedepends' },
+        'optdepends'    => sub { $opt_search_by = 'optdepends' },
+        'checkdepends'  => sub { $opt_search_by = 'checkdepends' },
+        'submitter'     => sub { $opt_search_by = 'submitter' },
+        'provides'      => sub { $opt_search_by = 'provides' },
+        'conflicts'     => sub { $opt_search_by = 'conflicts' },
+        'replaces'      => sub { $opt_search_by = 'replaces' },
+        'keywords'      => sub { $opt_search_by = 'keywords' },
+        'groups'        => sub { $opt_search_by = 'groups' },
+        'comaintainers' => sub { $opt_search_by = 'comaintainers' },
+        'q|short'       => sub { $opt_format    = 'short' },
+        'v|verbose'     => sub { $opt_format    = 'long' },
+        'J|json|raw'    => sub { $opt_format    = 'json' },
+        'color=s'       => \$opt_color,
+        'r|reverse'     => \$opt_reverse,
+        'k|key=s'       => \$opt_sort_key,
+    );
+    GetOptions(@opt_spec) or exit(1);
+
+    if ($opt_dump) {
+        dump_options([grep { !ref } @opt_spec]);
+        exit;
+    }
+
+    # Handle '-' to take packages from stdin
+    add_from_stdin(\@ARGV, ['-', '/dev/stdin']);
+
+    if (not scalar @ARGV) {
+        say STDERR "$argv0: at least one search term needed";
+        exit(1);
+    }
+
+    # Colored messages on both stdout and stderr may be desired if stdout is not
+    # connected to a terminal, e.g. when piping to less -R. (#585) When printing
+    # to a file, they should be disabled instead. Default to `--color=auto` but
+    # allow specifying other modes.
+    my $colorize = 0;
+    if (not defined $ENV{AUR_DEBUG}) {
+        if (($opt_color eq 'auto' and -t STDOUT) or $opt_color eq 'always') {
+            $colorize = 1;
+        }
+    }
+    if ($colorize == 0) {
+        $ENV{ANSI_COLORS_DISABLED} = 1;
+    }
+
+    # Set format depending on query type (#319)
+    if (not length($opt_format)) {
+        $opt_format = $opt_type eq 'info' ? 'long' : 'short';
+    }
+
+    # Retrieve JSON responses
+    my @results;
+
+    # TODO: handle '-' as stdin argument
+    if ($opt_type eq 'search') {
+        # Apply union/intersection starting at the first argument
+        my $first = shift;
+        my %query_args = (type => 'search', by => $opt_search_by, callback => \&parse_json_aur);
+        @results = query(term => $first, %query_args);
+
+        my %seen;
+        for my $arg (@ARGV) {
+            my @next = query(term => $arg, %query_args);
+
+            if ($opt_multiple eq 'union') {
+                results_union(\@next, \@results, \%seen, 'Name');
+            }
+            elsif ($opt_multiple eq 'section') {
+                results_isect(\@next, \@results, 'Name');
+            }
+            else {
+                push(@results, @next);
+            }
+        }
+    }
+    elsif ($opt_type eq 'info') {
+        # Union/intersection do not apply to info-style requests
+        @results = query_multi(terms => \@ARGV, type => 'info', callback => \&parse_json_aur);
+    }
+    exit(1) if scalar @results == 0;
+
+    # Apply sorting criteria
+    if (length $opt_sort_key or $opt_reverse) {
+        results_rsort(\@results, $opt_sort_key, $opt_reverse);
+    }
+    # Format results to standard output
+    if ($opt_format eq 'short') {
+        map { format_short($_) } @results;
+    }
+    elsif ($opt_format eq 'long') {
+        my $i = 0;
+        map { format_long($_); say '' if ++$i < scalar @results } @results;
+    }
+    elsif ($opt_format eq 'json') {
+        say write_json(\@results);
+    }
+    else {
+        die 'invalid format';
+    }
+}
+
+# vim: set et sw=4 sts=4 ft=perl:

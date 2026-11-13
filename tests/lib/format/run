@@ -1,0 +1,65 @@
+#!/bin/bash
+set -e
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+tests_t=(data/{ascii,depends,meta,none,empty_a,search,utf-8}.json*)
+tests_f=(data/{empty,error}.json)
+
+for t in "${tests_t[@]}"; do
+    # check if correct amount of entries were parsed
+    cnt1=$(aur format -f '%n\n' "$t" | wc -l)
+
+    # variable input formats
+    u=${t%%.json}
+    case ${u##data/} in
+        ascii|depends|search|utf-8|none)
+            cnt2=$(jq < "$t" '.results | length') ;;
+        meta|empty_a)
+            cnt2=$(jq < "$t" '. | length') ;;
+        search.jsonl)
+            cnt2=$(jq < "$t" -s 'map(.results | length) | add') ;;
+    esac
+    [[ $cnt1 == "$cnt2" ]]
+done
+
+# fields, text, escapes and %% in the format (ascii.json: aurutils-git)
+format() {
+    aur format -f "$1" data/ascii.json
+}
+[[ $(format '%n\t%n') == $'aurutils-git\taurutils-git' ]]
+[[ $(format '%n\\t') == 'aurutils-git\\t' ]]  # escaped backslash
+[[ $(format '\t%n') == $'\taurutils-git' ]]   # escape before the first field
+[[ $(format '100%%done') == '100%done' ]]     # %% before a key (d)
+[[ $(format '%n%%') == 'aurutils-git%' ]]
+[[ $(format '%n%') == 'aurutils-git%' ]]
+[[ $(format '%z' 2>&1) == *'invalid format key'* ]]
+
+# error codes:
+# 1: option error
+# 2: file error
+# 4: invalid input
+
+# exit on invalid potion
+aur format data/ascii.json --doesnotexit || err=$?
+[[ $err == 1 ]]
+aur format data/ascii.json || err=$?
+[[ $err == 1 ]]
+
+# exit >0 if file path does not exist
+aur format -f '%n' /does/not/exist || err=$?
+[[ $err == 2 ]]
+
+# check for errors on invalid inputs
+aur format -f '%n' data/error.json || err=$? # response error
+[[ $err == 4 ]]
+
+# exit 4 on input that is not a JSON object or array, in both modes
+for input in 'garbage' '{"a":' '"str"' '{}{}'; do
+    err=0; printf '%s\n' "$input" | aur format -f '%n' 2>/dev/null || err=$?
+    [[ $err == 4 ]]
+    err=0; printf '%s\n' "$input" | aur format --gron 2>/dev/null || err=$?
+    [[ $err == 4 ]]
+done
+
+# check modes with empty stdin
+printf '' | aur format -f '%n\n'

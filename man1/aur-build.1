@@ -11,6 +11,7 @@ aur\-build \- build packages to a local repository
 .OP \-\-pkgver
 .OP \-\-root DIRECTORY
 .OP \-\-margs
+.OP \-\-cargs
 .RI [ makepkg_args... ]
 .YS
 .
@@ -57,8 +58,8 @@ database.
 The root directory for the repository. The
 .I root
 is the location for the pacman database
-.RI ( foo.db ),
-built packages, and secondary files such as the files database
+.RI ( foo.db )
+and secondary files such as the files database
 .RI ( foo.files ).
 This defaults to the value of the
 .B Server
@@ -73,6 +74,17 @@ is used for
 .BR pacman (8)
 sync operations regardless of this setting. See also
 .BR \-\-no\-sync .
+.
+.TP
+.BI \-\-pool= DIR
+The pool directory for the repository. The
+.I pool
+is the location for built packages.
+If this value differs from the repository root (see
+.BR \-\-root )
+symbolic links are maintained, and the root contains links to
+all packages referenced by the repository. This requires a file
+system that supports symbolic links.
 .
 .TP
 .BR \-f ", " \-\-force
@@ -103,6 +115,16 @@ or the
 .B pkgver()
 function run priorly with
 .BR \-\-pkgver .
+.IP
+Rebuilding a package without increasing
+.B pkgrel
+may result in checksum mismatches when installing it, unless the local
+repository is set as a pacman
+.IR CacheDir .
+See
+.B CacheDir
+in
+.BR aur (1).
 .
 .TP
 .BR \-S ", " \-\-sign ", " \-\-gpg\-sign
@@ -151,6 +173,15 @@ operations. For chroot builds, the file is also used inside the container.
 .RB ( makepkg " " \-\-config ", " aur\-chroot " " \-\-makepkg\-conf ).
 .
 .TP
+.BI \-\-makepkg\-gnupghome= PATH
+The
+.BR gpg (1)
+home directory used with
+.BR makepkg (8)
+or
+.BR aur\-chroot (1).
+.
+.TP
 .BI \-\-pacman\-conf= FILE
 The file used for retrieving local repositories
 .RB ( aur\-repo " " \-\-config ).
@@ -166,6 +197,27 @@ and local repository upgrades (see the
 .B Repository updates
 section)
 are unaffected by this option.
+.
+.TP
+.BI \-\-cargs= ARGS "\fR,\fP \-\-makechrootpkg\-args=" ARGS
+Arguments (comma-separated) to be passed to
+.B makechrootpkg
+for chroot builds
+.RB ( aur\-chroot " " \-\-cargs ).
+.
+.TP
+.BI \-\-base\-packages= PACKAGES
+Packages or package groups (comma-separated) to be passed to
+.B aur-chroot
+for chroot builds
+.RB ( aur\-chroot " " \-\-create " " \-\- " " [ "package..." ] ).
+.
+.IP
+See also
+.BR \-\-create
+in
+.BR aur\-chroot (1)
+for additional usage notes.
 .
 .TP
 .BR \-\-no\-sync
@@ -312,6 +364,17 @@ options if
 .B aur\-build \-\-pkgver
 is used.
 .
+.TP
+.B AUR_MAKEPKG_GNUPGHOME
+Directory where the 
+.BR gpg (1)
+keyring for usage with
+.BR makepkg (8)
+or
+.BR aur\-chroot (1)
+is stored. This variable takes precedence over
+.BR GNUPGHOME .
+.
 .B AUR_BUILD_PKGLIST
 The command used to check for built packages in the local
 repository. Defaults to
@@ -326,18 +389,26 @@ the default command runs faster by not linting the
 The command used to sign packages. The arguments
 .BR \-\-batch ,
 .BR \-\-detach\-sign ,
-and
 .BR \-\-no\-armor
-must be supported by this command.
-
+and
+.BR \-\-output
+must be supported by this command. The package file is passed after
+.BR \-\- ,
+which must be taken as the end of options.
+.
 .TP
 .B AUR_REPO_ADD
 The command used to update the local repository. Any
 .BR repo\-add (8)
 options (see the
 .B repo\-add options
-section) forwarded must be supported by this command.
+section) forwarded must be supported by this command, as well as
+.BR \-\-wait\-for\-lock .
+The database file and package files are passed after
+.BR \-\- ,
+which must be taken as the end of options.
 .
+.TP
 .B AUR_PACMAN_AUTH
 A command prefix for running
 .BR pacman (8)
@@ -377,10 +448,16 @@ When building on the host (outside of a container), installed packages in the
 local repository are upgraded to the latest available version by running
 .BI "pacsync " <repository>
 followed by
-.BI "pacman \-S \-\-noconfirm " <repository>/<upgrades...> \fR.
+.BR "pactrans \-\-install \-\-sysupgrade" ,
+with a configuration that only contains the local repository.
 This is comparable to
 .BR "makepkg \-i" ,
 except that only priorly installed packages are upgraded to a new version.
+.PP
+The transaction is confirmed interactively, unless
+.B \-\-no\-confirm
+is specified. If no terminal is available, the transaction is not run
+without this option.
 .
 .SS Using a dedicated build user
 While using a dedicated user for the build process does not increase
@@ -397,7 +474,7 @@ New users may be created with
 as follows:
 .PP
 .EX
-    # useradd build \-\-system \-\-home\-dir /var/cache/aurbuild \-\-create\-home
+    # useradd aurbuild \-\-system \-\-home\-dir /var/cache/aurbuild \-\-create\-home
 .EE
 .PP
 Because dependency resolution is not replicated and left to
@@ -417,8 +494,32 @@ For example, create the
 file with the following contents:
 .PP
 .EX
-    aurbuild ALL = (root) NOPASSWD: /usr/bin/pacman, /usr/bin/pacsync
+    aurbuild ALL = (root) NOPASSWD: /usr/bin/pacman
+    aurbuild ALL = (root) NOPASSWD: /usr/lib/aurutils/aur-build--sync
 .EE
+.PP
+.B Warning:
+This policy is equivalent to
+.IR "NOPASSWD: ALL" ,
+since
+.B "pacman \-U"
+installs any package file and runs its install script as root.
+.PP
+The following
+.B aur\-build
+options require root access:
+.BR \-\-syncdeps ,
+.BR \-\-rmdeps ,
+.BR \-\-chroot .
+Root access is also required for
+.BR pacsync (1)
+and
+.BR "pacman \-S" ,
+unless the
+.B \-\-nosync
+or
+.B \-\-chroot
+options are specified.
 .PP
 .BR aur\-build (1)
 and related programs such as
@@ -429,10 +530,10 @@ user.
 For example:
 .PP
 .EX
-    # cd /var/cache/aurbuild
-    # sudo \-u aurbuild git clone https://aur.archlinux.org/mypackage.git
-    # cd mypackage
-    # sudo \-u aurbuild aur build \-d custom
+    $ sudo -u aurbuild -i
+    $ git clone https://aur.archlinux.org/mypackage.git
+    $ cd mypackage
+    $ aur build \-d custom
 .EE
 .PP
 Any created files in the local repository (such as packages,
@@ -444,23 +545,6 @@ See also
 .B Avoiding password prompts
 in
 .BR aur\-chroot (1).
-.TP
-.B Note:
-The following
-.B aur\-build
-options require root access:
-.BR \-\-syncdeps ,
-.BR \-\-rmdeps ,
-.BR \-\-chroot .
-Root access are also required for
-.BR pacsync (1)
-and
-.BR "pacman \-S" ,
-unless the
-.B \-\-nosync
-or
-.B \-\-chroot
-options are specified.
 .
 .SS PKGBUILD signatures
 GPG signatures defined in the
